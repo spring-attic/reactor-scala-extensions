@@ -1,0 +1,36 @@
+group 'org.projectreactor'
+version '1.0-SNAPSHOT'
+
+description = 'Scala wrapper for reactor-core'
+
+apply plugin: 'scala'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+// scala dependencies
+    compile "org.scala-lang:scala-library:2.11.8"
+// reactor dependencies
+    compile group: 'io.projectreactor', name: 'reactor-core', version: '3.0.4.RELEASE'
+
+//    test dependencies
+    testCompile "org.scalatest:scalatest_2.11:3.0.1"
+    testRuntime "org.pegdown:pegdown:1.6.0"
+    testCompile group: 'io.projectreactor.addons', name: 'reactor-test', version: '3.0.4.RELEASE'
+}
+
+buildscript {
+    repositories {
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
+    }
+
+    dependencies {
+        classpath "gradle.plugin.com.github.maiflai:gradle-scalatest:0.14"
+    }
+}
+
+apply plugin: "com.github.maiflai.scalatest"
