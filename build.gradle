@@ -1,4 +1,4 @@
-group 'org.projectreactor'
+group 'org.reactor-scala'
 version '1.0-SNAPSHOT'
 
 description = 'Scala wrapper for reactor-core'
