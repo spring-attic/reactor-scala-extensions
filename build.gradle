@@ -55,6 +55,10 @@ artifacts {
     archives sourcesJar
 }
 
+ext.sonatypeUsername = hasProperty("ossrhUsername") ? ossrhUsername : System.getenv("ossrhUsername")
+
+ext.sonatypePassword = hasProperty("ossrhPassword") ? ossrhPassword : System.getenv("ossrhPassword")
+
 uploadArchives {
     repositories {
         mavenDeployer {
@@ -68,8 +72,3 @@ uploadArchives {
         }
     }
 }
-
-def sonatypeUsername = hasProperty("ossrhUsername") ? ossrhUsername : System.getenv("ossrhUsername")
-
-def sonatypePassword = hasProperty("ossrhPassword") ? ossrhPassword : System.getenv("ossrhPassword")
-
