@@ -1,9 +1,11 @@
-group 'org.reactor-scala'
+group 'com.github.sinwe'
 version '1.0-SNAPSHOT'
 
 description = 'Scala wrapper for reactor-core'
 
 apply plugin: 'scala'
+apply plugin: "com.github.maiflai.scalatest"
+apply plugin: 'signing'
 
 repositories {
     mavenCentral()
@@ -33,4 +35,19 @@ buildscript {
     }
 }
 
-apply plugin: "com.github.maiflai.scalatest"
+ext.isReleaseVersion = !version.endsWith("SNAPSHOT")
+signing {
+    required { isReleaseVersion && gradle.taskGraph.hasTask("uploadArchives")}
+    sign configurations.archives
+}
+
+/*
+uploadArchives {
+    repositories {
+        mavenDeployer {
+            beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
+        }
+    }
+}
+*/
+
