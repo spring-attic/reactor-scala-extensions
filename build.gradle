@@ -1,26 +1,30 @@
 group 'com.github.sinwe'
-version '1.0-SNAPSHOT'
-
 description = 'Scala wrapper for reactor-core'
 
 apply plugin: 'scala'
 apply plugin: "com.github.maiflai.scalatest"
 apply plugin: 'signing'
+apply plugin: 'maven'
 
 repositories {
     mavenCentral()
 }
 
+ext {
+    reactorVersion = "3.0.4.RELEASE"
+    baseScalaVersion = "2.11"
+}
+
 dependencies {
 // scala dependencies
-    compile "org.scala-lang:scala-library:2.11.8"
+    compile "org.scala-lang:scala-library:$baseScalaVersion.8"
 // reactor dependencies
-    compile group: 'io.projectreactor', name: 'reactor-core', version: '3.0.4.RELEASE'
+    compile group: 'io.projectreactor', name: 'reactor-core', version: "$reactorVersion"
 
 //    test dependencies
-    testCompile "org.scalatest:scalatest_2.11:3.0.1"
+    testCompile "org.scalatest:scalatest_$baseScalaVersion:3.0.1"
     testRuntime "org.pegdown:pegdown:1.6.0"
-    testCompile group: 'io.projectreactor.addons', name: 'reactor-test', version: '3.0.4.RELEASE'
+    testCompile group: 'io.projectreactor.addons', name: 'reactor-test', version: "$reactorVersion"
 }
 
 buildscript {
@@ -37,7 +41,7 @@ buildscript {
 
 ext.isReleaseVersion = !version.endsWith("SNAPSHOT")
 signing {
-    required { isReleaseVersion && gradle.taskGraph.hasTask("uploadArchives")}
+    required { isReleaseVersion && gradle.taskGraph.hasTask("publish")}
     sign configurations.archives
 }
 
@@ -47,16 +51,22 @@ task sourcesJar(type: Jar, dependsOn: classes) {
 }
 
 artifacts {
+    archives jar
     archives sourcesJar
 }
 
-/*
 uploadArchives {
     repositories {
         mavenDeployer {
             beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
+            repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2") {
+                authentication(userName: ossrhUsername, password: ossrhPassword)
+            }
+            snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots") {
+                authentication(userName: ossrhUsername, password: ossrhPassword)
+            }
         }
     }
 }
-*/
+
 
