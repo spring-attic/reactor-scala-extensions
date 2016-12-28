@@ -19,7 +19,7 @@ import scala.util.Random
   */
 class MonoTest extends FreeSpec with Matchers {
 
-  private val randomValue = Random.nextInt()
+  private val randomValue = Random.nextLong()
   "Mono" - {
     ".create should create a Mono" in {
       val mono = createMono
@@ -96,11 +96,18 @@ class MonoTest extends FreeSpec with Matchers {
         .expectError(classOf[RuntimeException])
         .verify()
     }
+
+    ".map should map the type of Mono from T to R" in {
+      val mono = createMono.map(_.toString)
+
+      StepVerifier.create(mono)
+        .expectNext(randomValue.toString)
+        .expectComplete()
+        .verify()
+    }
   }
 
   private def createMono = {
-    Mono.create[Int](monoSink => monoSink.success(randomValue))
+    Mono.create[Long](monoSink => monoSink.success(randomValue))
   }
-
-
 }

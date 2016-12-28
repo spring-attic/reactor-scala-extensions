@@ -23,7 +23,7 @@ import java.util.function.{Consumer, Function, Supplier}
 
 import org.reactivestreams.{Publisher, Subscriber}
 import reactor.core.publisher.{MonoSink, Mono => JMono}
-import java.lang.{Long => JLong}
+import java.lang.{Iterable, Long => JLong}
 
 import reactor.core.scheduler.TimedScheduler
 
@@ -31,11 +31,26 @@ import reactor.core.scheduler.TimedScheduler
 /**
   * Created by winarto on 12/26/16.
   */
-class Mono[T](val jMono: JMono[T]) extends Publisher[T] {
+class Mono[T](private val jMono: JMono[T]) extends Publisher[T] {
   override def subscribe(s: Subscriber[_ >: T]): Unit = jMono.subscribe(s)
+
+  def  map[R](mapper: T => R): Mono[R] = {
+    Mono(jMono.map(new Function[T, R] {
+      override def apply(t: T): R = mapper(t)
+    }))
+  }
 }
 
 object Mono {
+
+  /**
+    * This function is used as bridge to create scala-wrapper of Mono based on existing Java Mono
+    * @param javaMono
+    * @tparam T
+    * @return Wrapper of Java Mono
+    */
+  def apply[T](javaMono: JMono[T]) = new Mono[T](javaMono)
+
   def create[T](callback: MonoSink[T] => Unit): Mono[T] = {
     new Mono[T](
       JMono.create(new Consumer[MonoSink[T]] {
