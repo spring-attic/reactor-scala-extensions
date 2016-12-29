@@ -2,12 +2,10 @@ package reactor.core.scala.publisher
 
 import java.time
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger}
-import java.util.function.{Consumer, Function, Supplier}
+import java.util.function.Supplier
 
-import org.reactivestreams.{Publisher, Subscription}
-import reactor.core.publisher.{BaseSubscriber, DirectProcessor, MonoProcessor, MonoSink, Mono => JMono}
 import org.scalatest.{FreeSpec, Matchers}
+import reactor.core.publisher.{Flux, Mono => JMono}
 import reactor.test.StepVerifier
 import reactor.test.scheduler.VirtualTimeScheduler
 
@@ -95,6 +93,19 @@ class MonoTest extends FreeSpec with Matchers {
       StepVerifier.create(mono)
         .expectError(classOf[RuntimeException])
         .verify()
+    }
+
+    ".from" - {
+      "a publisher should ensure that the publisher will emit 0 or 1 item." in {
+        val publisher: Flux[Int] = Flux.just(1, 2, 3, 4, 5)
+
+        val mono = Mono.from(publisher)
+
+        StepVerifier.create(mono)
+          .expectNext(1)
+          .expectComplete()
+          .verify()
+      }
     }
 
     ".map should map the type of Mono from T to R" in {

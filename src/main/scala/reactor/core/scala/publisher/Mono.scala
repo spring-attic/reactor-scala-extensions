@@ -18,13 +18,12 @@
 
 package reactor.core.scala.publisher
 
+import java.lang.{Long => JLong}
 import java.time.Duration
 import java.util.function.{Consumer, Function, Supplier}
 
 import org.reactivestreams.{Publisher, Subscriber}
 import reactor.core.publisher.{MonoSink, Mono => JMono}
-import java.lang.{Iterable, Long => JLong}
-
 import reactor.core.scheduler.TimedScheduler
 
 
@@ -112,6 +111,12 @@ object Mono {
   def error[T](throwable: Throwable): Mono[T] = {
     new Mono[T](
       JMono.error(throwable)
+    )
+  }
+
+  def from[T](publisher: Publisher[_ <: T]): Mono[T] = {
+    new Mono[T](
+      JMono.from(publisher)
     )
   }
 }
