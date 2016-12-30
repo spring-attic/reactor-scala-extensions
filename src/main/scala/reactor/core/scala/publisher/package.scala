@@ -1,6 +1,8 @@
 package reactor.core.scala
 
+import java.lang.{Boolean => JBoolean}
 import java.time.{Duration => JDuration}
+import java.util.Optional
 
 import scala.concurrent.duration.Duration
 import scala.language.implicitConversions
@@ -11,5 +13,9 @@ import scala.language.implicitConversions
 package object publisher {
   implicit def scalaDuration2JavaDuration(duration: Duration): JDuration = {
     JDuration.ofNanos(duration.toNanos)
+  }
+
+  implicit def scalaOption2JavaOptional[T](option: Option[T]): Optional[T] = {
+    option.map(Optional.of[T]).getOrElse(Optional.empty())
   }
 }

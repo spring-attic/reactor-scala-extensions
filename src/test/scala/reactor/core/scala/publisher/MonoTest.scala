@@ -1,6 +1,6 @@
 package reactor.core.scala.publisher
 
-import java.time
+import java.time.{Duration => JDuration}
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.{Callable, TimeUnit, TimeoutException}
 import java.util.function.Supplier
@@ -45,7 +45,7 @@ class MonoTest extends FreeSpec with Matchers {
         StepVerifier.withVirtualTime(new Supplier[Mono[Long]] {
           override def get(): Mono[Long] = Mono.delay(Duration(5, TimeUnit.DAYS))
         })
-          .thenAwait(time.Duration.ofDays(5))
+          .thenAwait(JDuration.ofDays(5))
           .expectNextCount(1)
           .expectComplete()
           .verify()
@@ -55,7 +55,7 @@ class MonoTest extends FreeSpec with Matchers {
         StepVerifier.withVirtualTime(new Supplier[Mono[Long]] {
           override def get(): Mono[Long] = Mono.delayMillis(50000)
         })
-          .thenAwait(time.Duration.ofSeconds(50))
+          .thenAwait(JDuration.ofSeconds(50))
           .expectNextCount(1)
           .expectComplete()
           .verify()
@@ -65,7 +65,7 @@ class MonoTest extends FreeSpec with Matchers {
         StepVerifier.withVirtualTime(new Supplier[Mono[Long]] {
           override def get(): Mono[Long] = Mono.delayMillis(50000, VirtualTimeScheduler.enable(false))
         })
-          .thenAwait(time.Duration.ofSeconds(50))
+          .thenAwait(JDuration.ofSeconds(50))
           .expectNextCount(1)
           .expectComplete()
           .verify()
@@ -124,7 +124,9 @@ class MonoTest extends FreeSpec with Matchers {
 
       "a future should result Mono that will return the value from the future object" in {
         import scala.concurrent.ExecutionContext.Implicits.global
-        val future = Future[Long] {randomValue}
+        val future = Future[Long] {
+          randomValue
+        }
 
         val mono = Mono.fromFuture(future)
         StepVerifier.create(mono)
@@ -144,6 +146,59 @@ class MonoTest extends FreeSpec with Matchers {
           .verify()
         atomicLong.get() shouldBe randomValue
       }
+
+      "a Supplier should result Mono that will return the result from supplier" in {
+        val mono = Mono.fromSupplier(() => randomValue)
+        StepVerifier.create(mono)
+          .expectNext(randomValue)
+          .expectComplete()
+          .verify()
+      }
+    }
+
+    ".ignoreElements should ignore all elements from a publisher and just react on completion signal" in {
+      val mono = Mono.ignoreElements(createMono)
+      StepVerifier.create(mono)
+        .expectComplete()
+        .verify()
+    }
+
+    ".just should emit the specified item" in {
+      val mono = Mono.just(randomValue)
+      StepVerifier.create(mono)
+        .expectNext(randomValue)
+        .verifyComplete()
+    }
+
+    ".justOrEmpty" - {
+      "with Option should" - {
+        "emit the specified item if the option is not empty" in {
+          val mono = Mono.justOrEmpty(Option(randomValue))
+          StepVerifier.create(mono)
+            .expectNext(randomValue)
+            .verifyComplete()
+        }
+        "just react on completion signal if the option is empty" in {
+          val mono = Mono.justOrEmpty(Option.empty)
+          StepVerifier.create(mono)
+            .expectComplete()
+            .verify()
+        }
+      }
+      "with data should" - {
+        "emit the specified item if it is not null" in {
+          val mono = Mono.justOrEmpty(randomValue)
+          StepVerifier.create(mono)
+            .expectNext(randomValue)
+            .verifyComplete()
+        }
+      }
+    }
+
+    ".never will never signal any data, error or completion signal" in {
+      val mono = Mono.never
+      StepVerifier.create(mono)
+        .expectNoEvent(JDuration.ofMillis(1000))
     }
 
     ".map should map the type of Mono from T to R" in {
@@ -158,14 +213,14 @@ class MonoTest extends FreeSpec with Matchers {
       StepVerifier.withVirtualTime(new Supplier[Publisher[Long]] {
         override def get(): Mono[Long] = Mono.delayMillis(10000).timeout(Duration(5, TimeUnit.SECONDS))
       })
-        .thenAwait(time.Duration.ofSeconds(5))
+        .thenAwait(JDuration.ofSeconds(5))
         .expectError(classOf[TimeoutException])
         .verify()
     }
 
     ".doOnTerminate should do something on terminate" in {
       val atomicLong = new AtomicLong()
-      val mono: Mono[Long] = createMono.doOnTerminate {(l, t) => atomicLong.set(l)}
+      val mono: Mono[Long] = createMono.doOnTerminate { (l, t) => atomicLong.set(l) }
       StepVerifier.create(mono)
         .expectNext(randomValue)
         .expectComplete()

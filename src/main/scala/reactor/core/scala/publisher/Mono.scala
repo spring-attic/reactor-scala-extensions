@@ -18,7 +18,7 @@
 
 package reactor.core.scala.publisher
 
-import java.lang.{Long => JLong}
+import java.lang.{Boolean => JBoolean, Long => JLong}
 import java.time.{Duration => JDuration}
 import java.util.concurrent.{Callable, CompletableFuture}
 import java.util.function.{BiConsumer, Consumer, Function, Supplier}
@@ -155,6 +155,52 @@ object Mono {
     new Mono[Unit](
       JMono.fromRunnable(runnable).map(new Function[Void, Unit] {
         override def apply(t: Void):Unit = ()
+      })
+    )
+  }
+
+  def fromSupplier[T](supplier: () => T): Mono[T] = {
+    new Mono[T](
+      JMono.fromSupplier(new Supplier[T] {
+        override def get(): T = supplier()
+      })
+    )
+  }
+
+  def ignoreElements[T](publisher: Publisher[T]): Mono[T] = {
+    new Mono[T](
+      JMono.ignoreElements(publisher)
+    )
+  }
+
+  def just[T](data: T): Mono[T] = {
+    new Mono[T](
+      JMono.just(data)
+    )
+  }
+
+  def justOrEmpty[T](data: Option[_ <: T]): Mono[T] = {
+    new Mono[T](
+      JMono.justOrEmpty[T](data)
+    )
+  }
+
+  def justOrEmpty[T](data: T): Mono[T] = {
+    new Mono[T](
+      JMono.justOrEmpty(data)
+    )
+  }
+
+  def never[T]: Mono[T] = {
+    new Mono[T](
+      JMono.never[T]()
+    )
+  }
+
+  def sequenceEqual[T](source1: Publisher[_ <: T], source2: Publisher[_ <: T]): Mono[Boolean] = {
+    new Mono[Boolean](
+      JMono.sequenceEqual[T](source1, source2).map(new Function[JBoolean, Boolean] {
+        override def apply(t: JBoolean): Boolean = Boolean2boolean(t)
       })
     )
   }
