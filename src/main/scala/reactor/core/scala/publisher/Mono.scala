@@ -150,4 +150,12 @@ object Mono {
       JMono.fromFuture(completableFuture)
     )
   }
+
+  def fromRunnable(runnable: Runnable): Mono[Unit] = {
+    new Mono[Unit](
+      JMono.fromRunnable(runnable).map(new Function[Void, Unit] {
+        override def apply(t: Void):Unit = ()
+      })
+    )
+  }
 }

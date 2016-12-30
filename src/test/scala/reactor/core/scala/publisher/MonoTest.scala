@@ -132,6 +132,18 @@ class MonoTest extends FreeSpec with Matchers {
           .expectComplete()
           .verify()
       }
+
+      "a Runnable should run the unit within it" in {
+        val atomicLong = new AtomicLong()
+        val runnable = new Runnable {
+          override def run(): Unit = atomicLong.set(randomValue)
+        }
+        val mono = Mono.fromRunnable(runnable)
+        StepVerifier.create(mono)
+          .expectComplete()
+          .verify()
+        atomicLong.get() shouldBe randomValue
+      }
     }
 
     ".map should map the type of Mono from T to R" in {
