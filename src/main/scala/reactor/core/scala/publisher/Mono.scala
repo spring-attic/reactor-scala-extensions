@@ -19,13 +19,15 @@
 package reactor.core.scala.publisher
 
 import java.lang.{Long => JLong}
-import java.time.Duration
-import java.util.function.{Consumer, Function, Supplier}
+import java.time.{Duration => JDuration}
+import java.util.concurrent.Callable
+import java.util.function.{BiConsumer, Consumer, Function, Supplier}
 
 import org.reactivestreams.{Publisher, Subscriber}
 import reactor.core.publisher.{MonoSink, Mono => JMono}
 import reactor.core.scheduler.TimedScheduler
 
+import scala.concurrent.duration.Duration
 
 /**
   * Created by winarto on 12/26/16.
@@ -36,6 +38,16 @@ class Mono[T](private val jMono: JMono[T]) extends Publisher[T] {
   def  map[R](mapper: T => R): Mono[R] = {
     Mono(jMono.map(new Function[T, R] {
       override def apply(t: T): R = mapper(t)
+    }))
+  }
+
+  def timeout(duration: Duration): Mono[T] = {
+    Mono(jMono.timeout(duration))
+  }
+
+  def doOnTerminate(onTerminate: (T, Throwable) => Unit): Mono[T] = {
+    Mono(jMono.doOnTerminate(new BiConsumer[T, Throwable] {
+      override def accept(t: T, u: Throwable): Unit = onTerminate(t, u)
     }))
   }
 }
@@ -68,7 +80,7 @@ object Mono {
 
   def delay(duration: scala.concurrent.duration.Duration): Mono[Long] = {
     new Mono[Long](
-      JMono.delay(Duration.ofNanos(duration.toNanos))
+      JMono.delay(JDuration.ofNanos(duration.toNanos))
         .map(new Function[JLong, Long] {
           override def apply(t: JLong): Long = t
         })
@@ -117,6 +129,12 @@ object Mono {
   def from[T](publisher: Publisher[_ <: T]): Mono[T] = {
     new Mono[T](
       JMono.from(publisher)
+    )
+  }
+
+  def fromCallable[T](callable: Callable[T]): Mono[T] = {
+    new Mono[T](
+      JMono.fromCallable(callable)
     )
   }
 }
