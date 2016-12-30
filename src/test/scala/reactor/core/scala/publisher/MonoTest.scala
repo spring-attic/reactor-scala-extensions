@@ -144,6 +144,14 @@ class MonoTest extends FreeSpec with Matchers {
           .verify()
         atomicLong.get() shouldBe randomValue
       }
+
+      ".fromSupplier should result Mono that will return the result from supplier" in {
+        val mono = Mono.fromSupplier(() => randomValue)
+        StepVerifier.create(mono)
+          .expectNext(randomValue)
+          .expectComplete()
+          .verify()
+      }
     }
 
     ".map should map the type of Mono from T to R" in {
