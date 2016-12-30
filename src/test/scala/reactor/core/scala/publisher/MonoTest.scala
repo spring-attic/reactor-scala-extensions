@@ -11,6 +11,7 @@ import reactor.core.publisher.{Flux, Mono => JMono}
 import reactor.test.StepVerifier
 import reactor.test.scheduler.VirtualTimeScheduler
 
+import scala.concurrent.Future
 import scala.concurrent.duration.Duration
 import scala.util.Random
 
@@ -115,6 +116,17 @@ class MonoTest extends FreeSpec with Matchers {
           override def call(): Long = randomValue
         }
         val mono = Mono.fromCallable(callable)
+        StepVerifier.create(mono)
+          .expectNext(randomValue)
+          .expectComplete()
+          .verify()
+      }
+
+      "a future should result Mono that will return the value from the future object" in {
+        import scala.concurrent.ExecutionContext.Implicits.global
+        val future = Future[Long] {randomValue}
+
+        val mono = Mono.fromFuture(future)
         StepVerifier.create(mono)
           .expectNext(randomValue)
           .expectComplete()

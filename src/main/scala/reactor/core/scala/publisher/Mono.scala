@@ -20,14 +20,16 @@ package reactor.core.scala.publisher
 
 import java.lang.{Long => JLong}
 import java.time.{Duration => JDuration}
-import java.util.concurrent.Callable
+import java.util.concurrent.{Callable, CompletableFuture}
 import java.util.function.{BiConsumer, Consumer, Function, Supplier}
 
 import org.reactivestreams.{Publisher, Subscriber}
 import reactor.core.publisher.{MonoSink, Mono => JMono}
 import reactor.core.scheduler.TimedScheduler
 
+import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.Duration
+import scala.util.{Failure, Success}
 
 /**
   * Created by winarto on 12/26/16.
@@ -135,6 +137,17 @@ object Mono {
   def fromCallable[T](callable: Callable[T]): Mono[T] = {
     new Mono[T](
       JMono.fromCallable(callable)
+    )
+  }
+
+  def fromFuture[T](future: Future[T])(implicit executionContext: ExecutionContext): Mono[T] = {
+    val completableFuture = new CompletableFuture[T]()
+    future onComplete {
+      case Success(t) => completableFuture.complete(t)
+      case Failure(error) => completableFuture.completeExceptionally(error)
+    }
+    new Mono[T](
+      JMono.fromFuture(completableFuture)
     )
   }
 }
