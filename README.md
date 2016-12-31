@@ -1,6 +1,7 @@
 #Reactor Core Scala
 
 [![Travis CI](https://travis-ci.org/sinwe/reactor-core-scala.svg?branch=master)](https://travis-ci.org/sinwe/reactor-core-scala)
+[![codecov](https://codecov.io/gh/sinwe/reactor-core-scala/branch/master/graph/badge.svg)](https://codecov.io/gh/sinwe/reactor-core-scala)
 
 This project is a Scala wrapper for reactor-core.
 
