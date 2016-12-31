@@ -151,6 +151,14 @@ object Mono {
     )
   }
 
+  def fromSupplier[T](supplier: () => T): Mono[T] = {
+    new Mono[T](
+      JMono.fromSupplier(new Supplier[T] {
+        override def get(): T = supplier()
+      })
+    )
+  }
+
   def fromRunnable(runnable: Runnable): Mono[Unit] = {
     new Mono[Unit](
       JMono.fromRunnable(runnable).map(new Function[Void, Unit] {
