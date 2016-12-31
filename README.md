@@ -11,4 +11,15 @@ Using reactor-core project as it is in scala code will look ugly because
 a lot of methods use Java 8 lambda which is not compatible with Scala lambda.
 This will force Scala code to use anonymous class which turns ugly.
 
+So instead of
+
+    val mono = Mono.just(1)
+                   .map(new java.util.function.Function[Int, String] {
+                       def apply(t: Int): String = t.toString
+                   })
+                   
+it becomes
+
+    val mono = Mono.just(1).map(_.toString)
+
 Contributions are welcome.
