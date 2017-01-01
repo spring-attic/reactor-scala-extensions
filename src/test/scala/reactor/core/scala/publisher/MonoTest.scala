@@ -6,6 +6,7 @@ import java.util.concurrent.{Callable, TimeUnit, TimeoutException}
 import java.util.function.Supplier
 
 import org.reactivestreams.Publisher
+import org.scalatest.prop.TableDrivenPropertyChecks
 import org.scalatest.{FreeSpec, Matchers}
 import reactor.core.publisher.{Flux, Mono => JMono}
 import reactor.test.StepVerifier
@@ -18,7 +19,7 @@ import scala.util.Random
 /**
   * Created by winarto on 12/26/16.
   */
-class MonoTest extends FreeSpec with Matchers {
+class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
 
   private val randomValue = Random.nextLong()
   "Mono" - {
@@ -199,6 +200,160 @@ class MonoTest extends FreeSpec with Matchers {
       val mono = Mono.never
       StepVerifier.create(mono)
         .expectNoEvent(JDuration.ofMillis(1000))
+    }
+
+    ".when" - {
+      "with p1 and p2 should" - {
+        "emit tuple2 when both p1 and p2 have emitted the value" in {
+          val mono = Mono.when(Mono.just(1), Mono.just("one"))
+
+          StepVerifier.create(mono)
+            .expectNext((1, "one"))
+            .verifyComplete()
+        }
+        "emit error when one of the publisher has error" in {
+          val mono = Mono.when(Mono.just(1), Mono.error(new RuntimeException()))
+
+          StepVerifier.create(mono)
+            .expectError(classOf[RuntimeException])
+            .verify()
+        }
+      }
+      "with p1 and p2 and a function combinator (T1, T2) => O should" - {
+        "emit O when both p1 and p2 have emitted the value" in {
+          val mono = Mono.when(Mono.just(1), Mono.just("one"), (t1:Int, t2: String) => s"${t1.toString}-$t2")
+          StepVerifier.create(mono)
+            .expectNext("1-one")
+            .verifyComplete()
+        }
+        "emit error when one of the publisher has error" in {
+          val mono = Mono.when(Mono.just(1), Mono.error(new RuntimeException()), (t1:Int, t2: String) => s"${t1.toString}-$t2")
+
+          StepVerifier.create(mono)
+            .expectError(classOf[RuntimeException])
+            .verify()
+        }
+      }
+
+      "with p1, p2 and p3 should" - {
+        "emit tuple3 when all publisher have emitted the value" in {
+          val mono = Mono.when(Mono.just(1), Mono.just(2), Mono.just("one-two"))
+          StepVerifier.create(mono)
+            .expectNext((1, 2, "one-two"))
+            .verifyComplete()
+        }
+        "emit error when one of the publisher encounter error" in {
+          val p1 = Mono.just(1)
+          val p2 = Mono.just(2)
+          val p3 = Mono.just(3)
+          val error = Mono.error(new RuntimeException())
+          val monos = Table(
+            ("p1", "p2", "p3"),
+            (p1, p2, error),
+            (p1, error, p3),
+            (error, p2, p3)
+          )
+          forAll(monos){(p1, p2, p3) => {
+            val mono = Mono.when(p1, p2, p3)
+            StepVerifier.create(mono)
+              .expectError(classOf[RuntimeException])
+              .verify()
+          }}
+        }
+      }
+
+      "with p1, p2, p3 and p4 should" - {
+        "emit tuple4 when all publisher have emitted the value" in {
+          val mono = Mono.when(Mono.just(1), Mono.just(2), Mono.just("one"), Mono.just("two"))
+          StepVerifier.create(mono)
+            .expectNext((1, 2, "one", "two"))
+            .verifyComplete()
+        }
+        "emit error when one of the publisher encounter error" in {
+          val p1 = Mono.just(1)
+          val p2 = Mono.just(2)
+          val p3 = Mono.just(3)
+          val p4 = Mono.just(4)
+          val error = Mono.error(new RuntimeException())
+          val monos = Table(
+            ("p1", "p2", "p3", "p4"),
+            (p1, p2, p3, error),
+            (p1, p2, error, p4),
+            (p1, error, p3, p4),
+            (error, p2, p3, p4)
+          )
+          forAll(monos){(p1, p2, p3, p4) => {
+            val mono = Mono.when(p1, p2, p3, p4)
+            StepVerifier.create(mono)
+              .expectError(classOf[RuntimeException])
+              .verify()
+          }}
+        }
+      }
+
+      "with p1, p2, p3, p4 and p5 should" - {
+        "emit tuple5 when all publisher have emitted the value" in {
+          val mono = Mono.when(Mono.just(1), Mono.just(2), Mono.just("one"), Mono.just("two"), Mono.just("three"))
+          StepVerifier.create(mono)
+            .expectNext((1, 2, "one", "two", "three"))
+            .verifyComplete()
+        }
+        "emit error when one of the publisher encounter error" in {
+          val p1 = Mono.just(1)
+          val p2 = Mono.just(2)
+          val p3 = Mono.just(3)
+          val p4 = Mono.just(4)
+          val p5 = Mono.just(5)
+          val error = Mono.error(new RuntimeException())
+          val monos = Table(
+            ("p1", "p2", "p3", "p4", "p5"),
+            (p1, p2, p3, p4, error),
+            (p1, p2, p3, error, p5),
+            (p1, p2, error, p4, p5),
+            (p1, error, p3, p4, p5),
+            (error, p2, p3, p4, p5)
+          )
+          forAll(monos){(p1, p2, p3, p4, p5) => {
+            val mono = Mono.when(p1, p2, p3, p4, p5)
+            StepVerifier.create(mono)
+              .expectError(classOf[RuntimeException])
+              .verify()
+          }}
+        }
+      }
+
+      "with p1, p2, p3, p4, p5 and p6 should" - {
+        "emit tuple6 when all publisher have emitted the value" in {
+          val mono = Mono.when(Mono.just(1), Mono.just(2), Mono.just(3), Mono.just("one"), Mono.just("two"), Mono.just("three"))
+          StepVerifier.create(mono)
+            .expectNext((1, 2, 3, "one", "two", "three"))
+            .verifyComplete()
+        }
+        "emit error when one of the publisher encounter error" in {
+          val p1 = Mono.just(1)
+          val p2 = Mono.just(2)
+          val p3 = Mono.just(3)
+          val p4 = Mono.just(4)
+          val p5 = Mono.just(5)
+          val p6 = Mono.just(6)
+          val error = Mono.error(new RuntimeException())
+          val monos = Table(
+            ("p1", "p2", "p3", "p4", "p5", "p6"),
+            (p1, p2, p3, p4, p5, error),
+            (p1, p2, p3, p4, error, p6),
+            (p1, p2, p3, error, p5, p6),
+            (p1, p2, error, p4, p5, p6),
+            (p1, error, p3, p4, p5, p6),
+            (error, p2, p3, p4, p5, p6)
+          )
+          forAll(monos){(p1, p2, p3, p4, p5, p6) => {
+            val mono = Mono.when(p1, p2, p3, p4, p5, p6)
+            StepVerifier.create(mono)
+              .expectError(classOf[RuntimeException])
+              .verify()
+          }}
+        }
+      }
     }
 
     ".map should map the type of Mono from T to R" in {

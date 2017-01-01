@@ -21,6 +21,8 @@ dependencies {
     compile "org.scala-lang:scala-library:$baseScalaVersion.8"
 // reactor dependencies
     compile group: 'io.projectreactor', name: 'reactor-core', version: "$reactorVersion"
+// jsr305
+    compile group: 'com.google.code.findbugs', name: 'jsr305', version: '3.0.1'
 
 //    test dependencies
     testCompile "org.scalatest:scalatest_$baseScalaVersion:3.0.1"

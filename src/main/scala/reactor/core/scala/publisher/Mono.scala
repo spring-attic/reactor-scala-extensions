@@ -21,11 +21,13 @@ package reactor.core.scala.publisher
 import java.lang.{Boolean => JBoolean, Long => JLong}
 import java.time.{Duration => JDuration}
 import java.util.concurrent.{Callable, CompletableFuture}
-import java.util.function.{BiConsumer, Consumer, Function, Supplier}
+import java.util.function.{BiConsumer, BiFunction, Consumer, Function, Supplier}
 
 import org.reactivestreams.{Publisher, Subscriber}
 import reactor.core.publisher.{MonoSink, Mono => JMono}
 import reactor.core.scheduler.TimedScheduler
+import reactor.util.function
+import reactor.util.function.{Tuple2, Tuple3, Tuple4}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.Duration
@@ -201,6 +203,59 @@ object Mono {
     new Mono[Boolean](
       JMono.sequenceEqual[T](source1, source2).map(new Function[JBoolean, Boolean] {
         override def apply(t: JBoolean): Boolean = Boolean2boolean(t)
+      })
+    )
+  }
+
+  def when[T1, T2](p1: Mono[_ <: T1], p2: Mono[_ <: T2]): Mono[(T1, T2)] = {
+    val jMono: JMono[Tuple2[T1, T2]] = JMono.when(p1.jMono, p2.jMono)
+
+    new Mono[(T1, T2)](
+      jMono.map(new Function[Tuple2[T1, T2], (T1, T2)] {
+        override def apply(t: Tuple2[T1, T2]): (T1, T2) = (t.getT1, t.getT2)
+      })
+    )
+  }
+
+  def when[T1, T2, O](p1: Mono[_ <: T1], p2: Mono[_ <: T2], combinator: (T1, T2) => O): Mono[O] = {
+    val jMono: JMono[O] = JMono.when(p1.jMono, p2.jMono, new BiFunction[T1, T2, O] {
+      override def apply(t: T1, u: T2): O = combinator(t, u)
+    })
+    new Mono[O](jMono)
+  }
+
+  def when[T1, T2, T3](p1: Mono[_ <: T1], p2: Mono[_ <: T2], p3: Mono[_ <: T3]): Mono[(T1, T2, T3)] = {
+    val jMono: JMono[Tuple3[T1, T2, T3]] = JMono.when(p1.jMono, p2.jMono, p3.jMono)
+    new Mono[(T1, T2, T3)](
+      jMono.map(new Function[function.Tuple3[T1, T2, T3], (T1, T2, T3)] {
+        override def apply(t: function.Tuple3[T1, T2, T3]): (T1, T2, T3) = (t.getT1, t.getT2, t.getT3)
+      })
+    )
+  }
+
+  def when[T1, T2, T3, T4](p1: Mono[_ <: T1], p2: Mono[_ <: T2], p3: Mono[_ <: T3], p4: Mono[_ <: T4]): Mono[(T1, T2, T3, T4)] = {
+    val jMono: JMono[Tuple4[T1, T2, T3, T4]] = JMono.when(p1.jMono, p2.jMono, p3.jMono, p4.jMono)
+    new Mono[(T1, T2, T3, T4)](
+      jMono.map(new Function[function.Tuple4[T1, T2, T3, T4], (T1, T2, T3, T4)] {
+        override def apply(t: function.Tuple4[T1, T2, T3, T4]): (T1, T2, T3, T4) = (t.getT1, t.getT2, t.getT3, t.getT4)
+      })
+    )
+  }
+
+  def when[T1, T2, T3, T4, T5](p1: Mono[_ <: T1], p2: Mono[_ <: T2], p3: Mono[_ <: T3], p4: Mono[_ <: T4], p5: Mono[_ <: T5]): Mono[(T1, T2, T3, T4, T5)] = {
+    val jMono: JMono[function.Tuple5[T1, T2, T3, T4, T5]] = JMono.when(p1.jMono, p2.jMono, p3.jMono, p4.jMono, p5.jMono)
+    new Mono[(T1, T2, T3, T4, T5)](
+      jMono.map(new Function[function.Tuple5[T1, T2, T3, T4, T5], (T1, T2, T3, T4, T5)] {
+        override def apply(t: function.Tuple5[T1, T2, T3, T4, T5]): (T1, T2, T3, T4, T5) = (t.getT1, t.getT2, t.getT3, t.getT4, t.getT5)
+      })
+    )
+  }
+
+  def when[T1, T2, T3, T4, T5, T6](p1: Mono[_ <: T1], p2: Mono[_ <: T2], p3: Mono[_ <: T3], p4: Mono[_ <: T4], p5: Mono[_ <: T5], p6: Mono[_ <: T6]): Mono[(T1, T2, T3, T4, T5, T6)] = {
+    val jMono: JMono[function.Tuple6[T1, T2, T3, T4, T5, T6]] = JMono.when(p1.jMono, p2.jMono, p3.jMono, p4.jMono, p5.jMono, p6.jMono)
+    new Mono[(T1, T2, T3, T4, T5, T6)](
+      jMono.map(new Function[function.Tuple6[T1, T2, T3, T4, T5, T6], (T1, T2, T3, T4, T5, T6)] {
+        override def apply(t: function.Tuple6[T1, T2, T3, T4, T5, T6]): (T1, T2, T3, T4, T5, T6) = (t.getT1, t.getT2, t.getT3, t.getT4, t.getT5, t.getT6)
       })
     )
   }
