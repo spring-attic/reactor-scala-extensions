@@ -39,7 +39,7 @@ import scala.util.{Failure, Success}
 class Mono[T](private val jMono: JMono[T]) extends Publisher[T] {
   override def subscribe(s: Subscriber[_ >: T]): Unit = jMono.subscribe(s)
 
-  def  map[R](mapper: T => R): Mono[R] = {
+  def map[R](mapper: T => R): Mono[R] = {
     Mono(jMono.map(new Function[T, R] {
       override def apply(t: T): R = mapper(t)
     }))
@@ -60,6 +60,7 @@ object Mono {
 
   /**
     * This function is used as bridge to create scala-wrapper of Mono based on existing Java Mono
+    *
     * @param javaMono
     * @tparam T
     * @return Wrapper of Java Mono
@@ -156,7 +157,7 @@ object Mono {
   def fromRunnable(runnable: Runnable): Mono[Unit] = {
     new Mono[Unit](
       JMono.fromRunnable(runnable).map(new Function[Void, Unit] {
-        override def apply(t: Void):Unit = ()
+        override def apply(t: Void): Unit = ()
       })
     )
   }
@@ -257,6 +258,23 @@ object Mono {
       jMono.map(new Function[function.Tuple6[T1, T2, T3, T4, T5, T6], (T1, T2, T3, T4, T5, T6)] {
         override def apply(t: function.Tuple6[T1, T2, T3, T4, T5, T6]): (T1, T2, T3, T4, T5, T6) = (t.getT1, t.getT2, t.getT3, t.getT4, t.getT5, t.getT6)
       })
+    )
+  }
+
+  def when(sources: Iterable[_ <: Publisher[Unit]]): Mono[Unit] = {
+    import scala.collection.JavaConverters._
+    val mappedSources: Iterable[Publisher[Void]] = sources.map {
+      case m: Mono[Unit] =>
+        val jMono: JMono[Unit] = m.jMono
+        jMono.map(new Function[Unit, Void] {
+          override def apply(t: Unit): Void = None.orNull
+        }): JMono[Void]
+    }
+    val mono: JMono[Void] = JMono.when(mappedSources.asJava)
+    new Mono[Unit](
+      mono.map(new Function[Void, Unit] {
+        override def apply(t: Void): Unit = ()
+      }): JMono[Unit]
     )
   }
 }

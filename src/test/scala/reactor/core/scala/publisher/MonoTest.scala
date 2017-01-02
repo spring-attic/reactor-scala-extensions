@@ -1,14 +1,15 @@
 package reactor.core.scala.publisher
 
 import java.time.{Duration => JDuration}
-import java.util.concurrent.atomic.AtomicLong
-import java.util.concurrent.{Callable, TimeUnit, TimeoutException}
+import java.util.concurrent.ConcurrentHashMap.KeySetView
+import java.util.concurrent.atomic.{AtomicBoolean, AtomicLong}
+import java.util.concurrent.{Callable, ConcurrentHashMap, TimeUnit, TimeoutException}
 import java.util.function.Supplier
 
-import org.reactivestreams.Publisher
+import org.reactivestreams.{Publisher, Subscription}
 import org.scalatest.prop.TableDrivenPropertyChecks
 import org.scalatest.{FreeSpec, Matchers}
-import reactor.core.publisher.{Flux, Mono => JMono}
+import reactor.core.publisher.{BaseSubscriber, Flux, Mono => JMono}
 import reactor.test.StepVerifier
 import reactor.test.scheduler.VirtualTimeScheduler
 
@@ -202,6 +203,27 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         .expectNoEvent(JDuration.ofMillis(1000))
     }
 
+//    sequenceEqual has bug with subscription signalling
+//    see https://github.com/reactor/reactor-core/issues/328
+    ".sequenceEqual should" - {
+      "emit Boolean.TRUE when both publisher emit the same value" ignore {
+        val emittedValue = new AtomicBoolean(false)
+        val isSubscribed = new AtomicBoolean(false)
+
+        val mono = Mono.sequenceEqual(Mono.just(1), Mono.just(1))
+        mono.subscribe(new BaseSubscriber[Boolean] {
+          override def hookOnSubscribe(subscription: Subscription): Unit = {
+            subscription.request(1)
+            isSubscribed.compareAndSet(false, true)
+          }
+
+          override def hookOnNext(value: Boolean): Unit = emittedValue.compareAndSet(false, true)
+        })
+//        isSubscribed shouldBe 'get
+        emittedValue shouldBe 'get
+      }
+    }
+
     ".when" - {
       "with p1 and p2 should" - {
         "emit tuple2 when both p1 and p2 have emitted the value" in {
@@ -352,6 +374,24 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
               .expectError(classOf[RuntimeException])
               .verify()
           }}
+        }
+      }
+
+      "with iterable" - {
+        "of publisher of unit should return when all of the sources has fulfilled" in {
+          val completed = new ConcurrentHashMap[String, Boolean]()
+          val mono = Mono.when(Iterable(
+            Mono.just[Unit]({
+              completed.put("first", true)
+          }),
+            Mono.just[Unit]({
+              completed.put("second", true)
+            })
+          ))
+          StepVerifier.create(mono)
+            .expectComplete()
+          completed should contain key "first"
+          completed should contain key "second"
         }
       }
     }
