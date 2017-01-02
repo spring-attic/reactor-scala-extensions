@@ -2,7 +2,8 @@
 
 [![Travis CI](https://travis-ci.org/sinwe/reactor-core-scala.svg?branch=master)](https://travis-ci.org/sinwe/reactor-core-scala)
 [![codecov](https://codecov.io/gh/sinwe/reactor-core-scala/branch/master/graph/badge.svg)](https://codecov.io/gh/sinwe/reactor-core-scala)
-
+[![Dependencies](https://app.updateimpact.com/badge/816040452200468480/reactor-core-scala.svg?config=compile)](https://app.updateimpact.com/latest/816040452200468480/reactor-core-scala)
+                            
 This project is a Scala wrapper for reactor-core.
 
 This project was created after I can't find any Scala code for [reactor-core](https://github.com/reactor/reactor-core) project.
