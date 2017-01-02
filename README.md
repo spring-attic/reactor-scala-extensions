@@ -5,7 +5,6 @@
 
 This project is a Scala wrapper for reactor-core.
 
-It is still in preliminary stage and requires a lot of refinement.
 This project was created after I can't find any Scala code for [reactor-core](https://github.com/reactor/reactor-core) project.
 Using reactor-core project as it is in scala code will look ugly because
 a lot of methods use Java 8 lambda which is not compatible with Scala lambda.
@@ -21,5 +20,27 @@ So instead of
 it becomes
 
     val mono = Mono.just(1).map(_.toString)
+
+It is still in preliminary stage and requires a lot of refinement. No release has been made so far.
+Those who wanted to try, can get the SNAPSHOT version from snapshot repository as below:
+
+    <repositories>
+        <repository>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+            <id>ossSonatypeSnapshot</id>
+            <name>OSS Sonatype Snapshots</name>
+            <url>https://oss.sonatype.org/content/repositories/snapshots/</url>
+            <layout>default</layout>
+        </repository>
+     </repositories>
+
+    <dependency>
+        <groupId>com.github.sinwe</groupId>
+        <artifactId>reactor-core-scala</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </dependency>
+
 
 Contributions are welcome.
