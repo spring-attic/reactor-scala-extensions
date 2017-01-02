@@ -203,10 +203,9 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         .expectNoEvent(JDuration.ofMillis(1000))
     }
 
-//    sequenceEqual has bug with subscription signalling
-//    see https://github.com/reactor/reactor-core/issues/328
+
     ".sequenceEqual should" - {
-      "emit Boolean.TRUE when both publisher emit the same value" ignore {
+      "emit Boolean.TRUE when both publisher emit the same value" in {
         val emittedValue = new AtomicBoolean(false)
         val isSubscribed = new AtomicBoolean(false)
 
@@ -219,6 +218,9 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
 
           override def hookOnNext(value: Boolean): Unit = emittedValue.compareAndSet(false, true)
         })
+//    sequenceEqual has bug with subscription signalling
+//    see https://github.com/reactor/reactor-core/issues/328
+//        TODO: Fix this once the above issue is fixed
 //        isSubscribed shouldBe 'get
         emittedValue shouldBe 'get
       }
