@@ -415,6 +415,18 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         completed should contain key "first"
         completed should contain key "second"
       }
+
+      "with function combinator and varargs of mono should return when all of the monos has fulfilled" in {
+
+        val combinator: (Array[Any] => String) = { values =>
+          values.map(_.toString).foldLeft(""){(acc, value) => if(acc.isEmpty) s"$value" else s"$acc-$value"}
+        }
+
+        StepVerifier.create(Mono.when(combinator, Mono.just[Any](1), Mono.just[Any](2)))
+          .expectNext("1-2")
+          .expectComplete()
+          .verify()
+      }
     }
 
     ".map should map the type of Mono from T to R" in {

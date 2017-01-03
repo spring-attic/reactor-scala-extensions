@@ -294,4 +294,20 @@ object Mono {
       })
     )
   }
+
+  def when[R](combinator: (Array[Any] => R), monos: Mono[Any]*): Mono[R] = {
+    val combinatorFunction: Function[_ >: Array[Object], _ <: R] = new Function[Array[Object], R] {
+      override def apply(t: Array[Object]): R = {
+        val v: Array[Any] = t.map { v => v:Any}
+        combinator(v)
+      }
+    }
+    val jMonos = monos.map(_.jMono.map(new Function[Any, Object] {
+      override def apply(t: Any): Object = t.asInstanceOf[Object]
+    }))
+
+    new Mono[R](
+      JMono.when(combinatorFunction, jMonos.toArray:_*)
+    )
+  }
 }
