@@ -439,6 +439,14 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       }
     }
 
+    ".whenDelayError" - {
+      "with p1 and p2 should merge when both Monos are fulfilled" in {
+        StepVerifier.create(Mono.whenDelayError(Mono.just(1), Mono.just("one")))
+          .expectNext((1, "one"))
+          .verifyComplete()
+      }
+    }
+
     ".map should map the type of Mono from T to R" in {
       val mono = createMono.map(_.toString)
 

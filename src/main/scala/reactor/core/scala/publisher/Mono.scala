@@ -326,4 +326,13 @@ object Mono {
       JMono.when(combinatorFunction, jMonos.toArray:_*)
     )
   }
+
+  def whenDelayError[T1, T2](p1: Mono[_ <: T1], p2: Mono[_ <: T2]): Mono[(T1, T2)] = {
+    val jMono = JMono.whenDelayError[T1, T2](p1.jMono, p2.jMono)
+    new Mono[(T1, T2)](
+      jMono.map(new Function[Tuple2[T1, T2], (T1, T2)] {
+        override def apply(t: Tuple2[T1, T2]): (T1, T2) = tupleTwo2ScalaTuple2(t)
+      })
+    )
+  }
 }
