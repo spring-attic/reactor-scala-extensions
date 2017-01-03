@@ -14,6 +14,7 @@ import reactor.test.scheduler.VirtualTimeScheduler
 
 import scala.concurrent.Future
 import scala.concurrent.duration.Duration
+import scala.language.existentials
 import scala.util.Random
 
 /**
@@ -397,6 +398,15 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
             .expectComplete()
           completed should contain key "first"
           completed should contain key "second"
+        }
+
+        "of Mono and combinator function should emit the value after combined by combinator function" in {
+          val combinator: (Array[Any] => String) = values => values.map(_.toString).foldLeft("") { (acc, v) => if (acc.isEmpty) v else s"$acc-$v" }
+          val mono = Mono.when(Iterable(Mono.just[Any](1), Mono.just[Any](2)), combinator)
+          StepVerifier.create(mono)
+            .expectNext("1-2")
+            .expectComplete()
+            .verify()
         }
       }
 

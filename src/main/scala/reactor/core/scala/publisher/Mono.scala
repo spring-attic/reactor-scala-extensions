@@ -278,6 +278,22 @@ object Mono {
     )
   }
 
+  def when[R](monos: Iterable[_ <: Mono[Any]], combinator: (Array[Any] => R)) : Mono[R] = {
+    val combinatorFunction: Function[_ >: Array[Object], _ <: R] = new Function[Array[Object], R] {
+      override def apply(t: Array[Object]): R = {
+        val v: Array[Any] = t.map { v => v:Any}
+        combinator(v)
+      }
+    }
+    val jMonos = monos.map(_.jMono.map(new Function[Any, Object] {
+      override def apply(t: Any): Object = t.asInstanceOf[Object]
+    })).asJava
+
+    new Mono[R](
+      JMono.when(jMonos, combinatorFunction)
+    )
+  }
+
   def when(sources: Publisher[Unit]*): Mono[Unit] = {
     val mappedSources: Seq[JMono[Void]] = sources.map {
       case m: Mono[Unit] =>
