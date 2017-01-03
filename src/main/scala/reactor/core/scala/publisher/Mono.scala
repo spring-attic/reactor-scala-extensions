@@ -18,7 +18,7 @@
 
 package reactor.core.scala.publisher
 
-import java.lang.{Boolean => JBoolean, Long => JLong}
+import java.lang.{Boolean => JBoolean, Iterable => JIterable, Long => JLong}
 import java.time.{Duration => JDuration}
 import java.util.concurrent.{Callable, CompletableFuture}
 import java.util.function.{BiConsumer, BiFunction, Consumer, Function, Supplier}
@@ -29,8 +29,9 @@ import reactor.core.scheduler.TimedScheduler
 import reactor.util.function
 import reactor.util.function.{Tuple2, Tuple3, Tuple4}
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.collection.JavaConverters._
 import scala.concurrent.duration.Duration
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
 /**
@@ -262,7 +263,6 @@ object Mono {
   }
 
   def when(sources: Iterable[_ <: Publisher[Unit]]): Mono[Unit] = {
-    import scala.collection.JavaConverters._
     val mappedSources: Iterable[Publisher[Void]] = sources.map {
       case m: Mono[Unit] =>
         val jMono: JMono[Unit] = m.jMono
@@ -275,6 +275,23 @@ object Mono {
       mono.map(new Function[Void, Unit] {
         override def apply(t: Void): Unit = ()
       }): JMono[Unit]
+    )
+  }
+
+  def when(sources: Publisher[Unit]*): Mono[Unit] = {
+    val mappedSources: Seq[JMono[Void]] = sources.map {
+      case m: Mono[Unit] =>
+        val jMono: JMono[Unit] = m.jMono
+        jMono.map(new Function[Unit, Void] {
+          override def apply(t: Unit): Void = None.orNull
+        }): JMono[Void
+          ]
+    }
+    val mono: JMono[Void] = JMono.when(mappedSources.asJava)
+    new Mono[Unit](
+      mono.map(new Function[Void, Unit] {
+        override def apply(t: Void): Unit = ()
+      })
     )
   }
 }

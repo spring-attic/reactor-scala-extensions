@@ -1,7 +1,6 @@
 package reactor.core.scala.publisher
 
 import java.time.{Duration => JDuration}
-import java.util.concurrent.ConcurrentHashMap.KeySetView
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicLong}
 import java.util.concurrent.{Callable, ConcurrentHashMap, TimeUnit, TimeoutException}
 import java.util.function.Supplier
@@ -218,10 +217,10 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
 
           override def hookOnNext(value: Boolean): Unit = emittedValue.compareAndSet(false, true)
         })
-//    sequenceEqual has bug with subscription signalling
-//    see https://github.com/reactor/reactor-core/issues/328
-//        TODO: Fix this once the above issue is fixed
-//        isSubscribed shouldBe 'get
+        //    sequenceEqual has bug with subscription signalling
+        //    see https://github.com/reactor/reactor-core/issues/328
+        //        TODO: Fix this once the above issue is fixed
+        //        isSubscribed shouldBe 'get
         emittedValue shouldBe 'get
       }
     }
@@ -245,13 +244,13 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       }
       "with p1 and p2 and a function combinator (T1, T2) => O should" - {
         "emit O when both p1 and p2 have emitted the value" in {
-          val mono = Mono.when(Mono.just(1), Mono.just("one"), (t1:Int, t2: String) => s"${t1.toString}-$t2")
+          val mono = Mono.when(Mono.just(1), Mono.just("one"), (t1: Int, t2: String) => s"${t1.toString}-$t2")
           StepVerifier.create(mono)
             .expectNext("1-one")
             .verifyComplete()
         }
         "emit error when one of the publisher has error" in {
-          val mono = Mono.when(Mono.just(1), Mono.error(new RuntimeException()), (t1:Int, t2: String) => s"${t1.toString}-$t2")
+          val mono = Mono.when(Mono.just(1), Mono.error(new RuntimeException()), (t1: Int, t2: String) => s"${t1.toString}-$t2")
 
           StepVerifier.create(mono)
             .expectError(classOf[RuntimeException])
@@ -277,12 +276,13 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
             (p1, error, p3),
             (error, p2, p3)
           )
-          forAll(monos){(p1, p2, p3) => {
+          forAll(monos) { (p1, p2, p3) => {
             val mono = Mono.when(p1, p2, p3)
             StepVerifier.create(mono)
               .expectError(classOf[RuntimeException])
               .verify()
-          }}
+          }
+          }
         }
       }
 
@@ -306,12 +306,13 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
             (p1, error, p3, p4),
             (error, p2, p3, p4)
           )
-          forAll(monos){(p1, p2, p3, p4) => {
+          forAll(monos) { (p1, p2, p3, p4) => {
             val mono = Mono.when(p1, p2, p3, p4)
             StepVerifier.create(mono)
               .expectError(classOf[RuntimeException])
               .verify()
-          }}
+          }
+          }
         }
       }
 
@@ -337,12 +338,13 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
             (p1, error, p3, p4, p5),
             (error, p2, p3, p4, p5)
           )
-          forAll(monos){(p1, p2, p3, p4, p5) => {
+          forAll(monos) { (p1, p2, p3, p4, p5) => {
             val mono = Mono.when(p1, p2, p3, p4, p5)
             StepVerifier.create(mono)
               .expectError(classOf[RuntimeException])
               .verify()
-          }}
+          }
+          }
         }
       }
 
@@ -370,12 +372,13 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
             (p1, error, p3, p4, p5, p6),
             (error, p2, p3, p4, p5, p6)
           )
-          forAll(monos){(p1, p2, p3, p4, p5, p6) => {
+          forAll(monos) { (p1, p2, p3, p4, p5, p6) => {
             val mono = Mono.when(p1, p2, p3, p4, p5, p6)
             StepVerifier.create(mono)
               .expectError(classOf[RuntimeException])
               .verify()
-          }}
+          }
+          }
         }
       }
 
@@ -385,7 +388,7 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
           val mono = Mono.when(Iterable(
             Mono.just[Unit]({
               completed.put("first", true)
-          }),
+            }),
             Mono.just[Unit]({
               completed.put("second", true)
             })
@@ -395,6 +398,22 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
           completed should contain key "first"
           completed should contain key "second"
         }
+      }
+
+      "with varargs of publisher should return when all of the resources has fulfilled" in {
+        val completed = new ConcurrentHashMap[String, Boolean]()
+        val sources = Seq(Mono.just[Unit]({
+          completed.put("first", true)
+        }),
+          Mono.just[Unit]({
+            completed.put("second", true)
+          })
+        )
+        val mono = Mono.when(sources.toArray:_*)
+        StepVerifier.create(mono)
+          .expectComplete()
+        completed should contain key "first"
+        completed should contain key "second"
       }
     }
 
