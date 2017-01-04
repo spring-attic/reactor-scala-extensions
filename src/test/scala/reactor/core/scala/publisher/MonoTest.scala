@@ -445,6 +445,31 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
           .expectNext((1, "one"))
           .verifyComplete()
       }
+
+//      wait till https://github.com/reactor/reactor-core/issues/333 is fixed
+      "with p1, p2 and p3 should merge when all Monos are fulfilled" ignore {
+        StepVerifier.create(Mono.whenDelayError(Mono.just(1), Mono.just("one"), Mono.just(1L)))
+          .expectNext((1, "one", 1L))
+          .verifyComplete()
+      }
+
+      "with p1, p2, p3 and p4 should merge when all Monos are fulfilled" in {
+        StepVerifier.create(Mono.whenDelayError(Mono.just(1), Mono.just(2), Mono.just(3), Mono.just(4)))
+          .expectNext((1, 2, 3, 4))
+          .verifyComplete()
+      }
+
+      "with p1, p2, p3, p4 and p5 should merge when all Monos are fulfilled" in {
+        StepVerifier.create(Mono.whenDelayError(Mono.just(1), Mono.just(2), Mono.just(3), Mono.just(4), Mono.just(5)))
+          .expectNext((1, 2, 3, 4, 5))
+          .verifyComplete()
+      }
+
+      "with p1, p2, p3, p4, p5 and p6 should merge when all Monos are fulfilled" in {
+        StepVerifier.create(Mono.whenDelayError(Mono.just(1), Mono.just(2), Mono.just(3), Mono.just(4), Mono.just(5), Mono.just(6)))
+          .expectNext((1, 2, 3, 4, 5, 6))
+          .verifyComplete()
+      }
     }
 
     ".map should map the type of Mono from T to R" in {
