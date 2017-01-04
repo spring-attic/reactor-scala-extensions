@@ -518,8 +518,24 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         .verifyComplete()
     }
 
-    ".and should combine this mono and the other" in {
-      val mono = just(1) and just(2)
+    ".and" - {
+      "should combine this mono and the other" in {
+        val mono = just(1) and just(2)
+        StepVerifier.create(mono)
+          .expectNext((1, 2))
+          .verifyComplete()
+      }
+      "with combinator should combine this mono and the other" in {
+        val combinator: (Int, Int) => String = (a, b) => s"$a-$b"
+        val mono = just(1).and(just(2), combinator)
+        StepVerifier.create(mono)
+          .expectNext("1-2")
+          .verifyComplete()
+      }
+    }
+
+    "++ should combine this mono and the other" in {
+      val mono = just(1) ++ just(2)
       StepVerifier.create(mono)
         .expectNext((1, 2))
         .verifyComplete()

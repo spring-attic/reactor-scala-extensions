@@ -18,7 +18,7 @@
 
 package reactor.core.scala.publisher
 
-import java.lang.{Boolean => JBoolean, Iterable => JIterable, Long => JLong}
+import java.lang.{Boolean => JBoolean, Long => JLong}
 import java.time.{Duration => JDuration}
 import java.util.concurrent.{Callable, CompletableFuture}
 import java.util.function.{BiConsumer, BiFunction, Consumer, Function, Supplier}
@@ -39,11 +39,11 @@ import scala.util.{Failure, Success}
 class Mono[T](private val jMono: JMono[T]) extends Publisher[T] {
   override def subscribe(s: Subscriber[_ >: T]): Unit = jMono.subscribe(s)
 
-  def as[P](transformer: (Mono[T] => P)): P = {
+  final def as[P](transformer: (Mono[T] => P)): P = {
     transformer(this)
   }
 
-  def and[T2](other: Mono[_ <: T2]): Mono[(T, T2)] = {
+  final def and[T2](other: Mono[_ <: T2]): Mono[(T, T2)] = {
     val combinedMono: JMono[Tuple2[T, T2]] = jMono.and(other.jMono)
     new Mono[(T, T2)](
       combinedMono
@@ -51,6 +51,18 @@ class Mono[T](private val jMono: JMono[T]) extends Publisher[T] {
           override def apply(t: Tuple2[T, T2]): (T, T2) = tupleTwo2ScalaTuple2(t)
         })
     )
+  }
+
+  final def ++[T2](other: Mono[_ <: T2]): Mono[(T, T2)] = {
+    and(other)
+  }
+
+  final def and[T2, O](other: Mono[T2], combinator: (T, T2) => O): Mono[O] = {
+    val combinatorFunction: BiFunction[T, T2, O] = new BiFunction[T, T2, O] {
+      override def apply(t: T, u: T2): O = combinator(t, u)
+    }
+    val combinedMono: JMono[O] = jMono.and(other.jMono, combinatorFunction)
+    new Mono[O](combinedMono)
   }
 
   def map[R](mapper: T => R): Mono[R] = {
