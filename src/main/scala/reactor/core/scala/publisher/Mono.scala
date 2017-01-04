@@ -24,7 +24,7 @@ import java.util.concurrent.{Callable, CompletableFuture}
 import java.util.function.{BiConsumer, BiFunction, Consumer, Function, Supplier}
 
 import org.reactivestreams.{Publisher, Subscriber}
-import reactor.core.publisher.{Flux, MonoSink, Mono => JMono}
+import reactor.core.publisher.{MonoSink, Mono => JMono}
 import reactor.core.scheduler.TimedScheduler
 import reactor.util.function._
 
@@ -41,6 +41,16 @@ class Mono[T](private val jMono: JMono[T]) extends Publisher[T] {
 
   def as[P](transformer: (Mono[T] => P)): P = {
     transformer(this)
+  }
+
+  def and[T2](other: Mono[_ <: T2]): Mono[(T, T2)] = {
+    val combinedMono: JMono[Tuple2[T, T2]] = jMono.and(other.jMono)
+    new Mono[(T, T2)](
+      combinedMono
+        .map(new Function[Tuple2[T, T2], (T, T2)] {
+          override def apply(t: Tuple2[T, T2]): (T, T2) = tupleTwo2ScalaTuple2(t)
+        })
+    )
   }
 
   def map[R](mapper: T => R): Mono[R] = {
