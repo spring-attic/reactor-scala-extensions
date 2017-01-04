@@ -24,7 +24,7 @@ import java.util.concurrent.{Callable, CompletableFuture}
 import java.util.function.{BiConsumer, BiFunction, Consumer, Function, Supplier}
 
 import org.reactivestreams.{Publisher, Subscriber}
-import reactor.core.publisher.{MonoSink, Mono => JMono}
+import reactor.core.publisher.{Flux, MonoSink, Mono => JMono}
 import reactor.core.scheduler.TimedScheduler
 import reactor.util.function._
 
@@ -38,6 +38,10 @@ import scala.util.{Failure, Success}
   */
 class Mono[T](private val jMono: JMono[T]) extends Publisher[T] {
   override def subscribe(s: Subscriber[_ >: T]): Unit = jMono.subscribe(s)
+
+  def as[P](transformer: (Mono[T] => P)): P = {
+    transformer(this)
+  }
 
   def map[R](mapper: T => R): Mono[R] = {
     Mono(jMono.map(new Function[T, R] {
@@ -277,10 +281,10 @@ object Mono {
     )
   }
 
-  def when[R](monos: Iterable[_ <: Mono[Any]], combinator: (Array[Any] => R)) : Mono[R] = {
+  def when[R](monos: Iterable[_ <: Mono[Any]], combinator: (Array[Any] => R)): Mono[R] = {
     val combinatorFunction: Function[_ >: Array[Object], _ <: R] = new Function[Array[Object], R] {
       override def apply(t: Array[Object]): R = {
-        val v: Array[Any] = t.map { v => v:Any}
+        val v: Array[Any] = t.map { v => v: Any }
         combinator(v)
       }
     }
@@ -299,8 +303,7 @@ object Mono {
         val jMono: JMono[Unit] = m.jMono
         jMono.map(new Function[Unit, Void] {
           override def apply(t: Unit): Void = None.orNull
-        }): JMono[Void
-          ]
+        }): JMono[Void]
     }
     val mono: JMono[Void] = JMono.when(mappedSources.asJava)
     new Mono[Unit](
@@ -313,7 +316,7 @@ object Mono {
   def when[R](combinator: (Array[Any] => R), monos: Mono[Any]*): Mono[R] = {
     val combinatorFunction: Function[_ >: Array[Object], _ <: R] = new Function[Array[Object], R] {
       override def apply(t: Array[Object]): R = {
-        val v: Array[Any] = t.map { v => v:Any}
+        val v: Array[Any] = t.map { v => v: Any }
         combinator(v)
       }
     }
@@ -322,7 +325,7 @@ object Mono {
     }))
 
     new Mono[R](
-      JMono.when(combinatorFunction, jMonos.toArray:_*)
+      JMono.when(combinatorFunction, jMonos.toArray: _*)
     )
   }
 
@@ -368,6 +371,49 @@ object Mono {
       jMono.map(new Function[Tuple6[T1, T2, T3, T4, T5, T6], (T1, T2, T3, T4, T5, T6)] {
         override def apply(t: Tuple6[T1, T2, T3, T4, T5, T6]): (T1, T2, T3, T4, T5, T6) = tupleSix2ScalaTuple6(t)
       })
+    )
+  }
+
+  def whenDelayError(sources: Publisher[Unit]*): Mono[Unit] = {
+    val jSources: Seq[JMono[Void]] = sources.map {
+      case m: Mono[Unit] => m.jMono.map(new Function[Unit, Void] {
+          override def apply(t: Unit): Void = None.orNull
+        }): JMono[Void]
+    }
+    new Mono[Unit](
+      JMono.whenDelayError(jSources.toArray: _*)
+        .map(new Function[Void, Unit] {
+          override def apply(t: Void): Unit = ()
+        })
+    )
+  }
+
+  def whenDelayError[R](combinator: (Array[Any] => R), monos: Mono[Any]*): Mono[R] = {
+    val combinatorFunction: Function[_ >: Array[Object], _ <: R] = new Function[Array[Object], R] {
+      override def apply(t: Array[Object]): R = {
+        val v: Array[Any] = t.map { v => v: Any }
+        combinator(v)
+      }
+    }
+    val jMonos = monos.map(_.jMono.map(new Function[Any, Object] {
+      override def apply(t: Any): Object = t.asInstanceOf[Object]
+    }))
+
+    new Mono[R](
+      JMono.whenDelayError(combinatorFunction, jMonos.toArray: _*)
+    )
+  }
+
+  def zip[T, V](combinator: (Array[Any] => V), monos: Mono[_ <: T]*): Mono[V] = {
+    val combinatorFunction: Function[_ >: Array[Object], _ <: V] = new Function[Array[Object], V] {
+      override def apply(t: Array[Object]): V = {
+        val v: Array[Any] = t.map { v => v: Any }
+        combinator(v)
+      }
+    }
+    val jMonos = monos.map(_.jMono)
+    new Mono[V](
+      JMono.zip(combinatorFunction, jMonos.toArray:_*)
     )
   }
 }

@@ -8,7 +8,7 @@ import java.util.function.Supplier
 import org.reactivestreams.{Publisher, Subscription}
 import org.scalatest.prop.TableDrivenPropertyChecks
 import org.scalatest.{FreeSpec, Matchers}
-import reactor.core.publisher.{BaseSubscriber, Flux, Mono => JMono}
+import reactor.core.publisher.{BaseSubscriber, Flux => JFlux, Mono => JMono}
 import reactor.test.StepVerifier
 import reactor.test.scheduler.VirtualTimeScheduler
 
@@ -103,7 +103,7 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
 
     ".from" - {
       "a publisher should ensure that the publisher will emit 0 or 1 item." in {
-        val publisher: Flux[Int] = Flux.just(1, 2, 3, 4, 5)
+        val publisher: JFlux[Int] = JFlux.just(1, 2, 3, 4, 5)
 
         val mono = Mono.from(publisher)
 
@@ -419,7 +419,7 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
             completed.put("second", true)
           })
         )
-        val mono = Mono.when(sources.toArray:_*)
+        val mono = Mono.when(sources.toArray: _*)
         StepVerifier.create(mono)
           .expectComplete()
         completed should contain key "first"
@@ -429,7 +429,7 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       "with function combinator and varargs of mono should return when all of the monos has fulfilled" in {
 
         val combinator: (Array[Any] => String) = { values =>
-          values.map(_.toString).foldLeft(""){(acc, value) => if(acc.isEmpty) s"$value" else s"$acc-$value"}
+          values.map(_.toString).foldLeft("") { (acc, value) => if (acc.isEmpty) s"$value" else s"$acc-$value" }
         }
 
         StepVerifier.create(Mono.when(combinator, Mono.just[Any](1), Mono.just[Any](2)))
@@ -446,7 +446,7 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
           .verifyComplete()
       }
 
-//      wait till https://github.com/reactor/reactor-core/issues/333 is fixed
+      //      wait till https://github.com/reactor/reactor-core/issues/333 is fixed
       "with p1, p2 and p3 should merge when all Monos are fulfilled" ignore {
         StepVerifier.create(Mono.whenDelayError(Mono.just(1), Mono.just("one"), Mono.just(1L)))
           .expectNext((1, "one", 1L))
@@ -470,6 +470,52 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
           .expectNext((1, 2, 3, 4, 5, 6))
           .verifyComplete()
       }
+
+      "with varargs of Publisher[Unit] should be fulfilled when all the underlying sources are fulfilled" in {
+        val completed = new ConcurrentHashMap[String, Boolean]()
+        val mono = Mono.whenDelayError(
+          Seq(
+            Mono.just[Unit](completed.put("first", true)),
+            Mono.just[Unit](completed.put("second", true))
+          ).toArray: _*
+        )
+        StepVerifier.create(mono)
+          .expectComplete()
+
+        completed should contain key "first"
+        completed should contain key "second"
+      }
+
+      "with function combinator and varargs of mono should return when all of the monos has fulfilled" in {
+        val combinator: (Array[Any] => String) = { values =>
+          values.map(_.toString).foldLeft("") { (acc, value) => if (acc.isEmpty) s"$value" else s"$acc-$value" }
+        }
+
+        StepVerifier.create(Mono.whenDelayError(combinator, Mono.just[Any](1), Mono.just[Any](2)))
+          .expectNext("1-2")
+          .expectComplete()
+          .verify()
+      }
+    }
+
+    ".zip" - {
+      "with combinator function and varargs of mono should fullfill when all Monos are fulfilled" in {
+        val combinator: (Array[Any] => String) = { datas => datas.map(_.toString).foldLeft("") { (acc, v) => if (acc.isEmpty) v else s"$acc-$v" } }
+        val mono = Mono.zip(combinator, Mono.just(1), Mono.just(2))
+        StepVerifier.create(mono)
+          .expectNext("1-2")
+          .verifyComplete()
+      }
+    }
+
+    ".as should transform the Mono to whatever the transformer function is provided" in {
+      val mono = Mono.just(randomValue)
+
+      val flux = mono.as(m => Flux.from(m))
+      StepVerifier.create(flux)
+        .expectNext(randomValue)
+        .verifyComplete()
+
     }
 
     ".map should map the type of Mono from T to R" in {
