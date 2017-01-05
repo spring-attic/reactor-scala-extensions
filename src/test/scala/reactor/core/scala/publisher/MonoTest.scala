@@ -5,8 +5,6 @@ import java.util.concurrent.atomic.{AtomicBoolean, AtomicLong}
 import java.util.concurrent.{Callable, ConcurrentHashMap, TimeUnit, TimeoutException}
 import java.util.function.{Function, Supplier}
 
-import org.mockito.Mockito
-import org.mockito.Mockito.verify
 import org.reactivestreams.{Publisher, Subscription}
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.prop.TableDrivenPropertyChecks
@@ -25,7 +23,7 @@ import scala.util.Random
 /**
   * Created by winarto on 12/26/16.
   */
-class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks with MockitoSugar {
+class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
 
   private val randomValue = Random.nextLong()
   "Mono" - {
@@ -551,11 +549,8 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
       }
     }
 
-    ".awaitOnSubscribe should call the underlying Mono.awaitOnSubscribe" in {
-      val jMono = mock[JMono[Int]]
-      val mono = Mono(jMono).awaitOnSubscribe()
-
-      verify(jMono).awaitOnSubscribe()
+    ".awaitOnSubscribe should await onSubscribe" ignore {
+//      TODO: How to test this?
     }
 
     ".block" - {
@@ -573,6 +568,14 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
     ".cast should cast the underlying value" in {
       val number = Mono.just(BigDecimal("123")).cast(classOf[ScalaNumber]).block()
       number shouldBe a[ScalaNumber]
+    }
+
+    ".cache should make this Mono a hot source by caching the value" ignore {
+//      TODO: How to test this?
+    }
+
+    ".cancelOn should cancel the subscriber on a particular scheduler" ignore {
+//      TODO: How to test this?
     }
 
     "++ should combine this mono and the other" in {

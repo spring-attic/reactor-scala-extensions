@@ -25,7 +25,7 @@ import java.util.function.{BiConsumer, BiFunction, Consumer, Function, Supplier}
 
 import org.reactivestreams.{Publisher, Subscriber}
 import reactor.core.publisher.{MonoSink, Mono => JMono}
-import reactor.core.scheduler.TimedScheduler
+import reactor.core.scheduler.{Scheduler, TimedScheduler}
 import reactor.util.function._
 
 import scala.collection.JavaConverters._
@@ -110,6 +110,18 @@ class Mono[T](private val jMono: JMono[T]) extends Publisher[T] {
   final def cast[E](clazz: Class[E]): Mono[E] = {
     new Mono[E](
       jMono.cast(clazz)
+    )
+  }
+
+  final def cache(): Mono[T] = {
+    new Mono[T](
+      jMono.cache()
+    )
+  }
+
+  final def cancelOn(scheduler: Scheduler): Mono[T] = {
+    new Mono[T](
+      jMono.cancelOn(scheduler)
     )
   }
 
