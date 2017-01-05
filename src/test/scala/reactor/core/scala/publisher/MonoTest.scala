@@ -19,6 +19,7 @@ import reactor.test.scheduler.VirtualTimeScheduler
 import scala.concurrent.Future
 import scala.concurrent.duration.Duration
 import scala.language.existentials
+import scala.math.ScalaNumber
 import scala.util.Random
 
 /**
@@ -567,6 +568,11 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
       "with millis should block up to the duration" in {
         Mono.just(randomValue).blockMillis(10000) shouldBe randomValue
       }
+    }
+
+    ".cast should cast the underlying value" in {
+      val number = Mono.just(BigDecimal("123")).cast(classOf[ScalaNumber]).block()
+      number shouldBe a[ScalaNumber]
     }
 
     "++ should combine this mono and the other" in {

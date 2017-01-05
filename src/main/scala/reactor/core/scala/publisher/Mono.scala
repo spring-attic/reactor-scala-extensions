@@ -107,6 +107,12 @@ class Mono[T](private val jMono: JMono[T]) extends Publisher[T] {
     jMono.blockMillis(millis)
   }
 
+  final def cast[E](clazz: Class[E]): Mono[E] = {
+    new Mono[E](
+      jMono.cast(clazz)
+    )
+  }
+
   def map[R](mapper: T => R): Mono[R] = {
     Mono(jMono.map(new Function[T, R] {
       override def apply(t: T): R = mapper(t)
