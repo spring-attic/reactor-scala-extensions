@@ -65,6 +65,18 @@ class Mono[T](private val jMono: JMono[T]) extends Publisher[T] {
     new Mono[O](combinedMono)
   }
 
+  final def and[T2](generator: (T => Mono[T2])): Mono[(T, T2)] = {
+    val rightGeneratorFunction: Function[T, JMono[_ <: T2]] = new Function[T, JMono[_ <:T2]]() {
+      def apply(i: T): JMono[_ <: T2] = generator(i).jMono
+    }
+
+    new Mono[(T, T2)](
+      jMono.and[T2](rightGeneratorFunction).map(new Function[Tuple2[T, T2], (T, T2)] {
+        override def apply(t: Tuple2[T, T2]): (T, T2) = tupleTwo2ScalaTuple2(t)
+      })
+    )
+  }
+
   def map[R](mapper: T => R): Mono[R] = {
     Mono(jMono.map(new Function[T, R] {
       override def apply(t: T): R = mapper(t)
