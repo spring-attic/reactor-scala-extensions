@@ -89,6 +89,12 @@ class Mono[T](private val jMono: JMono[T]) extends Publisher[T] {
     )
   }
 
+  final def awaitOnSubscribe() : Mono[T] = {
+    new Mono[T](
+      jMono.awaitOnSubscribe()
+    )
+  }
+
   def map[R](mapper: T => R): Mono[R] = {
     Mono(jMono.map(new Function[T, R] {
       override def apply(t: T): R = mapper(t)
