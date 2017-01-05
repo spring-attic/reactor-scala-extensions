@@ -557,6 +557,18 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
       verify(jMono).awaitOnSubscribe()
     }
 
+    ".block" - {
+      "should block the mono to get the value" in {
+        Mono.just(randomValue).block() shouldBe randomValue
+      }
+      "with duration should block the mono up to the duration" in {
+        Mono.just(randomValue).block(Duration(10, TimeUnit.SECONDS)) shouldBe randomValue
+       }
+      "with millis should block up to the duration" in {
+        Mono.just(randomValue).blockMillis(10000) shouldBe randomValue
+      }
+    }
+
     "++ should combine this mono and the other" in {
       val mono = just(1) ++ just(2)
       StepVerifier.create(mono)

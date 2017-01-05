@@ -95,6 +95,18 @@ class Mono[T](private val jMono: JMono[T]) extends Publisher[T] {
     )
   }
 
+  final def block(): T = {
+    jMono.block()
+  }
+
+  final def block(duration: Duration): T = {
+    jMono.block(duration)
+  }
+
+  final def blockMillis(millis: Long): T = {
+    jMono.blockMillis(millis)
+  }
+
   def map[R](mapper: T => R): Mono[R] = {
     Mono(jMono.map(new Function[T, R] {
       override def apply(t: T): R = mapper(t)
