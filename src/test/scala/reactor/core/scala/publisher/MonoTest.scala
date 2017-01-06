@@ -556,7 +556,7 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
     }
 
     ".awaitOnSubscribe should await onSubscribe" ignore {
-//      TODO: How to test this?
+      //      TODO: How to test this?
     }
 
     ".block" - {
@@ -565,7 +565,7 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       }
       "with duration should block the mono up to the duration" in {
         Mono.just(randomValue).block(Duration(10, TimeUnit.SECONDS)) shouldBe randomValue
-       }
+      }
       "with millis should block up to the duration" in {
         Mono.just(randomValue).blockMillis(10000) shouldBe randomValue
       }
@@ -577,11 +577,11 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
     }
 
     ".cache should make this Mono a hot source by caching the value" ignore {
-//      TODO: How to test this?
+      //      TODO: How to test this?
     }
 
     ".cancelOn should cancel the subscriber on a particular scheduler" ignore {
-//      TODO: How to test this?
+      //      TODO: How to test this?
     }
 
     ".compose should defer creating the target mono type" in {
@@ -606,6 +606,17 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       StepVerifier.create(mono.defaultIfEmpty(-1))
         .expectNext(-1)
         .verifyComplete()
+    }
+
+    ".delaySubscription" - {
+      "with delay duration should delay subscription as long as the provided duration" in {
+        StepVerifier.withVirtualTime(new Supplier[Mono[Int]] {
+          override def get(): Mono[Int] = Mono.just(1).delaySubscription(Duration(1, TimeUnit.HOURS))
+        })
+          .thenAwait(JDuration.ofHours(1))
+          .expectNext(1)
+          .verifyComplete()
+      }
     }
 
     "++ should combine this mono and the other" in {
