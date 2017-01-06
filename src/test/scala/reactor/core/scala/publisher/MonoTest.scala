@@ -628,6 +628,17 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       }
     }
 
+    ".delaySubscriptionMillis" - {
+      "with delay duration in millis should delay subscription as long as the provided duration" in {
+        StepVerifier.withVirtualTime(new Supplier[Mono[Int]] {
+          override def get(): Mono[Int] = Mono.just(1).delaySubscriptionMillis(60000)
+        })
+          .thenAwait(JDuration.ofMinutes(10))
+          .expectNext(1)
+          .verifyComplete()
+      }
+    }
+
     "++ should combine this mono and the other" in {
       val mono = just(1) ++ just(2)
       StepVerifier.create(mono)
