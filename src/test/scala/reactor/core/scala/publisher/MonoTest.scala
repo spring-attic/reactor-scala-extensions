@@ -617,6 +617,15 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
           .expectNext(1)
           .verifyComplete()
       }
+      "with another publisher should delay the current subscription until the other publisher completes" in {
+        StepVerifier.withVirtualTime(new Supplier[Mono[Int]] {
+          override def get(): Mono[Int] = Mono.just(1).delaySubscription(Mono.just("one").delaySubscription(Duration(1, TimeUnit.HOURS)))
+        })
+          .thenAwait(JDuration.ofHours(1))
+          .expectNext(1)
+          .verifyComplete()
+
+      }
     }
 
     "++ should combine this mono and the other" in {
