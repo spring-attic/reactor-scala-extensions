@@ -11,6 +11,7 @@ import org.scalatest.prop.TableDrivenPropertyChecks
 import org.scalatest.{FreeSpec, Matchers}
 import reactor.core.publisher.{BaseSubscriber, Flux => JFlux, Mono => JMono}
 import reactor.core.scala.publisher.Mono.just
+import reactor.core.scheduler.Schedulers
 import reactor.test.StepVerifier
 import reactor.test.scheduler.VirtualTimeScheduler
 
@@ -632,6 +633,16 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       "with delay duration in millis should delay subscription as long as the provided duration" in {
         StepVerifier.withVirtualTime(new Supplier[Mono[Int]] {
           override def get(): Mono[Int] = Mono.just(1).delaySubscriptionMillis(60000)
+        })
+          .thenAwait(JDuration.ofMinutes(10))
+          .expectNext(1)
+          .verifyComplete()
+      }
+      "with delay duration in millis and timed scheduler should delay subscription as long as the provided duration using the provided scheduler" in {
+        StepVerifier.withVirtualTime(new Supplier[Mono[Int]] {
+          override def get(): Mono[Int] = {
+            Mono.just(1).delaySubscriptionMillis(60000, Schedulers.timer())
+          }
         })
           .thenAwait(JDuration.ofMinutes(10))
           .expectNext(1)
