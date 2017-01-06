@@ -18,7 +18,7 @@
 
 package reactor.core.scala.publisher
 
-import java.lang.{Boolean => JBoolean, Long => JLong}
+import java.lang.{Boolean => JBoolean, Long => JLong, Iterable => JIterable}
 import java.time.{Duration => JDuration}
 import java.util.concurrent.{Callable, CompletableFuture}
 import java.util.function.{BiConsumer, BiFunction, Consumer, Function, Supplier}
@@ -496,6 +496,20 @@ object Mono {
     val jMonos = monos.map(_.jMono)
     new Mono[V](
       JMono.zip(combinatorFunction, jMonos.toArray:_*)
+    )
+  }
+
+  def zip[T, V](combinator: (Array[Any] => V), monos: Iterable[Mono[_ <: T]]): Mono[V] = {
+    val combinatorFunction: Function[_ >: Array[Object], _ <: V] = new Function[Array[Object], V] {
+      override def apply(t: Array[Object]): V = {
+        //the reason we do the following is because the underlying reactor is by default allocating 8 elements with null, so we need to get rid of null
+        val v: Array[Any] = t.map { v => Option(v): Option[Any] }.filterNot(_.isEmpty).map(_.getOrElse(None.orNull))
+        combinator(v)
+      }
+    }
+    val jMonos: JIterable[JMono[T]] = monos.map(_.jMono).asJava.asInstanceOf[JIterable[JMono[T]]]
+    new Mono[V](
+      JMono.zip(combinatorFunction, jMonos)
     )
   }
 }

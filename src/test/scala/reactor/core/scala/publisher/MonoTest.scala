@@ -502,9 +502,15 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
     }
 
     ".zip" - {
+      val combinator: (Array[Any] => String) = { datas => datas.map(_.toString).foldLeft("") { (acc, v) => if (acc.isEmpty) v else s"$acc-$v" } }
       "with combinator function and varargs of mono should fullfill when all Monos are fulfilled" in {
-        val combinator: (Array[Any] => String) = { datas => datas.map(_.toString).foldLeft("") { (acc, v) => if (acc.isEmpty) v else s"$acc-$v" } }
         val mono = Mono.zip(combinator, just(1), just(2))
+        StepVerifier.create(mono)
+          .expectNext("1-2")
+          .verifyComplete()
+      }
+      "with combinator function and Iterable of mono should fulfill when all Monos are fulfilled" in {
+        val mono = Mono.zip(combinator, Iterable(just(1), just(2)))
         StepVerifier.create(mono)
           .expectNext("1-2")
           .verifyComplete()
