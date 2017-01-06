@@ -134,6 +134,12 @@ class Mono[T](private val jMono: JMono[T]) extends Publisher[T] {
     )
   }
 
+  final def concatWith(source: Publisher[T]): Flux[T] = {
+    new Flux[T](
+      jMono.concatWith(source)
+    )
+  }
+
   def map[R](mapper: T => R): Mono[R] = {
     Mono(jMono.map(new Function[T, R] {
       override def apply(t: T): R = mapper(t)

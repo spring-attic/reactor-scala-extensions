@@ -593,6 +593,14 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         .verifyComplete()
     }
 
+    ".concatWith should concatenate mono with another source" in {
+      val mono = Mono.just(1)
+      StepVerifier.create(mono.concatWith(Mono.just(2)))
+        .expectNext(1)
+        .expectNext(2)
+        .verifyComplete()
+    }
+
     "++ should combine this mono and the other" in {
       val mono = just(1) ++ just(2)
       StepVerifier.create(mono)
