@@ -601,6 +601,13 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         .verifyComplete()
     }
 
+    ".defaultIfEmpty should use the provided default value if the mono is empty" in {
+      val mono = Mono.empty[Int]
+      StepVerifier.create(mono.defaultIfEmpty(-1))
+        .expectNext(-1)
+        .verifyComplete()
+    }
+
     "++ should combine this mono and the other" in {
       val mono = just(1) ++ just(2)
       StepVerifier.create(mono)

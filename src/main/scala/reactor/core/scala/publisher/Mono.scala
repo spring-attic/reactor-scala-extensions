@@ -140,6 +140,12 @@ class Mono[T](private val jMono: JMono[T]) extends Publisher[T] {
     )
   }
 
+  final def defaultIfEmpty(default: T): Mono[T] = {
+    new Mono[T](
+      jMono.defaultIfEmpty(default)
+    )
+  }
+
   def map[R](mapper: T => R): Mono[R] = {
     Mono(jMono.map(new Function[T, R] {
       override def apply(t: T): R = mapper(t)
