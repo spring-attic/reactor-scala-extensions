@@ -584,6 +584,15 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
 //      TODO: How to test this?
     }
 
+    ".compose should defer creating the target mono type" in {
+      val mono = Mono.just(1)
+      val mono1: Mono[String] = mono.compose[String](m => Flux.from(m.map(_.toString)))
+
+      StepVerifier.create(mono1)
+        .expectNext("1")
+        .verifyComplete()
+    }
+
     "++ should combine this mono and the other" in {
       val mono = just(1) ++ just(2)
       StepVerifier.create(mono)

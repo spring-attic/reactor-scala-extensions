@@ -125,6 +125,15 @@ class Mono[T](private val jMono: JMono[T]) extends Publisher[T] {
     )
   }
 
+  final def compose[V](transformer: (Mono[T] => Publisher[V])): Mono[V] = {
+    val transformerFunction: Function[JMono[T], Publisher[V]] = new Function[JMono[T], Publisher[V]] {
+      override def apply(t: JMono[T]): Publisher[V] = transformer(Mono.this)
+    }
+    new Mono[V](
+      jMono.compose(transformerFunction)
+    )
+  }
+
   def map[R](mapper: T => R): Mono[R] = {
     Mono(jMono.map(new Function[T, R] {
       override def apply(t: T): R = mapper(t)
