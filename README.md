@@ -22,8 +22,21 @@ it becomes
 
     val mono = Mono.just(1).map(_.toString)
 
+##Getting it
 It is still in preliminary stage and requires a lot of refinement. No release has been made so far.
 Those who wanted to try, can get the SNAPSHOT version from snapshot repository as below:
+
+With Gradle from Sonatype:
+    
+    repositories {
+        maven { url 'https://oss.sonatype.org/content/repositories/snapshots/' }
+    }
+    
+    dependencies {
+        compile "com.github.sinwe:reactor-core-scala:1.0.0-SNAPSHOT
+    }
+
+With Maven from Sonatype:
 
     <repositories>
         <repository>
@@ -44,4 +57,6 @@ Those who wanted to try, can get the SNAPSHOT version from snapshot repository a
     </dependency>
 
 
-Contributions are welcome.
+##Contributing
+Contributions are welcome. Simply fork this project, make some modification, push and 
+create a pull request.
