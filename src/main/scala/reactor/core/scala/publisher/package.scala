@@ -3,6 +3,7 @@ package reactor.core.scala
 import java.lang.{Boolean => JBoolean}
 import java.time.{Duration => JDuration}
 import java.util.Optional
+import java.util.function.Consumer
 
 import reactor.util.function.{Tuple2, Tuple3, Tuple4, Tuple5, Tuple6}
 
@@ -45,5 +46,13 @@ package object publisher {
   implicit def try2Boolean[T](atry: Try[T]): Boolean = atry match {
     case Success(_) => true
     case Failure(_) => false
+  }
+
+  type ScalaConsumerT[T] = (T => Unit)
+
+  implicit def scalaConsumerT2JConsumer[T](sc: ScalaConsumerT[T]): Consumer[T] = {
+    new Consumer[T] {
+      override def accept(t: T): Unit = sc(t)
+    }
   }
 }

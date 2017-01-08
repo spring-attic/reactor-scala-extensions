@@ -222,11 +222,14 @@ class Mono[T](private val jMono: JMono[T]) extends Publisher[T] {
   }
 
   final def doOnError(onError: (Throwable => Unit)): Mono[T] = {
-    val onErrorFunction = new Consumer[Throwable] {
-      override def accept(t: Throwable): Unit = onError(t)
-    }
     new Mono[T](
-      jMono.doOnError(onErrorFunction)
+      jMono.doOnError(onError)
+    )
+  }
+
+  final def doOnError[E <: Throwable](exceptionType: Class[E], onError: (E => Unit)): Mono[T] = {
+    new Mono[T](
+      jMono.doOnError(exceptionType, onError: Consumer[E])
     )
   }
 
