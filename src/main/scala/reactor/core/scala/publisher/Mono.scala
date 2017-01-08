@@ -170,6 +170,12 @@ class Mono[T](private val jMono: JMono[T]) extends Publisher[T] {
     )
   }
 
+  final def dematerialize[X](): Mono[X] = {
+    new Mono[X](
+      jMono.dematerialize[X]()
+    )
+  }
+
   def map[R](mapper: T => R): Mono[R] = {
     Mono(jMono.map(new Function[T, R] {
       override def apply(t: T): R = mapper(t)

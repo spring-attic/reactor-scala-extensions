@@ -8,6 +8,7 @@ import reactor.util.function.{Tuple2, Tuple3, Tuple4, Tuple5, Tuple6}
 
 import scala.concurrent.duration.Duration
 import scala.language.implicitConversions
+import scala.util.{Failure, Success, Try}
 
 /**
   * Created by winarto on 12/31/16.
@@ -39,5 +40,10 @@ package object publisher {
 
   implicit def tupleSix2ScalaTuple6[T1, T2, T3, T4, T5, T6](javaTuple6: Tuple6[T1, T2, T3, T4, T5, T6]): (T1, T2, T3, T4, T5, T6) = {
     (javaTuple6.getT1, javaTuple6.getT2, javaTuple6.getT3, javaTuple6.getT4, javaTuple6.getT5, javaTuple6.getT6)
+  }
+
+  implicit def try2Boolean[T](atry: Try[T]): Boolean = atry match {
+    case Success(_) => true
+    case Failure(_) => false
   }
 }

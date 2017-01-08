@@ -9,7 +9,7 @@ import org.reactivestreams.{Publisher, Subscription}
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.prop.TableDrivenPropertyChecks
 import org.scalatest.{FreeSpec, Matchers}
-import reactor.core.publisher.{BaseSubscriber, Flux => JFlux, Mono => JMono}
+import reactor.core.publisher.{BaseSubscriber, Signal, Flux => JFlux, Mono => JMono}
 import reactor.core.scala.publisher.Mono.just
 import reactor.core.scheduler.Schedulers
 import reactor.test.StepVerifier
@@ -648,6 +648,13 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
           .expectNext(1)
           .verifyComplete()
       }
+    }
+
+    ".dematerialize should dematerialize the underlying mono" in {
+      val mono = Mono.just(Signal.next(randomValue))
+      StepVerifier.create(mono.dematerialize())
+        .expectNext(randomValue)
+        .verifyComplete()
     }
 
     "++ should combine this mono and the other" in {
