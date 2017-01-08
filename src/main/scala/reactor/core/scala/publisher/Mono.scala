@@ -18,13 +18,13 @@
 
 package reactor.core.scala.publisher
 
-import java.lang.{Boolean => JBoolean, Long => JLong, Iterable => JIterable}
+import java.lang.{Boolean => JBoolean, Iterable => JIterable, Long => JLong}
 import java.time.{Duration => JDuration}
 import java.util.concurrent.{Callable, CompletableFuture}
 import java.util.function.{BiConsumer, BiFunction, Consumer, Function, Supplier}
 
 import org.reactivestreams.{Publisher, Subscriber}
-import reactor.core.publisher.{MonoSink, Mono => JMono}
+import reactor.core.publisher.{MonoSink, Signal, SignalType, Mono => JMono}
 import reactor.core.scheduler.{Scheduler, TimedScheduler}
 import reactor.util.function._
 
@@ -182,6 +182,15 @@ class Mono[T](private val jMono: JMono[T]) extends Publisher[T] {
     }
     new Mono[T](
       jMono.doAfterTerminate(afterTerminalFunction)
+    )
+  }
+
+  final def doFinally(onFinally: (SignalType => Unit)): Mono[T] = {
+    val onFinallyFunction = new Consumer[SignalType] {
+      override def accept(t: SignalType): Unit = onFinally(t)
+    }
+    new Mono[T](
+      jMono.doFinally(onFinallyFunction)
     )
   }
 
