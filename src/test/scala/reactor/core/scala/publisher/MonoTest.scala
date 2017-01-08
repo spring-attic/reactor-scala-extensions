@@ -657,6 +657,19 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         .verifyComplete()
     }
 
+    ".doAfterTerminate should call the callback function after the mono is terminated" in {
+      val atomicBoolean = new AtomicBoolean(false)
+      val mono = Mono.just(randomValue)
+        .doAfterTerminate {(v: Long, t: Throwable) =>
+          atomicBoolean.compareAndSet(false, true) shouldBe true
+          ()
+        }
+      StepVerifier.create(mono)
+        .expectNext(randomValue)
+        .verifyComplete()
+      atomicBoolean shouldBe 'get
+    }
+
     "++ should combine this mono and the other" in {
       val mono = just(1) ++ just(2)
       StepVerifier.create(mono)

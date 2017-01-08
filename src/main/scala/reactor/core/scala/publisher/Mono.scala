@@ -66,7 +66,7 @@ class Mono[T](private val jMono: JMono[T]) extends Publisher[T] {
   }
 
   final def and[T2](rightGenerator: (T => Mono[T2])): Mono[(T, T2)] = {
-    val rightGeneratorFunction: Function[T, JMono[_ <: T2]] = new Function[T, JMono[_ <:T2]]() {
+    val rightGeneratorFunction: Function[T, JMono[_ <: T2]] = new Function[T, JMono[_ <: T2]]() {
       def apply(i: T): JMono[_ <: T2] = rightGenerator(i).jMono
     }
 
@@ -77,8 +77,8 @@ class Mono[T](private val jMono: JMono[T]) extends Publisher[T] {
     )
   }
 
-  final def and[T2, O](rightGenerator: (T => Mono[T2]), combinator: (T, T2) => O) = {
-    val rightGeneratorFunction: Function[T, JMono[_ <: T2]] = new Function[T, JMono[_ <:T2]]() {
+  final def and[T2, O](rightGenerator: (T => Mono[T2]), combinator: (T, T2) => O): Mono[O] = {
+    val rightGeneratorFunction: Function[T, JMono[_ <: T2]] = new Function[T, JMono[_ <: T2]]() {
       def apply(i: T): JMono[_ <: T2] = rightGenerator(i).jMono
     }
     val combinatorFunction: BiFunction[T, T2, O] = new BiFunction[T, T2, O] {
@@ -89,7 +89,7 @@ class Mono[T](private val jMono: JMono[T]) extends Publisher[T] {
     )
   }
 
-  final def awaitOnSubscribe() : Mono[T] = {
+  final def awaitOnSubscribe(): Mono[T] = {
     new Mono[T](
       jMono.awaitOnSubscribe()
     )
@@ -173,6 +173,15 @@ class Mono[T](private val jMono: JMono[T]) extends Publisher[T] {
   final def dematerialize[X](): Mono[X] = {
     new Mono[X](
       jMono.dematerialize[X]()
+    )
+  }
+
+  final def doAfterTerminate(afterTerminate: (_ >: T, Throwable) => Unit): Mono[T] = {
+    val afterTerminalFunction = new BiConsumer[T, Throwable] {
+      override def accept(t: T, u: Throwable): Unit = afterTerminate(t, u)
+    }
+    new Mono[T](
+      jMono.doAfterTerminate(afterTerminalFunction)
     )
   }
 
@@ -510,8 +519,8 @@ object Mono {
   def whenDelayError(sources: Publisher[Unit]*): Mono[Unit] = {
     val jSources: Seq[JMono[Void]] = sources.map {
       case m: Mono[Unit] => m.jMono.map(new Function[Unit, Void] {
-          override def apply(t: Unit): Void = None.orNull
-        }): JMono[Void]
+        override def apply(t: Unit): Void = None.orNull
+      }): JMono[Void]
     }
     new Mono[Unit](
       JMono.whenDelayError(jSources.toArray: _*)
@@ -546,7 +555,7 @@ object Mono {
     }
     val jMonos = monos.map(_.jMono)
     new Mono[V](
-      JMono.zip(combinatorFunction, jMonos.toArray:_*)
+      JMono.zip(combinatorFunction, jMonos.toArray: _*)
     )
   }
 
