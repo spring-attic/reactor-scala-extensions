@@ -719,6 +719,14 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       atomicBoolean shouldBe 'get
     }
 
+    ".doOnError should call the callback function when the mono encounter error" in {
+      val atomicBoolean = new AtomicBoolean(false)
+      val mono = Mono.error(new RuntimeException())
+        .doOnError(t => atomicBoolean.compareAndSet(false, true) shouldBe true)
+      StepVerifier.create(mono)
+        .expectError(classOf[RuntimeException])
+    }
+
     "++ should combine this mono and the other" in {
       val mono = just(1) ++ just(2)
       StepVerifier.create(mono)
