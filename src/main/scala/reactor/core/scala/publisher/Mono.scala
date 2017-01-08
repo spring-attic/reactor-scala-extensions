@@ -203,6 +203,24 @@ class Mono[T](private val jMono: JMono[T]) extends Publisher[T] {
     )
   }
 
+  final def doOnNext(onNext: (T => Unit)): Mono[T] = {
+    val onNextFunction = new Consumer[T] {
+      override def accept(t: T): Unit = onNext(t)
+    }
+    new Mono[T](
+      jMono.doOnNext(onNextFunction)
+    )
+  }
+
+  final def doOnSuccess(onSuccess: (T => Unit)): Mono[T] = {
+    val onSuccessFunction = new Consumer[T] {
+      override def accept(t: T): Unit = onSuccess(t)
+    }
+    new Mono[T](
+      jMono.doOnSuccess(onSuccessFunction)
+    )
+  }
+
   def map[R](mapper: T => R): Mono[R] = {
     Mono(jMono.map(new Function[T, R] {
       override def apply(t: T): R = mapper(t)
