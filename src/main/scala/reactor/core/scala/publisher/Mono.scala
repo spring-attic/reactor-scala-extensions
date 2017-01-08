@@ -194,6 +194,15 @@ class Mono[T](private val jMono: JMono[T]) extends Publisher[T] {
     )
   }
 
+  final def doOnCancel(onCancel: () => Unit): Mono[T] = {
+    val onCancelFunction = new Runnable {
+      override def run(): Unit = onCancel()
+    }
+    new Mono[T](
+      jMono.doOnCancel(onCancelFunction)
+    )
+  }
+
   def map[R](mapper: T => R): Mono[R] = {
     Mono(jMono.map(new Function[T, R] {
       override def apply(t: T): R = mapper(t)

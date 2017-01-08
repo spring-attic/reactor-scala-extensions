@@ -1,11 +1,11 @@
 package reactor.core.scala.publisher
 
 import java.time.{Duration => JDuration}
-import java.util.concurrent.atomic.{AtomicBoolean, AtomicLong}
+import java.util.concurrent.atomic.{AtomicBoolean, AtomicLong, AtomicReference}
 import java.util.concurrent.{Callable, ConcurrentHashMap, TimeUnit, TimeoutException}
 import java.util.function.{Function, Supplier}
 
-import org.reactivestreams.{Publisher, Subscription}
+import org.reactivestreams.{Publisher, Subscriber, Subscription}
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.prop.TableDrivenPropertyChecks
 import org.scalatest.{FreeSpec, Matchers}
@@ -677,6 +677,26 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       StepVerifier.create(mono)
         .expectNext(randomValue)
         .verifyComplete()
+      atomicBoolean shouldBe 'get
+    }
+
+    ".doOnCancel should call the callback function when the subscription is cancelled" in {
+      val atomicBoolean = new AtomicBoolean(false)
+      val mono = Mono.delay(Duration(1, TimeUnit.MINUTES))
+        .doOnCancel(() => {
+          atomicBoolean.compareAndSet(false, true) shouldBe true
+        })
+
+      val subscriptionReference = new AtomicReference[Subscription]()
+      mono.subscribe(new BaseSubscriber[Long] {
+        override def hookOnSubscribe(subscription: Subscription) = {
+          subscriptionReference.set(subscription)
+          subscription.request(1)
+        }
+
+        override def hookOnNext(value: Long) = ()
+      })
+      subscriptionReference.get().cancel()
       atomicBoolean shouldBe 'get
     }
 
