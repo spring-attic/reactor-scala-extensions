@@ -43,10 +43,13 @@ package object publisher {
     (javaTuple6.getT1, javaTuple6.getT2, javaTuple6.getT3, javaTuple6.getT4, javaTuple6.getT5, javaTuple6.getT6)
   }
 
+/*
+Uncomment this when used. It is not used for now and reduce the code coverage
   implicit def try2Boolean[T](atry: Try[T]): Boolean = atry match {
     case Success(_) => true
     case Failure(_) => false
   }
+*/
 
   type ScalaConsumer[T] = (T => Unit)
   type ScalaPredicate[T] = (T => Boolean)
