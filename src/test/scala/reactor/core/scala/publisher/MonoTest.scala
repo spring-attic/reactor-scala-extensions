@@ -781,23 +781,40 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       atomicLong.get() shouldBe randomValue
     }
 
-    ".elapse should provide the time elapse when this mono emit value" in {
-      StepVerifier.withVirtualTime(new Supplier[Mono[(Long, Long)]] {
-        override def get(): Mono[(Long, Long)] = Mono.just(randomValue)
-          .delaySubscriptionMillis(1000)
-          .elapse()
-      }, new Supplier[VirtualTimeScheduler] {
-        override def get(): VirtualTimeScheduler = VirtualTimeScheduler.enable(true)
-      }, 1)
-        .thenAwait(Duration(1, "second"))
-        .expectNextMatches(new Predicate[(Long, Long)] {
-          override def test(t: (Long, Long)): Boolean = t match {
-            case (time, data) => time >= 0 && data == randomValue
-          }
-        })
-        .verifyComplete()
+    ".elapse" - {
+      "should provide the time elapse when this mono emit value" in {
+        StepVerifier.withVirtualTime(new Supplier[Mono[(Long, Long)]] {
+          override def get(): Mono[(Long, Long)] = Mono.just(randomValue)
+            .delaySubscriptionMillis(1000)
+            .elapsed()
+        }, new Supplier[VirtualTimeScheduler] {
+          override def get(): VirtualTimeScheduler = VirtualTimeScheduler.enable(true)
+        }, 1)
+          .thenAwait(Duration(1, "second"))
+          .expectNextMatches(new Predicate[(Long, Long)] {
+            override def test(t: (Long, Long)): Boolean = t match {
+              case (time, data) => time >= 0 && data == randomValue
+            }
+          })
+          .verifyComplete()
+      }
+      "with TimedScheduler should provide the time elapsed using the provided scheduler when this mono emit value" in {
+        StepVerifier.withVirtualTime(new Supplier[Mono[(Long, Long)]] {
+          override def get(): Mono[(Long, Long)] = Mono.just(randomValue)
+            .delaySubscriptionMillis(1000)
+            .elapsed(Schedulers.timer())
+        }, new Supplier[VirtualTimeScheduler] {
+          override def get(): VirtualTimeScheduler = VirtualTimeScheduler.enable(true)
+        }, 1)
+          .thenAwait(Duration(1, "second"))
+          .expectNextMatches(new Predicate[(Long, Long)] {
+            override def test(t: (Long, Long)): Boolean = t match {
+              case (time, data) => time >= 0 && data == randomValue
+            }
+          })
+          .verifyComplete()
+      }
     }
-
     "++ should combine this mono and the other" in {
       val mono = just(1) ++ just(2)
       StepVerifier.create(mono)

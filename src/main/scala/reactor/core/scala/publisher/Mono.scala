@@ -257,11 +257,19 @@ class Mono[T](private val jMono: JMono[T]) extends Publisher[T] {
     }))
   }
 
-  final def elapse(): Mono[(Long, T)] = {
+  val javaTupleLongAndT2ScalaTupleLongAndT = new Function[Tuple2[JLong, T], (Long, T)] {
+    override def apply(t: Tuple2[JLong, T]): (Long, T) = (Long2long(t.getT1), t.getT2)
+  }
+
+  final def elapsed(): Mono[(Long, T)] = {
     new Mono[(Long, T)](
-      jMono.elapsed().map(new Function[Tuple2[JLong, T], (Long, T)] {
-        override def apply(t: Tuple2[JLong, T]): (Long, T) = (Long2long(t.getT1), t.getT2)
-      })
+      jMono.elapsed().map(javaTupleLongAndT2ScalaTupleLongAndT)
+    )
+  }
+
+  final def elapsed(scheduler: TimedScheduler): Mono[(Long, T)] = {
+    new Mono[(Long, T)](
+      jMono.elapsed(scheduler).map(javaTupleLongAndT2ScalaTupleLongAndT)
     )
   }
 
