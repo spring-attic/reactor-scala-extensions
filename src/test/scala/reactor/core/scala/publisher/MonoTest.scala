@@ -746,6 +746,31 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       }
     }
 
+    ".doOnRequest should call the callback function when subscriber request data" in {
+      val atomicLong = new AtomicLong(0)
+      val mono = Mono.just(randomValue)
+        .doOnRequest(l => atomicLong.compareAndSet(0, l))
+      mono.subscribe(new BaseSubscriber[Long] {
+        override def hookOnSubscribe(subscription: Subscription): Unit = {
+          subscription.request(1)
+          ()
+        }
+
+        override def hookOnNext(value: Long): Unit = ()
+      })
+      atomicLong.get() shouldBe 1
+    }
+
+    ".doOnSubscribe should call the callback function when the mono is subscribed" in {
+      val atomicBoolean = new AtomicBoolean(false)
+      val mono = Mono.just(randomValue)
+        .doOnSubscribe(s => atomicBoolean.compareAndSet(false, true))
+      StepVerifier.create(mono)
+        .expectNextCount(1)
+        .verifyComplete()
+      atomicBoolean shouldBe 'get
+    }
+
     "++ should combine this mono and the other" in {
       val mono = just(1) ++ just(2)
       StepVerifier.create(mono)

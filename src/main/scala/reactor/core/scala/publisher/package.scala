@@ -3,7 +3,7 @@ package reactor.core.scala
 import java.lang.{Boolean => JBoolean}
 import java.time.{Duration => JDuration}
 import java.util.Optional
-import java.util.function.{Consumer, Predicate}
+import java.util.function.{Consumer, LongConsumer, Predicate}
 
 import reactor.util.function.{Tuple2, Tuple3, Tuple4, Tuple5, Tuple6}
 
@@ -60,6 +60,12 @@ package object publisher {
   implicit def scalaPredicate2JPredicate[T](sp: ScalaPredicate[T]): Predicate[T] = {
     new Predicate[T] {
       override def test(t: T): Boolean = sp(t)
+    }
+  }
+
+  implicit def scalaLongConsumer2JLongConsumer(lc: ScalaConsumer[Long]): LongConsumer = {
+    new LongConsumer {
+      override def accept(value: Long): Unit = lc(value)
     }
   }
 }

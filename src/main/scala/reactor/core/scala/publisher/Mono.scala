@@ -23,7 +23,7 @@ import java.time.{Duration => JDuration}
 import java.util.concurrent.{Callable, CompletableFuture}
 import java.util.function.{BiConsumer, BiFunction, Consumer, Function, Predicate, Supplier}
 
-import org.reactivestreams.{Publisher, Subscriber}
+import org.reactivestreams.{Publisher, Subscriber, Subscription}
 import reactor.core.publisher.{MonoSink, Signal, SignalType, Mono => JMono}
 import reactor.core.scheduler.{Scheduler, TimedScheduler}
 import reactor.util.function._
@@ -236,6 +236,18 @@ class Mono[T](private val jMono: JMono[T]) extends Publisher[T] {
   final def doOnError(predicate: (Throwable => Boolean), onError: (Throwable => Unit)): Mono[T] = {
     new Mono[T](
       jMono.doOnError(predicate: Predicate[Throwable], onError: Consumer[Throwable])
+    )
+  }
+
+  final def doOnRequest(onRequest: Long => Unit): Mono[T] = {
+    new Mono[T](
+      jMono.doOnRequest(onRequest)
+    )
+  }
+
+  final def doOnSubscribe(onSubscribe: Subscription => Unit): Mono[T] = {
+    new Mono[T](
+      jMono.doOnSubscribe(onSubscribe)
     )
   }
 
