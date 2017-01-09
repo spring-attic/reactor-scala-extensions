@@ -771,6 +771,16 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       atomicBoolean shouldBe 'get
     }
 
+    ".doOnTerminate should do something on terminate" in {
+      val atomicLong = new AtomicLong()
+      val mono: Mono[Long] = createMono.doOnTerminate { (l, t) => atomicLong.set(l) }
+      StepVerifier.create(mono)
+        .expectNext(randomValue)
+        .expectComplete()
+        .verify()
+      atomicLong.get() shouldBe randomValue
+    }
+
     "++ should combine this mono and the other" in {
       val mono = just(1) ++ just(2)
       StepVerifier.create(mono)
@@ -793,16 +803,6 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         .thenAwait(JDuration.ofSeconds(5))
         .expectError(classOf[TimeoutException])
         .verify()
-    }
-
-    ".doOnTerminate should do something on terminate" in {
-      val atomicLong = new AtomicLong()
-      val mono: Mono[Long] = createMono.doOnTerminate { (l, t) => atomicLong.set(l) }
-      StepVerifier.create(mono)
-        .expectNext(randomValue)
-        .expectComplete()
-        .verify()
-      atomicLong.get() shouldBe randomValue
     }
   }
 

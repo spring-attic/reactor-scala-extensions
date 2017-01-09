@@ -251,6 +251,12 @@ class Mono[T](private val jMono: JMono[T]) extends Publisher[T] {
     )
   }
 
+  final def doOnTerminate(onTerminate: (T, Throwable) => Unit): Mono[T] = {
+    Mono(jMono.doOnTerminate(new BiConsumer[T, Throwable] {
+      override def accept(t: T, u: Throwable): Unit = onTerminate(t, u)
+    }))
+  }
+
   def map[R](mapper: T => R): Mono[R] = {
     Mono(jMono.map(new Function[T, R] {
       override def apply(t: T): R = mapper(t)
@@ -259,12 +265,6 @@ class Mono[T](private val jMono: JMono[T]) extends Publisher[T] {
 
   def timeout(duration: Duration): Mono[T] = {
     Mono(jMono.timeout(duration))
-  }
-
-  def doOnTerminate(onTerminate: (T, Throwable) => Unit): Mono[T] = {
-    Mono(jMono.doOnTerminate(new BiConsumer[T, Throwable] {
-      override def accept(t: T, u: Throwable): Unit = onTerminate(t, u)
-    }))
   }
 }
 
