@@ -815,6 +815,14 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
           .verifyComplete()
       }
     }
+
+    ".filter should filter the value of mono where it pass the provided predicate" in {
+      val mono = Mono.just(10)
+        .filter(i => i < 10)
+      StepVerifier.create(mono)
+        .verifyComplete()
+    }
+
     "++ should combine this mono and the other" in {
       val mono = just(1) ++ just(2)
       StepVerifier.create(mono)
