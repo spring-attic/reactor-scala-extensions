@@ -16,4 +16,10 @@ object Flux {
       JFlux.from(source)
     )
   }
+
+  def just[T](data: T*): Flux[T] = {
+    new Flux[T](
+      JFlux.just(data:_*)
+    )
+  }
 }
