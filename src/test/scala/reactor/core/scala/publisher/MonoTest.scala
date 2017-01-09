@@ -3,7 +3,7 @@ package reactor.core.scala.publisher
 import java.time.{Duration => JDuration}
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicLong, AtomicReference}
 import java.util.concurrent.{Callable, ConcurrentHashMap, TimeUnit, TimeoutException}
-import java.util.function.{Function, Supplier}
+import java.util.function.{Consumer, Function, Supplier}
 
 import org.reactivestreams.{Publisher, Subscriber, Subscription}
 import org.scalatest.mockito.MockitoSugar
@@ -730,9 +730,19 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       "with exception type and callback function should call the callback function when the mono encounter exception with the provided type" in {
         val atomicBoolean = new AtomicBoolean(false)
         val mono = Mono.error(new RuntimeException())
-          .doOnError(classOf[RuntimeException], (t: RuntimeException) => atomicBoolean.compareAndSet(false, true) shouldBe true)
+          .doOnError(classOf[RuntimeException]: Class[RuntimeException],
+            ((t: RuntimeException) => atomicBoolean.compareAndSet(false, true) shouldBe true): ScalaConsumer[RuntimeException])
         StepVerifier.create(mono)
           .expectError(classOf[RuntimeException])
+      }
+      "with predicate and callback fnction should call the callback function when the predicate returns true" in {
+        val atomicBoolean = new AtomicBoolean(false)
+        val mono: Mono[Int] = Mono.error[Int](new RuntimeException("Whatever"))
+          .doOnError((_: Throwable) => true,
+            ((t: Throwable) => atomicBoolean.compareAndSet(false, true) shouldBe true): ScalaConsumer[Throwable])
+        StepVerifier.create(mono)
+          .expectError(classOf[RuntimeException])
+
       }
     }
 

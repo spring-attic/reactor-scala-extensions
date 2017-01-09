@@ -21,7 +21,7 @@ package reactor.core.scala.publisher
 import java.lang.{Boolean => JBoolean, Iterable => JIterable, Long => JLong}
 import java.time.{Duration => JDuration}
 import java.util.concurrent.{Callable, CompletableFuture}
-import java.util.function.{BiConsumer, BiFunction, Consumer, Function, Supplier}
+import java.util.function.{BiConsumer, BiFunction, Consumer, Function, Predicate, Supplier}
 
 import org.reactivestreams.{Publisher, Subscriber}
 import reactor.core.publisher.{MonoSink, Signal, SignalType, Mono => JMono}
@@ -230,6 +230,12 @@ class Mono[T](private val jMono: JMono[T]) extends Publisher[T] {
   final def doOnError[E <: Throwable](exceptionType: Class[E], onError: (E => Unit)): Mono[T] = {
     new Mono[T](
       jMono.doOnError(exceptionType, onError: Consumer[E])
+    )
+  }
+
+  final def doOnError(predicate: (Throwable => Boolean), onError: (Throwable => Unit)): Mono[T] = {
+    new Mono[T](
+      jMono.doOnError(predicate: Predicate[Throwable], onError: Consumer[Throwable])
     )
   }
 

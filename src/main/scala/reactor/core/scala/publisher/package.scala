@@ -3,7 +3,7 @@ package reactor.core.scala
 import java.lang.{Boolean => JBoolean}
 import java.time.{Duration => JDuration}
 import java.util.Optional
-import java.util.function.Consumer
+import java.util.function.{Consumer, Predicate}
 
 import reactor.util.function.{Tuple2, Tuple3, Tuple4, Tuple5, Tuple6}
 
@@ -48,11 +48,18 @@ package object publisher {
     case Failure(_) => false
   }
 
-  type ScalaConsumerT[T] = (T => Unit)
+  type ScalaConsumer[T] = (T => Unit)
+  type ScalaPredicate[T] = (T => Boolean)
 
-  implicit def scalaConsumerT2JConsumer[T](sc: ScalaConsumerT[T]): Consumer[T] = {
+  implicit def scalaConsumer2JConsumer[T](sc: ScalaConsumer[T]): Consumer[T] = {
     new Consumer[T] {
       override def accept(t: T): Unit = sc(t)
+    }
+  }
+
+  implicit def scalaPredicate2JPredicate[T](sp: ScalaPredicate[T]): Predicate[T] = {
+    new Predicate[T] {
+      override def test(t: T): Boolean = sp(t)
     }
   }
 }
