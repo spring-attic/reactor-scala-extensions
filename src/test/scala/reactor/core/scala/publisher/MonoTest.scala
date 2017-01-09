@@ -3,7 +3,7 @@ package reactor.core.scala.publisher
 import java.time.{Duration => JDuration}
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicLong, AtomicReference}
 import java.util.concurrent.{Callable, ConcurrentHashMap, TimeUnit, TimeoutException}
-import java.util.function.{Consumer, Function, Supplier}
+import java.util.function.{Consumer, Function, Predicate, Supplier}
 
 import org.reactivestreams.{Publisher, Subscriber, Subscription}
 import org.scalatest.mockito.MockitoSugar
@@ -660,7 +660,7 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
     ".doAfterTerminate should call the callback function after the mono is terminated" in {
       val atomicBoolean = new AtomicBoolean(false)
       val mono = Mono.just(randomValue)
-        .doAfterTerminate {(v: Long, t: Throwable) =>
+        .doAfterTerminate { (v: Long, t: Throwable) =>
           atomicBoolean.compareAndSet(false, true) shouldBe true
           ()
         }
@@ -779,6 +779,23 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         .expectComplete()
         .verify()
       atomicLong.get() shouldBe randomValue
+    }
+
+    ".elapse should provide the time elapse when this mono emit value" in {
+      StepVerifier.withVirtualTime(new Supplier[Mono[(Long, Long)]] {
+        override def get(): Mono[(Long, Long)] = Mono.just(randomValue)
+          .delaySubscriptionMillis(1000)
+          .elapse()
+      }, new Supplier[VirtualTimeScheduler] {
+        override def get(): VirtualTimeScheduler = VirtualTimeScheduler.enable(true)
+      }, 1)
+        .thenAwait(Duration(1, "second"))
+        .expectNextMatches(new Predicate[(Long, Long)] {
+          override def test(t: (Long, Long)): Boolean = t match {
+            case (time, data) => time >= 0 && data == randomValue
+          }
+        })
+        .verifyComplete()
     }
 
     "++ should combine this mono and the other" in {

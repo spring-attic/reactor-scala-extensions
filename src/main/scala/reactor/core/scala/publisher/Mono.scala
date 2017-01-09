@@ -257,6 +257,14 @@ class Mono[T](private val jMono: JMono[T]) extends Publisher[T] {
     }))
   }
 
+  final def elapse(): Mono[(Long, T)] = {
+    new Mono[(Long, T)](
+      jMono.elapsed().map(new Function[Tuple2[JLong, T], (Long, T)] {
+        override def apply(t: Tuple2[JLong, T]): (Long, T) = (Long2long(t.getT1), t.getT2)
+      })
+    )
+  }
+
   def map[R](mapper: T => R): Mono[R] = {
     Mono(jMono.map(new Function[T, R] {
       override def apply(t: T): R = mapper(t)
