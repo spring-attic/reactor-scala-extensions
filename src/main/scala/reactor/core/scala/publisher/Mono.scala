@@ -293,6 +293,13 @@ class Mono[T](private val jMono: JMono[T]) extends Publisher[T] {
     )
   }
 
+  final def flatMapIterable[R](mapper : T => Iterable[R]): Flux[R] = {
+    val mapperFunction: Function[T, JIterable[R]] = mapper.andThen(it => it.asJava)
+    new Flux[R](
+      jMono.flatMapIterable(mapperFunction)
+    )
+  }
+
   def map[R](mapper: T => R): Mono[R] = {
     Mono(jMono.map(mapper))
   }
