@@ -24,7 +24,7 @@ import java.util.concurrent.{Callable, CompletableFuture}
 import java.util.function.{BiConsumer, BiFunction, Consumer, Function, Predicate, Supplier}
 
 import org.reactivestreams.{Publisher, Subscriber, Subscription}
-import reactor.core.publisher.{MonoSink, Signal, SignalType, Mono => JMono}
+import reactor.core.publisher.{MonoSink, SignalType, Mono => JMono}
 import reactor.core.scheduler.{Scheduler, TimedScheduler}
 import reactor.util.function._
 
@@ -285,6 +285,14 @@ class Mono[T](private val jMono: JMono[T]) extends Publisher[T] {
     )
   }
 
+  final def flatMap[R](mapperOnNext: T => Publisher[R],
+                       mapperOnError: Throwable => Publisher[R],
+                       mapperOnComplete: () => Publisher[R]): Flux[R] = {
+    new Flux[R](
+      jMono.flatMap(mapperOnNext, mapperOnError, mapperOnComplete)
+    )
+  }
+
   def map[R](mapper: T => R): Mono[R] = {
     Mono(jMono.map(mapper))
   }
@@ -299,8 +307,8 @@ object Mono {
   /**
     * This function is used as bridge to create scala-wrapper of Mono based on existing Java Mono
     *
-    * @param javaMono
-    * @tparam T
+    * @param javaMono The underlying Java Mono
+    * @tparam T The value type that will be emitted by this mono
     * @return Wrapper of Java Mono
     */
   def apply[T](javaMono: JMono[T]) = new Mono[T](javaMono)

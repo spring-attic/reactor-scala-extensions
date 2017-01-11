@@ -3,7 +3,7 @@ package reactor.core.scala
 import java.lang.{Boolean => JBoolean}
 import java.time.{Duration => JDuration}
 import java.util.Optional
-import java.util.function.{Consumer, Function, LongConsumer, Predicate}
+import java.util.function.{Consumer, Function, LongConsumer, Predicate, Supplier}
 
 import reactor.util.function.{Tuple2, Tuple3, Tuple4, Tuple5, Tuple6}
 
@@ -75,6 +75,12 @@ Uncomment this when used. It is not used for now and reduce the code coverage
   implicit def scalaFunction2JavaFunction[T, U](function: T => U): Function[T, U] = {
     new Function[T, U] {
       override def apply(t: T): U = function(t)
+    }
+  }
+
+  implicit def unit2SupplierT[T](supplier: () => T): Supplier[T] = {
+    new Supplier[T] {
+      override def get(): T = supplier()
     }
   }
 }

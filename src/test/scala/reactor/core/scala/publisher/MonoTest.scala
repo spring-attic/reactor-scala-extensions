@@ -827,11 +827,24 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         .verifyComplete()
     }
 
-    ".flatMap should flatmap the value mapped by the provider mapper" in {
-      val flux = Mono.just(1).flatMap(i => Flux.just(i, i*2))
-      StepVerifier.create(flux)
-        .expectNext(1, 2)
-        .verifyComplete()
+    ".flatMap" - {
+      "with a single mapper should flatmap the value mapped by the provider mapper" in {
+        val flux = Mono.just(1).flatMap(i => Flux.just(i, i*2))
+        StepVerifier.create(flux)
+          .expectNext(1, 2)
+          .verifyComplete()
+      }
+      "with mapperOnNext, mapperOnError and mapperOnComplete should mapped each individual event into values emitted by flux" in {
+        val flux = Mono.just(1)
+          .flatMap(
+            i => Mono.just("one"),
+            t => Mono.just("error"),
+            () => Mono.just("complete")
+          )
+        StepVerifier.create(flux)
+          .expectNext("one", "complete")
+          .verifyComplete()
+      }
     }
 
     "++ should combine this mono and the other" in {
