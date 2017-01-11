@@ -300,6 +300,12 @@ class Mono[T](private val jMono: JMono[T]) extends Publisher[T] {
     )
   }
 
+  final def flux(): Flux[T] = {
+    new Flux[T](
+      jMono.flux()
+    )
+  }
+
   def map[R](mapper: T => R): Mono[R] = {
     Mono(jMono.map(mapper))
   }

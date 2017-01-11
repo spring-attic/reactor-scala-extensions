@@ -854,6 +854,13 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         .verifyComplete()
     }
 
+    ".flux should convert this mono into a flux" in {
+      val flux = Mono.just(randomValue).flux()
+      StepVerifier.create(flux)
+        .expectNext(randomValue)
+        .verifyComplete()
+    }
+
     "++ should combine this mono and the other" in {
       val mono = just(1) ++ just(2)
       StepVerifier.create(mono)
