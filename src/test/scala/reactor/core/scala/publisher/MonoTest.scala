@@ -861,6 +861,21 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         .verifyComplete()
     }
 
+    ".hasElement should convert to another Mono that emit" - {
+      "true if it has element" in {
+        val mono = Mono.just(1).hasElement
+        StepVerifier.create(mono)
+          .expectNext(true)
+          .verifyComplete()
+      }
+      "false if it is empty" in {
+        val mono = Mono.empty.hasElement
+        StepVerifier.create(mono)
+          .expectNext(false)
+          .verifyComplete()
+      }
+    }
+
     "++ should combine this mono and the other" in {
       val mono = just(1) ++ just(2)
       StepVerifier.create(mono)
