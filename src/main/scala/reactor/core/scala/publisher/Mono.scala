@@ -318,6 +318,19 @@ class Mono[T](private val jMono: JMono[T]) extends Publisher[T] {
     )
   }
 
+  //TODO: How to test this?
+  final def hide: Mono[T] = {
+    new Mono[T](
+      jMono.hide()
+    )
+  }
+
+  final def ignoreElement: Mono[T] = {
+    new Mono[T](
+      jMono.ignoreElement()
+    )
+  }
+
   def map[R](mapper: T => R): Mono[R] = {
     Mono(jMono.map(mapper))
   }

@@ -887,6 +887,12 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         .verifyComplete()
     }
 
+    ".ignoreElement should only emit termination event" in {
+      val mono = Mono.just(randomValue).ignoreElement
+      StepVerifier.create(mono)
+        .verifyComplete()
+    }
+
     "++ should combine this mono and the other" in {
       val mono = just(1) ++ just(2)
       StepVerifier.create(mono)
