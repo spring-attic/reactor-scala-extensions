@@ -793,23 +793,27 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
           .thenAwait(Duration(1, "second"))
           .expectNextMatches(new Predicate[(Long, Long)] {
             override def test(t: (Long, Long)): Boolean = t match {
+//                time should be >= 1000 until https://github.com/reactor/reactor-core/issues/351 is fixed
               case (time, data) => time >= 0 && data == randomValue
             }
           })
           .verifyComplete()
       }
       "with TimedScheduler should provide the time elapsed using the provided scheduler when this mono emit value" in {
+        val virtualTimeScheduler = VirtualTimeScheduler.create()
         StepVerifier.withVirtualTime(new Supplier[Mono[(Long, Long)]] {
           override def get(): Mono[(Long, Long)] = Mono.just(randomValue)
             .delaySubscriptionMillis(1000)
-            .elapsed(Schedulers.timer())
+            .elapsed(virtualTimeScheduler)
         }, new Supplier[VirtualTimeScheduler] {
-          override def get(): VirtualTimeScheduler = VirtualTimeScheduler.enable(true)
+          override def get(): VirtualTimeScheduler = {
+            virtualTimeScheduler
+          }
         }, 1)
           .thenAwait(Duration(1, "second"))
           .expectNextMatches(new Predicate[(Long, Long)] {
             override def test(t: (Long, Long)): Boolean = t match {
-              case (time, data) => time >= 0 && data == randomValue
+              case (time, data) => time >= 1000 && data == randomValue
             }
           })
           .verifyComplete()
