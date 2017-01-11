@@ -3,7 +3,7 @@ package reactor.core.scala
 import java.lang.{Boolean => JBoolean}
 import java.time.{Duration => JDuration}
 import java.util.Optional
-import java.util.function.{Consumer, Function, LongConsumer, Predicate, Supplier}
+import java.util.function.{BiConsumer, Consumer, Function, LongConsumer, Predicate, Supplier}
 
 import reactor.util.function.{Tuple2, Tuple3, Tuple4, Tuple5, Tuple6}
 
@@ -51,22 +51,24 @@ Uncomment this when used. It is not used for now and reduce the code coverage
   }
 */
 
-  type ScalaConsumer[T] = (T => Unit)
-  type ScalaPredicate[T] = (T => Boolean)
+  type SConsumer[T] = (T => Unit)
+  type SPredicate[T] = (T => Boolean)
+  type SBiConsumer[T, U] = (T, U) => Unit
+  type JBiConsumer[T, U] = BiConsumer[T, U]
 
-  implicit def scalaConsumer2JConsumer[T](sc: ScalaConsumer[T]): Consumer[T] = {
+  implicit def scalaConsumer2JConsumer[T](sc: SConsumer[T]): Consumer[T] = {
     new Consumer[T] {
       override def accept(t: T): Unit = sc(t)
     }
   }
 
-  implicit def scalaPredicate2JPredicate[T](sp: ScalaPredicate[T]): Predicate[T] = {
+  implicit def scalaPredicate2JPredicate[T](sp: SPredicate[T]): Predicate[T] = {
     new Predicate[T] {
       override def test(t: T): Boolean = sp(t)
     }
   }
 
-  implicit def scalaLongConsumer2JLongConsumer(lc: ScalaConsumer[Long]): LongConsumer = {
+  implicit def scalaLongConsumer2JLongConsumer(lc: SConsumer[Long]): LongConsumer = {
     new LongConsumer {
       override def accept(value: Long): Unit = lc(value)
     }
@@ -81,6 +83,12 @@ Uncomment this when used. It is not used for now and reduce the code coverage
   implicit def unit2SupplierT[T](supplier: () => T): Supplier[T] = {
     new Supplier[T] {
       override def get(): T = supplier()
+    }
+  }
+
+  implicit def scalaBiConsumer2JavaBiConsumer[T, U](biConsumer: SBiConsumer[T, U]): JBiConsumer[T, U] = {
+    new BiConsumer[T, U] {
+      override def accept(t: T, u: U): Unit = biConsumer(t, u)
     }
   }
 }

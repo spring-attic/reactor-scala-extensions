@@ -9,7 +9,7 @@ import org.reactivestreams.{Publisher, Subscriber, Subscription}
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.prop.TableDrivenPropertyChecks
 import org.scalatest.{FreeSpec, Matchers}
-import reactor.core.publisher.{BaseSubscriber, Signal, Flux => JFlux, Mono => JMono}
+import reactor.core.publisher.{BaseSubscriber, Signal, SynchronousSink, Flux => JFlux, Mono => JMono}
 import reactor.core.scala.publisher.Mono.just
 import reactor.core.scheduler.Schedulers
 import reactor.test.StepVerifier
@@ -731,7 +731,7 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         val atomicBoolean = new AtomicBoolean(false)
         val mono = Mono.error(new RuntimeException())
           .doOnError(classOf[RuntimeException]: Class[RuntimeException],
-            ((t: RuntimeException) => atomicBoolean.compareAndSet(false, true) shouldBe true): ScalaConsumer[RuntimeException])
+            ((t: RuntimeException) => atomicBoolean.compareAndSet(false, true) shouldBe true): SConsumer[RuntimeException])
         StepVerifier.create(mono)
           .expectError(classOf[RuntimeException])
       }
@@ -739,7 +739,7 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         val atomicBoolean = new AtomicBoolean(false)
         val mono: Mono[Int] = Mono.error[Int](new RuntimeException("Whatever"))
           .doOnError((_: Throwable) => true,
-            ((t: Throwable) => atomicBoolean.compareAndSet(false, true) shouldBe true): ScalaConsumer[Throwable])
+            ((t: Throwable) => atomicBoolean.compareAndSet(false, true) shouldBe true): SConsumer[Throwable])
         StepVerifier.create(mono)
           .expectError(classOf[RuntimeException])
 
@@ -874,6 +874,17 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
           .expectNext(false)
           .verifyComplete()
       }
+    }
+
+    ".handle should handle onNext, onError and onComplete" in {
+      val mono = Mono.just(randomValue)
+        .handle((l: Long, s: SynchronousSink[String]) => {
+          s.next("One")
+          s.complete()
+        })
+      StepVerifier.create(mono)
+        .expectNext("One")
+        .verifyComplete()
     }
 
     "++ should combine this mono and the other" in {

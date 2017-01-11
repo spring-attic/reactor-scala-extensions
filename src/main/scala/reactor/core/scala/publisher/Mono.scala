@@ -24,7 +24,7 @@ import java.util.concurrent.{Callable, CompletableFuture}
 import java.util.function.{BiConsumer, BiFunction, Consumer, Function, Predicate, Supplier}
 
 import org.reactivestreams.{Publisher, Subscriber, Subscription}
-import reactor.core.publisher.{MonoSink, SignalType, Mono => JMono}
+import reactor.core.publisher.{MonoSink, SignalType, SynchronousSink, Mono => JMono}
 import reactor.core.scheduler.{Scheduler, TimedScheduler}
 import reactor.util.function._
 
@@ -309,6 +309,12 @@ class Mono[T](private val jMono: JMono[T]) extends Publisher[T] {
   final def hasElement: Mono[Boolean] = {
     new Mono[Boolean](
       jMono.hasElement.map[Boolean](scalaFunction2JavaFunction((jb: JBoolean) => boolean2Boolean(jb.booleanValue())))
+    )
+  }
+
+  final def handle[R](handler: (T, SynchronousSink[R]) => Unit): Mono[R] = {
+    new Mono[R](
+      jMono.handle(handler)
     )
   }
 
