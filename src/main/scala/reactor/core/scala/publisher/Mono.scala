@@ -22,6 +22,7 @@ import java.lang.{Boolean => JBoolean, Iterable => JIterable, Long => JLong}
 import java.time.{Duration => JDuration}
 import java.util.concurrent.{Callable, CompletableFuture}
 import java.util.function.{BiConsumer, BiFunction, Consumer, Function, Predicate, Supplier}
+import java.util.logging.Level
 
 import org.reactivestreams.{Publisher, Subscriber, Subscription}
 import reactor.core.publisher.{MonoSink, SignalType, SynchronousSink, Mono => JMono}
@@ -329,6 +330,23 @@ class Mono[T](private val jMono: JMono[T]) extends Publisher[T] {
     new Mono[T](
       jMono.ignoreElement()
     )
+  }
+
+//  TODO: How to test all these .log(...) variants?
+  final def log: Mono[T] = {
+    new Mono[T](jMono.log())
+  }
+
+  final def log(category: String): Mono[T] = {
+    new Mono[T](jMono.log(category))
+  }
+
+  final def log(category: String, level: Level, options: SignalType*): Mono[T] = {
+    new Mono[T](jMono.log(category, level, options:_*))
+  }
+
+  final def log(category: String, level: Level, showOperatorLine: Boolean, options: SignalType*): Mono[T] = {
+    new Mono[T](jMono.log(category, level, showOperatorLine, options: _*))
   }
 
   def map[R](mapper: T => R): Mono[R] = {
