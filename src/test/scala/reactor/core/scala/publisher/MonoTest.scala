@@ -908,6 +908,22 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         .expectComplete()
         .verify()
     }
+
+    ".mapError should map the error to another error" in {
+      class MyCustomException(val message: String) extends Exception(message)
+      import reactor.core.scala.publisher._
+      val mono: Mono[Int] = Mono.error[Int](new RuntimeException("runtimeException"))
+        .mapError(t => new MyCustomException(t.getMessage))
+      StepVerifier.create(mono)
+        .expectErrorMatches((t: Throwable) => {
+          t.getMessage shouldBe "runtimeException"
+          t should not be a[RuntimeException]
+          t shouldBe a[MyCustomException]
+          true
+        })
+        .verify()
+    }
+
     ".timeout should raise TimeoutException after duration elapse" in {
       StepVerifier.withVirtualTime(new Supplier[Publisher[Long]] {
         override def get(): Mono[Long] = Mono.delayMillis(10000).timeout(Duration(5, TimeUnit.SECONDS))
