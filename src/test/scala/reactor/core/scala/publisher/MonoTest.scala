@@ -976,6 +976,13 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         .verifyComplete()
     }
 
+    ".mergeWith should convert this mono to flux with value emitted from this mono followed by the other" in {
+      val flux = Mono.just(1).mergeWith(Mono.just(2))
+      StepVerifier.create(flux)
+        .expectNext(1, 2)
+        .verifyComplete()
+    }
+
     ".timeout should raise TimeoutException after duration elapse" in {
       StepVerifier.withVirtualTime(new Supplier[Publisher[Long]] {
         override def get(): Mono[Long] = Mono.delayMillis(10000).timeout(Duration(5, TimeUnit.SECONDS))
