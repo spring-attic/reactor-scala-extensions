@@ -25,7 +25,7 @@ import java.util.function.{BiConsumer, BiFunction, Consumer, Function, Predicate
 import java.util.logging.Level
 
 import org.reactivestreams.{Publisher, Subscriber, Subscription}
-import reactor.core.publisher.{MonoSink, SignalType, SynchronousSink, Mono => JMono}
+import reactor.core.publisher.{MonoSink, Signal, SignalType, SynchronousSink, Mono => JMono}
 import reactor.core.scheduler.{Scheduler, TimedScheduler}
 import reactor.util.function._
 
@@ -363,6 +363,10 @@ class Mono[T](private val jMono: JMono[T]) extends Publisher[T] {
 
   def mapError(predicate: Throwable => Boolean, mapper: Throwable => Throwable): Mono[T] = {
     new Mono[T](jMono.mapError(predicate, mapper))
+  }
+
+  def materialize(): Mono[Signal[T]] = {
+    new Mono[Signal[T]](jMono.materialize())
   }
 
   def timeout(duration: Duration): Mono[T] = {

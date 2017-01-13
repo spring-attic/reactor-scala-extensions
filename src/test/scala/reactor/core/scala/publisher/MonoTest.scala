@@ -968,6 +968,14 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       }
     }
 
+    ".materialize should convert the mono into a mono that emit its signal" in {
+      val mono = Mono.just(randomValue).materialize()
+      StepVerifier.create(mono)
+        .expectNext(Signal.next(randomValue))
+//        .expectNext(Signal.complete())
+        .verifyComplete()
+    }
+
     ".timeout should raise TimeoutException after duration elapse" in {
       StepVerifier.withVirtualTime(new Supplier[Publisher[Long]] {
         override def get(): Mono[Long] = Mono.delayMillis(10000).timeout(Duration(5, TimeUnit.SECONDS))
