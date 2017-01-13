@@ -1005,6 +1005,13 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       }
     }
 
+    ".otherwise will fallback to the provided value when error happens" in {
+      val mono = Mono.error(new RuntimeException()).otherwise(_ => Mono.just(-1))
+      StepVerifier.create(mono)
+        .expectNext(-1)
+        .verifyComplete()
+    }
+
     ".timeout should raise TimeoutException after duration elapse" in {
       StepVerifier.withVirtualTime(new Supplier[Publisher[Long]] {
         override def get(): Mono[Long] = Mono.delayMillis(10000).timeout(Duration(5, TimeUnit.SECONDS))
