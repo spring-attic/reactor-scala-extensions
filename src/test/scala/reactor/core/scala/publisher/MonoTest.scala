@@ -1005,11 +1005,19 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       }
     }
 
-    ".otherwise will fallback to the provided value when error happens" in {
-      val mono = Mono.error(new RuntimeException()).otherwise(_ => Mono.just(-1))
-      StepVerifier.create(mono)
-        .expectNext(-1)
-        .verifyComplete()
+    ".otherwise" - {
+      "will fallback to the provided value when error happens" in {
+        val mono = Mono.error(new RuntimeException()).otherwise(_ => Mono.just(-1))
+        StepVerifier.create(mono)
+          .expectNext(-1)
+          .verifyComplete()
+      }
+      "with class type and fallback function will fallback to the provided value when the exception is of provided type" in {
+        val mono = Mono.error(new RuntimeException()).otherwise(classOf[RuntimeException], (t: Exception) => Mono.just(-1))
+        StepVerifier.create(mono)
+          .expectNext(-1)
+          .verifyComplete()
+      }
     }
 
     ".timeout should raise TimeoutException after duration elapse" in {

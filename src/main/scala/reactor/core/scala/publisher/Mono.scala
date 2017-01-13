@@ -388,6 +388,13 @@ class Mono[T](private val jMono: JMono[T]) extends Publisher[T] {
     }
     new Mono[T](jMono.otherwise(fallbackFunction))
   }
+  
+  def otherwise[E <: Throwable](`type`: Class[E], fallback: E => Mono[_ <: T]): Mono[T] = {
+    val fallbackFunction: Function[E, JMono[_ <: T]] = new Function[E, JMono[_ <: T]] {
+      override def apply(t: E): JMono[_ <: T] = fallback(t).jMono
+    }
+    new Mono[T](jMono.otherwise(`type`, fallbackFunction))
+  }
 
   def timeout(duration: Duration): Mono[T] = {
     Mono(jMono.timeout(duration))
