@@ -976,6 +976,13 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         .verifyComplete()
     }
 
+    ".mergeWith should convert this mono to flux with value emitted from this mono followed by the other" in {
+      val flux = Mono.just(1).mergeWith(Mono.just(2))
+      StepVerifier.create(flux)
+        .expectNext(1, 2)
+        .verifyComplete()
+    }
+
     ".or should return Mono that emit the value between the two Monos that is emited first" in {
       val mono = Mono.delay(Duration(5, "seconds")).or(Mono.just(2))
       StepVerifier.create(mono)
@@ -983,11 +990,19 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         .verifyComplete()
     }
 
-    ".mergeWith should convert this mono to flux with value emitted from this mono followed by the other" in {
-      val flux = Mono.just(1).mergeWith(Mono.just(2))
-      StepVerifier.create(flux)
-        .expectNext(1, 2)
-        .verifyComplete()
+    ".ofType should" - {
+      "convert the Mono value type to the provided type if it can be casted" in {
+        val mono = Mono.just(BigDecimal("1")).ofType(classOf[ScalaNumber])
+        StepVerifier.create(mono)
+          .expectNextCount(1)
+          .verifyComplete()
+      }
+      "ignore the Mono value if it can't be casted" in {
+        val mono = Mono.just(1).ofType(classOf[String])
+        StepVerifier.create(mono)
+          .expectComplete()
+          .verify()
+      }
     }
 
     ".timeout should raise TimeoutException after duration elapse" in {

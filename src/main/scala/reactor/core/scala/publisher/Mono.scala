@@ -377,6 +377,10 @@ class Mono[T](private val jMono: JMono[T]) extends Publisher[T] {
     new Mono[T](jMono.or(other.jMono))
   }
 
+  def ofType[U](clazz: Class[U]): Mono[U] = {
+    new Mono[U](jMono.ofType(clazz))
+  }
+
   def timeout(duration: Duration): Mono[T] = {
     Mono(jMono.timeout(duration))
   }
