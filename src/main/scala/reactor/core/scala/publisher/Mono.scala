@@ -373,6 +373,10 @@ class Mono[T](private val jMono: JMono[T]) extends Publisher[T] {
     new Flux[T](jMono.mergeWith(other))
   }
 
+  def or(other: Mono[_ <: T]): Mono[T] = {
+    new Mono[T](jMono.or(other.jMono))
+  }
+
   def timeout(duration: Duration): Mono[T] = {
     Mono(jMono.timeout(duration))
   }

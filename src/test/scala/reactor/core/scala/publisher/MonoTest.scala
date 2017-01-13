@@ -976,6 +976,13 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         .verifyComplete()
     }
 
+    ".or should return Mono that emit the value between the two Monos that is emited first" in {
+      val mono = Mono.delay(Duration(5, "seconds")).or(Mono.just(2))
+      StepVerifier.create(mono)
+        .expectNext(2)
+        .verifyComplete()
+    }
+
     ".mergeWith should convert this mono to flux with value emitted from this mono followed by the other" in {
       val flux = Mono.just(1).mergeWith(Mono.just(2))
       StepVerifier.create(flux)
