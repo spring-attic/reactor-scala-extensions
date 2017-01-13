@@ -1018,6 +1018,12 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
           .expectNext(-1)
           .verifyComplete()
       }
+      "with predicate and fallback function will fallback to the provided value when the predicate returns true" in {
+        val mono = Mono.error(new RuntimeException("fallback")).otherwise(t => t.getMessage == "fallback", (t: Throwable) => Mono.just(-1))
+        StepVerifier.create(mono)
+          .expectNext(-1)
+          .verifyComplete()
+      }
     }
 
     ".timeout should raise TimeoutException after duration elapse" in {
