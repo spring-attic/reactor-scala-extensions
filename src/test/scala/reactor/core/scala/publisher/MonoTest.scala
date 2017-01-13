@@ -793,7 +793,7 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
           .thenAwait(Duration(1, "second"))
           .expectNextMatches(new Predicate[(Long, Long)] {
             override def test(t: (Long, Long)): Boolean = t match {
-//                time should be >= 1000 until https://github.com/reactor/reactor-core/issues/351 is fixed
+              //                time should be >= 1000 until https://github.com/reactor/reactor-core/issues/351 is fixed
               case (time, data) => time >= 0 && data == randomValue
             }
           })
@@ -829,7 +829,7 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
 
     ".flatMap" - {
       "with a single mapper should flatmap the value mapped by the provided mapper" in {
-        val flux = Mono.just(1).flatMap(i => Flux.just(i, i*2))
+        val flux = Mono.just(1).flatMap(i => Flux.just(i, i * 2))
         StepVerifier.create(flux)
           .expectNext(1, 2)
           .verifyComplete()
@@ -850,7 +850,7 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
     ".flatMapIterable should flatmap the value mapped by the provided mapper" in {
       val flux = Mono.just("one").flatMapIterable(str => str.toCharArray)
       StepVerifier.create(flux)
-        .expectNext('o','n','e')
+        .expectNext('o', 'n', 'e')
         .verifyComplete()
     }
 
@@ -909,19 +909,47 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         .verify()
     }
 
-    ".mapError should map the error to another error" in {
+    ".mapError" - {
       class MyCustomException(val message: String) extends Exception(message)
       import reactor.core.scala.publisher._
-      val mono: Mono[Int] = Mono.error[Int](new RuntimeException("runtimeException"))
-        .mapError(t => new MyCustomException(t.getMessage))
-      StepVerifier.create(mono)
-        .expectErrorMatches((t: Throwable) => {
-          t.getMessage shouldBe "runtimeException"
-          t should not be a[RuntimeException]
-          t shouldBe a[MyCustomException]
-          true
-        })
-        .verify()
+      "with mapper should map the error to another error" in {
+        val mono: Mono[Int] = Mono.error[Int](new RuntimeException("runtimeException"))
+          .mapError(t => new MyCustomException(t.getMessage))
+        StepVerifier.create(mono)
+          .expectErrorMatches((t: Throwable) => {
+            t.getMessage shouldBe "runtimeException"
+            t should not be a[RuntimeException]
+            t shouldBe a[MyCustomException]
+            true
+          })
+          .verify()
+      }
+      "with an error type and mapper should" - {
+        "map the error to another type if the exception is according to the provided type" in {
+          val mono: Mono[Int] = Mono.error[Int](new RuntimeException("runtimeException"))
+            .mapError(classOf[RuntimeException], (t:RuntimeException) => new MyCustomException(t.getMessage))
+          StepVerifier.create(mono)
+            .expectErrorMatches((t: Throwable) => {
+              t.getMessage shouldBe "runtimeException"
+              t should not be a[RuntimeException]
+              t shouldBe a[MyCustomException]
+              true
+            })
+            .verify()
+        }
+        "not map the error if the exception is not the type of provided exception class" in {
+          val mono: Mono[Int] = Mono.error[Int](new Exception("runtimeException"))
+            .mapError(classOf[RuntimeException], (t:RuntimeException) => new MyCustomException(t.getMessage))
+          StepVerifier.create(mono)
+            .expectErrorMatches((t: Throwable) => {
+              t.getMessage shouldBe "runtimeException"
+              t should not be a[MyCustomException]
+              t shouldBe a[Exception]
+              true
+            })
+            .verify()
+        }
+      }
     }
 
     ".timeout should raise TimeoutException after duration elapse" in {
