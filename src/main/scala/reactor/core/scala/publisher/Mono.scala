@@ -361,6 +361,10 @@ class Mono[T](private val jMono: JMono[T]) extends Publisher[T] {
     new Mono[T](jMono.mapError(`type`, mapper))
   }
 
+  def mapError(predicate: Throwable => Boolean, mapper: Throwable => Throwable): Mono[T] = {
+    new Mono[T](jMono.mapError(predicate, mapper))
+  }
+
   def timeout(duration: Duration): Mono[T] = {
     Mono(jMono.timeout(duration))
   }

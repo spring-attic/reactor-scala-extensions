@@ -950,6 +950,22 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
             .verify()
         }
       }
+      "with a predicate and mapper should" - {
+        "map the error to another type if the predicate returns true" in {
+          val mono:Mono[Int] = Mono.error[Int](new RuntimeException("should map"))
+            .mapError(t => t.getMessage == "should map", t => new MyCustomException(t.getMessage))
+          StepVerifier.create(mono)
+            .expectError(classOf[MyCustomException])
+            .verify()
+        }
+        "not map the error to another type if the predicate returns false" in {
+          val mono:Mono[Int] = Mono.error[Int](new RuntimeException("should not map"))
+            .mapError(t => t.getMessage == "should map", t => new MyCustomException(t.getMessage))
+          StepVerifier.create(mono)
+            .expectError(classOf[RuntimeException])
+            .verify()
+        }
+      }
     }
 
     ".timeout should raise TimeoutException after duration elapse" in {
