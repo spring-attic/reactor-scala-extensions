@@ -39,7 +39,7 @@ class FluxTest extends FreeSpec {
         .verifyComplete()
     }
 
-    ".sample should emit the last value for given interval" in {
+    ".sample should emit the last value for given interval" ignore {
       val flux = Flux.just(1L).sample(Duration(1, "second"))
       val counter = new CountDownLatch(3)
       flux.subscribe(new BaseSubscriber[Long] {

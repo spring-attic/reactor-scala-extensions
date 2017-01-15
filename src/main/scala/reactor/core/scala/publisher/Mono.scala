@@ -425,7 +425,7 @@ class Mono[T](private val jMono: JMono[T]) extends Publisher[T] {
 
   def publish[R](transform: Mono[T] => Mono[R]): Mono[R] = {
     val transformFunction: Function[JMono[T], JMono[R]] = new Function[JMono[T], JMono[R]] {
-      override def apply(t: JMono[T]): JMono[R] = transform(new Mono[T](t)).jMono
+      override def apply(t: JMono[T]): JMono[R] = transform(Mono.this).jMono
     }
     new Mono[R](jMono.publish(transformFunction))
   }
