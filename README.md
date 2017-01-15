@@ -33,7 +33,7 @@ With Gradle from Sonatype:
     }
     
     dependencies {
-        compile "com.github.sinwe:reactor-core-scala:1.0.0-SNAPSHOT
+        compile "com.github.sinwe:reactor-core-scala:0.1.0-SNAPSHOT
     }
 
 With Maven from Sonatype:
@@ -53,7 +53,7 @@ With Maven from Sonatype:
     <dependency>
         <groupId>com.github.sinwe</groupId>
         <artifactId>reactor-core-scala</artifactId>
-        <version>1.0.0-SNAPSHOT</version>
+        <version>0.1.0-SNAPSHOT</version>
     </dependency>
 
 
