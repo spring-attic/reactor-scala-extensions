@@ -443,6 +443,10 @@ class Mono[T](private val jMono: JMono[T]) extends Publisher[T] {
     new Flux[T](jMono.repeat(predicate))
   }
 
+  def repeat(n: Long): Flux[T] = {
+    new Flux[T](jMono.repeat(n))
+  }
+
   def timeout(duration: Duration): Mono[T] = {
     Mono(jMono.timeout(duration))
   }

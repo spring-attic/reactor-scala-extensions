@@ -1101,6 +1101,12 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
           fail("no completion signal is detected")
 
       }
+      "with number of repeat should repeat value from this value as many as the provided parameter" in {
+        val flux = Mono.just(randomValue).repeat(5)
+        StepVerifier.create(flux)
+          .expectNext(randomValue,randomValue,randomValue,randomValue,randomValue)
+          .verifyComplete()
+      }
     }
 
     ".timeout should raise TimeoutException after duration elapse" in {
