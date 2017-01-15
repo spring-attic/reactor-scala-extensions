@@ -1053,6 +1053,25 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       }
     }
 
+    ".publish should share share and may transform it and consume it as many times as necessary without causing" +
+      "multiple subscription" in {
+      val mono = Mono.just(randomValue).publish[String](ml => ml.map(l => l.toString))
+
+      val counter = new AtomicLong()
+
+      val subscriber = new BaseSubscriber[String] {
+        override def hookOnSubscribe(subscription: Subscription): Unit = {
+          subscription.request(1)
+          counter.incrementAndGet()
+        }
+
+        override def hookOnNext(value: String): Unit = ()
+      }
+      mono.subscribe(subscriber)
+      mono.subscribe(subscriber)
+      counter.get() shouldBe 1
+    }
+
     ".timeout should raise TimeoutException after duration elapse" in {
       StepVerifier.withVirtualTime(new Supplier[Publisher[Long]] {
         override def get(): Mono[Long] = Mono.delayMillis(10000).timeout(Duration(5, TimeUnit.SECONDS))

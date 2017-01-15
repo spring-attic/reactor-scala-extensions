@@ -423,6 +423,13 @@ class Mono[T](private val jMono: JMono[T]) extends Publisher[T] {
     new Mono[T](jMono.onTerminateDetach())
   }
 
+  def publish[R](transform: Mono[T] => Mono[R]): Mono[R] = {
+    val transformFunction: Function[JMono[T], JMono[R]] = new Function[JMono[T], JMono[R]] {
+      override def apply(t: JMono[T]): JMono[R] = transform(Mono.this).jMono
+    }
+    new Mono[R](jMono.publish(transformFunction))
+  }
+
   def timeout(duration: Duration): Mono[T] = {
     Mono(jMono.timeout(duration))
   }
