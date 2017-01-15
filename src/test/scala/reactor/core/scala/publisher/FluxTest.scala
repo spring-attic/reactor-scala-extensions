@@ -1,7 +1,15 @@
 package reactor.core.scala.publisher
 
+import java.util.concurrent.{CountDownLatch, TimeUnit}
+import java.util.function.Supplier
+
+import org.reactivestreams.Subscription
 import org.scalatest.FreeSpec
+import reactor.core.publisher.BaseSubscriber
 import reactor.test.StepVerifier
+import reactor.test.scheduler.VirtualTimeScheduler
+
+import scala.concurrent.duration.Duration
 
 /**
   * Created by winarto on 1/10/17.
@@ -25,10 +33,24 @@ class FluxTest extends FreeSpec {
     }
 
     ".take should emit only n values" in {
-      val flux = Flux.just(1,2,3,4,5,6,7,8,9,10).take(3)
+      val flux = Flux.just(1, 2, 3, 4, 5, 6, 7, 8, 9, 10).take(3)
       StepVerifier.create(flux)
         .expectNext(1, 2, 3)
         .verifyComplete()
     }
+
+    ".sample should emit the last value for given interval" in {
+      val flux = Flux.just(1L).sample(Duration(1, "second"))
+      val counter = new CountDownLatch(3)
+      flux.subscribe(new BaseSubscriber[Long] {
+        override def hookOnSubscribe(subscription: Subscription): Unit = subscription.request(Long.MaxValue)
+
+        override def hookOnNext(value: Long): Unit = {
+          counter.countDown()
+          Console.out.println(value)
+        }
+      })
+      counter.await(4, TimeUnit.SECONDS)
+   }
   }
 }

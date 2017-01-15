@@ -6,6 +6,8 @@ import org.reactivestreams.{Publisher, Subscriber}
 import reactor.core.publisher.{Flux => JFlux}
 import java.lang.{Long => JLong}
 
+import scala.concurrent.duration.Duration
+
 /**
   * Created by winarto on 1/4/17.
   */
@@ -20,6 +22,10 @@ class Flux[T](jFlux: JFlux[T]) extends Publisher[T] {
 
   def take(n: Long): Flux[T] = {
     new Flux[T](jFlux.take(n))
+  }
+
+  def sample(duration: Duration): Flux[T] = {
+    new Flux[T](jFlux.sample(duration))
   }
 }
 

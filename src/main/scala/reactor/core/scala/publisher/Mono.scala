@@ -25,7 +25,7 @@ import java.util.function.{BiConsumer, BiFunction, Consumer, Function, Predicate
 import java.util.logging.Level
 
 import org.reactivestreams.{Publisher, Subscriber, Subscription}
-import reactor.core.publisher.{MonoSink, Signal, SignalType, SynchronousSink, Mono => JMono}
+import reactor.core.publisher.{MonoSink, Signal, SignalType, SynchronousSink, Mono => JMono, Flux => JFlux}
 import reactor.core.scheduler.{Scheduler, TimedScheduler}
 import reactor.util.function._
 
@@ -425,7 +425,7 @@ class Mono[T](private val jMono: JMono[T]) extends Publisher[T] {
 
   def publish[R](transform: Mono[T] => Mono[R]): Mono[R] = {
     val transformFunction: Function[JMono[T], JMono[R]] = new Function[JMono[T], JMono[R]] {
-      override def apply(t: JMono[T]): JMono[R] = transform(Mono.this).jMono
+      override def apply(t: JMono[T]): JMono[R] = transform(new Mono[T](t)).jMono
     }
     new Mono[R](jMono.publish(transformFunction))
   }
@@ -449,6 +449,14 @@ class Mono[T](private val jMono: JMono[T]) extends Publisher[T] {
 
   def repeat(n: Long, predicate: () => Boolean): Flux[T] = {
     new Flux[T](jMono.repeat(n, predicate))
+  }
+
+  def repeatWhen(whenFactory: Flux[Long] => _ <: Publisher[_]): Flux[T] = {
+    val whenFactoryFunction: Function[JFlux[JLong], Publisher[_]] = new Function[JFlux[JLong], Publisher[_]] {
+      override def apply(t: JFlux[JLong]): Publisher[_] = whenFactory(new Flux[Long](t.map[Long]((jl:JLong) => Long2long(jl))))
+    }
+
+    new Flux[T](jMono.repeatWhen(whenFactoryFunction))
   }
 
   def timeout(duration: Duration): Mono[T] = {

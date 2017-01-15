@@ -1,14 +1,14 @@
 package reactor.core.scala.publisher
 
 import java.time.{Duration => JDuration}
-import java.util.concurrent.atomic.{AtomicBoolean, AtomicLong, AtomicReference}
 import java.util.concurrent._
+import java.util.concurrent.atomic.{AtomicBoolean, AtomicLong, AtomicReference}
 import java.util.function.{Predicate, Supplier}
 
 import org.reactivestreams.{Publisher, Subscription}
 import org.scalatest.prop.TableDrivenPropertyChecks
 import org.scalatest.{FreeSpec, Matchers}
-import reactor.core.publisher.{BaseSubscriber, Signal, SynchronousSink, Flux => JFlux, Mono => JMono}
+import reactor.core.publisher.{BaseSubscriber, Signal, SynchronousSink, Flux => JFlux}
 import reactor.core.scala.publisher.Mono.just
 import reactor.core.scheduler.Schedulers
 import reactor.test.StepVerifier
@@ -1128,6 +1128,14 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         else
           fail("no completion signal is detected")
       }
+    }
+
+    ".repeatWhen should emit the value of this mono accompanied by the publisher" in {
+      val counter = new AtomicLong()
+      val flux = Mono.just(randomValue).repeatWhen((fl: Flux[Long]) => Flux.just(counter.incrementAndGet())).take(3)
+      StepVerifier.create(flux)
+        .expectNext(randomValue, randomValue ,randomValue)
+        .verifyComplete()
     }
 
     ".timeout should raise TimeoutException after duration elapse" in {
