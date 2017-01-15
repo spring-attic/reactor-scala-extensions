@@ -972,7 +972,6 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       val mono = Mono.just(randomValue).materialize()
       StepVerifier.create(mono)
         .expectNext(Signal.next(randomValue))
-//        .expectNext(Signal.complete())
         .verifyComplete()
     }
 
@@ -1020,6 +1019,15 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       }
       "with predicate and fallback function will fallback to the provided value when the predicate returns true" in {
         val mono = Mono.error(new RuntimeException("fallback")).otherwise(t => t.getMessage == "fallback", (t: Throwable) => Mono.just(-1))
+        StepVerifier.create(mono)
+          .expectNext(-1)
+          .verifyComplete()
+      }
+    }
+    
+    ".otherwiseIfEmpty" - {
+      "with alternative will emit the value from alternative Mono when this mono is empty" in {
+        val mono = Mono.empty.otherwiseIfEmpty(Mono.just(-1))
         StepVerifier.create(mono)
           .expectNext(-1)
           .verifyComplete()
