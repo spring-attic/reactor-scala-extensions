@@ -2,7 +2,7 @@ package reactor.core.scala.publisher
 
 import java.time.{Duration => JDuration}
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicLong, AtomicReference}
-import java.util.concurrent.{Callable, ConcurrentHashMap, TimeUnit, TimeoutException}
+import java.util.concurrent._
 import java.util.function.{Predicate, Supplier}
 
 import org.reactivestreams.{Publisher, Subscription}
@@ -1072,11 +1072,35 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       counter.get() shouldBe 1
     }
 
-    ".repeat should return flux that repeat the value from this mono" in {
-      val flux = Mono.just(randomValue).repeat().take(3)
-      StepVerifier.create(flux)
-        .expectNext(randomValue, randomValue, randomValue)
-        .verifyComplete()
+    ".repeat" -{
+      "should return flux that repeat the value from this mono" in {
+        val flux = Mono.just(randomValue).repeat().take(3)
+        StepVerifier.create(flux)
+          .expectNext(randomValue, randomValue, randomValue)
+          .verifyComplete()
+      }
+      "with boolean predicate should repeat the value from this mono as long as the predicate returns true" in {
+        val counter = new AtomicLong()
+        val flux = Mono.just(randomValue)
+          .repeat(() => counter.get() < 3)
+        val buffer = new LinkedBlockingQueue[Long]()
+        val latch = new CountDownLatch(1)
+        flux.subscribe(new BaseSubscriber[Long] {
+          override def hookOnSubscribe(subscription: Subscription): Unit = subscription.request(Long.MaxValue)
+
+          override def hookOnNext(value: Long): Unit = {
+            counter.incrementAndGet()
+            buffer.put(value)
+          }
+
+          override def hookOnComplete(): Unit = latch.countDown()
+        })
+        if(latch.await(1, TimeUnit.SECONDS))
+          buffer should have size 3
+        else
+          fail("no completion signal is detected")
+
+      }
     }
 
     ".timeout should raise TimeoutException after duration elapse" in {

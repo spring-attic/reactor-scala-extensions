@@ -3,7 +3,7 @@ package reactor.core.scala
 import java.lang.{Boolean => JBoolean}
 import java.time.{Duration => JDuration}
 import java.util.Optional
-import java.util.function.{BiConsumer, Consumer, Function, LongConsumer, Predicate, Supplier}
+import java.util.function.{BiConsumer, BooleanSupplier, Consumer, Function, LongConsumer, Predicate, Supplier}
 
 import reactor.util.function.{Tuple2, Tuple3, Tuple4, Tuple5, Tuple6}
 
@@ -89,6 +89,12 @@ Uncomment this when used. It is not used for now and reduce the code coverage
   implicit def scalaBiConsumer2JavaBiConsumer[T, U](biConsumer: SBiConsumer[T, U]): JBiConsumer[T, U] = {
     new BiConsumer[T, U] {
       override def accept(t: T, u: U): Unit = biConsumer(t, u)
+    }
+  }
+
+  implicit def scalaBooleanSupplier2JavaBooleanSupplier(supplier: () => Boolean): BooleanSupplier = {
+    new BooleanSupplier {
+      override def getAsBoolean: Boolean = supplier()
     }
   }
 }
