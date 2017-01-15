@@ -1031,11 +1031,20 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         .verifyComplete()
     }
 
-    ".otherwiseReturn with fallback will emit to the fallback value when error occurs" in {
-      val mono = Mono.error(new RuntimeException).otherwiseReturn(-1)
-      StepVerifier.create(mono)
-        .expectNext(-1)
-        .verifyComplete()
+    ".otherwiseReturn" - {
+      "with fallback will emit to the fallback value when error occurs" in {
+        val mono = Mono.error(new RuntimeException).otherwiseReturn(-1)
+        StepVerifier.create(mono)
+          .expectNext(-1)
+          .verifyComplete()
+      }
+      class MyCustomException(message: String) extends Exception(message)
+      "with exception type and fallback value will emit the fallback value when exception of provided type occurs" in {
+        val mono = Mono.error(new MyCustomException("whatever")).otherwiseReturn(classOf[MyCustomException], -1)
+        StepVerifier.create(mono)
+          .expectNext(-1)
+          .verifyComplete()
+      }
     }
 
     ".timeout should raise TimeoutException after duration elapse" in {
