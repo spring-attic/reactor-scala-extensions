@@ -16,5 +16,12 @@ class FluxTest extends FreeSpec {
           .verifyComplete()
       }
     }
+
+    ".count should return Mono which emit the number of value in this flux" in {
+      val mono = Flux.just(10, 9, 8).count()
+      StepVerifier.create(mono)
+        .expectNext(3)
+        .verifyComplete()
+    }
   }
 }

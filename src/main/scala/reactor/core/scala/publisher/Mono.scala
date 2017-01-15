@@ -418,6 +418,11 @@ class Mono[T](private val jMono: JMono[T]) extends Publisher[T] {
     new Mono[T](jMono.otherwiseReturn(predicate, fallback))
   }
 
+//  TODO: How to test this?
+  def onTerminateDetach(): Mono[T] = {
+    new Mono[T](jMono.onTerminateDetach())
+  }
+
   def timeout(duration: Duration): Mono[T] = {
     Mono(jMono.timeout(duration))
   }
@@ -544,9 +549,7 @@ object Mono {
   }
 
   def just[T](data: T): Mono[T] = {
-    new Mono[T](
-      JMono.just(data)
-    )
+    new Mono[T](JMono.just(data))
   }
 
   def justOrEmpty[T](data: Option[_ <: T]): Mono[T] = {
