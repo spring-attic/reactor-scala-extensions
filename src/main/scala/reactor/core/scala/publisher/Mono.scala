@@ -430,6 +430,11 @@ class Mono[T](private val jMono: JMono[T]) extends Publisher[T] {
     new Mono[R](jMono.publish(transformFunction))
   }
 
+  //TODO: How to test this?
+  def publishOn(scheduler: Scheduler): Mono[T] = {
+    new Mono[T](jMono.publishOn(scheduler))
+  }
+
   def timeout(duration: Duration): Mono[T] = {
     Mono(jMono.timeout(duration))
   }
