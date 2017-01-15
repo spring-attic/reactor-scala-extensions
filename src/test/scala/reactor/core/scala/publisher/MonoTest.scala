@@ -1107,6 +1107,27 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
           .expectNext(randomValue,randomValue,randomValue,randomValue,randomValue)
           .verifyComplete()
       }
+      "with number of repeat and predicate should repeat value from this value as many as provided parameter and as" +
+        "long as the predicate returns true" in {
+        val counter = new AtomicLong()
+        val flux = Mono.just(randomValue).repeat(5, () => counter.get() < 3)
+        val buffer = new LinkedBlockingQueue[Long]()
+        val latch = new CountDownLatch(1)
+        flux.subscribe(new BaseSubscriber[Long] {
+          override def hookOnSubscribe(subscription: Subscription): Unit = subscription.request(Long.MaxValue)
+
+          override def hookOnNext(value: Long): Unit = {
+            counter.incrementAndGet()
+            buffer.put(value)
+          }
+
+          override def hookOnComplete(): Unit = latch.countDown()
+        })
+        if(latch.await(1, TimeUnit.SECONDS))
+          buffer should have size 3
+        else
+          fail("no completion signal is detected")
+      }
     }
 
     ".timeout should raise TimeoutException after duration elapse" in {

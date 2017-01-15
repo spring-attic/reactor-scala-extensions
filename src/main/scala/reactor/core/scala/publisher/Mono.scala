@@ -447,6 +447,10 @@ class Mono[T](private val jMono: JMono[T]) extends Publisher[T] {
     new Flux[T](jMono.repeat(n))
   }
 
+  def repeat(n: Long, predicate: () => Boolean): Flux[T] = {
+    new Flux[T](jMono.repeat(n, predicate))
+  }
+
   def timeout(duration: Duration): Mono[T] = {
     Mono(jMono.timeout(duration))
   }
