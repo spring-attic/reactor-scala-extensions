@@ -406,6 +406,10 @@ class Mono[T](private val jMono: JMono[T]) extends Publisher[T] {
     new Mono[T](jMono.otherwiseIfEmpty(alternate.jMono))
   }
 
+  def otherwiseReturn(fallback: T): Mono[T] = {
+    new Mono[T](jMono.otherwiseReturn(fallback))
+  }
+
   def timeout(duration: Duration): Mono[T] = {
     Mono(jMono.timeout(duration))
   }

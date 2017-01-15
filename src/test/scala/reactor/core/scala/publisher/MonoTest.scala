@@ -3,10 +3,9 @@ package reactor.core.scala.publisher
 import java.time.{Duration => JDuration}
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicLong, AtomicReference}
 import java.util.concurrent.{Callable, ConcurrentHashMap, TimeUnit, TimeoutException}
-import java.util.function.{Consumer, Function, Predicate, Supplier}
+import java.util.function.{Predicate, Supplier}
 
-import org.reactivestreams.{Publisher, Subscriber, Subscription}
-import org.scalatest.mockito.MockitoSugar
+import org.reactivestreams.{Publisher, Subscription}
 import org.scalatest.prop.TableDrivenPropertyChecks
 import org.scalatest.{FreeSpec, Matchers}
 import reactor.core.publisher.{BaseSubscriber, Signal, SynchronousSink, Flux => JFlux, Mono => JMono}
@@ -927,7 +926,7 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       "with an error type and mapper should" - {
         "map the error to another type if the exception is according to the provided type" in {
           val mono: Mono[Int] = Mono.error[Int](new RuntimeException("runtimeException"))
-            .mapError(classOf[RuntimeException], (t:RuntimeException) => new MyCustomException(t.getMessage))
+            .mapError(classOf[RuntimeException], (t: RuntimeException) => new MyCustomException(t.getMessage))
           StepVerifier.create(mono)
             .expectErrorMatches((t: Throwable) => {
               t.getMessage shouldBe "runtimeException"
@@ -939,7 +938,7 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         }
         "not map the error if the exception is not the type of provided exception class" in {
           val mono: Mono[Int] = Mono.error[Int](new Exception("runtimeException"))
-            .mapError(classOf[RuntimeException], (t:RuntimeException) => new MyCustomException(t.getMessage))
+            .mapError(classOf[RuntimeException], (t: RuntimeException) => new MyCustomException(t.getMessage))
           StepVerifier.create(mono)
             .expectErrorMatches((t: Throwable) => {
               t.getMessage shouldBe "runtimeException"
@@ -952,14 +951,14 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       }
       "with a predicate and mapper should" - {
         "map the error to another type if the predicate returns true" in {
-          val mono:Mono[Int] = Mono.error[Int](new RuntimeException("should map"))
+          val mono: Mono[Int] = Mono.error[Int](new RuntimeException("should map"))
             .mapError(t => t.getMessage == "should map", t => new MyCustomException(t.getMessage))
           StepVerifier.create(mono)
             .expectError(classOf[MyCustomException])
             .verify()
         }
         "not map the error to another type if the predicate returns false" in {
-          val mono:Mono[Int] = Mono.error[Int](new RuntimeException("should not map"))
+          val mono: Mono[Int] = Mono.error[Int](new RuntimeException("should not map"))
             .mapError(t => t.getMessage == "should map", t => new MyCustomException(t.getMessage))
           StepVerifier.create(mono)
             .expectError(classOf[RuntimeException])
@@ -1024,14 +1023,19 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
           .verifyComplete()
       }
     }
-    
-    ".otherwiseIfEmpty" - {
-      "with alternative will emit the value from alternative Mono when this mono is empty" in {
-        val mono = Mono.empty.otherwiseIfEmpty(Mono.just(-1))
-        StepVerifier.create(mono)
-          .expectNext(-1)
-          .verifyComplete()
-      }
+
+    ".otherwiseIfEmpty with alternative will emit the value from alternative Mono when this mono is empty" in {
+      val mono = Mono.empty.otherwiseIfEmpty(Mono.just(-1))
+      StepVerifier.create(mono)
+        .expectNext(-1)
+        .verifyComplete()
+    }
+
+    ".otherwiseReturn with fallback will emit to the fallback value when error occurs" in {
+      val mono = Mono.error(new RuntimeException).otherwiseReturn(-1)
+      StepVerifier.create(mono)
+        .expectNext(-1)
+        .verifyComplete()
     }
 
     ".timeout should raise TimeoutException after duration elapse" in {
