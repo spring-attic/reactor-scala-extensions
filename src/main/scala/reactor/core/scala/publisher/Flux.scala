@@ -17,6 +17,10 @@ class Flux[T](jFlux: JFlux[T]) extends Publisher[T] {
       override def apply(t: JLong): Long = Long2long(t)
     }))
   }
+
+  def take(n: Long): Flux[T] = {
+    new Flux[T](jFlux.take(n))
+  }
 }
 
 object Flux {

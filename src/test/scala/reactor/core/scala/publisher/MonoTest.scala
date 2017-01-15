@@ -1072,6 +1072,13 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       counter.get() shouldBe 1
     }
 
+    ".repeat should return flux that repeat the value from this mono" in {
+      val flux = Mono.just(randomValue).repeat().take(3)
+      StepVerifier.create(flux)
+        .expectNext(randomValue, randomValue, randomValue)
+        .verifyComplete()
+    }
+
     ".timeout should raise TimeoutException after duration elapse" in {
       StepVerifier.withVirtualTime(new Supplier[Publisher[Long]] {
         override def get(): Mono[Long] = Mono.delayMillis(10000).timeout(Duration(5, TimeUnit.SECONDS))

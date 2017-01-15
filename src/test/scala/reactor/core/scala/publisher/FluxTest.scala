@@ -23,5 +23,12 @@ class FluxTest extends FreeSpec {
         .expectNext(3)
         .verifyComplete()
     }
+
+    ".take should emit only n values" in {
+      val flux = Flux.just(1,2,3,4,5,6,7,8,9,10).take(3)
+      StepVerifier.create(flux)
+        .expectNext(1, 2, 3)
+        .verifyComplete()
+    }
   }
 }
