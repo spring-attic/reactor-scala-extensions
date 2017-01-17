@@ -8,6 +8,7 @@ import java.util.function.{Predicate, Supplier}
 import org.reactivestreams.{Publisher, Subscription}
 import org.scalatest.prop.TableDrivenPropertyChecks
 import org.scalatest.{FreeSpec, Matchers}
+import reactor.core.Disposable
 import reactor.core.publisher.{BaseSubscriber, MonoProcessor, Signal, SynchronousSink, Flux => JFlux}
 import reactor.core.scala.publisher.Mono.just
 import reactor.core.scheduler.Schedulers
@@ -1146,10 +1147,19 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         .verifyComplete()
     }
 
-    ".subscribe should return MonoProcessor" in {
-      val x = Mono.just(randomValue).subscribe()
-      x shouldBe a[MonoProcessor[_]]
-      x.block() shouldBe randomValue
+    ".subscribe" - {
+      "without parameter should return MonoProcessor" in {
+        val x = Mono.just(randomValue).subscribe()
+        x shouldBe a[MonoProcessor[_]]
+        x.block() shouldBe randomValue
+      }
+      "with consumer should invoke the consumer" in {
+        val counter = new CountDownLatch(1)
+        val disposable = Mono.just(randomValue).subscribe(t => counter.countDown())
+        disposable shouldBe a[Disposable]
+        counter.await(1, TimeUnit.SECONDS) shouldBe true
+
+      }
     }
 
     ".timeout should raise TimeoutException after duration elapse" in {

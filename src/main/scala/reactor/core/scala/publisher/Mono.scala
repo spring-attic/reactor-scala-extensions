@@ -25,6 +25,7 @@ import java.util.function.{BiConsumer, BiFunction, Consumer, Function, Predicate
 import java.util.logging.Level
 
 import org.reactivestreams.{Publisher, Subscriber, Subscription}
+import reactor.core.Disposable
 import reactor.core.publisher.{MonoProcessor, MonoSink, Signal, SignalType, SynchronousSink, Flux => JFlux, Mono => JMono}
 import reactor.core.scheduler.{Scheduler, TimedScheduler}
 import reactor.util.function._
@@ -495,6 +496,10 @@ class Mono[T](private val jMono: JMono[T]) extends Publisher[T] {
   }
 
   final def subscribe(): MonoProcessor[T] = jMono.subscribe()
+
+  final def subscribe(consumer: T => Unit): Disposable = {
+    jMono.subscribe(consumer)
+  }
 
   final def timeout(duration: Duration): Mono[T] = {
     Mono(jMono.timeout(duration))
