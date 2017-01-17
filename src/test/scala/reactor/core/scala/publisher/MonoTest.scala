@@ -8,7 +8,7 @@ import java.util.function.{Predicate, Supplier}
 import org.reactivestreams.{Publisher, Subscription}
 import org.scalatest.prop.TableDrivenPropertyChecks
 import org.scalatest.{FreeSpec, Matchers}
-import reactor.core.publisher.{BaseSubscriber, Signal, SynchronousSink, Flux => JFlux}
+import reactor.core.publisher.{BaseSubscriber, MonoProcessor, Signal, SynchronousSink, Flux => JFlux}
 import reactor.core.scala.publisher.Mono.just
 import reactor.core.scheduler.Schedulers
 import reactor.test.StepVerifier
@@ -1144,6 +1144,12 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       StepVerifier.create(mono)
         .expectNext(1)
         .verifyComplete()
+    }
+
+    ".subscribe should return MonoProcessor" in {
+      val x = Mono.just(randomValue).subscribe()
+      x shouldBe a[MonoProcessor[_]]
+      x.block() shouldBe randomValue
     }
 
     ".timeout should raise TimeoutException after duration elapse" in {

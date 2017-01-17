@@ -25,7 +25,7 @@ import java.util.function.{BiConsumer, BiFunction, Consumer, Function, Predicate
 import java.util.logging.Level
 
 import org.reactivestreams.{Publisher, Subscriber, Subscription}
-import reactor.core.publisher.{MonoSink, Signal, SignalType, SynchronousSink, Flux => JFlux, Mono => JMono}
+import reactor.core.publisher.{MonoProcessor, MonoSink, Signal, SignalType, SynchronousSink, Flux => JFlux, Mono => JMono}
 import reactor.core.scheduler.{Scheduler, TimedScheduler}
 import reactor.util.function._
 
@@ -295,7 +295,7 @@ class Mono[T](private val jMono: JMono[T]) extends Publisher[T] {
     )
   }
 
-  final def flatMapIterable[R](mapper : T => Iterable[R]): Flux[R] = {
+  final def flatMapIterable[R](mapper: T => Iterable[R]): Flux[R] = {
     val mapperFunction: Function[T, JIterable[R]] = mapper.andThen(it => it.asJava)
     new Flux[R](
       jMono.flatMapIterable(mapperFunction)
@@ -333,7 +333,7 @@ class Mono[T](private val jMono: JMono[T]) extends Publisher[T] {
     )
   }
 
-//  TODO: How to test all these .log(...) variants?
+  //  TODO: How to test all these .log(...) variants?
   final def log: Mono[T] = {
     new Mono[T](jMono.log())
   }
@@ -343,88 +343,88 @@ class Mono[T](private val jMono: JMono[T]) extends Publisher[T] {
   }
 
   final def log(category: String, level: Level, options: SignalType*): Mono[T] = {
-    new Mono[T](jMono.log(category, level, options:_*))
+    new Mono[T](jMono.log(category, level, options: _*))
   }
 
   final def log(category: String, level: Level, showOperatorLine: Boolean, options: SignalType*): Mono[T] = {
     new Mono[T](jMono.log(category, level, showOperatorLine, options: _*))
   }
 
-  def map[R](mapper: T => R): Mono[R] = {
+  final def map[R](mapper: T => R): Mono[R] = {
     Mono(jMono.map(mapper))
   }
 
-  def mapError(mapper: Throwable => Throwable): Mono[T] = {
+  final def mapError(mapper: Throwable => Throwable): Mono[T] = {
     new Mono[T](jMono.mapError(mapper))
   }
 
-  def mapError[E <: Throwable](`type`: Class[E], mapper: E => Throwable): Mono[T] = {
+  final def mapError[E <: Throwable](`type`: Class[E], mapper: E => Throwable): Mono[T] = {
     new Mono[T](jMono.mapError(`type`, mapper))
   }
 
-  def mapError(predicate: Throwable => Boolean, mapper: Throwable => Throwable): Mono[T] = {
+  final def mapError(predicate: Throwable => Boolean, mapper: Throwable => Throwable): Mono[T] = {
     new Mono[T](jMono.mapError(predicate, mapper))
   }
 
-  def materialize(): Mono[Signal[T]] = {
+  final def materialize(): Mono[Signal[T]] = {
     new Mono[Signal[T]](jMono.materialize())
   }
 
-  def mergeWith(other: Publisher[_ <: T]): Flux[T] = {
+  final def mergeWith(other: Publisher[_ <: T]): Flux[T] = {
     new Flux[T](jMono.mergeWith(other))
   }
 
-  def or(other: Mono[_ <: T]): Mono[T] = {
+  final def or(other: Mono[_ <: T]): Mono[T] = {
     new Mono[T](jMono.or(other.jMono))
   }
 
-  def ofType[U](clazz: Class[U]): Mono[U] = {
+  final def ofType[U](clazz: Class[U]): Mono[U] = {
     new Mono[U](jMono.ofType(clazz))
   }
 
-  def otherwise(fallback: Throwable => Mono[_ <: T]): Mono[T] = {
+  final def otherwise(fallback: Throwable => Mono[_ <: T]): Mono[T] = {
     val fallbackFunction: Function[Throwable, JMono[_ <: T]] = new Function[Throwable, JMono[_ <: T]] {
       override def apply(t: Throwable): JMono[_ <: T] = fallback(t).jMono
     }
     new Mono[T](jMono.otherwise(fallbackFunction))
   }
-  
-  def otherwise[E <: Throwable](`type`: Class[E], fallback: E => Mono[_ <: T]): Mono[T] = {
+
+  final def otherwise[E <: Throwable](`type`: Class[E], fallback: E => Mono[_ <: T]): Mono[T] = {
     val fallbackFunction: Function[E, JMono[_ <: T]] = new Function[E, JMono[_ <: T]] {
       override def apply(t: E): JMono[_ <: T] = fallback(t).jMono
     }
     new Mono[T](jMono.otherwise(`type`, fallbackFunction))
   }
 
-  def otherwise(predicate: Throwable => Boolean, fallback: Throwable => Mono[_ <: T]): Mono[T] = {
+  final def otherwise(predicate: Throwable => Boolean, fallback: Throwable => Mono[_ <: T]): Mono[T] = {
     val fallbackFunction: Function[Throwable, JMono[_ <: T]] = new Function[Throwable, JMono[_ <: T]] {
       override def apply(t: Throwable): JMono[_ <: T] = fallback(t).jMono
     }
     new Mono[T](jMono.otherwise(predicate, fallbackFunction))
   }
-  
-  def otherwiseIfEmpty(alternate: Mono[_ <: T]): Mono[T] = {
+
+  final def otherwiseIfEmpty(alternate: Mono[_ <: T]): Mono[T] = {
     new Mono[T](jMono.otherwiseIfEmpty(alternate.jMono))
   }
 
-  def otherwiseReturn(fallback: T): Mono[T] = {
+  final def otherwiseReturn(fallback: T): Mono[T] = {
     new Mono[T](jMono.otherwiseReturn(fallback))
   }
 
-  def otherwiseReturn[E <: Throwable](`type`: Class[E], fallback: T): Mono[T] = {
+  final def otherwiseReturn[E <: Throwable](`type`: Class[E], fallback: T): Mono[T] = {
     new Mono[T](jMono.otherwiseReturn(`type`, fallback))
   }
 
-  def otherwiseReturn(predicate: Throwable => Boolean, fallback: T): Mono[T] = {
+  final def otherwiseReturn(predicate: Throwable => Boolean, fallback: T): Mono[T] = {
     new Mono[T](jMono.otherwiseReturn(predicate, fallback))
   }
 
-//  TODO: How to test this?
-  def onTerminateDetach(): Mono[T] = {
+  //  TODO: How to test this?
+  final def onTerminateDetach(): Mono[T] = {
     new Mono[T](jMono.onTerminateDetach())
   }
 
-  def publish[R](transform: Mono[T] => Mono[R]): Mono[R] = {
+  final def publish[R](transform: Mono[T] => Mono[R]): Mono[R] = {
     val transformFunction: Function[JMono[T], JMono[R]] = new Function[JMono[T], JMono[R]] {
       override def apply(t: JMono[T]): JMono[R] = transform(Mono.this).jMono
     }
@@ -432,43 +432,71 @@ class Mono[T](private val jMono: JMono[T]) extends Publisher[T] {
   }
 
   //TODO: How to test this?
-  def publishOn(scheduler: Scheduler): Mono[T] = {
+  final def publishOn(scheduler: Scheduler): Mono[T] = {
     new Mono[T](jMono.publishOn(scheduler))
   }
 
-  def repeat(): Flux[T] = {
+  final def repeat(): Flux[T] = {
     new Flux[T](jMono.repeat())
   }
 
-  def repeat(predicate: () => Boolean): Flux[T] = {
+  final def repeat(predicate: () => Boolean): Flux[T] = {
     new Flux[T](jMono.repeat(predicate))
   }
 
-  def repeat(n: Long): Flux[T] = {
+  final def repeat(n: Long): Flux[T] = {
     new Flux[T](jMono.repeat(n))
   }
 
-  def repeat(n: Long, predicate: () => Boolean): Flux[T] = {
+  final def repeat(n: Long, predicate: () => Boolean): Flux[T] = {
     new Flux[T](jMono.repeat(n, predicate))
   }
 
-  implicit def fluxLong2PublisherAnyToJFluxJLong2PublisherAny(mapper: (Flux[Long] => Publisher[_])): Function[JFlux[JLong], Publisher[_]] = {
+  private implicit def fluxLong2PublisherAnyToJFluxJLong2PublisherAny(mapper: (Flux[Long] => Publisher[_])): Function[JFlux[JLong], Publisher[_]] = {
     new Function[JFlux[JLong], Publisher[_]] {
       override def apply(t: JFlux[JLong]): Publisher[_] = mapper(t)
     }
   }
 
-//  TODO: How to test this?
-  def repeatWhen(whenFactory: Flux[Long] => _ <: Publisher[_]): Flux[T] = {
+  //  TODO: How to test this?
+  final def repeatWhen(whenFactory: Flux[Long] => _ <: Publisher[_]): Flux[T] = {
     new Flux[T](jMono.repeatWhen(whenFactory))
   }
 
-//  TODO: How to test this?
-  def repeatWhenEmpty(repeatFactory: Flux[Long] => Publisher[_]): Mono[T] = {
+  //  TODO: How to test this?
+  final def repeatWhenEmpty(repeatFactory: Flux[Long] => Publisher[_]): Mono[T] = {
     new Mono[T](jMono.repeatWhenEmpty(repeatFactory))
   }
 
-  def timeout(duration: Duration): Mono[T] = {
+  //  TODO: How to test this?
+  final def repeatWhenEmpty(maxRepeat: Int, repeatFactory: Flux[Long] => Publisher[_]): Mono[T] = {
+    new Mono[T](jMono.repeatWhenEmpty(maxRepeat, repeatFactory))
+  }
+
+  //  TODO: How to test these retry(...)
+  final def retry(): Mono[T] = {
+    new Mono[T](jMono.retry())
+  }
+
+  final def retry(numRetries: Long): Mono[T] = {
+    new Mono[T](jMono.retry(numRetries))
+  }
+
+  final def retry(retryMatcher: Throwable => Boolean): Mono[T] = {
+    new Mono[T](jMono.retry(retryMatcher))
+  }
+
+  final def retry(numRetries: Long, retryMatcher: Throwable => Boolean): Mono[T] = {
+    new Mono[T](jMono.retry(numRetries, retryMatcher))
+  }
+
+  final def retryWhen(whenFactory: Flux[Throwable] => Publisher[_]): Mono[T] = {
+    new Mono[T](jMono.retryWhen(whenFactory))
+  }
+
+  final def subscribe(): MonoProcessor[T] = jMono.subscribe()
+
+  final def timeout(duration: Duration): Mono[T] = {
     Mono(jMono.timeout(duration))
   }
 }

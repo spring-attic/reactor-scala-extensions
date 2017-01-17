@@ -103,4 +103,10 @@ Uncomment this when used. It is not used for now and reduce the code coverage
 
   implicit def mappableJLong2MappableLong(mappableJLong: MapablePublisher[JLong]): MapablePublisher[Long] = mappableJLong.map(Long2long(_: JLong))
 
+  implicit def fluxTToU2JFluxTToU[T, U](fluxTToU: Flux[T] => U): Function[JFlux[T], U] = {
+    new Function[JFlux[T], U] {
+      override def apply(t: JFlux[T]): U = fluxTToU(Flux.from(t))
+    }
+  }
+
 }
