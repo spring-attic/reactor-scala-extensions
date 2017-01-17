@@ -1,10 +1,11 @@
 package reactor.core.scala
 
-import java.lang.{Boolean => JBoolean}
+import java.lang.{Boolean => JBoolean, Long => JLong}
 import java.time.{Duration => JDuration}
 import java.util.Optional
 import java.util.function.{BiConsumer, BooleanSupplier, Consumer, Function, LongConsumer, Predicate, Supplier}
 
+import reactor.core.publisher.{Flux => JFlux}
 import reactor.util.function.{Tuple2, Tuple3, Tuple4, Tuple5, Tuple6}
 
 import scala.concurrent.duration.Duration
@@ -97,4 +98,9 @@ Uncomment this when used. It is not used for now and reduce the code coverage
       override def getAsBoolean: Boolean = supplier()
     }
   }
+
+  implicit def jFluxJLong2FluxLong(jFluxLong: JFlux[JLong]): Flux[Long] = Flux.from(jFluxLong.map(Long2long(_: JLong)))
+
+  implicit def mappableJLong2MappableLong(mappableJLong: MapablePublisher[JLong]): MapablePublisher[Long] = mappableJLong.map(Long2long(_: JLong))
+
 }

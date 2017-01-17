@@ -11,7 +11,7 @@ import scala.concurrent.duration.Duration
 /**
   * Created by winarto on 1/4/17.
   */
-class Flux[T](jFlux: JFlux[T]) extends Publisher[T] {
+class Flux[T](jFlux: JFlux[T]) extends Publisher[T] with MapablePublisher[T] {
   override def subscribe(s: Subscriber[_ >: T]): Unit = jFlux.subscribe(s)
 
   def count(): Mono[Long] = {
@@ -27,6 +27,8 @@ class Flux[T](jFlux: JFlux[T]) extends Publisher[T] {
   def sample(duration: Duration): Flux[T] = {
     new Flux[T](jFlux.sample(duration))
   }
+
+  override def map[U](mapper: (T) => U): Flux[U] = new Flux[U](jFlux.map(mapper))
 }
 
 object Flux {

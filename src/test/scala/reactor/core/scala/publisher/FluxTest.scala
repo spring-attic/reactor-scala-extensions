@@ -32,6 +32,15 @@ class FluxTest extends FreeSpec {
         .verifyComplete()
     }
 
+    ".map should map the type of Flux from T to R" in {
+      val flux = Flux.just(1, 2, 3).map(_.toString)
+
+      StepVerifier.create(flux)
+        .expectNext("1", "2", "3")
+        .expectComplete()
+        .verify()
+    }
+
     ".take should emit only n values" in {
       val flux = Flux.just(1, 2, 3, 4, 5, 6, 7, 8, 9, 10).take(3)
       StepVerifier.create(flux)

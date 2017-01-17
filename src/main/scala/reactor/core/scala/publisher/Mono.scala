@@ -25,13 +25,14 @@ import java.util.function.{BiConsumer, BiFunction, Consumer, Function, Predicate
 import java.util.logging.Level
 
 import org.reactivestreams.{Publisher, Subscriber, Subscription}
-import reactor.core.publisher.{MonoSink, Signal, SignalType, SynchronousSink, Mono => JMono, Flux => JFlux}
+import reactor.core.publisher.{MonoSink, Signal, SignalType, SynchronousSink, Flux => JFlux, Mono => JMono}
 import reactor.core.scheduler.{Scheduler, TimedScheduler}
 import reactor.util.function._
 
 import scala.collection.JavaConverters._
 import scala.concurrent.duration.Duration
 import scala.concurrent.{ExecutionContext, Future}
+import scala.language.implicitConversions
 import scala.util.{Failure, Success}
 
 /**
@@ -451,12 +452,20 @@ class Mono[T](private val jMono: JMono[T]) extends Publisher[T] {
     new Flux[T](jMono.repeat(n, predicate))
   }
 
-  def repeatWhen(whenFactory: Flux[Long] => _ <: Publisher[_]): Flux[T] = {
-    val whenFactoryFunction: Function[JFlux[JLong], Publisher[_]] = new Function[JFlux[JLong], Publisher[_]] {
-      override def apply(t: JFlux[JLong]): Publisher[_] = whenFactory(new Flux[Long](t.map[Long]((jl:JLong) => Long2long(jl))))
+  implicit def fluxLong2PublisherAnyToJFluxJLong2PublisherAny(mapper: (Flux[Long] => Publisher[_])): Function[JFlux[JLong], Publisher[_]] = {
+    new Function[JFlux[JLong], Publisher[_]] {
+      override def apply(t: JFlux[JLong]): Publisher[_] = mapper(t)
     }
+  }
 
-    new Flux[T](jMono.repeatWhen(whenFactoryFunction))
+//  TODO: How to test this?
+  def repeatWhen(whenFactory: Flux[Long] => _ <: Publisher[_]): Flux[T] = {
+    new Flux[T](jMono.repeatWhen(whenFactory))
+  }
+
+//  TODO: How to test this?
+  def repeatWhenEmpty(repeatFactory: Flux[Long] => _ <: Publisher[_]): Mono[T] = {
+    new Mono[T](jMono.repeatWhenEmpty(repeatFactory))
   }
 
   def timeout(duration: Duration): Mono[T] = {
