@@ -1138,6 +1138,14 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         .verifyComplete()
     }
 
+//    Is this the right way to test?
+    ".repeatWhenEmpty should emit resubscribe to this mono when the companion is empty" in {
+      val mono = Mono.just(1).repeatWhenEmpty((fluxLong: Flux[Long]) => Flux.just(-1, -2, -3))
+      StepVerifier.create(mono)
+        .expectNext(1)
+        .verifyComplete()
+    }
+
     ".timeout should raise TimeoutException after duration elapse" in {
       StepVerifier.withVirtualTime(new Supplier[Publisher[Long]] {
         override def get(): Mono[Long] = Mono.delayMillis(10000).timeout(Duration(5, TimeUnit.SECONDS))

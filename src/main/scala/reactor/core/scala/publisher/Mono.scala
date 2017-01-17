@@ -464,7 +464,7 @@ class Mono[T](private val jMono: JMono[T]) extends Publisher[T] {
   }
 
 //  TODO: How to test this?
-  def repeatWhenEmpty(repeatFactory: Flux[Long] => _ <: Publisher[_]): Mono[T] = {
+  def repeatWhenEmpty(repeatFactory: Flux[Long] => Publisher[_]): Mono[T] = {
     new Mono[T](jMono.repeatWhenEmpty(repeatFactory))
   }
 
