@@ -1158,7 +1158,12 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         val disposable = Mono.just(randomValue).subscribe(t => counter.countDown())
         disposable shouldBe a[Disposable]
         counter.await(1, TimeUnit.SECONDS) shouldBe true
-
+      }
+      "with consumer and error consumer should invoke the error consumer when error happen" in {
+        val counter = new CountDownLatch(1)
+        val disposable = Mono.error[Any](new RuntimeException()).subscribe(t => (), t => counter.countDown())
+        disposable shouldBe a[Disposable]
+        counter.await(1, TimeUnit.SECONDS) shouldBe true
       }
     }
 
