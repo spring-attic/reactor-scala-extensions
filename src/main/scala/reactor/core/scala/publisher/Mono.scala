@@ -509,9 +509,33 @@ class Mono[T](private val jMono: JMono[T]) extends Publisher[T] {
     jMono.subscribe(consumer, errorConsumer, completeConsumer)
   }
 
+  final def subscribe(consumer: T => Unit, errorConsumer: Throwable => Unit, completeConsumer: => Unit, subscriptionConsumer: Subscription => Unit): Disposable = {
+    jMono.subscribe(consumer, errorConsumer, completeConsumer, subscriptionConsumer)
+  }
+
+  //  TODO: How to test this?
+  final def subscribeOn(scheduler: Scheduler): Mono[T] = {
+    new Mono[T](jMono.subscribeOn(scheduler))
+  }
+
+  //  TODO: How to test this?
+  final def subscribeWith[E <: Subscriber[_ >: T]](subscriber: E): E = {
+    jMono.subscribeWith(subscriber)
+  }
+
+  implicit def jMonoVoid2jMonoUnit(jMonoVoid: JMono[Void]): JMono[Unit] = {
+    jMonoVoid.map((v: Void) => ())
+  }
+
+  final def `then`(): Mono[Unit] = {
+    new Mono[Unit](jMono.`then`())
+  }
+
   final def timeout(duration: Duration): Mono[T] = {
     Mono(jMono.timeout(duration))
   }
+
+  final def asJava(): JMono[T] = jMono
 }
 
 object Mono {
