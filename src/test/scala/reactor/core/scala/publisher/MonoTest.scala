@@ -1165,6 +1165,12 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         disposable shouldBe a[Disposable]
         counter.await(1, TimeUnit.SECONDS) shouldBe true
       }
+      "with consumer, error consumer and completeConsumer should invoke the completeConsumer when it's complete" in {
+        val counter = new CountDownLatch(2)
+        val disposable = Mono.just(randomValue).subscribe(t => counter.countDown(), t => (), counter.countDown())
+        disposable shouldBe a[Disposable]
+        counter.await(1, TimeUnit.SECONDS) shouldBe true
+      }
     }
 
     ".timeout should raise TimeoutException after duration elapse" in {

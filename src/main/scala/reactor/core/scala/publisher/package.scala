@@ -109,4 +109,9 @@ Uncomment this when used. It is not used for now and reduce the code coverage
     }
   }
 
+  implicit def runnableMapper(runnable: => Unit): Runnable = {
+    new Runnable {
+      override def run(): Unit = runnable
+    }
+  }
 }

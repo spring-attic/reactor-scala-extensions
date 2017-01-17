@@ -505,6 +505,10 @@ class Mono[T](private val jMono: JMono[T]) extends Publisher[T] {
     jMono.subscribe(consumer, errorConsumer)
   }
 
+  final def subscribe(consumer: T => Unit, errorConsumer: Throwable => Unit, completeConsumer: => Unit): Disposable = {
+    jMono.subscribe(consumer, errorConsumer, completeConsumer)
+  }
+
   final def timeout(duration: Duration): Mono[T] = {
     Mono(jMono.timeout(duration))
   }
