@@ -1279,6 +1279,12 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
           .expectError(classOf[TimeoutException])
           .verify()
       }
+      "with timeout and fallback should fallback to the given mono if the item does not arrive before a given period" in {
+        StepVerifier.withVirtualTime(() => Mono.delayMillis(10000).timeoutMillisWithFallback(5000, Mono.just(-1)))
+          .thenAwait(Duration(5, "seconds"))
+          .expectNext(-1)
+          .verifyComplete()
+      }
     }
   }
 
