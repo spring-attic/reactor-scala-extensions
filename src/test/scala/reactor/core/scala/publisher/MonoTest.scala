@@ -1096,7 +1096,7 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
 
           override def hookOnComplete(): Unit = latch.countDown()
         })
-        if(latch.await(1, TimeUnit.SECONDS))
+        if (latch.await(1, TimeUnit.SECONDS))
           buffer should have size 3
         else
           fail("no completion signal is detected")
@@ -1105,7 +1105,7 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       "with number of repeat should repeat value from this value as many as the provided parameter" in {
         val flux = Mono.just(randomValue).repeat(5)
         StepVerifier.create(flux)
-          .expectNext(randomValue,randomValue,randomValue,randomValue,randomValue)
+          .expectNext(randomValue, randomValue, randomValue, randomValue, randomValue)
           .verifyComplete()
       }
       "with number of repeat and predicate should repeat value from this value as many as provided parameter and as" +
@@ -1124,7 +1124,7 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
 
           override def hookOnComplete(): Unit = latch.countDown()
         })
-        if(latch.await(1, TimeUnit.SECONDS))
+        if (latch.await(1, TimeUnit.SECONDS))
           buffer should have size 3
         else
           fail("no completion signal is detected")
@@ -1135,11 +1135,11 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       val counter = new AtomicLong()
       val flux = Mono.just(randomValue).repeatWhen((fl: Flux[Long]) => Flux.just(counter.incrementAndGet())).take(3)
       StepVerifier.create(flux)
-        .expectNext(randomValue, randomValue ,randomValue)
+        .expectNext(randomValue, randomValue, randomValue)
         .verifyComplete()
     }
 
-//    Is this the right way to test?
+    //    Is this the right way to test?
     ".repeatWhenEmpty should emit resubscribe to this mono when the companion is empty" in {
       val mono = Mono.just(1).repeatWhenEmpty((fluxLong: Flux[Long]) => Flux.just(-1, -2, -3))
       StepVerifier.create(mono)
@@ -1171,10 +1171,12 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         disposable shouldBe a[Disposable]
         counter.await(1, TimeUnit.SECONDS) shouldBe true
       }
-//      See http://stackoverflow.com/questions/41703621/mono-subscribeconsumer-errorconsumer-completeconsumer-subscriptionconsumer
       "with consumer, error consumer, completeConsumer and subscriptionConsumer should invoke the subscriptionConsumer when there is subscription" ignore {
         val counter = new CountDownLatch(3)
-        val disposable = Mono.just(randomValue).subscribe(t => counter.countDown(), t => (), counter.countDown(), s => counter.countDown())
+        val disposable = Mono.just(randomValue).subscribe(t => counter.countDown(), t => (), counter.countDown(), s => {
+          s.request(1)
+          counter.countDown()
+        })
         disposable shouldBe a[Disposable]
         counter.await(1, TimeUnit.SECONDS) shouldBe true
       }
