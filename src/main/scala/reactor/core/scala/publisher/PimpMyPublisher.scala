@@ -9,11 +9,11 @@ import scala.language.implicitConversions
   */
 object PimpMyPublisher {
 
-  implicit def jfluxToFlux(jflux: JFlux[_]): Flux[_] = Flux.from(jflux)
+  implicit def jfluxToFlux[T](jflux: JFlux[T]): Flux[T] = Flux.from(jflux)
 
-  implicit def fluxToJFlux(flux: Flux[_]): JFlux[_] = flux.asJava()
+  implicit def fluxToJFlux[T](flux: Flux[T]): JFlux[T] = flux.asJava()
 
-  implicit def jMonoToMono(jMono: JMono[_]): Mono[_] = Mono(jMono)
+  implicit def jMonoToMono[T](jMono: JMono[T]): Mono[T] = Mono(jMono)
 
-  implicit def monoToJMono(mono: Mono[_]): JMono[_] = mono.asJava()
+  implicit def monoToJMono[T](mono: Mono[T]): JMono[T] = mono.asJava()
 }

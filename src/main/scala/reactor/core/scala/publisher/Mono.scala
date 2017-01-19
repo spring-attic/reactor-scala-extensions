@@ -27,6 +27,7 @@ import java.util.logging.Level
 import org.reactivestreams.{Publisher, Subscriber, Subscription}
 import reactor.core.Disposable
 import reactor.core.publisher.{MonoProcessor, MonoSink, Signal, SignalType, SynchronousSink, Flux => JFlux, Mono => JMono}
+import reactor.core.scala.publisher.PimpMyPublisher._
 import reactor.core.scheduler.{Scheduler, TimedScheduler}
 import reactor.util.function._
 
@@ -529,6 +530,10 @@ class Mono[T](private val jMono: JMono[T]) extends Publisher[T] {
 
   final def `then`(): Mono[Unit] = {
     new Mono[Unit](jMono.`then`())
+  }
+
+  final def `then`[R](transformer: T => Mono[R]): Mono[R] = {
+    new Mono[R](jMono.`then`[R](transformer: Function[T, JMono[_ <: R]]))
   }
 
   final def timeout(duration: Duration): Mono[T] = {

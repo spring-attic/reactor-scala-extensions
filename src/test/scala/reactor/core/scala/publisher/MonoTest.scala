@@ -1182,10 +1182,18 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       }
     }
 
-    ".then should only replays complete and error signals from this mono" in {
-      val mono = Mono.just(randomValue).`then`()
-      StepVerifier.create(mono)
-        .verifyComplete()
+    ".then" - {
+      "without parameter should only replays complete and error signals from this mono" in {
+        val mono = Mono.just(randomValue).`then`()
+        StepVerifier.create(mono)
+          .verifyComplete()
+      }
+      "with transformer function should transform the value to another Mono possibly with different type" in {
+        val mono = Mono.just(randomValue).`then`(l => Mono.just(l.toString))
+        StepVerifier.create(mono)
+          .expectNext(randomValue.toString)
+          .verifyComplete()
+      }
     }
 
     ".timeout should raise TimeoutException after duration elapse" in {

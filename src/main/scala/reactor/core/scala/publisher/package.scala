@@ -5,12 +5,11 @@ import java.time.{Duration => JDuration}
 import java.util.Optional
 import java.util.function.{BiConsumer, BooleanSupplier, Consumer, Function, LongConsumer, Predicate, Supplier}
 
-import reactor.core.publisher.{Flux => JFlux}
+import reactor.core.publisher.{Flux => JFlux, Mono => JMono}
 import reactor.util.function.{Tuple2, Tuple3, Tuple4, Tuple5, Tuple6}
 
 import scala.concurrent.duration.Duration
 import scala.language.implicitConversions
-import scala.util.{Failure, Success, Try}
 
 /**
   * Created by winarto on 12/31/16.
@@ -112,6 +111,12 @@ Uncomment this when used. It is not used for now and reduce the code coverage
   implicit def runnableMapper(runnable: => Unit): Runnable = {
     new Runnable {
       override def run(): Unit = runnable
+    }
+  }
+
+  implicit def scalaFunctionTToMonoR2JavaFunctionTToJMonoR[T, R](function: T => Mono[R]): Function[T, JMono[_ <: R]] = {
+    new Function[T, JMono[_ <: R]] {
+      override def apply(t: T): JMono[R] = function(t).asJava()
     }
   }
 }
