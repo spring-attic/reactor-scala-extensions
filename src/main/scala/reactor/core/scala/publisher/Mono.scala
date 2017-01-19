@@ -548,6 +548,10 @@ class Mono[T](private val jMono: JMono[T]) extends Publisher[T] {
     new Mono[Unit]((jMono:JMono[T]).thenEmpty(other))
   }
 
+  final def thenMany[V](other: Publisher[V]): Flux[V] = {
+    new Flux[V](jMono.thenMany(other))
+  }
+
   final def timeout(duration: Duration): Mono[T] = {
     Mono(jMono.timeout(duration))
   }

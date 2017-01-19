@@ -1220,6 +1220,14 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       latch.await(1, TimeUnit.SECONDS) shouldBe true
     }
 
+    ".thenMany should ignore the element from this mono and transform the completion signal into a Flux that will " +
+      "emit from the provided publisher" in {
+      val flux = Mono.just(randomValue).thenMany(Flux.just(1, 2, 3))
+      StepVerifier.create(flux)
+        .expectNext(1, 2, 3)
+        .verifyComplete()
+    }
+
     ".timeout should raise TimeoutException after duration elapse" in {
       StepVerifier.withVirtualTime(new Supplier[Publisher[Long]] {
         override def get(): Mono[Long] = Mono.delayMillis(10000).timeout(Duration(5, TimeUnit.SECONDS))
