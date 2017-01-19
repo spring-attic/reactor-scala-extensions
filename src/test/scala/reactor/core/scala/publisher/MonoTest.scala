@@ -1171,7 +1171,7 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         disposable shouldBe a[Disposable]
         counter.await(1, TimeUnit.SECONDS) shouldBe true
       }
-      "with consumer, error consumer, completeConsumer and subscriptionConsumer should invoke the subscriptionConsumer when there is subscription" ignore {
+      "with consumer, error consumer, completeConsumer and subscriptionConsumer should invoke the subscriptionConsumer when there is subscription" in {
         val counter = new CountDownLatch(3)
         val disposable = Mono.just(randomValue).subscribe(t => counter.countDown(), t => (), counter.countDown(), s => {
           s.request(1)
