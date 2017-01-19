@@ -1236,13 +1236,21 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       }
     }
 
-    ".timeout should raise TimeoutException after duration elapse" in {
-      StepVerifier.withVirtualTime(new Supplier[Publisher[Long]] {
-        override def get(): Mono[Long] = Mono.delayMillis(10000).timeout(Duration(5, TimeUnit.SECONDS))
-      })
-        .thenAwait(JDuration.ofSeconds(5))
-        .expectError(classOf[TimeoutException])
-        .verify()
+    ".timeout" - {
+      "should raise TimeoutException after duration elapse" in {
+        StepVerifier.withVirtualTime(new Supplier[Publisher[Long]] {
+          override def get(): Mono[Long] = Mono.delayMillis(10000).timeout(Duration(5, TimeUnit.SECONDS))
+        })
+          .thenAwait(JDuration.ofSeconds(5))
+          .expectError(classOf[TimeoutException])
+          .verify()
+      }
+      "should fallback to the provided mono if the value doesn't arrive in given duration" in {
+        StepVerifier.withVirtualTime(() => Mono.delayMillis(10000).timeout(Duration(5, "seconds"), Mono.just(1)))
+          .thenAwait(Duration(5, "seconds"))
+          .expectNext(1)
+          .verifyComplete()
+      }
     }
   }
 
