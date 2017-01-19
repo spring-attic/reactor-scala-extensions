@@ -5,6 +5,7 @@ import java.time.{Duration => JDuration}
 import java.util.Optional
 import java.util.function.{BiConsumer, BooleanSupplier, Consumer, Function, LongConsumer, Predicate, Supplier}
 
+import org.reactivestreams.Publisher
 import reactor.core.publisher.{Flux => JFlux, Mono => JMono}
 import reactor.util.function.{Tuple2, Tuple3, Tuple4, Tuple5, Tuple6}
 
@@ -117,6 +118,18 @@ Uncomment this when used. It is not used for now and reduce the code coverage
   implicit def scalaFunctionTToMonoR2JavaFunctionTToJMonoR[T, R](function: T => Mono[R]): Function[T, JMono[_ <: R]] = {
     new Function[T, JMono[_ <: R]] {
       override def apply(t: T): JMono[R] = function(t).asJava()
+    }
+  }
+
+  implicit def scalaSupplierMonoR2JavaSupplierJMonoR[R](supplier: () => Mono[R]): Supplier[JMono[R]] = {
+    new Supplier[JMono[R]] {
+      override def get(): JMono[R] = supplier().asJava()
+    }
+  }
+
+  implicit def publisherUnit2PublisherVoid(publisher: Publisher[Unit]): Publisher[Void] = {
+    publisher match {
+      case m: Mono[Unit] => m.map[Void](_ => null: Void)
     }
   }
 }

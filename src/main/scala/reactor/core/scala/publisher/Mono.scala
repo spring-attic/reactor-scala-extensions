@@ -544,6 +544,10 @@ class Mono[T](private val jMono: JMono[T]) extends Publisher[T] {
     new Mono[R](jMono.`then`[R](sourceSupplier))
   }
 
+  final def thenEmpty(other: Publisher[Unit]): Mono[Unit] = {
+    new Mono[Unit]((jMono:JMono[T]).thenEmpty(other))
+  }
+
   final def timeout(duration: Duration): Mono[T] = {
     Mono(jMono.timeout(duration))
   }
