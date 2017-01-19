@@ -1252,10 +1252,16 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
           .verifyComplete()
       }
       "should raise TimeoutException if this mono has not emit value when the provided publisher has emit value" in {
-        val mono = Mono.delayMillis(10000).timeout(Mono.just("whatever"))
+        val mono = Mono.delayMillis(10000).timeoutFirst(Mono.just("whatever"))
         StepVerifier.create(mono)
           .expectError(classOf[TimeoutException])
           .verify()
+      }
+      "shoudl fallback to the provided fallback mono if this mono does not emit value when the provided publisher emits value" in {
+        val mono = Mono.delayMillis(10000).timeoutFirst(Mono.just("whatever"), Mono.just(-1))
+        StepVerifier.create(mono)
+          .expectNext(-1)
+          .verifyComplete()
       }
     }
   }
