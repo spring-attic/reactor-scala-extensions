@@ -564,6 +564,10 @@ class Mono[T](private val jMono: JMono[T]) extends Publisher[T] {
     new Mono[T](jMono.timeout(duration, fallback))
   }
 
+  final def timeout[U](firstTimeout: Publisher[U]): Mono[T] = {
+    new Mono[T](jMono.timeout(firstTimeout))
+  }
+
   final def asJava(): JMono[T] = jMono
 }
 
