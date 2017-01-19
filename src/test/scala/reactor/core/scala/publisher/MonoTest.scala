@@ -1266,8 +1266,15 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
     }
 
     ".timeoutMillis" - {
-      "should raise TimeoutException if the item does arrive before a given period" in {
+      "should raise TimeoutException if the item does not arrive before a given period" in {
         StepVerifier.withVirtualTime(() => Mono.delayMillis(10000).timeoutMillis(5000))
+          .thenAwait(Duration(5, "seconds"))
+          .expectError(classOf[TimeoutException])
+          .verify()
+      }
+      "with timeout and timer should signal TiemoutException if the item does not arrive before a given period" in {
+        val timer = VirtualTimeScheduler.create()
+        StepVerifier.withVirtualTime(() => Mono.delayMillis(10000).timeoutMillis(5000, timer), () => timer, 1)
           .thenAwait(Duration(5, "seconds"))
           .expectError(classOf[TimeoutException])
           .verify()
