@@ -536,6 +536,14 @@ class Mono[T](private val jMono: JMono[T]) extends Publisher[T] {
     new Mono[R](jMono.`then`[R](transformer: Function[T, JMono[_ <: R]]))
   }
 
+  final def `then`[R](other: Mono[R]): Mono[R] = {
+    new Mono[R](jMono.`then`(other))
+  }
+
+  final def `then`[R](sourceSupplier: () => _ <: Mono[R]): Mono[R] = {
+    new Mono[R](jMono.`then`[R](sourceSupplier))
+  }
+
   final def timeout(duration: Duration): Mono[T] = {
     Mono(jMono.timeout(duration))
   }
