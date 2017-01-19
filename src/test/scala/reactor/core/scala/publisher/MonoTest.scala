@@ -1213,19 +1213,27 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
     ".thenEmpty should complete this mono then for a supplied publisher to also complete" in {
       val latch = new CountDownLatch(1)
       val mono = Mono.just(randomValue)
-          .doOnSuccess(_ => latch.countDown())
+        .doOnSuccess(_ => latch.countDown())
         .thenEmpty(Mono.empty)
       StepVerifier.create(mono)
         .verifyComplete()
       latch.await(1, TimeUnit.SECONDS) shouldBe true
     }
 
-    ".thenMany should ignore the element from this mono and transform the completion signal into a Flux that will " +
-      "emit from the provided publisher" in {
-      val flux = Mono.just(randomValue).thenMany(Flux.just(1, 2, 3))
-      StepVerifier.create(flux)
-        .expectNext(1, 2, 3)
-        .verifyComplete()
+    ".thenMany should ignore the element from this mono and transform the completion signal into a Flux that will emit " +
+      "from the provided publisher when the publisher is provided " - {
+      "directly" in {
+        val flux = Mono.just(randomValue).thenMany(Flux.just(1, 2, 3))
+        StepVerifier.create(flux)
+          .expectNext(1, 2, 3)
+          .verifyComplete()
+      }
+      "by supplier" in {
+        val flux = Mono.just(randomValue).thenMany(() => Flux.just(1, 2, 3))
+        StepVerifier.create(flux)
+          .expectNext(1, 2, 3)
+          .verifyComplete()
+      }
     }
 
     ".timeout should raise TimeoutException after duration elapse" in {
