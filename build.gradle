@@ -86,6 +86,35 @@ uploadArchives {
             snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots") {
                 authentication(userName: sonatypeUsername, password: sonatypePassword)
             }
+            
+            pom.project {
+                name 'ScalaScala wrapper for reactor-core'
+                packaging 'jar'
+        // optionally artifactId can be defined here 
+                description 'A Scala wrapper for reactor-core so that the code can be fluently used in Scala'
+                url 'https://sinwe.github.io/reactor-core-scala/'
+
+                scm {
+                    connection 'scm:git:git@github.com:sinwe/reactor-core-scala.git'
+                    developerConnection 'scm:git:git@github.com:sinwe/reactor-core-scala.git'
+                    url 'https://github.com/sinwe/reactor-core-scala'
+                }
+
+                licenses {
+                    license {
+                        name 'GNU LESSER GENERAL PUBLIC LICENSE'
+                        url 'https://www.gnu.org/licenses/lgpl-3.0.en.html'
+                    }
+                }
+
+                developers {
+                    developer {
+                        id 'sinwe'
+                        name 'Winarto'
+                        email 'winarto@gmail.com'
+                    }
+                }
+            }
         }
     }
 }
