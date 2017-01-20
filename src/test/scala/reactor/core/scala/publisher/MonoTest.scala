@@ -3,7 +3,7 @@ package reactor.core.scala.publisher
 import java.time.{Duration => JDuration}
 import java.util.concurrent._
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicLong, AtomicReference}
-import java.util.function.{BiFunction, Predicate, Supplier}
+import java.util.function.{Predicate, Supplier}
 
 import org.reactivestreams.{Publisher, Subscription}
 import org.scalatest.prop.TableDrivenPropertyChecks
@@ -1249,19 +1249,19 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
           .verify()
       }
       "should fallback to the provided mono if the value doesn't arrive in given duration" in {
-        StepVerifier.withVirtualTime(() => Mono.delayMillis(10000).timeout(Duration(5, "seconds"), Mono.just(1)))
+        StepVerifier.withVirtualTime(() => Mono.delayMillis(10000).timeout(Duration(5, "seconds"), Mono.just(1L)))
           .thenAwait(Duration(5, "seconds"))
           .expectNext(1)
           .verifyComplete()
       }
       "should raise TimeoutException if this mono has not emit value when the provided publisher has emit value" in {
-        val mono = Mono.delayMillis(10000).timeoutFirst(Mono.just("whatever"))
+        val mono = Mono.delayMillis(10000).timeout(Mono.just("whatever"))
         StepVerifier.create(mono)
           .expectError(classOf[TimeoutException])
           .verify()
       }
       "should fallback to the provided fallback mono if this mono does not emit value when the provided publisher emits value" in {
-        val mono = Mono.delayMillis(10000).timeoutFirst(Mono.just("whatever"), Mono.just(-1))
+        val mono = Mono.delayMillis(10000).timeout(Mono.just("whatever"), Mono.just(-1L))
         StepVerifier.create(mono)
           .expectNext(-1)
           .verifyComplete()
@@ -1283,7 +1283,7 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
           .verify()
       }
       "with timeout and fallback should fallback to the given mono if the item does not arrive before a given period" in {
-        StepVerifier.withVirtualTime(() => Mono.delayMillis(10000).timeoutMillis(5000, Mono.just(-1): Mono[Long]))
+        StepVerifier.withVirtualTime(() => Mono.delayMillis(10000).timeoutMillis(5000, Mono.just(-1L)))
           .thenAwait(Duration(5, "seconds"))
           .expectNext(-1)
           .verifyComplete()
