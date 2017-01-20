@@ -580,11 +580,11 @@ class Mono[T](private val jMono: JMono[T]) extends Publisher[T] {
     new Mono[T](jMono.timeoutMillis(timeout, timer))
   }
 
-  final def timeoutMillisWithFallback(timeout: Long, fallback: Mono[_ <: T]): Mono[T] = {
+  final def timeoutMillis(timeout: Long, fallback: Mono[T]): Mono[T] = {
     new Mono[T](jMono.timeoutMillis(timeout, fallback))
   }
 
-  final def timeoutMillisWithFallback(timeout: Long, fallback: Mono[_ <: T], timer: TimedScheduler): Mono[T] = {
+  final def timeoutMillis(timeout: Long, fallback: Mono[T], timer: TimedScheduler): Mono[T] = {
     new Mono[T](jMono.timeoutMillis(timeout, fallback, timer))
   }
 

@@ -1283,14 +1283,14 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
           .verify()
       }
       "with timeout and fallback should fallback to the given mono if the item does not arrive before a given period" in {
-        StepVerifier.withVirtualTime(() => Mono.delayMillis(10000).timeoutMillisWithFallback(5000, Mono.just(-1)))
+        StepVerifier.withVirtualTime(() => Mono.delayMillis(10000).timeoutMillis(5000, Mono.just(-1): Mono[Long]))
           .thenAwait(Duration(5, "seconds"))
           .expectNext(-1)
           .verifyComplete()
       }
       "with timeout, fallback and timer should fallback to the given mono if the item does not arrive before a given period" in {
         val timer = VirtualTimeScheduler.create()
-        StepVerifier.withVirtualTime(() => Mono.delayMillis(10000).timeoutMillisWithFallback(5000, Mono.just(-1), timer), () => timer, 1)
+        StepVerifier.withVirtualTime(() => Mono.delayMillis(10000).timeoutMillis(5000, Mono.just(-1), timer), () => timer, 1)
           .thenAwait(Duration(5, "seconds"))
           .expectNext(-1)
           .verifyComplete()
