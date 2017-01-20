@@ -3,11 +3,11 @@ package reactor.core.scala.publisher
 import java.time.{Duration => JDuration}
 import java.util.concurrent._
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicLong, AtomicReference}
-import java.util.function.{Predicate, Supplier}
+import java.util.function.{BiFunction, Predicate, Supplier}
 
 import org.reactivestreams.{Publisher, Subscription}
 import org.scalatest.prop.TableDrivenPropertyChecks
-import org.scalatest.{FreeSpec, Matchers}
+import org.scalatest.{AsyncFreeSpec, FreeSpec, Matchers}
 import reactor.core.Disposable
 import reactor.core.publisher.{BaseSubscriber, MonoProcessor, Signal, SynchronousSink, Flux => JFlux}
 import reactor.core.scala.publisher.Mono.just
@@ -553,6 +553,9 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         "the bi-function" in {
         val mono = Mono.just(1)
           .and[Int, String]((i: Int) => Mono.just(i * 2), (x: Int, y: Int) => s"${x.toString}-${y.toString}")
+        StepVerifier.create(mono)
+          .expectNext("1-2")
+          .verifyComplete()
       }
     }
 
@@ -1295,7 +1298,20 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
     }
   }
 
+
   private def createMono = {
     Mono.create[Long](monoSink => monoSink.success(randomValue))
   }
+}
+
+class MonoAsyncTest extends AsyncFreeSpec {
+  "Mono" - {
+    ".toFuture should convert this mono to future" in {
+      val future: Future[Int] = Mono.just(1).toFuture
+      future map {v => {
+        assert(v == 1)
+      }}
+    }
+  }
+
 }

@@ -3,7 +3,7 @@ package reactor.core.scala
 import java.lang.{Boolean => JBoolean, Long => JLong}
 import java.time.{Duration => JDuration}
 import java.util.Optional
-import java.util.function.{BiConsumer, BooleanSupplier, Consumer, Function, LongConsumer, Predicate, Supplier}
+import java.util.function.{BiConsumer, BiFunction, BooleanSupplier, Consumer, Function, LongConsumer, Predicate, Supplier}
 
 import org.reactivestreams.Publisher
 import reactor.core.publisher.{Flux => JFlux, Mono => JMono}
@@ -130,6 +130,12 @@ Uncomment this when used. It is not used for now and reduce the code coverage
   implicit def publisherUnit2PublisherVoid(publisher: Publisher[Unit]): Publisher[Void] = {
     publisher match {
       case m: Mono[Unit] => m.map[Void](_ => null: Void)
+    }
+  }
+
+  implicit def scalaBiFunction2JavaBiFunction[T, U, V](biFunction: (T, U) => V): BiFunction[T, U, V] = {
+    new BiFunction[T, U, V] {
+      override def apply(t: T, u: U): V = biFunction(t, u)
     }
   }
 }

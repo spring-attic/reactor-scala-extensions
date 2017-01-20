@@ -33,9 +33,9 @@ import reactor.util.function._
 
 import scala.collection.JavaConverters._
 import scala.concurrent.duration.Duration
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.language.implicitConversions
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 /**
   * Created by winarto on 12/26/16.
@@ -545,7 +545,7 @@ class Mono[T](private val jMono: JMono[T]) extends Publisher[T] {
   }
 
   final def thenEmpty(other: Publisher[Unit]): Mono[Unit] = {
-    new Mono[Unit]((jMono:JMono[T]).thenEmpty(other))
+    new Mono[Unit]((jMono: JMono[T]).thenEmpty(other))
   }
 
   final def thenMany[V](other: Publisher[V]): Flux[V] = {
@@ -588,16 +588,28 @@ class Mono[T](private val jMono: JMono[T]) extends Publisher[T] {
     new Mono[T](jMono.timeoutMillis(timeout, fallback, timer))
   }
 
-//  TODO: How to test timestamp(...) with the actual timestamp?
+  //  TODO: How to test timestamp(...) with the actual timestamp?
   final def timestamp(): Mono[(Long, T)] = {
     new Mono[(Long, T)](jMono.timestamp().map((t2: Tuple2[JLong, T]) => (Long2long(t2.getT1), t2.getT2)))
   }
 
   final def timestamp(scheduler: TimedScheduler): Mono[(Long, T)] = {
-    new Mono[(Long, T)](jMono.timestamp(scheduler).map((t2: Tuple2[JLong, T]) => (Long2long(t2.getT1), t2.getT2))
+    new Mono[(Long, T)](jMono.timestamp(scheduler).map((t2: Tuple2[JLong, T]) => (Long2long(t2.getT1), t2.getT2)))
   }
 
-  final def asJava(): JMono[T] = jMono
+  final def toFuture: Future[T] = {
+    val promise = Promise[T]()
+    jMono.toFuture.handle[Unit]((value: T, throwable: Throwable) => {
+      Option(value).foreach(v => promise.complete(Try(v)))
+      Option(throwable).foreach(t => promise.failure(t))
+      ()
+    })
+    promise.future
+  }
+
+  final def asJava(): JMono[T]
+
+  = jMono
 }
 
 object Mono {
