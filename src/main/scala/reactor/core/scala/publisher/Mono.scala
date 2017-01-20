@@ -588,6 +588,11 @@ class Mono[T](private val jMono: JMono[T]) extends Publisher[T] {
     new Mono[T](jMono.timeoutMillis(timeout, fallback, timer))
   }
 
+//  TODO: How to test timestamp(...) with the actual timestamp?
+  final def timestamp(): Mono[(Long, T)] = {
+    new Mono[(Long, T)](jMono.timestamp().map((t2: Tuple2[JLong, T]) => (Long2long(t2.getT1), t2.getT2)))
+  }
+
   final def asJava(): JMono[T] = jMono
 }
 
