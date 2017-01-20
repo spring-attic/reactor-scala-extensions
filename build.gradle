@@ -58,7 +58,7 @@ updateImpactSubmit {
 
 ext.isReleaseVersion = !version.endsWith("SNAPSHOT")
 signing {
-    required { isReleaseVersion && gradle.taskGraph.hasTask("publish")}
+    required { isReleaseVersion }
     sign configurations.archives
 }
 
