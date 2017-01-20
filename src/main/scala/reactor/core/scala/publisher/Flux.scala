@@ -15,7 +15,7 @@ class Flux[T](private val jFlux: JFlux[T]) extends Publisher[T] with MapablePubl
   override def subscribe(s: Subscriber[_ >: T]): Unit = jFlux.subscribe(s)
 
   def count(): Mono[Long] = {
-    new Mono[Long](jFlux.count().map(new Function[JLong, Long] {
+    Mono[Long](jFlux.count().map(new Function[JLong, Long] {
       override def apply(t: JLong): Long = Long2long(t)
     }))
   }

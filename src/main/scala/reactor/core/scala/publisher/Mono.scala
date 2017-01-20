@@ -40,7 +40,7 @@ import scala.util.{Failure, Success, Try}
 /**
   * Created by winarto on 12/26/16.
   */
-class Mono[T](private val jMono: JMono[T]) extends Publisher[T] {
+class Mono[T] private (private val jMono: JMono[T]) extends Publisher[T] {
   override def subscribe(s: Subscriber[_ >: T]): Unit = jMono.subscribe(s)
 
   final def as[P](transformer: (Mono[T] => P)): P = {
@@ -525,7 +525,7 @@ class Mono[T](private val jMono: JMono[T]) extends Publisher[T] {
   }
 
   implicit def jMonoVoid2jMonoUnit(jMonoVoid: JMono[Void]): JMono[Unit] = {
-    jMonoVoid.map((v: Void) => ())
+    jMonoVoid.map((_: Void) => ())
   }
 
   final def `then`(): Mono[Unit] = {
@@ -608,7 +608,7 @@ class Mono[T](private val jMono: JMono[T]) extends Publisher[T] {
   }
 
   final def transform[V](transformer: Mono[T] => Publisher[V]): Mono[V] = {
-    new Mono[V](jMono.transform[V]((t: JMono[T]) => transformer(Mono.this)))
+    new Mono[V](jMono.transform[V]((_: JMono[T]) => transformer(Mono.this)))
   }
 
   final def asJava(): JMono[T] = jMono
@@ -623,7 +623,7 @@ object Mono {
     * @tparam T The value type that will be emitted by this mono
     * @return Wrapper of Java Mono
     */
-  def apply[T](javaMono: JMono[T]) = new Mono[T](javaMono)
+  private[publisher] def apply[T](javaMono: JMono[T]) = new Mono[T](javaMono)
 
   def create[T](callback: MonoSink[T] => Unit): Mono[T] = {
     new Mono[T](
