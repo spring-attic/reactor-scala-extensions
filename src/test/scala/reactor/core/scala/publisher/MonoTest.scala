@@ -1296,6 +1296,13 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
           .verifyComplete()
       }
     }
+
+    ".transform should transform this mono in order to generate a target mono" in {
+      val mono = Mono.just(randomValue).transform(ml => Mono.just(ml.block().toString))
+      StepVerifier.create(mono)
+        .expectNext(randomValue.toString)
+        .verifyComplete()
+    }
   }
 
 

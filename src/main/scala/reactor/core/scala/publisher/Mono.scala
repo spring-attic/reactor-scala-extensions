@@ -607,9 +607,11 @@ class Mono[T](private val jMono: JMono[T]) extends Publisher[T] {
     promise.future
   }
 
-  final def asJava(): JMono[T]
+  final def transform[V](transformer: Mono[T] => Publisher[V]): Mono[V] = {
+    new Mono[V](jMono.transform[V]((t: JMono[T]) => transformer(Mono.this)))
+  }
 
-  = jMono
+  final def asJava(): JMono[T] = jMono
 }
 
 object Mono {
