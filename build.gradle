@@ -127,6 +127,8 @@ uploadArchives {
     }
 }
 
+afterReleaseBuild.dependsOn uploadArchives
+
 ScalaCompileOptions.metaClass.daemonServer = true
 ScalaCompileOptions.metaClass.fork = true
 ScalaCompileOptions.metaClass.useAnt = false
