@@ -8,6 +8,7 @@ apply plugin: 'maven'
 apply plugin: 'org.scoverage'
 apply plugin: 'com.updateimpact.updateimpact'
 apply plugin: 'net.researchgate.release'
+apply plugin: 'io.codearte.nexus-staging'
 
 repositories {
     mavenCentral()
@@ -46,6 +47,7 @@ buildscript {
         classpath "gradle.plugin.org.scoverage:gradle-scoverage:2.1.0"
         classpath 'com.updateimpact:updateimpact-gradle-plugin:1.1.6'
 	classpath 'net.researchgate:gradle-release:2.5.0'
+	classpath 'io.codearte.gradle.nexus:gradle-nexus-staging-plugin:0.5.3'
     }
 }
 
