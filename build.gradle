@@ -46,8 +46,8 @@ buildscript {
         classpath "gradle.plugin.com.github.maiflai:gradle-scalatest:0.14"
         classpath "gradle.plugin.org.scoverage:gradle-scoverage:2.1.0"
         classpath 'com.updateimpact:updateimpact-gradle-plugin:1.1.6'
-	classpath 'net.researchgate:gradle-release:2.5.0'
-	classpath 'io.codearte.gradle.nexus:gradle-nexus-staging-plugin:0.5.3'
+        classpath 'net.researchgate:gradle-release:2.5.0'
+        classpath 'io.codearte.gradle.nexus:gradle-nexus-staging-plugin:0.5.3'
     }
 }
 
@@ -94,11 +94,11 @@ uploadArchives {
             snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots") {
                 authentication(userName: sonatypeUsername, password: sonatypePassword)
             }
-            
+
             pom.project {
                 name 'ScalaScala wrapper for reactor-core'
                 packaging 'jar'
-        // optionally artifactId can be defined here 
+                // optionally artifactId can be defined here
                 description 'A Scala wrapper for reactor-core so that the code can be fluently used in Scala'
                 url 'https://sinwe.github.io/reactor-core-scala/'
 
@@ -133,3 +133,5 @@ ScalaCompileOptions.metaClass.daemonServer = true
 ScalaCompileOptions.metaClass.fork = true
 ScalaCompileOptions.metaClass.useAnt = false
 ScalaCompileOptions.metaClass.useCompileDaemon = false
+
+project.tasks.scaladoc.scalaDocOptions.additionalParameters=["-no-link-warnings"]

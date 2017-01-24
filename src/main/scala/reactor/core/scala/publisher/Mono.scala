@@ -38,15 +38,56 @@ import scala.language.implicitConversions
 import scala.util.{Failure, Success, Try}
 
 /**
-  * Created by winarto on 12/26/16.
+  * A Reactive Streams [[Publisher]] with basic rx operators that completes successfully by emitting an element, or
+  * with an error.
+  *
+  * <p>
+  * <img src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/mono.png" alt="">
+  * <p>
+  *
+  * <p>The rx operators will offer aliases for input [[Mono]] type to preserve the "at most one"
+  * property of the resulting [[Mono]]. For instance [[Mono.flatMap flatMap]] returns a [[Flux]] with
+  * possibly
+  * more than 1 emission. Its alternative enforcing [[Mono]] input is [[Mono.then then]].
+  *
+  * <p>`Mono[Unit]` should be used for [[Publisher]] that just completes without any value.
+  *
+  * <p>It is intended to be used in implementations and return types, input parameters should keep using raw
+  * [[Publisher]] as much as possible.
+  *
+  * <p>Note that using state in the `scala.Function` / lambdas used within Mono operators
+  * should be avoided, as these may be shared between several [[Subscriber Subscribers]].
+  *
+  * @tparam T the type of the single value of this class
+  * @see Flux
   */
 class Mono[T] private (private val jMono: JMono[T]) extends Publisher[T] {
   override def subscribe(s: Subscriber[_ >: T]): Unit = jMono.subscribe(s)
 
-  final def as[P](transformer: (Mono[T] => P)): P = {
-    transformer(this)
-  }
+  /**
+    * Transform this [[Mono]] into a target type.
+    *
+    * `mono.as(Flux::from).subscribe()`
+    *
+    * @param transformer the { @link Function} applying this { @link Mono}
+    * @tparam P the returned instance type
+    * @return the transformed { @link Mono} to instance P
+    * @see [[Mono.compose]] for a bounded conversion to [[org.reactivestreams.Publisher]]
+    */
+  final def as[P](transformer: (Mono[T] => P)): P = transformer(this)
 
+  /**
+    * Combine the result from this mono and another into a [[scala.Tuple2]].
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/and.png" alt="">
+    * <p>
+    *
+    * @param other the [[Mono]] to combine with
+    * @tparam T2 the element type of the other Mono instance
+    * @return a new combined Mono
+    * @see [[Mono.when]]
+    */
   final def and[T2](other: Mono[_ <: T2]): Mono[(T, T2)] = {
     val combinedMono: JMono[Tuple2[T, T2]] = jMono.and(other.jMono)
     new Mono[(T, T2)](
@@ -57,10 +98,38 @@ class Mono[T] private (private val jMono: JMono[T]) extends Publisher[T] {
     )
   }
 
+  /**
+    * An alias for [[Mono.and]]
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/and.png" alt="">
+    * <p>
+    *
+    * @param other the [[Mono]] to combine with
+    * @tparam T2 the element type of the other Mono instance
+    * @return a new combined Mono
+    * @see [[Mono.when]]
+    */
   final def ++[T2](other: Mono[_ <: T2]): Mono[(T, T2)] = {
     and(other)
   }
 
+  /**
+    * Combine the result from this mono and another into an arbitrary `O` object,
+    * as defined by the provided `combinator` function.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/and.png" alt="">
+    * <p>
+    *
+    * @param other the [[Mono]] to combine with
+    * @param combinator a [[scala.Function2]] combinator function when both sources
+    *                             complete
+    * @tparam T2 the element type of the other Mono instance
+    * @tparam O the element type of the combination
+    * @return a new combined Mono
+    * @see [[Mono.when]]
+    */
   final def and[T2, O](other: Mono[T2], combinator: (T, T2) => O): Mono[O] = {
     val combinatorFunction: BiFunction[T, T2, O] = new BiFunction[T, T2, O] {
       override def apply(t: T, u: T2): O = combinator(t, u)
@@ -69,6 +138,18 @@ class Mono[T] private (private val jMono: JMono[T]) extends Publisher[T] {
     new Mono[O](combinedMono)
   }
 
+  /**
+    * Wait for the result from this mono, use it to create a second mono via the
+    * provided `rightGenerator` function and combine both results into a [[scala.Tuple2]].
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/and.png" alt="">
+    * <p>
+    *
+    * @param rightGenerator the [[scala.Function1]] to generate a `Mono` to combine with
+    * @tparam T2 the element type of the other Mono instance
+    * @return a new combined Mono
+    */
   final def and[T2](rightGenerator: (T => Mono[T2])): Mono[(T, T2)] = {
     val rightGeneratorFunction: Function[T, JMono[_ <: T2]] = new Function[T, JMono[_ <: T2]]() {
       def apply(i: T): JMono[_ <: T2] = rightGenerator(i).jMono
@@ -80,6 +161,22 @@ class Mono[T] private (private val jMono: JMono[T]) extends Publisher[T] {
       })
     )
   }
+
+  /**
+    * Wait for the result from this mono, use it to create a second mono via the
+    * provided `rightGenerator` function and combine both results into an arbitrary
+    * `O` object, as defined by the provided `combinator` function.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/and.png" alt="">
+    * <p>
+    *
+    * @param rightGenerator the [[scala.Function1]] to generate a `Mono` to combine with
+    * @param combinator a [[scala.Function2]] combinator function when both sources complete
+    * @tparam T2 the element type of the other Mono instance
+    * @tparam O the element type of the combination
+    * @return a new combined Mono
+    */
 
   final def and[T2, O](rightGenerator: (T => Mono[T2]), combinator: (T, T2) => O): Mono[O] = {
     val rightGeneratorFunction: Function[T, JMono[_ <: T2]] = new Function[T, JMono[_ <: T2]]() {
@@ -93,44 +190,122 @@ class Mono[T] private (private val jMono: JMono[T]) extends Publisher[T] {
     )
   }
 
-  final def awaitOnSubscribe(): Mono[T] = {
-    new Mono[T](
-      jMono.awaitOnSubscribe()
-    )
-  }
+  /**
+    * Intercepts the onSubscribe call and makes sure calls to Subscription methods
+    * only happen after the child Subscriber has returned from its onSubscribe method.
+    *
+    * <p>This helps with child Subscribers that don't expect a recursive call from
+    * onSubscribe into their onNext because, for example, they request immediately from
+    * their onSubscribe but don't finish their preparation before that and onNext
+    * runs into a half-prepared state. This can happen with non Reactor based
+    * Subscribers.
+    *
+    * @return non reentrant onSubscribe [[Mono]]
+    */
+  final def awaitOnSubscribe(): Mono[T] = new Mono[T](
+    jMono.awaitOnSubscribe()
+  )
 
-  final def block(): T = {
-    jMono.block()
-  }
+  /**
+    * Block until a next signal is received, will return null if onComplete, T if onNext, throw a
+    * `Exceptions.DownstreamException` if checked error or origin RuntimeException if unchecked.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/block.png" alt="">
+    * <p>
+    *
+    * @return T the result
+    */
+  final def block(): T = jMono.block()
 
-  final def block(duration: Duration): T = {
-    jMono.block(duration)
-  }
+  /**
+    * Block until a next signal is received, will return null if onComplete, T if onNext, throw a
+    * `Exceptions.DownstreamException` if checked error or origin RuntimeException if unchecked.
+    * If the default timeout `30 seconds` has elapsed,a [[RuntimeException]]  will be thrown.
+    *
+    * Note that each block() will subscribe a new single (MonoSink) subscriber, in other words, the result might
+    * miss signal from hot publishers.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/block.png" alt="">
+    * <p>
+    *
+    * @param timeout maximum time period to wait for before raising a [[RuntimeException]]
+    * @return T the result
+    */
+  final def block(timeout: Duration): T = jMono.block(timeout)
 
-  final def blockMillis(millis: Long): T = {
-    jMono.blockMillis(millis)
-  }
+  /**
+    * Block until a next signal is received, will return null if onComplete, T if onNext, throw a
+    * `Exceptions.DownstreamException` if checked error or origin RuntimeException if unchecked.
+    * If the default timeout `30 seconds` has elapsed, a [[RuntimeException]]  will be thrown.
+    *
+    * Note that each block() will subscribe a new single (MonoSink) subscriber, in other words, the result might
+    * miss signal from hot publishers.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/block.png" alt="">
+    * <p>
+    *
+    * @param timeout maximum time period to wait for in milliseconds before raising a [[RuntimeException]]
+    * @return T the result
+    */
+  final def blockMillis(timeout: Long): T = jMono.blockMillis(timeout)
 
-  final def cast[E](clazz: Class[E]): Mono[E] = {
-    new Mono[E](
-      jMono.cast(clazz)
-    )
-  }
+  /**
+    * Cast the current [[Mono]] produced type into a target produced type.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/cast1.png" alt="">
+    *
+    * @tparam E the { @link Mono} output type
+    * @param clazz the target type to cast to
+    * @return a casted [[Mono]]
+    */
+  final def cast[E](clazz: Class[E]) = new Mono[E](
+    jMono.cast(clazz)
+  )
 
-  final def cache(): Mono[T] = {
-    new Mono[T](
-      jMono.cache()
-    )
-  }
+  /**
+    * Turn this [[Mono]] into a hot source and cache last emitted signals for further [[Subscriber]].
+    * Completion and Error will also be replayed.
+    * <p>
+    * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/cache1.png"
+    * alt="">
+    *
+    * @return a replaying [[Mono]]
+    */
+  final def cache(): Mono[T] = new Mono[T](
+    jMono.cache()
+  )
 
-  final def cancelOn(scheduler: Scheduler): Mono[T] = {
-    new Mono[T](
-      jMono.cancelOn(scheduler)
-    )
-  }
+  /**
+    * Prepare this [[Mono]] so that subscribers will cancel from it on a
+    * specified
+    * [[reactor.core.scheduler.Scheduler]].
+    *
+    * @param scheduler the [[reactor.core.scheduler.Scheduler]] to signal cancel  on
+    * @return a scheduled cancel [[Mono]]
+    */
+  final def cancelOn(scheduler: Scheduler): Mono[T] = new Mono[T](
+    jMono.cancelOn(scheduler)
+  )
 
+  /**
+    * Defer the given transformation to this [[Mono]] in order to generate a
+    * target [[Mono]] type. A transformation will occur for each
+    * [[org.reactivestreams.Subscriber]].
+    *
+    * `flux.compose(Mono::from).subscribe()`
+    *
+    * @param transformer the function to immediately map this [[Mono]] into a target [[Mono]]
+    *                    instance.
+    * @tparam V the item type in the returned [[org.reactivestreams.Publisher]]
+    * @return a new [[Mono]]
+    * @see [[Mono.as]] for a loose conversion to an arbitrary type
+    */
   final def compose[V](transformer: (Mono[T] => Publisher[V])): Mono[V] = {
-    val transformerFunction: Function[JMono[T], Publisher[V]] = new Function[JMono[T], Publisher[V]] {
+    val transformerFunction = new Function[JMono[T], Publisher[V]] {
       override def apply(t: JMono[T]): Publisher[V] = transformer(Mono.this)
     }
     new Mono[V](
@@ -138,48 +313,129 @@ class Mono[T] private (private val jMono: JMono[T]) extends Publisher[T] {
     )
   }
 
-  final def concatWith(source: Publisher[T]): Flux[T] = {
-    new Flux[T](
-      jMono.concatWith(source)
-    )
-  }
+  /**
+    * Concatenate emissions of this [[Mono]] with the provided [[Publisher]]
+    * (no interleave).
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/concat1.png" alt="">
+    *
+    * @param other the [[Publisher]] sequence to concat after this [[Flux]]
+    * @return a concatenated [[Flux]]
+    */
+  final def concatWith(other: Publisher[T]): Flux[T] = new Flux[T](
+    jMono.concatWith(other)
+  )
 
-  final def defaultIfEmpty(default: T): Mono[T] = {
-    new Mono[T](
-      jMono.defaultIfEmpty(default)
-    )
-  }
+  /**
+    * Provide a default unique value if this mono is completed without any data
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/defaultifempty.png" alt="">
+    * <p>
+    *
+    * @param defaultV the alternate value if this sequence is empty
+    * @return a new [[Mono]]
+    * @see [[Flux.defaultIfEmpty]]
+    */
+  final def defaultIfEmpty(defaultV: T): Mono[T] = new Mono[T](
+    jMono.defaultIfEmpty(defaultV)
+  )
 
-  final def delaySubscription(delay: Duration): Mono[T] = {
-    new Mono[T](
-      jMono.delaySubscription(delay)
-    )
-  }
+  /**
+    * Delay the [[Mono.subscribe subscription]] to this [[Mono]] source until the given
+    * period elapses.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/delaysubscription1.png" alt="">
+    *
+    * @param delay duration before subscribing this [[Mono]]
+    * @return a delayed [[Mono]]
+    *
+    */
+  final def delaySubscription(delay: Duration): Mono[T] = new Mono[T](
+    jMono.delaySubscription(delay)
+  )
 
-  final def delaySubscription[U](subscriptionDelay: Publisher[U]): Mono[T] = {
-    new Mono[T](
-      jMono.delaySubscription(subscriptionDelay)
-    )
-  }
+  /**
+    * Delay the subscription to this [[Mono]] until another [[Publisher]]
+    * signals a value or completes.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/delaysubscriptionp1.png" alt="">
+    *
+    * @param subscriptionDelay a
+    *                          [[Publisher]] to signal by next or complete this [[Mono.subscribe]]
+    * @tparam U the other source type
+    * @return a delayed [[Mono]]
+    *
+    */
+  final def delaySubscription[U](subscriptionDelay: Publisher[U]): Mono[T] = new Mono[T](
+    jMono.delaySubscription(subscriptionDelay)
+  )
 
-  final def delaySubscriptionMillis(delay: Long): Mono[T] = {
-    new Mono[T](
-      jMono.delaySubscriptionMillis(delay)
-    )
-  }
+  /**
+    * Delay the [[Mono.subscribe subscription]] to this [[Mono]] source until the given
+    * period elapses.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/delaysubscription1.png" alt="">
+    *
+    * @param delay period in milliseconds before subscribing this [[Mono]]
+    * @return a delayed [[Mono]]
+    *
+    */
+  final def delaySubscriptionMillis(delay: Long): Mono[T] = new Mono[T](
+    jMono.delaySubscriptionMillis(delay)
+  )
 
-  final def delaySubscriptionMillis(delay: Long, timedScheduler: TimedScheduler): Mono[T] = {
-    new Mono[T](
-      jMono.delaySubscriptionMillis(delay, timedScheduler)
-    )
-  }
+  /**
+    * Delay the [[Mono.subscribe subscription]] to this [[Mono]] source until the given
+    * period elapses.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/delaysubscription1.png" alt="">
+    *
+    * @param delay period in milliseconds before subscribing this [[Mono]]
+    * @param timer the [[reactor.core.scheduler.TimedScheduler]] to run on
+    * @return a delayed [[Mono]]
+    *
+    */
+  final def delaySubscriptionMillis(delay: Long, timer: TimedScheduler): Mono[T] = new Mono[T](
+    jMono.delaySubscriptionMillis(delay, timer)
+  )
 
-  final def dematerialize[X](): Mono[X] = {
-    new Mono[X](
-      jMono.dematerialize[X]()
-    )
-  }
+  /**
+    * A "phantom-operator" working only if this
+    * [[Mono]] is a emits onNext, onError or onComplete [[reactor.core.publisher.Signal]]. The relative [[org.reactivestreams.Subscriber]]
+    * callback will be invoked, error [[reactor.core.publisher.Signal]] will trigger onError and complete [[reactor.core.publisher.Signal]] will trigger
+    * onComplete.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/dematerialize1.png" alt="">
+    *
+    * @tparam X the dematerialized type
+    * @return a dematerialized [[Mono]]
+    */
+  final def dematerialize[X](): Mono[X] = new Mono[X](
+    jMono.dematerialize[X]()
+  )
 
+  /**
+    * Triggered after the [[Mono]] terminates, either by completing downstream successfully or with an error.
+    * The arguments will be null depending on success, success with data and error:
+    * <ul>
+    * <li>null, null : completed without data</li>
+    * <li>T, null : completed with data</li>
+    * <li>null, Throwable : failed with/without data</li>
+    * </ul>
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/doafterterminate1.png" alt="">
+    * <p>
+    *
+    * @param afterTerminate the callback to call after [[org.reactivestreams.Subscriber.onNext]], [[org.reactivestreams.Subscriber.onComplete]] without preceding [[org.reactivestreams.Subscriber.onNext]] or [[org.reactivestreams.Subscriber.onError]]
+    * @return a new [[Mono]]
+    */
   final def doAfterTerminate(afterTerminate: (_ >: T, Throwable) => Unit): Mono[T] = {
     val afterTerminalFunction = new BiConsumer[T, Throwable] {
       override def accept(t: T, u: Throwable): Unit = afterTerminate(t, u)
@@ -198,6 +454,17 @@ class Mono[T] private (private val jMono: JMono[T]) extends Publisher[T] {
     )
   }
 
+  /**
+    * Triggered when the [[Mono]] is cancelled.
+    *
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/dooncancel.png" alt="">
+    * <p>
+    *
+    * @param onCancel the callback to call on [[org.reactivestreams.Subscriber.cancel]]
+    * @return a new [[Mono]]
+    */
   final def doOnCancel(onCancel: () => Unit): Mono[T] = {
     val onCancelFunction = new Runnable {
       override def run(): Unit = onCancel()
@@ -216,6 +483,23 @@ class Mono[T] private (private val jMono: JMono[T]) extends Publisher[T] {
     )
   }
 
+  /**
+    * Triggered when the [[Mono]] completes successfully.
+    *
+    * <ul>
+    * <li>null : completed without data</li>
+    * <li>T: completed with data</li>
+    * </ul>
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/doonsuccess.png" alt="">
+    * <p>
+    *
+    * @param onSuccess the callback to call on, argument is null if the [[Mono]]
+    *                                                                           completes without data
+    *                                                                           [[org.reactivestreams.Subscriber.onNext]] or [[org.reactivestreams.Subscriber.onComplete]] without preceding [[org.reactivestreams.Subscriber.onNext]]
+    * @return a new [[Mono]]
+    */
   final def doOnSuccess(onSuccess: (T => Unit)): Mono[T] = {
     val onSuccessFunction = new Consumer[T] {
       override def accept(t: T): Unit = onSuccess(t)
@@ -225,23 +509,48 @@ class Mono[T] private (private val jMono: JMono[T]) extends Publisher[T] {
     )
   }
 
-  final def doOnError(onError: (Throwable => Unit)): Mono[T] = {
-    new Mono[T](
-      jMono.doOnError(onError)
-    )
-  }
+  /**
+    * Triggered when the [[Mono]] completes with an error.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/doonerror1.png" alt="">
+    * <p>
+    *
+    * @param onError the error callback to call on [[org.reactivestreams.Subscriber.onError]]
+    * @return a new [[Mono]]
+    */
+  final def doOnError(onError: (Throwable => Unit)): Mono[T] = new Mono[T](
+    jMono.doOnError(onError)
+  )
 
-  final def doOnError[E <: Throwable](exceptionType: Class[E], onError: (E => Unit)): Mono[T] = {
-    new Mono[T](
-      jMono.doOnError(exceptionType, onError: Consumer[E])
-    )
-  }
+  /**
+    * Triggered when the [[Mono]] completes with an error matching the given exception type.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/doonerrorw.png" alt="">
+    *
+    * @param exceptionType the type of exceptions to handle
+    * @param onError       the error handler for each error
+    * @tparam E type of the error to handle
+    * @return an observed  [[Mono]]
+    *
+    */
+  final def doOnError[E <: Throwable](exceptionType: Class[E], onError: (E => Unit)): Mono[T] = new Mono[T](
+    jMono.doOnError(exceptionType, onError: Consumer[E])
+  )
 
-  final def doOnError(predicate: (Throwable => Boolean), onError: (Throwable => Unit)): Mono[T] = {
-    new Mono[T](
-      jMono.doOnError(predicate: Predicate[Throwable], onError: Consumer[Throwable])
-    )
-  }
+  /**
+    * Triggered when the [[Mono]] completes with an error matching the given exception.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/doonerrorw.png" alt="">
+    *
+    * @param predicate the matcher for exceptions to handle
+    * @param onError   the error handler for each error
+    * @return an observed  [[Mono]]
+    *
+    */
+  final def doOnError(predicate: (Throwable => Boolean), onError: (Throwable => Unit)): Mono[T] = new Mono[T](
+    jMono.doOnError(predicate: Predicate[Throwable], onError: Consumer[Throwable])
+  )
 
   final def doOnRequest(onRequest: Long => Unit): Mono[T] = {
     new Mono[T](
@@ -502,9 +811,21 @@ class Mono[T] private (private val jMono: JMono[T]) extends Publisher[T] {
     jMono.subscribe(consumer)
   }
 
-  final def subscribe(consumer: T => Unit, errorConsumer: Throwable => Unit): Disposable = {
-    jMono.subscribe(consumer, errorConsumer)
-  }
+  /**
+    * Subscribe [[scala.Function1[T,Unit] Consumer]] to this [[Mono]] that will consume all the
+    * sequence.
+    * <p>
+    * For a passive version that observe and forward incoming data see [[Mono.doOnSuccess]] and
+    * [[Mono.doOnError]].
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/subscribeerror1.png" alt="">
+    *
+    * @param consumer      the consumer to invoke on each next signal
+    * @param errorConsumer the consumer to invoke on error signal
+    * @return a new [[Runnable]] to dispose the [[org.reactivestreams.Subscription]]
+    */
+  final def subscribe(consumer: T => Unit, errorConsumer: Throwable => Unit): Disposable = jMono.subscribe(consumer, errorConsumer)
 
   final def subscribe(consumer: T => Unit, errorConsumer: Throwable => Unit, completeConsumer: => Unit): Disposable = {
     jMono.subscribe(consumer, errorConsumer, completeConsumer)
@@ -764,6 +1085,21 @@ object Mono {
     )
   }
 
+  /**
+    * Merge given monos into a new a `Mono` that will be fulfilled when all of the given `Monos`
+    * have been fulfilled. An error will cause pending results to be cancelled and immediate error emission to the
+    * returned [[Mono]].
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/whent.png" alt="">
+    * <p>
+    *
+    * @param p1 The first upstream { @link org.reactivestreams.Publisher} to subscribe to.
+    * @param p2 The second upstream { @link org.reactivestreams.Publisher} to subscribe to.
+    * @tparam T1 type of the value from source1
+    * @tparam T2 type of the value from source2
+    * @return a [[Mono]].
+    */
   def when[T1, T2](p1: Mono[_ <: T1], p2: Mono[_ <: T2]): Mono[(T1, T2)] = {
     val jMono: JMono[Tuple2[T1, T2]] = JMono.when(p1.jMono, p2.jMono)
 
@@ -774,6 +1110,24 @@ object Mono {
     )
   }
 
+  /**
+    * Merge given monos into a new a `Mono` that will be fulfilled when all of the given `Monos`
+    * have been fulfilled. An error will cause pending results to be cancelled and immediate error emission to the
+    * returned [[Mono]].
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/whent.png" alt="">
+    * <p>
+    *
+    * @param p1 The first upstream { @link org.reactivestreams.Publisher} to subscribe to.
+    * @param p2 The second upstream { @link org.reactivestreams.Publisher} to subscribe to.
+    * @param combinator a [[scala.Function2]] combinator function when both sources
+    *                             complete
+    * @tparam T1 type of the value from source1
+    * @tparam T2 type of the value from source2
+    * @tparam O output value
+    * @return a [[Mono]].
+    */
   def when[T1, T2, O](p1: Mono[_ <: T1], p2: Mono[_ <: T2], combinator: (T1, T2) => O): Mono[O] = {
     val jMono: JMono[O] = JMono.when(p1.jMono, p2.jMono, new BiFunction[T1, T2, O] {
       override def apply(t: T1, u: T2): O = combinator(t, u)
@@ -781,6 +1135,23 @@ object Mono {
     new Mono[O](jMono)
   }
 
+  /**
+    * Merge given monos into a new a `Mono` that will be fulfilled when all of the given `Monos`
+    * have been fulfilled. An error will cause pending results to be cancelled and immediate error emission to the
+    * returned [[Mono]].
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/whent.png" alt="">
+    * <p>
+    *
+    * @param p1 The first upstream { @link org.reactivestreams.Publisher} to subscribe to.
+    * @param p2 The second upstream { @link org.reactivestreams.Publisher} to subscribe to.
+    * @param p3 The third upstream { @link org.reactivestreams.Publisher} to subscribe to.
+    * @tparam T1 type of the value from source1
+    * @tparam T2 type of the value from source2
+    * @tparam T3 type of the value from source3
+    * @return a { @link Mono}.
+    */
   def when[T1, T2, T3](p1: Mono[_ <: T1], p2: Mono[_ <: T2], p3: Mono[_ <: T3]): Mono[(T1, T2, T3)] = {
     val jMono: JMono[Tuple3[T1, T2, T3]] = JMono.when(p1.jMono, p2.jMono, p3.jMono)
     new Mono[(T1, T2, T3)](
@@ -790,6 +1161,25 @@ object Mono {
     )
   }
 
+  /**
+    * Merge given monos into a new a `Mono` that will be fulfilled when all of the given `Monos`
+    * have been fulfilled. An error will cause pending results to be cancelled and immediate error emission to the
+    * returned [[Mono]].
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/whent.png" alt="">
+    * <p>
+    *
+    * @param p1 The first upstream { @link org.reactivestreams.Publisher} to subscribe to.
+    * @param p2 The second upstream { @link org.reactivestreams.Publisher} to subscribe to.
+    * @param p3 The third upstream { @link org.reactivestreams.Publisher} to subscribe to.
+    * @param p4 The fourth upstream { @link org.reactivestreams.Publisher} to subscribe to.
+    * @tparam T1 type of the value from source1
+    * @tparam T2 type of the value from source2
+    * @tparam T3 type of the value from source3
+    * @tparam T4 type of the value from source4
+    * @return a { @link Mono}.
+    */  
   def when[T1, T2, T3, T4](p1: Mono[_ <: T1], p2: Mono[_ <: T2], p3: Mono[_ <: T3], p4: Mono[_ <: T4]): Mono[(T1, T2, T3, T4)] = {
     val jMono: JMono[Tuple4[T1, T2, T3, T4]] = JMono.when(p1.jMono, p2.jMono, p3.jMono, p4.jMono)
     new Mono[(T1, T2, T3, T4)](
@@ -799,6 +1189,27 @@ object Mono {
     )
   }
 
+  /**
+    * Merge given monos into a new a `Mono` that will be fulfilled when all of the given `Monos`
+    * have been fulfilled. An error will cause pending results to be cancelled and immediate error emission to the
+    * returned [[Mono]].
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/whent.png" alt="">
+    * <p>
+    *
+    * @param p1 The first upstream [[org.reactivestreams.Publisher]] to subscribe to.
+    * @param p2 The second upstream [[org.reactivestreams.Publisher]] to subscribe to.
+    * @param p3 The third upstream [[org.reactivestreams.Publisher]] to subscribe to.
+    * @param p4 The fourth upstream [[org.reactivestreams.Publisher]] to subscribe to.
+    * @param p5 The fifth upstream [[org.reactivestreams.Publisher]] to subscribe to.
+    * @tparam T1 type of the value from source1
+    * @tparam T2 type of the value from source2
+    * @tparam T3 type of the value from source3
+    * @tparam T4 type of the value from source4
+    * @tparam T5 type of the value from source5
+    * @return a [[Mono]].
+    */
   def when[T1, T2, T3, T4, T5](p1: Mono[_ <: T1], p2: Mono[_ <: T2], p3: Mono[_ <: T3], p4: Mono[_ <: T4], p5: Mono[_ <: T5]): Mono[(T1, T2, T3, T4, T5)] = {
     val jMono: JMono[Tuple5[T1, T2, T3, T4, T5]] = JMono.when(p1.jMono, p2.jMono, p3.jMono, p4.jMono, p5.jMono)
     new Mono[(T1, T2, T3, T4, T5)](
@@ -808,6 +1219,29 @@ object Mono {
     )
   }
 
+  /**
+    * Merge given monos into a new a `Mono` that will be fulfilled when all of the given `Monos`
+    * have been fulfilled. An error will cause pending results to be cancelled and immediate error emission to the
+    * returned [[Mono]].
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/whent.png" alt="">
+    * <p>
+    *
+    * @param p1 The first upstream [[org.reactivestreams.Publisher]] to subscribe to.
+    * @param p2 The second upstream [[org.reactivestreams.Publisher]] to subscribe to.
+    * @param p3 The third upstream [[org.reactivestreams.Publisher]] to subscribe to.
+    * @param p4 The fourth upstream [[org.reactivestreams.Publisher]] to subscribe to.
+    * @param p5 The fifth upstream [[org.reactivestreams.Publisher]] to subscribe to.
+    * @param p6 The sixth upstream [[org.reactivestreams.Publisher]] to subscribe to.
+    * @tparam T1 type of the value from source1
+    * @tparam T2 type of the value from source2
+    * @tparam T3 type of the value from source3
+    * @tparam T4 type of the value from source4
+    * @tparam T5 type of the value from source5
+    * @tparam T6 type of the value from source6
+    * @return a [[Mono]].
+    */
   def when[T1, T2, T3, T4, T5, T6](p1: Mono[_ <: T1], p2: Mono[_ <: T2], p3: Mono[_ <: T3], p4: Mono[_ <: T4], p5: Mono[_ <: T5], p6: Mono[_ <: T6]): Mono[(T1, T2, T3, T4, T5, T6)] = {
     val jMono: JMono[Tuple6[T1, T2, T3, T4, T5, T6]] = JMono.when(p1.jMono, p2.jMono, p3.jMono, p4.jMono, p5.jMono, p6.jMono)
     new Mono[(T1, T2, T3, T4, T5, T6)](
@@ -817,6 +1251,18 @@ object Mono {
     )
   }
 
+  /**
+    * Aggregate given void publishers into a new a `Mono` that will be
+    * fulfilled when all of the given `Monos` have been fulfilled. If any Mono terminates without value,
+    * the returned sequence will be terminated immediately and pending results cancelled.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/whent.png" alt="">
+    * <p>
+    *
+    * @param sources The sources to use.
+    * @return a [[Mono]].
+    */
   def when(sources: Iterable[_ <: Publisher[Unit]]): Mono[Unit] = {
     val mappedSources: Iterable[Publisher[Void]] = sources.map {
       case m: Mono[Unit] =>
@@ -833,6 +1279,20 @@ object Mono {
     )
   }
 
+  /**
+    * Aggregate given monos into a new a `Mono` that will be fulfilled when all of the given `Monos` have been fulfilled.
+    * If any Mono terminates without value, the returned sequence will be terminated immediately and pending results cancelled.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/whent.png" alt="">
+    * <p>
+    *
+    * @param monos      The monos to use.
+    * @param combinator the function to transform the combined array into an arbitrary
+    *                   object.
+    * @tparam           R the combined result
+    * @return a [[Mono]].
+    */
   def when[R](monos: Iterable[_ <: Mono[Any]], combinator: (Array[Any] => R)): Mono[R] = {
     val combinatorFunction: Function[_ >: Array[Object], _ <: R] = new Function[Array[Object], R] {
       override def apply(t: Array[Object]): R = {
@@ -849,6 +1309,18 @@ object Mono {
     )
   }
 
+  /**
+    * Aggregate given void publishers into a new a `Mono` that will be
+    * fulfilled when all of the given `Monos` have been fulfilled. If any Mono terminates without value,
+    * the returned sequence will be terminated immediately and pending results cancelled.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/whent.png" alt="">
+    * <p>
+    *
+    * @param sources The sources to use.
+    * @return a [[Mono]].
+    */
   def when(sources: Publisher[Unit]*): Mono[Unit] = {
     val mappedSources: Seq[JMono[Void]] = sources.map {
       case m: Mono[Unit] =>
@@ -865,6 +1337,20 @@ object Mono {
     )
   }
 
+  /**
+    * Aggregate given monos into a new a `Mono` that will be fulfilled when all of the given `Monos` have been fulfilled.
+    * An error will cause pending results to be cancelled and immediate error emission to the
+    * returned [[Mono]].
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/whent.png" alt="">
+    * <p>
+    *
+    * @param monos      The monos to use.
+    * @param combinator the function to transform the combined array into an arbitrary
+    *                   object.
+    * @tparam           R the combined result
+    * @return a [[Mono]].
+    */
   def when[R](combinator: (Array[Any] => R), monos: Mono[Any]*): Mono[R] = {
     val combinatorFunction: Function[_ >: Array[Object], _ <: R] = new Function[Array[Object], R] {
       override def apply(t: Array[Object]): R = {
