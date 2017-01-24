@@ -341,36 +341,101 @@ class Mono[T] private (private val jMono: JMono[T]) extends Publisher[T] {
     jMono.defaultIfEmpty(defaultV)
   )
 
-  final def delaySubscription(delay: Duration): Mono[T] = {
-    new Mono[T](
-      jMono.delaySubscription(delay)
-    )
-  }
+  /**
+    * Delay the [[Mono.subscribe subscription]] to this [[Mono]] source until the given
+    * period elapses.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/delaysubscription1.png" alt="">
+    *
+    * @param delay duration before subscribing this [[Mono]]
+    * @return a delayed [[Mono]]
+    *
+    */
+  final def delaySubscription(delay: Duration): Mono[T] = new Mono[T](
+    jMono.delaySubscription(delay)
+  )
 
-  final def delaySubscription[U](subscriptionDelay: Publisher[U]): Mono[T] = {
-    new Mono[T](
-      jMono.delaySubscription(subscriptionDelay)
-    )
-  }
+  /**
+    * Delay the subscription to this [[Mono]] until another [[Publisher]]
+    * signals a value or completes.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/delaysubscriptionp1.png" alt="">
+    *
+    * @param subscriptionDelay a
+    *                          [[Publisher]] to signal by next or complete this [[Mono.subscribe]]
+    * @tparam U the other source type
+    * @return a delayed [[Mono]]
+    *
+    */
+  final def delaySubscription[U](subscriptionDelay: Publisher[U]): Mono[T] = new Mono[T](
+    jMono.delaySubscription(subscriptionDelay)
+  )
 
-  final def delaySubscriptionMillis(delay: Long): Mono[T] = {
-    new Mono[T](
-      jMono.delaySubscriptionMillis(delay)
-    )
-  }
+  /**
+    * Delay the [[Mono.subscribe subscription]] to this [[Mono]] source until the given
+    * period elapses.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/delaysubscription1.png" alt="">
+    *
+    * @param delay period in milliseconds before subscribing this [[Mono]]
+    * @return a delayed [[Mono]]
+    *
+    */
+  final def delaySubscriptionMillis(delay: Long): Mono[T] = new Mono[T](
+    jMono.delaySubscriptionMillis(delay)
+  )
 
-  final def delaySubscriptionMillis(delay: Long, timedScheduler: TimedScheduler): Mono[T] = {
-    new Mono[T](
-      jMono.delaySubscriptionMillis(delay, timedScheduler)
-    )
-  }
+  /**
+    * Delay the [[Mono.subscribe subscription]] to this [[Mono]] source until the given
+    * period elapses.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/delaysubscription1.png" alt="">
+    *
+    * @param delay period in milliseconds before subscribing this [[Mono]]
+    * @param timer the [[reactor.core.scheduler.TimedScheduler]] to run on
+    * @return a delayed [[Mono]]
+    *
+    */
+  final def delaySubscriptionMillis(delay: Long, timer: TimedScheduler): Mono[T] = new Mono[T](
+    jMono.delaySubscriptionMillis(delay, timer)
+  )
 
-  final def dematerialize[X](): Mono[X] = {
-    new Mono[X](
-      jMono.dematerialize[X]()
-    )
-  }
+  /**
+    * A "phantom-operator" working only if this
+    * [[Mono]] is a emits onNext, onError or onComplete [[reactor.core.publisher.Signal]]. The relative [[org.reactivestreams.Subscriber]]
+    * callback will be invoked, error [[reactor.core.publisher.Signal]] will trigger onError and complete [[reactor.core.publisher.Signal]] will trigger
+    * onComplete.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/dematerialize1.png" alt="">
+    *
+    * @tparam X the dematerialized type
+    * @return a dematerialized [[Mono]]
+    */
+  final def dematerialize[X](): Mono[X] = new Mono[X](
+    jMono.dematerialize[X]()
+  )
 
+  /**
+    * Triggered after the [[Mono]] terminates, either by completing downstream successfully or with an error.
+    * The arguments will be null depending on success, success with data and error:
+    * <ul>
+    * <li>null, null : completed without data</li>
+    * <li>T, null : completed with data</li>
+    * <li>null, Throwable : failed with/without data</li>
+    * </ul>
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/doafterterminate1.png" alt="">
+    * <p>
+    *
+    * @param afterTerminate the callback to call after [[org.reactivestreams.Subscriber.onNext]], [[org.reactivestreams.Subscriber.onComplete]] without preceding [[org.reactivestreams.Subscriber.onNext]] or [[org.reactivestreams.Subscriber.onError]]
+    * @return a new [[Mono]]
+    */
   final def doAfterTerminate(afterTerminate: (_ >: T, Throwable) => Unit): Mono[T] = {
     val afterTerminalFunction = new BiConsumer[T, Throwable] {
       override def accept(t: T, u: Throwable): Unit = afterTerminate(t, u)
@@ -389,6 +454,17 @@ class Mono[T] private (private val jMono: JMono[T]) extends Publisher[T] {
     )
   }
 
+  /**
+    * Triggered when the [[Mono]] is cancelled.
+    *
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/dooncancel.png" alt="">
+    * <p>
+    *
+    * @param onCancel the callback to call on [[org.reactivestreams.Subscriber.cancel]]
+    * @return a new [[Mono]]
+    */
   final def doOnCancel(onCancel: () => Unit): Mono[T] = {
     val onCancelFunction = new Runnable {
       override def run(): Unit = onCancel()
@@ -407,6 +483,23 @@ class Mono[T] private (private val jMono: JMono[T]) extends Publisher[T] {
     )
   }
 
+  /**
+    * Triggered when the [[Mono]] completes successfully.
+    *
+    * <ul>
+    * <li>null : completed without data</li>
+    * <li>T: completed with data</li>
+    * </ul>
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/doonsuccess.png" alt="">
+    * <p>
+    *
+    * @param onSuccess the callback to call on, argument is null if the [[Mono]]
+    *                                                                           completes without data
+    *                                                                           [[org.reactivestreams.Subscriber.onNext]] or [[org.reactivestreams.Subscriber.onComplete]] without preceding [[org.reactivestreams.Subscriber.onNext]]
+    * @return a new [[Mono]]
+    */
   final def doOnSuccess(onSuccess: (T => Unit)): Mono[T] = {
     val onSuccessFunction = new Consumer[T] {
       override def accept(t: T): Unit = onSuccess(t)
@@ -416,23 +509,48 @@ class Mono[T] private (private val jMono: JMono[T]) extends Publisher[T] {
     )
   }
 
-  final def doOnError(onError: (Throwable => Unit)): Mono[T] = {
-    new Mono[T](
-      jMono.doOnError(onError)
-    )
-  }
+  /**
+    * Triggered when the [[Mono]] completes with an error.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/doonerror1.png" alt="">
+    * <p>
+    *
+    * @param onError the error callback to call on [[org.reactivestreams.Subscriber.onError]]
+    * @return a new [[Mono]]
+    */
+  final def doOnError(onError: (Throwable => Unit)): Mono[T] = new Mono[T](
+    jMono.doOnError(onError)
+  )
 
-  final def doOnError[E <: Throwable](exceptionType: Class[E], onError: (E => Unit)): Mono[T] = {
-    new Mono[T](
-      jMono.doOnError(exceptionType, onError: Consumer[E])
-    )
-  }
+  /**
+    * Triggered when the [[Mono]] completes with an error matching the given exception type.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/doonerrorw.png" alt="">
+    *
+    * @param exceptionType the type of exceptions to handle
+    * @param onError       the error handler for each error
+    * @tparam E type of the error to handle
+    * @return an observed  [[Mono]]
+    *
+    */
+  final def doOnError[E <: Throwable](exceptionType: Class[E], onError: (E => Unit)): Mono[T] = new Mono[T](
+    jMono.doOnError(exceptionType, onError: Consumer[E])
+  )
 
-  final def doOnError(predicate: (Throwable => Boolean), onError: (Throwable => Unit)): Mono[T] = {
-    new Mono[T](
-      jMono.doOnError(predicate: Predicate[Throwable], onError: Consumer[Throwable])
-    )
-  }
+  /**
+    * Triggered when the [[Mono]] completes with an error matching the given exception.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/doonerrorw.png" alt="">
+    *
+    * @param predicate the matcher for exceptions to handle
+    * @param onError   the error handler for each error
+    * @return an observed  [[Mono]]
+    *
+    */
+  final def doOnError(predicate: (Throwable => Boolean), onError: (Throwable => Unit)): Mono[T] = new Mono[T](
+    jMono.doOnError(predicate: Predicate[Throwable], onError: Consumer[Throwable])
+  )
 
   final def doOnRequest(onRequest: Long => Unit): Mono[T] = {
     new Mono[T](
@@ -693,9 +811,21 @@ class Mono[T] private (private val jMono: JMono[T]) extends Publisher[T] {
     jMono.subscribe(consumer)
   }
 
-  final def subscribe(consumer: T => Unit, errorConsumer: Throwable => Unit): Disposable = {
-    jMono.subscribe(consumer, errorConsumer)
-  }
+  /**
+    * Subscribe [[scala.Function1[T,Unit] Consumer]] to this [[Mono]] that will consume all the
+    * sequence.
+    * <p>
+    * For a passive version that observe and forward incoming data see [[Mono.doOnSuccess]] and
+    * [[Mono.doOnError]].
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/subscribeerror1.png" alt="">
+    *
+    * @param consumer      the consumer to invoke on each next signal
+    * @param errorConsumer the consumer to invoke on error signal
+    * @return a new [[Runnable]] to dispose the [[org.reactivestreams.Subscription]]
+    */
+  final def subscribe(consumer: T => Unit, errorConsumer: Throwable => Unit): Disposable = jMono.subscribe(consumer, errorConsumer)
 
   final def subscribe(consumer: T => Unit, errorConsumer: Throwable => Unit, completeConsumer: => Unit): Disposable = {
     jMono.subscribe(consumer, errorConsumer, completeConsumer)
