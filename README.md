@@ -30,11 +30,13 @@ Those who wanted to try, can get the SNAPSHOT version from snapshot repository a
 With Gradle from Sonatype:
     
     repositories {
-        maven { url 'https://oss.sonatype.org/content/repositories/snapshots/' }
+        //maven { url 'https://oss.sonatype.org/content/repositories/snapshots/' }
+        mavenCentral()
     }
     
     dependencies {
-        compile "com.github.sinwe:reactor-core-scala:0.1.0-SNAPSHOT
+        //compile "com.github.sinwe:reactor-core-scala:0.2.0-SNAPSHOT
+        compile "com.github.sinwe:reactor-core-scala:0.1.8
     }
 
 With Maven from Sonatype:
