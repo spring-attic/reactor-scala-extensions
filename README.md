@@ -27,7 +27,7 @@ it becomes
 It is still in preliminary stage and requires a lot of refinement. No release has been made so far.
 Those who wanted to try, can get the SNAPSHOT version from snapshot repository as below:
 
-With Gradle from Sonatype:
+With Gradle:
     
     repositories {
         //maven { url 'https://oss.sonatype.org/content/repositories/snapshots/' }
@@ -39,8 +39,9 @@ With Gradle from Sonatype:
         compile "com.github.sinwe:reactor-core-scala:0.1.8
     }
 
-With Maven from Sonatype:
+With Maven:
 
+    <!-- To get latest SNAPSHOT version from Sonatype
     <repositories>
         <repository>
             <snapshots>
@@ -56,9 +57,14 @@ With Maven from Sonatype:
     <dependency>
         <groupId>com.github.sinwe</groupId>
         <artifactId>reactor-core-scala</artifactId>
-        <version>0.1.0-SNAPSHOT</version>
+        <version>0.2.0-SNAPSHOT</version>
     </dependency>
-
+    -->
+    <dependency>
+        <groupId>com.github.sinwe</groupId>
+        <artifactId>reactor-core-scala</artifactId>
+        <version>0.1.8</version>
+    </dependency>
 
 ##Contributing
 Contributions are welcome. Simply fork this project, make some modification, push and 
