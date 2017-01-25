@@ -135,3 +135,9 @@ ScalaCompileOptions.metaClass.useAnt = false
 ScalaCompileOptions.metaClass.useCompileDaemon = false
 
 project.tasks.scaladoc.scalaDocOptions.additionalParameters=["-no-link-warnings"]
+
+release {
+    git {
+        requireBranch = ''
+    }
+}
