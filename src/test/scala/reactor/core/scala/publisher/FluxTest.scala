@@ -1,13 +1,11 @@
 package reactor.core.scala.publisher
 
 import java.util.concurrent.{CountDownLatch, TimeUnit}
-import java.util.function.Supplier
 
 import org.reactivestreams.Subscription
 import org.scalatest.FreeSpec
 import reactor.core.publisher.BaseSubscriber
 import reactor.test.StepVerifier
-import reactor.test.scheduler.VirtualTimeScheduler
 
 import scala.concurrent.duration.Duration
 
@@ -16,6 +14,13 @@ import scala.concurrent.duration.Duration
   */
 class FluxTest extends FreeSpec {
   "Flux" - {
+    ".combineLatest should latest elements into a single element" in {
+      val flux = Flux.combineLatest[Int, String]((array: Array[AnyRef]) => s"${array(0).toString}-${array(1).toString}", Mono.just(1), Mono.just(2))
+      StepVerifier.create(flux)
+        .expectNext("1-2")
+        .verifyComplete()
+    }
+
     ".just" - {
       "with varargs should emit values from provided data" in {
         val flux = Flux.just(1, 2)
