@@ -14,11 +14,20 @@ import scala.concurrent.duration.Duration
   */
 class FluxTest extends FreeSpec {
   "Flux" - {
-    ".combineLatest should latest elements into a single element" in {
-      val flux = Flux.combineLatest[Int, String]((array: Array[AnyRef]) => s"${array(0).toString}-${array(1).toString}", Mono.just(1), Mono.just(2))
-      StepVerifier.create(flux)
-        .expectNext("1-2")
-        .verifyComplete()
+    ".combineLatest" - {
+      "with combinator and sources should produce latest elements into a single element" in {
+        val flux = Flux.combineLatest[Int, String]((array: Array[AnyRef]) => s"${array(0).toString}-${array(1).toString}", Mono.just(1), Mono.just(2))
+        StepVerifier.create(flux)
+          .expectNext("1-2")
+          .verifyComplete()
+      }
+      "with combinator, prefetch and sources should produce latest elements into a single element" in {
+        val flux = Flux.combineLatest[Int, String]((array: Array[AnyRef]) => s"${array(0).toString}-${array(1).toString}", 2, Flux.just(1, 2), Flux.just(10, 20))
+        StepVerifier.create(flux)
+          .expectNext("2-10")
+          .expectNext("2-20")
+          .verifyComplete()
+      }
     }
 
     ".just" - {
