@@ -96,7 +96,7 @@ uploadArchives {
             }
 
             pom.project {
-                name 'ScalaScala wrapper for reactor-core'
+                name 'Scala wrapper for reactor-core'
                 packaging 'jar'
                 // optionally artifactId can be defined here
                 description 'A Scala wrapper for reactor-core so that the code can be fluently used in Scala'
