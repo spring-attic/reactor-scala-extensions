@@ -2,14 +2,19 @@ package reactor.core.scala.scheduler
 
 import java.util.concurrent.Executor
 
-import reactor.core.Cancellation
-import reactor.core.scheduler.{Scheduler, Schedulers}
+import reactor.core.Disposable
 import reactor.core.scheduler.Scheduler.Worker
+import reactor.core.scheduler.{Scheduler, Schedulers}
 
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, ExecutionContextExecutorService}
 
 class ExecutionContextScheduler private(val scheduler: Scheduler) extends Scheduler {
-  override def schedule(task: Runnable): Cancellation = scheduler.schedule(task)
+  override def schedule(task: Runnable): Disposable = {
+    val cancellation = scheduler.schedule(task)
+    new Disposable {
+      override def dispose(): Unit = cancellation.dispose()
+    }
+  }
 
   override def createWorker(): Worker = scheduler.createWorker()
 }
