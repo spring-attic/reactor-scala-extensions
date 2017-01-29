@@ -28,7 +28,7 @@ import scala.concurrent.duration.Duration
   * @tparam T the element type of this Reactive Streams [[Publisher]]
   * @see [[Mono]]
   */
-class Flux[T](private val jFlux: JFlux[T]) extends Publisher[T] with MapablePublisher[T] {
+class Flux[T](private[publisher] val jFlux: JFlux[T]) extends Publisher[T] with MapablePublisher[T] {
   override def subscribe(s: Subscriber[_ >: T]): Unit = jFlux.subscribe(s)
 
   def count(): Mono[Long] = Mono[Long](jFlux.count().map(new Function[JLong, Long] {

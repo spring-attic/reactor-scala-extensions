@@ -61,7 +61,7 @@ import scala.util.{Failure, Success, Try}
   * @tparam T the type of the single value of this class
   * @see Flux
   */
-class Mono[T] private (private val jMono: JMono[T]) extends Publisher[T] {
+class Mono[T] private(private val jMono: JMono[T]) extends Publisher[T] with MapablePublisher[T] {
   override def subscribe(s: Subscriber[_ >: T]): Unit = jMono.subscribe(s)
 
   /**
@@ -1263,19 +1263,9 @@ object Mono {
     * @param sources The sources to use.
     * @return a [[Mono]].
     */
-  def when(sources: Iterable[_ <: Publisher[Unit]]): Mono[Unit] = {
-    val mappedSources: Iterable[Publisher[Void]] = sources.map {
-      case m: Mono[Unit] =>
-        val jMono: JMono[Unit] = m.jMono
-        jMono.map(new Function[Unit, Void] {
-          override def apply(t: Unit): Void = None.orNull
-        }): JMono[Void]
-    }
-    val mono: JMono[Void] = JMono.when(mappedSources.asJava)
+  def when(sources: Iterable[_ <: Publisher[Unit] with MapablePublisher[Unit]]): Mono[Unit] = {
     new Mono[Unit](
-      mono.map(new Function[Void, Unit] {
-        override def apply(t: Void): Unit = ()
-      }): JMono[Unit]
+      JMono.when(sources.map(s => s.map((t: Unit) => None.orNull: Void)).asJava).map((t: Void) => ())
     )
   }
 
@@ -1321,19 +1311,9 @@ object Mono {
     * @param sources The sources to use.
     * @return a [[Mono]].
     */
-  def when(sources: Publisher[Unit]*): Mono[Unit] = {
-    val mappedSources: Seq[JMono[Void]] = sources.map {
-      case m: Mono[Unit] =>
-        val jMono: JMono[Unit] = m.jMono
-        jMono.map(new Function[Unit, Void] {
-          override def apply(t: Unit): Void = None.orNull
-        }): JMono[Void]
-    }
-    val mono: JMono[Void] = JMono.when(mappedSources.asJava)
+  def when(sources: (Publisher[Unit] with MapablePublisher[Unit])*): Mono[Unit] = {
     new Mono[Unit](
-      mono.map(new Function[Void, Unit] {
-        override def apply(t: Void): Unit = ()
-      })
+      JMono.when(sources.map(s => s.map((T: Unit) => None.orNull: Void)).asJava).map((t: Void) => ())
     )
   }
 
@@ -1367,6 +1347,20 @@ object Mono {
     )
   }
 
+  /**
+    * Merge given monos into a new a `Mono` that will be fulfilled when all of the given `Monos`
+    * have been fulfilled.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/whent.png" alt="">
+    * <p>
+    *
+    * @param p1 The first upstream [[Publisher]] to subscribe to.
+    * @param p2 The second upstream [[Publisher]] to subscribe to.
+    * @tparam T1 type of the value from source1
+    * @tparam T2 type of the value from source2
+    * @return a [[Mono]].
+    */
   def whenDelayError[T1, T2](p1: Mono[_ <: T1], p2: Mono[_ <: T2]): Mono[(T1, T2)] = {
     val jMono = JMono.whenDelayError[T1, T2](p1.jMono, p2.jMono)
     new Mono[(T1, T2)](
@@ -1376,60 +1370,147 @@ object Mono {
     )
   }
 
+  /**
+    * Merge given monos into a new a `Mono` that will be fulfilled when all of the given `Monos`
+    * have been fulfilled.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/whent.png" alt="">
+    * <p>
+    *
+    * @param p1 The first upstream [[Publisher]] to subscribe to.
+    * @param p2 The second upstream [[Publisher]] to subscribe to.
+    * @param p3 The third upstream [[Publisher]] to subscribe to.
+    * @tparam T1 type of the value from source1
+    * @tparam T2 type of the value from source2
+    * @tparam T3 type of the value from source3
+    * @return a [[Mono]].
+    */
   def whenDelayError[T1, T2, T3](p1: Mono[_ <: T1], p2: Mono[_ <: T2], p3: Mono[_ <: T3]): Mono[(T1, T2, T3)] = {
-    val jMono = JMono.whenDelayError[T1, T2, T3](p1.jMono, p2.jMono, p3.jMono)
     new Mono[(T1, T2, T3)](
-      jMono.map(new Function[Tuple3[T1, T2, T3], (T1, T2, T3)] {
+      JMono.whenDelayError[T1, T2, T3](p1.jMono, p2.jMono, p3.jMono).map(new Function[Tuple3[T1, T2, T3], (T1, T2, T3)] {
         override def apply(t: Tuple3[T1, T2, T3]): (T1, T2, T3) = tupleThree2ScalaTuple3(t)
       })
     )
   }
 
+  /**
+    * Merge given monos into a new a `Mono` that will be fulfilled when all of the given `Monos`
+    * have been fulfilled.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/whent.png" alt="">
+    * <p>
+    *
+    * @param p1 The first upstream [[Publisher]] to subscribe to.
+    * @param p2 The second upstream [[Publisher]] to subscribe to.
+    * @param p3 The third upstream [[Publisher]] to subscribe to.
+    * @param p4 The fourth upstream [[Publisher]] to subscribe to.
+    * @tparam T1 type of the value from source1
+    * @tparam T2 type of the value from source2
+    * @tparam T3 type of the value from source3
+    * @tparam T4 type of the value from source4
+    * @return a [[Mono]].
+    */
   def whenDelayError[T1, T2, T3, T4](p1: Mono[_ <: T1], p2: Mono[_ <: T2], p3: Mono[_ <: T3], p4: Mono[_ <: T4]): Mono[(T1, T2, T3, T4)] = {
-    val jMono = JMono.whenDelayError[T1, T2, T3, T4](p1.jMono, p2.jMono, p3.jMono, p4.jMono)
     new Mono[(T1, T2, T3, T4)](
-      jMono.map(new Function[Tuple4[T1, T2, T3, T4], (T1, T2, T3, T4)] {
+      JMono.whenDelayError[T1, T2, T3, T4](p1.jMono, p2.jMono, p3.jMono, p4.jMono).map(new Function[Tuple4[T1, T2, T3, T4], (T1, T2, T3, T4)] {
         override def apply(t: Tuple4[T1, T2, T3, T4]): (T1, T2, T3, T4) = tupleFour2ScalaTuple4(t)
       })
     )
   }
 
+  /**
+    * Merge given monos into a new a `Mono` that will be fulfilled when all of the given `Monos`
+    * have been fulfilled.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/whent.png" alt="">
+    * <p>
+    *
+    * @param p1 The first upstream [[Publisher]] to subscribe to.
+    * @param p2 The second upstream [[Publisher]] to subscribe to.
+    * @param p3 The third upstream [[Publisher]] to subscribe to.
+    * @param p4 The fourth upstream [[Publisher]] to subscribe to.
+    * @param p5 The fifth upstream [[Publisher]] to subscribe to.
+    * @tparam T1 type of the value from source1
+    * @tparam T2 type of the value from source2
+    * @tparam T3 type of the value from source3
+    * @tparam T4 type of the value from source4
+    * @tparam T5 type of the value from source5
+    * @return a [[Mono]].
+    */
   def whenDelayError[T1, T2, T3, T4, T5](p1: Mono[_ <: T1], p2: Mono[_ <: T2], p3: Mono[_ <: T3], p4: Mono[_ <: T4], p5: Mono[_ <: T5]): Mono[(T1, T2, T3, T4, T5)] = {
-    val jMono = JMono.whenDelayError[T1, T2, T3, T4, T5](p1.jMono, p2.jMono, p3.jMono, p4.jMono, p5.jMono)
     new Mono[(T1, T2, T3, T4, T5)](
-      jMono.map(new Function[Tuple5[T1, T2, T3, T4, T5], (T1, T2, T3, T4, T5)] {
+      JMono.whenDelayError[T1, T2, T3, T4, T5](p1.jMono, p2.jMono, p3.jMono, p4.jMono, p5.jMono).map(new Function[Tuple5[T1, T2, T3, T4, T5], (T1, T2, T3, T4, T5)] {
         override def apply(t: Tuple5[T1, T2, T3, T4, T5]): (T1, T2, T3, T4, T5) = tupleFive2ScalaTuple5(t)
       })
     )
   }
 
-  def whenDelayError[T1, T2, T3, T4, T5, T6](p1: Mono[_ <: T1], p2: Mono[_ <: T2], p3: Mono[_ <: T3], p4: Mono[_ <: T4], p5: Mono[_ <: T5], p6: Mono[_ <: T6]): Mono[(T1, T2, T3, T4, T5, T6)] = {
-    val jMono = JMono.whenDelayError[T1, T2, T3, T4, T5, T6](p1.jMono, p2.jMono, p3.jMono, p4.jMono, p5.jMono, p6.jMono)
-    new Mono[(T1, T2, T3, T4, T5, T6)](
-      jMono.map(new Function[Tuple6[T1, T2, T3, T4, T5, T6], (T1, T2, T3, T4, T5, T6)] {
-        override def apply(t: Tuple6[T1, T2, T3, T4, T5, T6]): (T1, T2, T3, T4, T5, T6) = tupleSix2ScalaTuple6(t)
-      })
-    )
-  }
+  /**
+    * Merge given monos into a new a `Mono` that will be fulfilled when all of the given `Monos`
+    * have been fulfilled.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/whent.png" alt="">
+    * <p>
+    *
+    * @param p1 The first upstream [[Publisher]] to subscribe to.
+    * @param p2 The second upstream [[Publisher]] to subscribe to.
+    * @param p3 The third upstream [[Publisher]] to subscribe to.
+    * @param p4 The fourth upstream [[Publisher]] to subscribe to.
+    * @param p5 The fifth upstream [[Publisher]] to subscribe to.
+    * @param p6 The sixth upstream [[Publisher]] to subscribe to.
+    * @tparam T1 type of the value from source1
+    * @tparam T2 type of the value from source2
+    * @tparam T3 type of the value from source3
+    * @tparam T4 type of the value from source4
+    * @tparam T5 type of the value from source5
+    * @tparam T6 type of the value from source6
+    * @return a [[Mono]].
+    */
+  def whenDelayError[T1, T2, T3, T4, T5, T6](p1: Mono[_ <: T1], p2: Mono[_ <: T2], p3: Mono[_ <: T3], p4: Mono[_ <: T4], p5: Mono[_ <: T5], p6: Mono[_ <: T6]) = new Mono[(T1, T2, T3, T4, T5, T6)](
+    JMono.whenDelayError[T1, T2, T3, T4, T5, T6](p1.jMono, p2.jMono, p3.jMono, p4.jMono, p5.jMono, p6.jMono).map(new Function[Tuple6[T1, T2, T3, T4, T5, T6], (T1, T2, T3, T4, T5, T6)] {
+      override def apply(t: Tuple6[T1, T2, T3, T4, T5, T6]): (T1, T2, T3, T4, T5, T6) = tupleSix2ScalaTuple6(t)
+    })
+  )
 
-  def whenDelayError(sources: Publisher[Unit]*): Mono[Unit] = {
-    val jSources: Seq[JMono[Void]] = sources.map {
-      case m: Mono[Unit] => m.jMono.map(new Function[Unit, Void] {
-        override def apply(t: Unit): Void = None.orNull
-      }): JMono[Void]
-    }
-    new Mono[Unit](
-      JMono.whenDelayError(jSources.toArray: _*)
-        .map(new Function[Void, Unit] {
-          override def apply(t: Void): Unit = ()
-        })
-    )
-  }
+  /**
+    * Merge given void publishers into a new a `Mono` that will be fulfilled
+    * when all of the given `Monos`
+    * have been fulfilled.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/whent.png" alt="">
+    * <p>
+    *
+    * @param sources The sources to use.
+    * @return a [[Mono]].
+    */
+  def whenDelayError(sources: (Publisher[Unit] with MapablePublisher[Unit])*) = new Mono[Unit](
+    JMono.whenDelayError(sources.map(s => s.map((t: Unit) => None.orNull: Void)).toArray: _*)
+      .map((t: Void) => ())
+  )
 
+  /**
+    * Merge given monos into a new a `Mono` that will be fulfilled when all of the given `Monos`
+    * have been fulfilled.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/whent.png" alt="">
+    * <p>
+    *
+    * @param monos      The monos to use.
+    * @param combinator the function to transform the combined array into an arbitrary
+    *                   object.
+    * @tparam R the combined result
+    * @return a combined [[Mono]].
+    */
   def whenDelayError[R](combinator: (Array[Any] => R), monos: Mono[Any]*): Mono[R] = {
-    val combinatorFunction: Function[_ >: Array[Object], _ <: R] = new Function[Array[Object], R] {
+    val combinatorFunction = new Function[Array[Object], R] {
       override def apply(t: Array[Object]): R = {
-        val v: Array[Any] = t.map { v => v: Any }
+        val v = t.map { v => v: Any }
         combinator(v)
       }
     }
