@@ -62,6 +62,18 @@ class FluxTest extends FreeSpec {
           .expectNext("1-a-0-1-2-3")
           .verifyComplete()
       }
+      "with iterable and combinator should produce latest elements into a single element" in {
+        val flux = Flux.combineLatest(Iterable(Mono.just(1), Mono.just(2)), (array: Array[AnyRef]) => s"${array(0).toString}-${array(1).toString}")
+        StepVerifier.create(flux)
+          .expectNext("1-2")
+          .verifyComplete()
+      }
+      "with iterable, prefetch and combinator should produce latest elements into a single element" in {
+        val flux = Flux.combineLatest(Iterable(Mono.just(1), Mono.just(2)), 2, (array: Array[AnyRef]) => s"${array(0).toString}-${array(1).toString}")
+        StepVerifier.create(flux)
+          .expectNext("1-2")
+          .verifyComplete()
+      }
     }
 
     ".just" - {
