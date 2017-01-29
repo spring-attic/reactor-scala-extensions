@@ -1,6 +1,6 @@
 package reactor.core.scala
 
-import java.lang.{Boolean => JBoolean, Long => JLong}
+import java.lang.{Boolean => JBoolean, Long => JLong, Iterable => JIterable}
 import java.time.{Duration => JDuration}
 import java.util.Optional
 import java.util.function.{BiConsumer, BiFunction, BooleanSupplier, Consumer, Function, LongConsumer, Predicate, Supplier}
@@ -137,5 +137,10 @@ Uncomment this when used. It is not used for now and reduce the code coverage
     new BiFunction[T, U, V] {
       override def apply(t: T, u: U): V = biFunction(t, u)
     }
+  }
+
+  implicit def scalaIterable2JavaIterable[T](scalaIterable: Iterable[T]): JIterable[T] = {
+    import scala.collection.JavaConverters._
+    scalaIterable.asJava
   }
 }
