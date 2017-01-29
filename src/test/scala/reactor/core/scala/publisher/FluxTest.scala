@@ -55,6 +55,13 @@ class FluxTest extends FreeSpec {
           .expectNext("1-a-0-1-2")
           .verifyComplete()
       }
+      "with source1, source2, source3, source4, source5, source6 and combinator should produce latest elements into a single element" in {
+        val flux = Flux.combineLatest(Mono.just(1), Mono.just("a"), Mono.just(BigDecimal("0")), Mono.just(1L), Mono.just(2), Mono.just(3),
+          (array: Array[AnyRef]) => s"${array(0).toString}-${array(1).toString}-${array(2).toString}-${array(3).toString}-${array(4).toString}-${array(5).toString}")
+        StepVerifier.create(flux)
+          .expectNext("1-a-0-1-2-3")
+          .verifyComplete()
+      }
     }
 
     ".just" - {
