@@ -2,7 +2,7 @@ package reactor.core.scala.publisher
 
 import java.util.concurrent.{CountDownLatch, TimeUnit}
 
-import org.reactivestreams.Subscription
+import org.reactivestreams.{Publisher, Subscription}
 import org.scalatest.FreeSpec
 import reactor.core.publisher.BaseSubscriber
 import reactor.test.StepVerifier
@@ -76,11 +76,19 @@ class FluxTest extends FreeSpec {
       }
     }
 
-    ".concat should concatenate the sources" in {
-      val flux = Flux.concat(Iterable(Flux.just(1, 2, 3), Flux.just(2, 3)))
-      StepVerifier.create(flux)
-        .expectNext(1, 2, 3, 2, 3)
-        .verifyComplete()
+    ".concat" - {
+      "with iterable should concatenate the sources" in {
+        val flux = Flux.concat(Iterable(Flux.just(1, 2, 3), Flux.just(2, 3)))
+        StepVerifier.create(flux)
+          .expectNext(1, 2, 3, 2, 3)
+          .verifyComplete()
+      }
+      "with publisher of publisher should concatenate the underlying publisher" in {
+        val flux = Flux.concat(Flux.just(Flux.just(1, 2, 3), Flux.just(2, 3)): Publisher[Publisher[Int]])
+        StepVerifier.create(flux)
+          .expectNext(1, 2, 3, 2, 3)
+          .verifyComplete()
+      }
     }
 
     ".just" - {
