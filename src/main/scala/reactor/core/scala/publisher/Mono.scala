@@ -1537,16 +1537,10 @@ object Mono {
     * @tparam V The type of the function result.
     * @return a [[Mono]].
     */
-  def zip[T, V](combinator: (Array[Any] => V), monos: Mono[_ <: T]*): Mono[V] = {
-    val combinatorFunction = new Function[Array[Object], V] {
-      override def apply(t: Array[Object]): V = {
-        val v = t.map { v => v: Any }
-        combinator(v)
-      }
-    }
+  def zip[T, V](combinator: (Array[AnyRef] => V), monos: Mono[_ <: T]*): Mono[V] = {
     val jMonos = monos.map(_.jMono)
     new Mono[V](
-      JMono.zip(combinatorFunction, jMonos.toArray: _*)
+      JMono.zip(combinator, jMonos.toArray: _*)
     )
   }
 
@@ -1564,11 +1558,11 @@ object Mono {
     * @tparam V The result type
     * @return a [[Mono]].
     */
-  def zip[T, V](combinator: (Array[Any] => V), monos: Iterable[Mono[_ <: T]]): Mono[V] = {
+  def zip[T, V](combinator: (Array[AnyRef] => V), monos: Iterable[Mono[_ <: T]]): Mono[V] = {
     val combinatorFunction = new Function[Array[Object], V] {
       override def apply(t: Array[Object]): V = {
         //the reason we do the following is because the underlying reactor is by default allocating 8 elements with null, so we need to get rid of null
-        val v = t.map { v => Option(v): Option[Any] }.filterNot(_.isEmpty).map(_.getOrElse(None.orNull))
+        val v = t.map { v => Option(v): Option[AnyRef] }.filterNot(_.isEmpty).map(_.getOrElse(None.orNull))
         combinator(v)
       }
     }
