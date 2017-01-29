@@ -76,6 +76,13 @@ class FluxTest extends FreeSpec {
       }
     }
 
+    ".concat should concatenate the sources" in {
+      val flux = Flux.concat(Iterable(Flux.just(1, 2, 3), Flux.just(2, 3)))
+      StepVerifier.create(flux)
+        .expectNext(1, 2, 3, 2, 3)
+        .verifyComplete()
+    }
+
     ".just" - {
       "with varargs should emit values from provided data" in {
         val flux = Flux.just(1, 2)

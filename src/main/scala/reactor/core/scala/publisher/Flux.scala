@@ -254,6 +254,20 @@ object Flux {
     */
   def combineLatest[T, V](sources: Iterable[Publisher[T]], prefetch: Int, combinator: Array[AnyRef] => V) = Flux(JFlux.combineLatest(sources, prefetch, combinator))
 
+  /**
+    * Concat all sources pulled from the supplied
+    * [[Iterator]] on [[Publisher.subscribe]] from the passed [[Iterable]] until [[Iterator.hasNext]]
+    * returns false. A complete signal from each source will delimit the individual sequences and will be eventually
+    * passed to the returned Publisher.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/concat.png" alt="">
+    *
+    * @param sources The [[Publisher]] of [[Publisher]] to concat
+    * @tparam T The source type of the data sequence
+    * @return a new [[Flux]] concatenating all source sequences
+    */
+  def concat[T](sources: Iterable[Publisher[T]]) = Flux(JFlux.concat(sources))
+
   def from[T](source: Publisher[_ <: T]): Flux[T] = {
     new Flux[T](
       JFlux.from(source)
