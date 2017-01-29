@@ -1523,10 +1523,24 @@ object Mono {
     )
   }
 
+  /**
+    * Aggregate given monos into a new a `Mono` that will be fulfilled when all of the given `Monos` have been fulfilled.
+    * If any Mono terminates without value, the returned sequence will be terminated immediately and pending results cancelled.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/zip1.png" alt="">
+    * <p>
+    *
+    * @param combinator the combinator [[scala.Function]]
+    * @param monos The monos to use.
+    * @tparam T The super incoming type
+    * @tparam V The type of the function result.
+    * @return a [[Mono]].
+    */
   def zip[T, V](combinator: (Array[Any] => V), monos: Mono[_ <: T]*): Mono[V] = {
-    val combinatorFunction: Function[_ >: Array[Object], _ <: V] = new Function[Array[Object], V] {
+    val combinatorFunction = new Function[Array[Object], V] {
       override def apply(t: Array[Object]): V = {
-        val v: Array[Any] = t.map { v => v: Any }
+        val v = t.map { v => v: Any }
         combinator(v)
       }
     }
@@ -1536,15 +1550,29 @@ object Mono {
     )
   }
 
+  /**
+    * Aggregate given monos into a new a `Mono` that will be fulfilled when all of the given `Monos` have been fulfilled.
+    * If any Mono terminates without value, the returned sequence will be terminated immediately and pending results cancelled.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/zip1.png" alt="">
+    * <p>
+    *
+    * @param combinator the combinator [[scala.Function]]
+    * @param monos The monos to use.
+    * @tparam T The type of the function result.
+    * @tparam V The result type
+    * @return a [[Mono]].
+    */
   def zip[T, V](combinator: (Array[Any] => V), monos: Iterable[Mono[_ <: T]]): Mono[V] = {
-    val combinatorFunction: Function[_ >: Array[Object], _ <: V] = new Function[Array[Object], V] {
+    val combinatorFunction = new Function[Array[Object], V] {
       override def apply(t: Array[Object]): V = {
         //the reason we do the following is because the underlying reactor is by default allocating 8 elements with null, so we need to get rid of null
-        val v: Array[Any] = t.map { v => Option(v): Option[Any] }.filterNot(_.isEmpty).map(_.getOrElse(None.orNull))
+        val v = t.map { v => Option(v): Option[Any] }.filterNot(_.isEmpty).map(_.getOrElse(None.orNull))
         combinator(v)
       }
     }
-    val jMonos: JIterable[JMono[T]] = monos.map(_.jMono).asJava.asInstanceOf[JIterable[JMono[T]]]
+    val jMonos = monos.map(_.jMono).asJava.asInstanceOf[JIterable[JMono[T]]]
     new Mono[V](
       JMono.zip(combinatorFunction, jMonos)
     )
