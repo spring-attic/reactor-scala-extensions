@@ -95,6 +95,12 @@ class FluxTest extends FreeSpec {
           .expectNext(1, 2, 3, 2, 3)
           .verifyComplete()
       }
+      "with varargs of publisher should concatenate the underlying publisher" in {
+        val flux = Flux.concat(Flux.just(1, 2, 3), Mono.just(3), Flux.just(3, 4))
+        StepVerifier.create(flux)
+          .expectNext(1, 2, 3, 3, 3, 4)
+          .verifyComplete()
+      }
     }
 
     ".just" - {

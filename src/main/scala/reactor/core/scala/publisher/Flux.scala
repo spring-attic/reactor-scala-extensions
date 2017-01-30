@@ -66,7 +66,7 @@ object Flux {
     * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/combinelatest.png"
     * alt="">
     *
-    * @param sources The upstreams [[Publisher]] to subscribe to.
+    * @param sources    The upstreams [[Publisher]] to subscribe to.
     * @param combinator The aggregate function that will receive a unique value from each upstream and return the value
     *                   to signal downstream
     * @tparam T type of the value from sources
@@ -82,8 +82,8 @@ object Flux {
     * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/combinelatest.png"
     * alt="">
     *
-    * @param sources The upstreams [[Publisher]] to subscribe to.
-    * @param prefetch demand produced to each combined source [[Publisher]]
+    * @param sources    The upstreams [[Publisher]] to subscribe to.
+    * @param prefetch   demand produced to each combined source [[Publisher]]
     * @param combinator The aggregate function that will receive a unique value from each upstream and return the value
     *                   to signal downstream
     * @tparam T type of the value from sources
@@ -99,13 +99,13 @@ object Flux {
     * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/combinelatest.png"
     * alt="">
     *
-    * @param source1 The first upstream [[Publisher]] to subscribe to.
-    * @param source2 The second upstream [[Publisher]] to subscribe to.
+    * @param source1    The first upstream [[Publisher]] to subscribe to.
+    * @param source2    The second upstream [[Publisher]] to subscribe to.
     * @param combinator The aggregate function that will receive a unique value from each upstream and return the value
     *                   to signal downstream
     * @tparam T1 type of the value from source1
     * @tparam T2 type of the value from source2
-    * @tparam V The produced output after transformation by the given combinator
+    * @tparam V  The produced output after transformation by the given combinator
     * @return a [[Flux]] based on the produced value
     */
   def combineLatest[T1, T2, V](source1: Publisher[_ <: T1],
@@ -119,15 +119,15 @@ object Flux {
     * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/combinelatest.png"
     * alt="">
     *
-    * @param source1 The first upstream [[Publisher]] to subscribe to.
-    * @param source2 The second upstream [[Publisher]] to subscribe to.
-    * @param source3 The third upstream [[Publisher]] to subscribe to.
+    * @param source1    The first upstream [[Publisher]] to subscribe to.
+    * @param source2    The second upstream [[Publisher]] to subscribe to.
+    * @param source3    The third upstream [[Publisher]] to subscribe to.
     * @param combinator The aggregate function that will receive a unique value from each upstream and return the value
     *                   to signal downstream
     * @tparam T1 type of the value from source1
     * @tparam T2 type of the value from source2
     * @tparam T3 type of the value from source3
-    * @tparam V The produced output after transformation by the given combinator
+    * @tparam V  The produced output after transformation by the given combinator
     * @return a [[Flux]] based on the produced value
     */
   def combineLatest[T1, T2, T3, V](source1: Publisher[_ <: T1],
@@ -168,11 +168,11 @@ object Flux {
     * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/combinelatest.png"
     * alt="">
     *
-    * @param source1 The first upstream [[Publisher]] to subscribe to.
-    * @param source2 The second upstream [[Publisher]] to subscribe to.
-    * @param source3 The third upstream [[Publisher]] to subscribe to.
-    * @param source4 The fourth upstream [[Publisher]] to subscribe to.
-    * @param source5 The fifth upstream [[Publisher]] to subscribe to.
+    * @param source1    The first upstream [[Publisher]] to subscribe to.
+    * @param source2    The second upstream [[Publisher]] to subscribe to.
+    * @param source3    The third upstream [[Publisher]] to subscribe to.
+    * @param source4    The fourth upstream [[Publisher]] to subscribe to.
+    * @param source5    The fifth upstream [[Publisher]] to subscribe to.
     * @param combinator The aggregate function that will receive a unique value from each upstream and return the value
     *                   to signal downstream
     * @tparam T1 type of the value from source1
@@ -180,7 +180,7 @@ object Flux {
     * @tparam T3 type of the value from source3
     * @tparam T4 type of the value from source4
     * @tparam T5 type of the value from source5
-    * @tparam V The produced output after transformation by the given combinator
+    * @tparam V  The produced output after transformation by the given combinator
     * @return a [[Flux]] based on the produced value
     */
   def combineLatest[T1, T2, T3, T4, T5, V](source1: Publisher[_ <: T1],
@@ -290,12 +290,26 @@ object Flux {
     * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/concatinner.png" alt="">
     * <p>
     *
-    * @param sources The [[Publisher]] of [[Publisher]] to concat
+    * @param sources  The [[Publisher]] of [[Publisher]] to concat
     * @param prefetch the inner source request size
     * @tparam T The source type of the data sequence
     * @return a new [[Flux]] concatenating all inner sources sequences until complete or error
     */
   def concat[T](sources: Publisher[Publisher[T]], prefetch: Int) = Flux(JFlux.concat(sources, prefetch))
+
+  /**
+    * Concat all sources pulled from the given [[Publisher]] array.
+    * A complete signal from each source will delimit the individual sequences and will be eventually
+    * passed to the returned Publisher.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/concat.png" alt="">
+    * <p>
+    *
+    * @param sources The array of [[Publisher]] to concat
+    * @tparam T The source type of the data sequence
+    * @return a new [[Flux]] concatenating all source sequences
+    */
+  def concat[T](sources: Publisher[T]*) = Flux(JFlux.concat(sources: _*))
 
   def from[T](source: Publisher[_ <: T]): Flux[T] = {
     new Flux[T](
@@ -305,7 +319,7 @@ object Flux {
 
   def just[T](data: T*): Flux[T] = {
     new Flux[T](
-      JFlux.just(data:_*)
+      JFlux.just(data: _*)
     )
   }
 }
