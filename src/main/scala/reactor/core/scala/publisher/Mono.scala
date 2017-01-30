@@ -166,14 +166,8 @@ class Mono[T] private(private val jMono: JMono[T]) extends Publisher[T] with Map
     */
 
   final def and[T2, O](rightGenerator: (T => Mono[T2]), combinator: (T, T2) => O): Mono[O] = {
-    val rightGeneratorFunction: Function[T, JMono[_ <: T2]] = new Function[T, JMono[_ <: T2]]() {
-      def apply(i: T): JMono[_ <: T2] = rightGenerator(i).jMono
-    }
-    val combinatorFunction: BiFunction[T, T2, O] = new BiFunction[T, T2, O] {
-      override def apply(t: T, u: T2): O = combinator(t, u)
-    }
-    new Mono[O](
-      jMono.and[T2, O](rightGeneratorFunction, combinatorFunction)
+    Mono[O](
+      jMono.and[T2, O](rightGenerator, combinator)
     )
   }
 
@@ -262,7 +256,7 @@ class Mono[T] private(private val jMono: JMono[T]) extends Publisher[T] with Map
     *
     * @return a replaying [[Mono]]
     */
-  final def cache(): Mono[T] = new Mono[T](
+  final def cache(): Mono[T] = Mono[T](
     jMono.cache()
   )
 
@@ -274,7 +268,7 @@ class Mono[T] private(private val jMono: JMono[T]) extends Publisher[T] with Map
     * @param scheduler the [[reactor.core.scheduler.Scheduler]] to signal cancel  on
     * @return a scheduled cancel [[Mono]]
     */
-  final def cancelOn(scheduler: Scheduler): Mono[T] = new Mono[T](
+  final def cancelOn(scheduler: Scheduler): Mono[T] = Mono[T](
     jMono.cancelOn(scheduler)
   )
 
@@ -295,7 +289,7 @@ class Mono[T] private(private val jMono: JMono[T]) extends Publisher[T] with Map
     val transformerFunction = new Function[JMono[T], Publisher[V]] {
       override def apply(t: JMono[T]): Publisher[V] = transformer(Mono.this)
     }
-    new Mono[V](
+    Mono[V](
       jMono.compose(transformerFunction)
     )
   }
