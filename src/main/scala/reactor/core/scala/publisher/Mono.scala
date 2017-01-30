@@ -89,12 +89,9 @@ class Mono[T] private(private val jMono: JMono[T]) extends Publisher[T] with Map
     * @see [[Mono.when]]
     */
   final def and[T2](other: Mono[_ <: T2]): Mono[(T, T2)] = {
-    val combinedMono: JMono[Tuple2[T, T2]] = jMono.and(other.jMono)
-    new Mono[(T, T2)](
-      combinedMono
-        .map(new Function[Tuple2[T, T2], (T, T2)] {
-          override def apply(t: Tuple2[T, T2]): (T, T2) = tupleTwo2ScalaTuple2(t)
-        })
+    Mono[(T, T2)](
+      jMono.and[T2](other.jMono)
+        .map((t: Tuple2[T, T2]) => tupleTwo2ScalaTuple2(t))
     )
   }
 
@@ -131,11 +128,7 @@ class Mono[T] private(private val jMono: JMono[T]) extends Publisher[T] with Map
     * @see [[Mono.when]]
     */
   final def and[T2, O](other: Mono[T2], combinator: (T, T2) => O): Mono[O] = {
-    val combinatorFunction: BiFunction[T, T2, O] = new BiFunction[T, T2, O] {
-      override def apply(t: T, u: T2): O = combinator(t, u)
-    }
-    val combinedMono: JMono[O] = jMono.and(other.jMono, combinatorFunction)
-    new Mono[O](combinedMono)
+    Mono[O](jMono.and(other.jMono, combinator))
   }
 
   /**
@@ -151,14 +144,8 @@ class Mono[T] private(private val jMono: JMono[T]) extends Publisher[T] with Map
     * @return a new combined Mono
     */
   final def and[T2](rightGenerator: (T => Mono[T2])): Mono[(T, T2)] = {
-    val rightGeneratorFunction: Function[T, JMono[_ <: T2]] = new Function[T, JMono[_ <: T2]]() {
-      def apply(i: T): JMono[_ <: T2] = rightGenerator(i).jMono
-    }
-
-    new Mono[(T, T2)](
-      jMono.and[T2](rightGeneratorFunction).map(new Function[Tuple2[T, T2], (T, T2)] {
-        override def apply(t: Tuple2[T, T2]): (T, T2) = tupleTwo2ScalaTuple2(t)
-      })
+    Mono[(T, T2)](
+      jMono.and[T2](rightGenerator).map((t: Tuple2[T, T2]) => tupleTwo2ScalaTuple2(t))
     )
   }
 
