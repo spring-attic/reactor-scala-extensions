@@ -89,6 +89,12 @@ class FluxTest extends FreeSpec {
           .expectNext(1, 2, 3, 2, 3)
           .verifyComplete()
       }
+      "with publisher of publisher and prefetch should concatenate the underlying publisher" in {
+        val flux = Flux.concat(Flux.just(Flux.just(1, 2, 3), Flux.just(2, 3)): Publisher[Publisher[Int]], 2)
+        StepVerifier.create(flux)
+          .expectNext(1, 2, 3, 2, 3)
+          .verifyComplete()
+      }
     }
 
     ".just" - {
