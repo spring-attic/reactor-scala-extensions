@@ -340,6 +340,26 @@ object Flux {
     */
   def concatDelayError[T](sources: Publisher[Publisher[T]], prefetch: Int) = Flux(JFlux.concatDelayError(sources, prefetch))
 
+  /**
+    * Concat all sources emitted as an onNext signal from a parent [[Publisher]].
+    * A complete signal from each source will delimit the individual sequences and will be eventually
+    * passed to the returned [[Publisher]] which will stop listening if the main sequence has also completed.
+    *
+    * Errors will be delayed after the current concat backlog if delayUntilEnd is
+    * false or after all sources if delayUntilEnd is true.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/concatinner.png" alt="">
+    * <p>
+    *
+    * @param sources       The [[Publisher]] of [[Publisher]] to concat
+    * @param delayUntilEnd delay error until all sources have been consumed instead of
+    *                      after the current source
+    * @param prefetch      the inner source request size
+    * @tparam T The source type of the data sequence
+    * @return a new [[Flux]] concatenating all inner sources sequences until complete or error
+    */
+  def concatDelayError[T](sources: Publisher[Publisher[T]], delayUntilEnd: Boolean, prefetch: Int) = Flux(JFlux.concatDelayError(sources, delayUntilEnd, prefetch))
+
   def from[T](source: Publisher[_ <: T]): Flux[T] = {
     new Flux[T](
       JFlux.from(source)

@@ -1,9 +1,10 @@
 package reactor.core.scala.publisher
 
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.{CountDownLatch, TimeUnit}
 
 import org.reactivestreams.{Publisher, Subscription}
-import org.scalatest.FreeSpec
+import org.scalatest.{FreeSpec, Matchers}
 import reactor.core.publisher.BaseSubscriber
 import reactor.test.StepVerifier
 
@@ -12,7 +13,7 @@ import scala.concurrent.duration.Duration
 /**
   * Created by winarto on 1/10/17.
   */
-class FluxTest extends FreeSpec {
+class FluxTest extends FreeSpec with Matchers {
   "Flux" - {
     ".combineLatest" - {
       "with combinator and sources should produce latest elements into a single element" in {
@@ -29,7 +30,7 @@ class FluxTest extends FreeSpec {
           .verifyComplete()
       }
       "with source1, source2 and combinator should produce latest elements into a single element" in {
-        val flux = Flux.combineLatest(Mono.just(1), Mono.just("a"),(int: Int, string: String) => s"${int.toString}-$string")
+        val flux = Flux.combineLatest(Mono.just(1), Mono.just("a"), (int: Int, string: String) => s"${int.toString}-$string")
         StepVerifier.create(flux)
           .expectNext("1-a")
           .verifyComplete()
@@ -116,6 +117,15 @@ class FluxTest extends FreeSpec {
           .expectNext(1, 2, 3)
           .verifyComplete()
       }
+      "with publisher of publisher, delayUntilEnd and prefetch should concatenate all sources emitted from parents" in {
+        val flag = new AtomicBoolean(false)
+        val flux = Flux.concatDelayError[Int](Flux.just(Mono.just(1), Mono.error(new RuntimeException()), Mono.just(3).doOnNext(i => flag.compareAndSet(false, true))): Publisher[Publisher[Int]], delayUntilEnd = true, 2)
+        StepVerifier.create(flux)
+          .expectNext(1, 3)
+          .expectError(classOf[RuntimeException])
+          .verify()
+        flag shouldBe 'get
+      }
     }
 
     ".just" - {
@@ -162,6 +172,6 @@ class FluxTest extends FreeSpec {
         }
       })
       counter.await(4, TimeUnit.SECONDS)
-   }
+    }
   }
 }
