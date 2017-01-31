@@ -105,7 +105,13 @@ class FluxTest extends FreeSpec {
 
     ".concatDelayError" - {
       "with publisher of publisher should concatenate all sources emitted from the parents" in {
-        val flux = Flux.concatDelayError[Int](Flux.just(Mono.just(1), Mono.just(2), Mono.just(3)))
+        val flux = Flux.concatDelayError[Int](Flux.just(Mono.just(1), Mono.just(2), Mono.just(3)): Publisher[Publisher[Int]])
+        StepVerifier.create(flux)
+          .expectNext(1, 2, 3)
+          .verifyComplete()
+      }
+      "with publisher of publisher and prefetch should concatenate all sources emitted from the parents" in {
+        val flux = Flux.concatDelayError[Int](Flux.just(Mono.just(1), Mono.just(2), Mono.just(3)): Publisher[Publisher[Int]], 2)
         StepVerifier.create(flux)
           .expectNext(1, 2, 3)
           .verifyComplete()
