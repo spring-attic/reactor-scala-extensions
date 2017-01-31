@@ -5,7 +5,7 @@ import java.util.concurrent.{CountDownLatch, TimeUnit}
 
 import org.reactivestreams.{Publisher, Subscription}
 import org.scalatest.{FreeSpec, Matchers}
-import reactor.core.publisher.BaseSubscriber
+import reactor.core.publisher.{BaseSubscriber, FluxSink}
 import reactor.test.StepVerifier
 
 import scala.concurrent.duration.Duration
@@ -135,7 +135,7 @@ class FluxTest extends FreeSpec with Matchers {
     }
 
     ".create should create a flux" in {
-      val flux = Flux.create[Int](emitter => {
+      val flux = Flux.create[Int]((emitter: FluxSink[Int]) => {
         emitter.next(1)
         emitter.complete()
       })

@@ -4,6 +4,7 @@ import java.lang.{Iterable => JIterable, Long => JLong}
 import java.util.function.Function
 
 import org.reactivestreams.{Publisher, Subscriber}
+import reactor.core.publisher.FluxSink.OverflowStrategy
 import reactor.core.publisher.{FluxSink, Flux => JFlux}
 
 import scala.concurrent.duration.Duration
@@ -408,6 +409,41 @@ object Flux {
     * @return a [[Flux]]
     */
   def create[T](emitter: FluxSink[T] => Unit) = Flux(JFlux.create[T](emitter))
+
+  /**
+    * Creates a Flux with multi-emission capabilities (synchronous or asynchronous) through
+    * the FluxSink API.
+    * <p>
+    * This Flux factory is useful if one wants to adapt some other a multi-valued async API
+    * and not worry about cancellation and backpressure. For example:
+    *
+    * <pre><code>
+    * Flux.&lt;String&gt;create(emitter -&gt; {
+    *
+    * ActionListener al = e -&gt; {
+    *         emitter.next(textField.getText());
+    * };
+    * // without cancellation support:
+    *
+    *     button.addActionListener(al);
+    *
+    * // with cancellation support:
+    *
+    *     button.addActionListener(al);
+    *     emitter.setCancellation(() -> {
+    *         button.removeListener(al);
+    * });
+    * }, FluxSink.OverflowStrategy.LATEST);
+    * <code></pre>
+    *
+    * @tparam T the value type
+    * @param backpressure the backpressure mode, see { @link OverflowStrategy} for the
+    *                                                        available backpressure modes
+    * @param emitter the consumer that will receive a FluxSink for each individual Subscriber.
+    * @return a [[Flux]]
+    */
+//  TODO: How to test backpressure?
+  def create[T](emitter: FluxSink[T] => Unit, backpressure: OverflowStrategy) = Flux(JFlux.create(emitter, backpressure))
 
   def from[T](source: Publisher[_ <: T]): Flux[T] = {
     new Flux[T](
