@@ -443,7 +443,7 @@ object Flux {
     * @return a [[Flux]]
     */
 //  TODO: How to test backpressure?
-  def create[T](emitter: FluxSink[T] => Unit, backpressure: OverflowStrategy) = Flux(JFlux.create(emitter, backpressure))
+  def create[T](emitter: FluxSink[T] => Unit, backpressure: OverflowStrategy) = Flux(JFlux.create[T](emitter, backpressure))
 
   def from[T](source: Publisher[_ <: T]): Flux[T] = {
     new Flux[T](
