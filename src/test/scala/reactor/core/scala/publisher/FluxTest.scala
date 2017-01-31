@@ -126,6 +126,12 @@ class FluxTest extends FreeSpec with Matchers {
           .verify()
         flag shouldBe 'get
       }
+      "with varargs of publishers should concatenate all sources emitted from parents" in {
+        val flux = Flux.concatDelayError[Int](Mono.just(1), Mono.just(2), Mono.just(3))
+        StepVerifier.create(flux)
+          .expectNext(1, 2, 3)
+          .verifyComplete()
+      }
     }
 
     ".just" - {
