@@ -1,6 +1,6 @@
 package reactor.core.scala.publisher
 
-import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.{AtomicBoolean, AtomicLong}
 import java.util.concurrent.{CountDownLatch, TimeUnit}
 
 import org.reactivestreams.{Publisher, Subscription}
@@ -9,6 +9,7 @@ import reactor.core.publisher.{BaseSubscriber, FluxSink}
 import reactor.test.StepVerifier
 
 import scala.concurrent.duration.Duration
+import scala.util.{Failure, Try}
 
 /**
   * Created by winarto on 1/10/17.
@@ -157,11 +158,42 @@ class FluxTest extends FreeSpec with Matchers {
         .verifyComplete()
     }
 
-    ".error should create a flux with error" in {
-      val flux = Flux.error(new RuntimeException())
-      StepVerifier.create(flux)
-        .expectError(classOf[RuntimeException])
-        .verify()
+    ".error" - {
+      "with throwable should create a flux with error" in {
+        val flux = Flux.error(new RuntimeException())
+        StepVerifier.create(flux)
+          .expectError(classOf[RuntimeException])
+          .verify()
+      }
+      "with throwable and whenRequest flag should" - {
+        "emit onError during onSubscribe if the flag is false" in {
+          val flag = new AtomicBoolean(false)
+          val flux = Flux.error(new RuntimeException(), whenRequested = false)
+            .doOnRequest(_ => flag.compareAndSet(false, true))
+          Try(flux.subscribe(new BaseSubscriber[Long] {
+            override def hookOnSubscribe(subscription: Subscription): Unit = {
+              ()
+            }
+
+            override def hookOnNext(value: Long): Unit = ()
+          })) shouldBe a[Failure[_]]
+          flag.get() shouldBe false
+        }
+        "emit onError during onRequest if the flag is true" in {
+          val flag = new AtomicBoolean(false)
+          val flux = Flux.error(new RuntimeException(), whenRequested = true)
+            .doOnRequest(_ => flag.compareAndSet(false, true))
+          Try(flux.subscribe(new BaseSubscriber[Long] {
+            override def hookOnSubscribe(subscription: Subscription): Unit = {
+              subscription.request(1)
+              ()
+            }
+
+            override def hookOnNext(value: Long): Unit = ()
+          })) shouldBe a[Failure[_]]
+          flag.get() shouldBe true
+        }
+      }
     }
 
     ".just" - {
@@ -208,6 +240,31 @@ class FluxTest extends FreeSpec with Matchers {
         }
       })
       counter.await(4, TimeUnit.SECONDS)
+    }
+
+    ".doOnRequest should be called upon request" in {
+      val atomicLong = new AtomicLong(0)
+      val mono = Flux.just(1L)
+        .doOnRequest(l => atomicLong.compareAndSet(0, l))
+      mono.subscribe(new BaseSubscriber[Long] {
+        override def hookOnSubscribe(subscription: Subscription): Unit = {
+          subscription.request(1)
+          ()
+        }
+
+        override def hookOnNext(value: Long): Unit = ()
+      })
+      atomicLong.get() shouldBe 1
+    }
+
+    ".doOnSubscribe should be called upon subscribe" in {
+      val atomicBoolean = new AtomicBoolean(false)
+      val mono = Flux.just(1L)
+        .doOnSubscribe(s => atomicBoolean.compareAndSet(false, true))
+      StepVerifier.create(mono)
+        .expectNextCount(1)
+        .verifyComplete()
+      atomicBoolean shouldBe 'get
     }
   }
 }

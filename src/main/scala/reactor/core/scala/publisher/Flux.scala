@@ -3,7 +3,7 @@ package reactor.core.scala.publisher
 import java.lang.{Iterable => JIterable, Long => JLong}
 import java.util.function.Function
 
-import org.reactivestreams.{Publisher, Subscriber}
+import org.reactivestreams.{Publisher, Subscriber, Subscription}
 import reactor.core.publisher.FluxSink.OverflowStrategy
 import reactor.core.publisher.{FluxSink, Flux => JFlux}
 
@@ -52,6 +52,29 @@ class Flux[T](private[publisher] val jFlux: JFlux[T]) extends Publisher[T] with 
     * @return a new [[Flux]]
     */
   final def defaultIfEmpty(defaultV: T) = new Flux[T](jFlux.defaultIfEmpty(defaultV))
+
+  /**
+	 * Attach a Long customer to this [[Flux]] that will observe any request to this [[Flux]].
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/doonrequest.png" alt="">
+	 *
+	 * @param consumer the consumer to invoke on each request
+	 *
+	 * @return an observed  [[Flux]]
+	 */
+  final def doOnRequest(consumer: Long => Unit): Flux[T] = Flux(jFlux.doOnRequest(consumer))
+
+  /**
+	 * Triggered when the [[Flux]] is subscribed.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/doonsubscribe.png" alt="">
+	 * <p>
+	 * @param onSubscribe the callback to call on [[org.reactivestreams.Subscriber.onSubscribe]]
+	 *
+	 * @return an observed  [[Flux]]
+	 */
+  final def doOnSubscribe(onSubscribe: Subscription => Unit): Flux[T] = Flux(jFlux.doOnSubscribe(onSubscribe))
 
   final def asJava(): JFlux[T] = jFlux
 }
@@ -483,6 +506,20 @@ object Flux {
 	 * @return a new failed  [[Flux]]
 	 */
   def error[T](error: Throwable): Flux[T] = Flux(JFlux.error[T](error))
+
+  /**
+    * Build a [[Flux]] that will only emit an error signal to any new subscriber.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/errorrequest.png" alt="">
+    *
+    * @param throwable     the error to signal to each [[Subscriber]]
+    * @param whenRequested if true, will onError on the first request instead of subscribe().
+    * @tparam O the output type
+    * @return a new failed [[Flux]]
+    */
+  def error[O](throwable: Throwable, whenRequested: Boolean): Flux[O] = Flux(JFlux.error(throwable, whenRequested))
+
   /**
     * Expose the specified [[Publisher]] with the [[Flux]] API.
     * <p>
