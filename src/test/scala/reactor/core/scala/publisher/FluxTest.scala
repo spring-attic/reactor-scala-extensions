@@ -156,6 +156,14 @@ class FluxTest extends FreeSpec with Matchers {
       StepVerifier.create(flux)
         .verifyComplete()
     }
+
+    ".error should create a flux with error" in {
+      val flux = Flux.error(new RuntimeException())
+      StepVerifier.create(flux)
+        .expectError(classOf[RuntimeException])
+        .verify()
+    }
+
     ".just" - {
       "with varargs should emit values from provided data" in {
         val flux = Flux.just(1, 2)

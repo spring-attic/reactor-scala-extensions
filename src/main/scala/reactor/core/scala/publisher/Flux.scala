@@ -473,6 +473,17 @@ object Flux {
   def empty[T](): Flux[T] = Flux(JFlux.empty[T]())
 
   /**
+	 * Create a [[Flux]] that completes with the specified error.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/error.png" alt="">
+	 * <p>
+	 * @param error the error to signal to each [[Subscriber]]
+	 * @tparam T the reified type of the target [[Subscriber]]
+	 *
+	 * @return a new failed  [[Flux]]
+	 */
+  def error[T](error: Throwable): Flux[T] = Flux(JFlux.error[T](error))
+  /**
     * Expose the specified [[Publisher]] with the [[Flux]] API.
     * <p>
     * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/from.png" alt="">
