@@ -521,6 +521,20 @@ object Flux {
   def error[O](throwable: Throwable, whenRequested: Boolean): Flux[O] = Flux(JFlux.error(throwable, whenRequested))
 
   /**
+	 * Select the fastest source who emitted first onNext or onComplete or onError
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/firstemitting.png" alt="">
+	 * <p> <p>
+	 *
+	 * @param sources The competing source publishers
+	 * @tparam I The source type of the data sequence
+	 *
+	 * @return a new [[Flux}]] eventually subscribed to one of the sources or empty
+	 */
+  def firstEmitting[I](sources: Publisher[_ <: I]*): Flux[I] = Flux(JFlux.firstEmitting(sources: _*))
+
+  /**
     * Expose the specified [[Publisher]] with the [[Flux]] API.
     * <p>
     * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/from.png" alt="">
