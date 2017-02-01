@@ -23,7 +23,7 @@ import scala.concurrent.duration.Duration
   * <p>If it is known that the underlying [[Publisher]] will emit 0 or 1 element, [[Mono]] should be used
   * instead.
   *
-  * <p>Note that using state in the [[scala.Function1]] / lambdas used within Flux operators
+  * <p>Note that using state in the lambdas used within Flux operators
   * should be avoided, as these may be shared between several [[Subscriber Subscribers]].
   *
   * @tparam T the element type of this Reactive Streams [[Publisher]]
@@ -445,6 +445,32 @@ object Flux {
 //  TODO: How to test backpressure?
   def create[T](emitter: FluxSink[T] => Unit, backpressure: OverflowStrategy) = Flux(JFlux.create[T](emitter, backpressure))
 
+  /**
+    * Supply a [[Publisher]] everytime subscribe is called on the returned flux. The passed [[scala.Function1[Unit,Publisher[T]]]]
+    * will be invoked and it's up to the developer to choose to return a new instance of a [[Publisher]] or reuse
+    * one effectively behaving like [[Flux.from]]
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/defer.png" alt="">
+    *
+    * @param supplier the [[Publisher]] Supplier to call on subscribe
+    * @tparam T the type of values passing through the [[Flux]]
+    * @return a deferred [[Flux]]
+    */
+  def defer[T](supplier: () => Publisher[T]): Flux[T] = {
+    Flux(JFlux.defer(supplier))
+  }
+
+  /**
+    * Expose the specified [[Publisher]] with the [[Flux]] API.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/from.png" alt="">
+    * <p>
+    *
+    * @param source the source to decorate
+    * @tparam T the source sequence type
+    * @return a new [[Flux]]
+    */
   def from[T](source: Publisher[_ <: T]): Flux[T] = {
     new Flux[T](
       JFlux.from(source)
