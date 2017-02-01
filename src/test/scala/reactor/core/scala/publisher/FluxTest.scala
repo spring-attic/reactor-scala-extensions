@@ -196,11 +196,19 @@ class FluxTest extends FreeSpec with Matchers {
       }
     }
 
-    ".firstEmitting should create Flux based on the publisher that emit first onNext or onComplete or onError" in {
-      val flux = Flux.firstEmitting(Mono.delay(Duration("10 seconds")), Mono.just(1L))
-      StepVerifier.create(flux)
-        .expectNext(1)
-        .verifyComplete()
+    ".firstEmitting" - {
+      "with varargs of publisher should create Flux based on the publisher that emit first onNext or onComplete or onError" in {
+        val flux = Flux.firstEmitting(Mono.delay(Duration("10 seconds")), Mono.just(1L))
+        StepVerifier.create(flux)
+          .expectNext(1)
+          .verifyComplete()
+      }
+      "with iterable of publisher should create Flux based on the publiher that first emit onNext or onComplete or onError" in {
+        val flux = Flux.firstEmitting(Iterable(Mono.delay(Duration("10 seconds")), Mono.just(1L)))
+        StepVerifier.create(flux)
+          .expectNext(1)
+          .verifyComplete()
+      }
     }
 
     ".just" - {

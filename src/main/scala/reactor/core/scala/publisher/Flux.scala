@@ -535,6 +535,20 @@ object Flux {
   def firstEmitting[I](sources: Publisher[_ <: I]*): Flux[I] = Flux(JFlux.firstEmitting(sources: _*))
 
   /**
+	 * Select the fastest source who won the "ambiguous" race and emitted first onNext or onComplete or onError
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/firstemitting.png" alt="">
+	 * <p> <p>
+	 *
+	 * @param sources The competing source publishers
+	 * @tparam I The source type of the data sequence
+	 *
+	 * @return a new [[Flux}]] eventually subscribed to one of the sources or empty
+	 */
+  def firstEmitting[I](sources: Iterable[Publisher[_ <: I]]): Flux[I] = Flux(JFlux.firstEmitting[I](sources))
+
+  /**
     * Expose the specified [[Publisher]] with the [[Flux]] API.
     * <p>
     * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/from.png" alt="">
