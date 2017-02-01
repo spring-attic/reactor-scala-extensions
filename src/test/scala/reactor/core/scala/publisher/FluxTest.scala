@@ -151,6 +151,11 @@ class FluxTest extends FreeSpec with Matchers {
         .verifyComplete()
     }
 
+    ".empty should create an empty flux" in {
+      val flux = Flux.empty()
+      StepVerifier.create(flux)
+        .verifyComplete()
+    }
     ".just" - {
       "with varargs should emit values from provided data" in {
         val flux = Flux.just(1, 2)

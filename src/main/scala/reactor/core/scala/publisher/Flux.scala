@@ -462,6 +462,17 @@ object Flux {
   }
 
   /**
+	 * Create a [[Flux]] that completes without emitting any item.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/empty.png" alt="">
+	 * <p>
+	 * @tparam T the reified type of the target [[Subscriber]]
+	 *
+	 * @return an empty [[Flux]]
+	 */
+  def empty[T](): Flux[T] = Flux(JFlux.empty[T]())
+
+  /**
     * Expose the specified [[Publisher]] with the [[Flux]] API.
     * <p>
     * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/from.png" alt="">
