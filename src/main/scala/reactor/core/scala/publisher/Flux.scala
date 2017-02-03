@@ -601,4 +601,99 @@ object Flux {
 	 * @return a new [[Flux]]
 	 */
   def just[T](data: T): Flux[T] = Flux(JFlux.just[T](data))
+
+  /**
+	 * Merge emitted [[Publisher]] sequences by the passed [[Publisher]] into an interleaved merged sequence.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/mergeinner.png" alt="">
+	 * <p>
+	 * @param source a [[Publisher]] of [[Publisher]] sequence to merge
+	 * @tparam T the merged type
+	 *
+	 * @return a merged [[Flux]]
+	 */
+//  TODO: How to test merge(...)?
+  def merge[T](source: Publisher[Publisher[_ <: T]]): Flux[T] = Flux(JFlux.merge[T](source))
+
+  /**
+	 * Merge emitted [[Publisher]] sequences by the passed [[Publisher]] into an interleaved merged sequence.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/mergeinner.png" alt="">
+	 * <p>
+	 * @param source a [[Publisher]] of [[Publisher]] sequence to merge
+	 * @param concurrency the request produced to the main source thus limiting concurrent merge backlog
+	 * @tparam T the merged type
+	 *
+	 * @return a merged [[Flux]]
+	 */
+  def merge[T](source: Publisher[Publisher[_ <: T]], concurrency: Int): Flux[T] = Flux(JFlux.merge[T](source, concurrency))
+
+  /**
+	 * Merge emitted [[Publisher]] sequences by the passed [[Publisher]] into an interleaved merged sequence.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/mergeinner.png" alt="">
+	 * <p>
+	 * @param source a [[Publisher]] of [[Publisher]] sequence to merge
+	 * @param concurrency the request produced to the main source thus limiting concurrent merge backlog
+	 * @param prefetch the inner source request size
+	 * @tparam T the merged type
+	 *
+	 * @return a merged [[Flux]]
+	 */
+  def merge[T](source: Publisher[Publisher[_ <: T]], concurrency: Int, prefetch: Int): Flux[T] = Flux(JFlux.merge[T](source, concurrency, prefetch))
+
+  /**
+	 * Merge emitted [[Publisher]] sequences from the passed [[Publisher]] into an interleaved merged sequence.
+	 * [[Iterable.iterator()]] will be called for each [[Publisher.subscribe]].
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/merge.png" alt="">
+	 * <p>
+	 * @param sources the [[scala.Iterable]] to lazily iterate on [[Publisher.subscribe]]
+	 * @tparam I The source type of the data sequence
+	 *
+	 * @return a fresh Reactive [[Flux]] publisher ready to be subscribed
+	 */
+  def merge[I](sources: Iterable[Publisher[_ <: I]]): Flux[I] = Flux(JFlux.merge[I](sources))
+
+  /**
+	 * Merge emitted [[Publisher]] sequences from the passed [[Publisher]] array into an interleaved merged
+	 * sequence.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/merge.png" alt="">
+	 * <p>
+	 * @param sources the [[Publisher]] array to iterate on [[Publisher.subscribe]]
+	 * @tparam I The source type of the data sequence
+	 *
+	 * @return a fresh Reactive [[Flux]] publisher ready to be subscribed
+	 */
+  def merge[I](sources: Publisher[_ <: I]*): Flux[I] = Flux(JFlux.merge[I](sources))
+
+  /**
+	 * Merge emitted [[Publisher]] sequences from the passed [[Publisher]] array into an interleaved merged
+	 * sequence.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/merge.png" alt="">
+	 * <p>
+	 * @param sources the [[Publisher]] array to iterate on [[Publisher.subscribe]]
+	 * @param prefetch the inner source request size
+	 * @tparam I The source type of the data sequence
+	 *
+	 * @return a fresh Reactive [[Flux]] publisher ready to be subscribed
+	 */
+  def merge[I](prefetch: Int, sources: Publisher[_ <: I]*): Flux[I] = Flux(JFlux.merge[I](prefetch, sources:_*))
+
+  /**
+	 * Merge emitted [[Publisher]] sequences from the passed [[Publisher]] array into an interleaved merged
+	 * sequence.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/merge.png" alt="">
+	 * <p>
+	 * @param sources the [[Publisher]] array to iterate on [[Publisher.subscribe]]
+	 * @param prefetch the inner source request size
+	 * @param delayError should any error be delayed after current merge backlog
+	 * @tparam I The source type of the data sequence
+	 *
+	 * @return a fresh Reactive [[Flux]] publisher ready to be subscribed
+	 */
+  def merge[I](prefetch: Int, delayError: Boolean, sources: Publisher[_ <: I]*): Flux[I] = Flux(JFlux.merge[I](prefetch, delayError, sources:_*))
 }
