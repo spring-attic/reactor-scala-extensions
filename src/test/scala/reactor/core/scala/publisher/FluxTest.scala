@@ -232,6 +232,12 @@ class FluxTest extends FreeSpec with Matchers {
           .expectNext(1, 2)
           .verifyComplete()
       }
+      "with one element should emit value from provided data" in {
+        val flux = Flux.just[Int](1)
+        StepVerifier.create(flux)
+          .expectNext(1)
+          .verifyComplete()
+      }
     }
 
     ".count should return Mono which emit the number of value in this flux" in {
@@ -258,7 +264,7 @@ class FluxTest extends FreeSpec with Matchers {
     }
 
     ".sample should emit the last value for given interval" ignore {
-      val flux = Flux.just(1L).sample(Duration(1, "second"))
+      val flux = Flux.just[Long](1L).sample(Duration(1, "second"))
       val counter = new CountDownLatch(3)
       flux.subscribe(new BaseSubscriber[Long] {
         override def hookOnSubscribe(subscription: Subscription): Unit = subscription.request(Long.MaxValue)
@@ -273,7 +279,7 @@ class FluxTest extends FreeSpec with Matchers {
 
     ".doOnRequest should be called upon request" in {
       val atomicLong = new AtomicLong(0)
-      val mono = Flux.just(1L)
+      val mono = Flux.just[Long](1L)
         .doOnRequest(l => atomicLong.compareAndSet(0, l))
       mono.subscribe(new BaseSubscriber[Long] {
         override def hookOnSubscribe(subscription: Subscription): Unit = {
@@ -288,7 +294,7 @@ class FluxTest extends FreeSpec with Matchers {
 
     ".doOnSubscribe should be called upon subscribe" in {
       val atomicBoolean = new AtomicBoolean(false)
-      val mono = Flux.just(1L)
+      val mono = Flux.just[Long](1L)
         .doOnSubscribe(s => atomicBoolean.compareAndSet(false, true))
       StepVerifier.create(mono)
         .expectNextCount(1)

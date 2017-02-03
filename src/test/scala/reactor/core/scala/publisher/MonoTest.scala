@@ -1136,7 +1136,7 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
 
     ".repeatWhen should emit the value of this mono accompanied by the publisher" ignore {
       val counter = new AtomicLong()
-      val flux = Mono.just(randomValue).repeatWhen((fl: Flux[Long]) => Flux.just(counter.incrementAndGet())).take(3)
+      val flux = Mono.just(randomValue).repeatWhen((fl: Flux[Long]) => Flux.just[Long](counter.incrementAndGet())).take(3)
       StepVerifier.create(flux)
         .expectNext(randomValue, randomValue, randomValue)
         .verifyComplete()

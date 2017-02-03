@@ -576,7 +576,29 @@ object Flux {
     Flux(JFlux.fromArray[T](array))
   }
 
+  /**
+    * Create a new [[Flux]] that emits the specified items and then complete.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/justn.png" alt="">
+    * <p>
+    *
+    * @param data the consecutive data objects to emit
+    * @tparam T the emitted data type
+    * @return a new [[Flux]]
+    */
   def just[T](data: T*): Flux[T] = {
     Flux(JFlux.just(data: _*))
   }
+
+  /**
+	 * Create a new [[Flux]] that will only emit the passed data then onComplete.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/just.png" alt="">
+	 * <p>
+	 * @param data the unique data to emit
+	 * @tparam T the emitted data type
+	 *
+	 * @return a new [[Flux]]
+	 */
+  def just[T](data: T): Flux[T] = Flux(JFlux.just[T](data))
 }
