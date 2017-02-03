@@ -211,6 +211,20 @@ class FluxTest extends FreeSpec with Matchers {
       }
     }
 
+    ".from should expose the specified publisher with flux API" in {
+      val flux = Flux.from(Mono.just(1))
+      StepVerifier.create(flux)
+        .expectNext(1)
+        .verifyComplete()
+    }
+
+    ".fromArray should create a flux that emits the items contained in the provided array" in {
+      val flux = Flux.fromArray(Array("1", "2", "3"))
+      StepVerifier.create(flux)
+        .expectNext("1", "2", "3")
+        .verifyComplete()
+    }
+
     ".just" - {
       "with varargs should emit values from provided data" in {
         val flux = Flux.just(1, 2)

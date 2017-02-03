@@ -559,14 +559,24 @@ object Flux {
     * @return a new [[Flux]]
     */
   def from[T](source: Publisher[_ <: T]): Flux[T] = {
-    new Flux[T](
-      JFlux.from(source)
-    )
+    Flux(JFlux.from(source))
+  }
+
+  /**
+    * Create a [[Flux]] that emits the items contained in the provided [[scala.Array]].
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/fromarray.png" alt="">
+    * <p>
+    *
+    * @param array the array to read data from
+    * @tparam T the [[Publisher]] type to stream
+    * @return a new [[Flux]]
+    */
+  def fromArray[T <: AnyRef](array: Array[T]): Flux[T] = {
+    Flux(JFlux.fromArray[T](array))
   }
 
   def just[T](data: T*): Flux[T] = {
-    new Flux[T](
-      JFlux.just(data: _*)
-    )
+    Flux(JFlux.just(data: _*))
   }
 }
