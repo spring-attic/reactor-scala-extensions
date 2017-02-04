@@ -745,4 +745,21 @@ object Flux {
 	 * @return a merged [[Flux]]
 	 */
   def mergeSequential[I](sources: Publisher[_ <: I]*): Flux[I] = Flux(JFlux.mergeSequential(sources:_*))
+
+  /**
+	 * Merge a number of [[Publisher]] sequences into an ordered merged sequence.
+	 * Unlike concat, the inner publishers are subscribed to eagerly. Unlike merge, their
+	 * emitted values are merged into the final sequence in subscription order.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/mergesequential.png" alt="">
+	 * <p>
+	 * @param delayError should any error be delayed after current merge backlog
+	 * @param prefetch the inner source request size
+	 * @param sources a number of [[Publisher]] sequences to merge
+	 * @tparam I the merged type
+	 *
+	 * @return a merged [[Flux]]
+	 */
+  def mergeSequential[I](prefetch: Int, delayError: Boolean, sources: Publisher[_ <: I]*): Flux[I] =
+    Flux(JFlux.mergeSequential(prefetch, delayError, sources: _*))
 }
