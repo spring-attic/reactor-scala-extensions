@@ -265,6 +265,18 @@ class FluxTest extends FreeSpec with Matchers {
           .expectNext(1, 2, 3, 2, 3, 4)
           .verifyComplete()
       }
+      "with iterable of publisher should merge the underlying publisher in sequence of the publisher" in {
+        val flux = Flux.mergeSequential[Int](Iterable(Flux.just(1, 2, 3), Flux.just(2, 3, 4)))
+        StepVerifier.create(flux)
+          .expectNext(1, 2, 3, 2, 3, 4)
+          .verifyComplete()
+      }
+      "with iterable of publisher, delayError, maxConcurrency and prefetch should merge the underlying publisher in sequence of the publisher" in {
+        val flux = Flux.mergeSequential[Int](Iterable(Flux.just(1, 2, 3), Flux.just(2, 3, 4)), true, 8, 2)
+        StepVerifier.create(flux)
+          .expectNext(1, 2, 3, 2, 3, 4)
+          .verifyComplete()
+      }
     }
 
     ".count should return Mono which emit the number of value in this flux" in {

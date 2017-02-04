@@ -762,4 +762,37 @@ object Flux {
 	 */
   def mergeSequential[I](prefetch: Int, delayError: Boolean, sources: Publisher[_ <: I]*): Flux[I] =
     Flux(JFlux.mergeSequential(prefetch, delayError, sources: _*))
+
+  /**
+	 * Merge [[Publisher]] sequences from an [[Iterable]] into an ordered merged
+	 * sequence. Unlike concat, the inner publishers are subscribed to eagerly. Unlike
+	 * merge, their emitted values are merged into the final sequence in subscription order.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/mergesequential.png" alt="">
+	 * <p>
+	 * @param sources an [[Iterable]] of [[Publisher]] sequences to merge
+	 * @tparam I the merged type
+	 *
+	 * @return a merged [[Flux]]
+	 */
+  def mergeSequential[I](sources: Iterable[Publisher[_ <: I]]): Flux[I] = Flux(JFlux.mergeSequential[I](sources))
+
+  /**
+	 * Merge [[Publisher]] sequences from an [[Iterable]] into an ordered merged
+	 * sequence. Unlike concat, the inner publishers are subscribed to eagerly. Unlike
+	 * merge, their emitted values are merged into the final sequence in subscription order.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/mergesequential.png" alt="">
+	 * <p>
+	 * @param sources an [[Iterable]] of [[Publisher]] sequences to merge
+	 * @param delayError should any error be delayed after current merge backlog
+	 * @param maxConcurrency the request produced to the main source thus limiting concurrent merge backlog
+	 * @param prefetch the inner source request size
+	 * @tparam I the merged type
+	 *
+	 * @return a merged [[Flux]]
+	 */
+  def mergeSequential[I](sources: Iterable[Publisher[_ <: I]], delayError: Boolean, maxConcurrency: Int, prefetch: Int): Flux[I] =
+    Flux(JFlux.mergeSequential[I](sources, delayError, maxConcurrency, prefetch))
+
 }
