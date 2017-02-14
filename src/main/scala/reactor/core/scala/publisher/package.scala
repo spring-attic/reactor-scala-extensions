@@ -1,6 +1,6 @@
 package reactor.core.scala
 
-import java.lang.{Boolean => JBoolean, Long => JLong, Iterable => JIterable}
+import java.lang.{Boolean => JBoolean, Iterable => JIterable, Long => JLong}
 import java.time.{Duration => JDuration}
 import java.util.Optional
 import java.util.function.{BiConsumer, BiFunction, BooleanSupplier, Consumer, Function, LongConsumer, Predicate, Supplier}
@@ -100,6 +100,8 @@ Uncomment this when used. It is not used for now and reduce the code coverage
   }
 
   implicit def jFluxJLong2FluxLong(jFluxLong: JFlux[JLong]): Flux[Long] = Flux.from(jFluxLong.map(Long2long(_: JLong)))
+
+  implicit def jFluxJInt2JFluxInt(jFluxInt: JFlux[Integer]): JFlux[Int] = jFluxInt.map[Int]((i: Integer) => Integer2int(i))
 
   implicit def mappableJLong2MappableLong(mappableJLong: MapablePublisher[JLong]): MapablePublisher[Long] = mappableJLong.map(Long2long(_: JLong))
 

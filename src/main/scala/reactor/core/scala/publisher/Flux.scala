@@ -54,26 +54,25 @@ class Flux[T](private[publisher] val jFlux: JFlux[T]) extends Publisher[T] with 
   final def defaultIfEmpty(defaultV: T) = new Flux[T](jFlux.defaultIfEmpty(defaultV))
 
   /**
-	 * Attach a Long customer to this [[Flux]] that will observe any request to this [[Flux]].
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/doonrequest.png" alt="">
-	 *
-	 * @param consumer the consumer to invoke on each request
-	 *
-	 * @return an observed  [[Flux]]
-	 */
+    * Attach a Long customer to this [[Flux]] that will observe any request to this [[Flux]].
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/doonrequest.png" alt="">
+    *
+    * @param consumer the consumer to invoke on each request
+    * @return an observed  [[Flux]]
+    */
   final def doOnRequest(consumer: Long => Unit): Flux[T] = Flux(jFlux.doOnRequest(consumer))
 
   /**
-	 * Triggered when the [[Flux]] is subscribed.
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/doonsubscribe.png" alt="">
-	 * <p>
-	 * @param onSubscribe the callback to call on [[org.reactivestreams.Subscriber.onSubscribe]]
-	 *
-	 * @return an observed  [[Flux]]
-	 */
+    * Triggered when the [[Flux]] is subscribed.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/doonsubscribe.png" alt="">
+    * <p>
+    *
+    * @param onSubscribe the callback to call on [[org.reactivestreams.Subscriber.onSubscribe]]
+    * @return an observed  [[Flux]]
+    */
   final def doOnSubscribe(onSubscribe: Subscription => Unit): Flux[T] = Flux(jFlux.doOnSubscribe(onSubscribe))
 
   final def asJava(): JFlux[T] = jFlux
@@ -461,11 +460,11 @@ object Flux {
     *
     * @tparam T the value type
     * @param backpressure the backpressure mode, see { @link OverflowStrategy} for the
-    *                                                        available backpressure modes
-    * @param emitter the consumer that will receive a FluxSink for each individual Subscriber.
+    *                     available backpressure modes
+    * @param emitter      the consumer that will receive a FluxSink for each individual Subscriber.
     * @return a [[Flux]]
     */
-//  TODO: How to test backpressure?
+  //  TODO: How to test backpressure?
   def create[T](emitter: FluxSink[T] => Unit, backpressure: OverflowStrategy) = Flux(JFlux.create[T](emitter, backpressure))
 
   /**
@@ -485,26 +484,26 @@ object Flux {
   }
 
   /**
-	 * Create a [[Flux]] that completes without emitting any item.
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/empty.png" alt="">
-	 * <p>
-	 * @tparam T the reified type of the target [[Subscriber]]
-	 *
-	 * @return an empty [[Flux]]
-	 */
+    * Create a [[Flux]] that completes without emitting any item.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/empty.png" alt="">
+    * <p>
+    *
+    * @tparam T the reified type of the target [[Subscriber]]
+    * @return an empty [[Flux]]
+    */
   def empty[T](): Flux[T] = Flux(JFlux.empty[T]())
 
   /**
-	 * Create a [[Flux]] that completes with the specified error.
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/error.png" alt="">
-	 * <p>
-	 * @param error the error to signal to each [[Subscriber]]
-	 * @tparam T the reified type of the target [[Subscriber]]
-	 *
-	 * @return a new failed  [[Flux]]
-	 */
+    * Create a [[Flux]] that completes with the specified error.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/error.png" alt="">
+    * <p>
+    *
+    * @param error the error to signal to each [[Subscriber]]
+    * @tparam T the reified type of the target [[Subscriber]]
+    * @return a new failed  [[Flux]]
+    */
   def error[T](error: Throwable): Flux[T] = Flux(JFlux.error[T](error))
 
   /**
@@ -521,31 +520,29 @@ object Flux {
   def error[O](throwable: Throwable, whenRequested: Boolean): Flux[O] = Flux(JFlux.error(throwable, whenRequested))
 
   /**
-	 * Select the fastest source who emitted first onNext or onComplete or onError
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/firstemitting.png" alt="">
-	 * <p> <p>
-	 *
-	 * @param sources The competing source publishers
-	 * @tparam I The source type of the data sequence
-	 *
-	 * @return a new [[Flux}]] eventually subscribed to one of the sources or empty
-	 */
+    * Select the fastest source who emitted first onNext or onComplete or onError
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/firstemitting.png" alt="">
+    * <p> <p>
+    *
+    * @param sources The competing source publishers
+    * @tparam I The source type of the data sequence
+    * @return a new [[Flux}]] eventually subscribed to one of the sources or empty
+    */
   def firstEmitting[I](sources: Publisher[_ <: I]*): Flux[I] = Flux(JFlux.firstEmitting(sources: _*))
 
   /**
-	 * Select the fastest source who won the "ambiguous" race and emitted first onNext or onComplete or onError
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/firstemitting.png" alt="">
-	 * <p> <p>
-	 *
-	 * @param sources The competing source publishers
-	 * @tparam I The source type of the data sequence
-	 *
-	 * @return a new [[Flux}]] eventually subscribed to one of the sources or empty
-	 */
+    * Select the fastest source who won the "ambiguous" race and emitted first onNext or onComplete or onError
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/firstemitting.png" alt="">
+    * <p> <p>
+    *
+    * @param sources The competing source publishers
+    * @tparam I The source type of the data sequence
+    * @return a new [[Flux}]] eventually subscribed to one of the sources or empty
+    */
   def firstEmitting[I](sources: Iterable[Publisher[_ <: I]]): Flux[I] = Flux(JFlux.firstEmitting[I](sources))
 
   /**
@@ -795,4 +792,54 @@ object Flux {
   def mergeSequential[I](sources: Iterable[Publisher[_ <: I]], delayError: Boolean, maxConcurrency: Int, prefetch: Int): Flux[I] =
     Flux(JFlux.mergeSequential[I](sources, delayError, maxConcurrency, prefetch))
 
+  /**
+    * Create a [[Flux]] that will never signal any data, error or completion signal.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/never.png" alt="">
+    * <p>
+    *
+    * @tparam T the [[Subscriber]] type target
+    * @return a never completing [[Flux]]
+    */
+  def never[T]() = Flux(JFlux.never[T]())
+
+  /**
+    * Build a [[Flux]] that will only emit a sequence of incrementing integer from `start` to `start + count` then complete.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/range.png" alt="">
+    *
+    * @param start the first integer to be emit
+    * @param count the number ot times to emit an increment including the first value
+    * @return a ranged [[Flux]]
+    */
+  def range(start: Int, count: Int) = Flux(JFlux.range(start, count))
+
+  /**
+    * Build a [[reactor.core.publisher.FluxProcessor]] whose data are emitted by the most recent emitted [[Publisher]]. The
+    * [[Flux]] will complete once both the publishers source and the last switched to [[Publisher]] have completed.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/switchonnext.png"
+    * alt="">
+    *
+    * @param mergedPublishers The { @link Publisher} of switching [[Publisher]] to subscribe to.
+    * @tparam T the produced type
+    * @return a [[reactor.core.publisher.FluxProcessor]] accepting publishers and producing T
+    */
+//  TODO: How to test these switchOnNext?
+  def switchOnNext[T](mergedPublishers: Publisher[Publisher[_ <: T]]) = Flux(JFlux.switchOnNext[T](mergedPublishers))
+
+  /**
+    * Build a [[reactor.core.publisher.FluxProcessor]] whose data are emitted by the most recent emitted [[Publisher]]. The
+    * [[Flux]] will complete once both the publishers source and the last switched to [[Publisher]] have completed.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/switchonnext.png"
+    * alt="">
+    *
+    * @param mergedPublishers The { @link Publisher} of switching { @link Publisher} to subscribe to.
+    * @param prefetch the inner source request size
+    * @tparam T the produced type
+    * @return a [[reactor.core.publisher.FluxProcessor]] accepting publishers and producing T
+    */
+  def switchOnNext[T](mergedPublishers: Publisher[Publisher[_ <: T]], prefetch: Int) = Flux(JFlux.switchOnNext[T](mergedPublishers, prefetch))
 }

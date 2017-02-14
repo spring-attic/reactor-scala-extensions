@@ -204,7 +204,7 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
     ".never will never signal any data, error or completion signal" in {
       val mono = Mono.never
       StepVerifier.create(mono)
-        .expectNoEvent(JDuration.ofMillis(1000))
+        .expectNoEvent(Duration(1, "second"))
     }
 
 
