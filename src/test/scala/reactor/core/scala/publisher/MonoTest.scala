@@ -69,7 +69,7 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
 
       "duration in millis with given TimeScheduler" in {
         StepVerifier.withVirtualTime(new Supplier[Mono[Long]] {
-          override def get(): Mono[Long] = Mono.delayMillis(50000, VirtualTimeScheduler.enable(false))
+          override def get(): Mono[Long] = Mono.delayMillis(50000, VirtualTimeScheduler.getOrSet(false))
         })
           .thenAwait(JDuration.ofSeconds(50))
           .expectNextCount(1)
@@ -222,10 +222,7 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
 
           override def hookOnNext(value: Boolean): Unit = emittedValue.compareAndSet(false, true)
         })
-        //    sequenceEqual has bug with subscription signalling
-        //    see https://github.com/reactor/reactor-core/issues/328
-        //        TODO: Fix this once the above issue is fixed
-        //        isSubscribed shouldBe 'get
+        isSubscribed shouldBe 'get
         emittedValue shouldBe 'get
       }
     }
@@ -450,8 +447,7 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
           .verifyComplete()
       }
 
-      //      wait till https://github.com/reactor/reactor-core/issues/333 is fixed
-      "with p1, p2 and p3 should merge when all Monos are fulfilled" ignore {
+      "with p1, p2 and p3 should merge when all Monos are fulfilled" in {
         StepVerifier.create(Mono.whenDelayError(just(1), just("one"), just(1L)))
           .expectNext((1, "one", 1L))
           .verifyComplete()
@@ -1315,9 +1311,10 @@ class MonoAsyncTest extends AsyncFreeSpec {
   "Mono" - {
     ".toFuture should convert this mono to future" in {
       val future: Future[Int] = Mono.just(1).toFuture
-      future map {v => {
+      future map { v => {
         assert(v == 1)
-      }}
+      }
+      }
     }
   }
 

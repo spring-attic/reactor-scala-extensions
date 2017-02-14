@@ -15,7 +15,7 @@ repositories {
 }
 
 ext {
-    reactorVersion = "3.0.4.RELEASE"
+    reactorVersion = "3.0.5.RELEASE"
     baseScalaVersion = "2.11"
 }
 
