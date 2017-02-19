@@ -3,6 +3,7 @@ package reactor.core.scala
 import java.lang.{Boolean => JBoolean, Iterable => JIterable, Long => JLong}
 import java.time.{Duration => JDuration}
 import java.util.Optional
+import java.util.concurrent.Callable
 import java.util.function.{BiConsumer, BiFunction, BooleanSupplier, Consumer, Function, LongConsumer, Predicate, Supplier}
 
 import org.reactivestreams.Publisher
@@ -144,5 +145,11 @@ Uncomment this when used. It is not used for now and reduce the code coverage
   implicit def scalaIterable2JavaIterable[T](scalaIterable: Iterable[T]): JIterable[T] = {
     import scala.collection.JavaConverters._
     scalaIterable.asJava
+  }
+
+  implicit def scalaFunction2JavaCallable[T] (scalaFunction: () => T): Callable[T] = {
+    new Callable[T] {
+      override def call(): T = scalaFunction()
+    }
   }
 }

@@ -1,5 +1,7 @@
 package reactor.core.scala.publisher
 
+import java.io.{File, PrintWriter}
+import java.nio.file.Files
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicLong}
 import java.util.concurrent.{CountDownLatch, TimeUnit}
 
@@ -9,6 +11,7 @@ import reactor.core.publisher.{BaseSubscriber, FluxSink}
 import reactor.test.StepVerifier
 
 import scala.concurrent.duration.Duration
+import scala.io.Source
 import scala.util.{Failure, Try}
 
 /**
@@ -293,6 +296,22 @@ class FluxTest extends FreeSpec with Matchers {
         .verifyComplete()
     }
 
+    ".using should produce some data" in {
+      val tempFile = Files.createTempFile("fluxtest-",".tmp")
+      tempFile.toFile.deleteOnExit()
+      new PrintWriter(tempFile.toFile) { write(s"1${sys.props("line.separator")}2"); flush(); close() }
+      val flux = Flux.using[String, File](() => tempFile.toFile, (file: File) => Flux.fromIterable(Source.fromFile(file).getLines().toIterable), (file: File) => file.delete())
+      StepVerifier.create(flux)
+        .expectNext("1", "2")
+        .verifyComplete()
+    }
+
+    ".iterable should produce data from iterable" in {
+      val flux = Flux.fromIterable[Int](Iterable(1, 2, 3))
+      StepVerifier.create(flux)
+        .expectNext(1, 2, 3)
+        .verifyComplete()
+    }
 
 
     ".count should return Mono which emit the number of value in this flux" in {
