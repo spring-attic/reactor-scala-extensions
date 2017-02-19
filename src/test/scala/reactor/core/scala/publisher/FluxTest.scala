@@ -296,14 +296,35 @@ class FluxTest extends FreeSpec with Matchers {
         .verifyComplete()
     }
 
-    ".using should produce some data" in {
-      val tempFile = Files.createTempFile("fluxtest-",".tmp")
-      tempFile.toFile.deleteOnExit()
-      new PrintWriter(tempFile.toFile) { write(s"1${sys.props("line.separator")}2"); flush(); close() }
-      val flux = Flux.using[String, File](() => tempFile.toFile, (file: File) => Flux.fromIterable(Source.fromFile(file).getLines().toIterable), (file: File) => file.delete())
-      StepVerifier.create(flux)
-        .expectNext("1", "2")
-        .verifyComplete()
+    ".using" - {
+      "without eager flag should produce some data" in {
+        val tempFile = Files.createTempFile("fluxtest-", ".tmp")
+        tempFile.toFile.deleteOnExit()
+        new PrintWriter(tempFile.toFile) {
+          write(s"1${sys.props("line.separator")}2"); flush(); close()
+        }
+        val flux: Flux[String] = Flux.using[String, File](() => tempFile.toFile, (file: File) => Flux.fromIterable[String](Source.fromFile(file).getLines().toIterable), (file: File) => {
+          file.delete()
+          ()
+        })
+        StepVerifier.create(flux)
+          .expectNext("1", "2")
+          .verifyComplete()
+      }
+      "with eager flag should produce some data" in {
+        val tempFile = Files.createTempFile("fluxtest-", ".tmp")
+        tempFile.toFile.deleteOnExit()
+        new PrintWriter(tempFile.toFile) {
+          write(s"1${sys.props("line.separator")}2"); flush(); close()
+        }
+        val flux: Flux[String] = Flux.using[String, File](() => tempFile.toFile, (file: File) => Flux.fromIterable[String](Source.fromFile(file).getLines().toIterable), (file: File) => {
+          file.delete()
+          ()
+        }, eager = true)
+        StepVerifier.create(flux)
+          .expectNext("1", "2")
+          .verifyComplete()
+      }
     }
 
     ".iterable should produce data from iterable" in {
