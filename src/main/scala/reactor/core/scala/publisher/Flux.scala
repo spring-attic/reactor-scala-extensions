@@ -32,6 +32,85 @@ import scala.concurrent.duration.Duration
 class Flux[T](private[publisher] val jFlux: JFlux[T]) extends Publisher[T] with MapablePublisher[T] {
   override def subscribe(s: Subscriber[_ >: T]): Unit = jFlux.subscribe(s)
 
+  /**
+    *
+    * Emit a single boolean true if all values of this sequence match
+    * the given predicate.
+    * <p>
+    * The implementation uses short-circuit logic and completes with false if
+    * the predicate doesn't match a value.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/all.png" alt="">
+    *
+    * @param predicate the predicate to match all emitted items
+    * @return a [[Mono]] of all evaluations
+    */
+  final def all(predicate: T => Boolean): Mono[Boolean] = Mono(jFlux.all(predicate)).map(Boolean2boolean)
+
+  /**
+    * Emit a single boolean true if any of the values of this [[Flux]] sequence match
+    * the predicate.
+    * <p>
+    * The implementation uses short-circuit logic and completes with true if
+    * the predicate matches a value.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/any.png" alt="">
+    *
+    * @param predicate predicate tested upon values
+    * @return a new [[Flux]] with <code>true</code> if any value satisfies a predicate and <code>false</code>
+    *         otherwise
+    *
+    */
+  final def any(predicate: T => Boolean): Mono[Boolean] = Mono(jFlux.any(predicate)).map(Boolean2boolean)
+
+  /**
+    * Immediately apply the given transformation to this [[Flux]] in order to generate a target type.
+    *
+    * `flux.as(Mono::from).subscribe()`
+    *
+    * @param transformer the [[Function1]] to immediately map this [[Flux]]
+    *                    into a target type
+    *                    instance.
+    * @tparam P the returned type
+    * @return a an instance of P
+    * @see [[Flux.compose]] for a bounded conversion to [[Publisher]]
+    */
+  final def as[P](transformer: Flux[T] => P): P = jFlux.as(transformer)
+
+  /**
+    * Defer the transformation of this [[Flux]] in order to generate a target [[Flux]] for each
+    * new [[Subscriber]].
+    *
+    * `flux.compose(Mono::from).subscribe()`
+    *
+    * @param transformer the [[Function1]] to map this [[Flux]] into a target [[Publisher]]
+    *                    instance for each new subscriber
+    * @tparam V the item type in the returned [[Publisher]]
+    * @return a new [[Flux]]
+    * @see [[Flux.transform]] for immmediate transformation of [[Flux]]
+    * @see [[Flux.as]] for a loose conversion to an arbitrary type
+    */
+  final def compose[V](transformer: Flux[T] => Publisher[V]) = Flux(jFlux.compose[V](transformer))
+
+  /**
+    * Transform this [[Flux]] in order to generate a target [[Flux]]. Unlike [[Flux.compose]], the
+    * provided function is executed as part of assembly.
+    * *
+    *
+    * @example val applySchedulers = flux => flux.subscribeOn(Schedulers.elastic()).publishOn(Schedulers.parallel());
+    *          flux.transform(applySchedulers).map(v => v * v).subscribe()
+    *
+    * @param transformer the [[Function1]] to immediately map this [[Flux]] into a target [[Flux]]
+    *                    instance.
+    * @tparam V the item type in the returned [[Flux]]
+    * @return a new [[Flux]]
+    * @see [[Flux.compose]] for deferred composition of [[Flux]] for each [[Subscriber]]
+    * @see [[Flux.as]] for a loose conversion to an arbitrary type
+    */
+  final def transform[V](transformer: Flux[T] => Publisher[V]) = Flux(jFlux.transform[V](transformer))
+
   def count(): Mono[Long] = Mono[Long](jFlux.count().map(new Function[JLong, Long] {
     override def apply(t: JLong) = Long2long(t)
   }))
@@ -1078,7 +1157,7 @@ object Flux {
     *
     * @param combinator The aggregate function that will receive a unique value from each upstream and return the
     *                   value to signal downstream
-    * @param prefetch individual source request size
+    * @param prefetch   individual source request size
     * @param sources    the [[Publisher]] array to iterate on [[Publisher.subscribe]]
     * @tparam I the type of the input sources
     * @tparam O the combined produced type

@@ -301,7 +301,9 @@ class FluxTest extends FreeSpec with Matchers {
         val tempFile = Files.createTempFile("fluxtest-", ".tmp")
         tempFile.toFile.deleteOnExit()
         new PrintWriter(tempFile.toFile) {
-          write(s"1${sys.props("line.separator")}2"); flush(); close()
+          write(s"1${sys.props("line.separator")}2");
+          flush();
+          close()
         }
         val flux: Flux[String] = Flux.using[String, File](() => tempFile.toFile, (file: File) => Flux.fromIterable[String](Source.fromFile(file).getLines().toIterable), (file: File) => {
           file.delete()
@@ -315,7 +317,9 @@ class FluxTest extends FreeSpec with Matchers {
         val tempFile = Files.createTempFile("fluxtest-", ".tmp")
         tempFile.toFile.deleteOnExit()
         new PrintWriter(tempFile.toFile) {
-          write(s"1${sys.props("line.separator")}2"); flush(); close()
+          write(s"1${sys.props("line.separator")}2");
+          flush();
+          close()
         }
         val flux: Flux[String] = Flux.using[String, File](() => tempFile.toFile, (file: File) => Flux.fromIterable[String](Source.fromFile(file).getLines().toIterable), (file: File) => {
           file.delete()
@@ -390,18 +394,52 @@ class FluxTest extends FreeSpec with Matchers {
       }
     }
 
-    ".iterable should produce data from iterable" in {
-      val flux = Flux.fromIterable[Int](Iterable(1, 2, 3))
-      StepVerifier.create(flux)
-        .expectNext(1, 2, 3)
+    ".all should check every single element satisfy the predicate" in {
+      val mono = Flux.just(1, 2, 3).all(i => i > 0)
+      StepVerifier.create(mono)
+        .expectNext(true)
         .verifyComplete()
     }
 
+    ".any should check that there is at least one element satisfy the predicate" in {
+      val mono = Flux.just(1, 2, 3).any(i => i % 2 == 0)
+      StepVerifier.create(mono)
+        .expectNext(true)
+        .verifyComplete()
+    }
+
+    ".as should transform this flux to another publisher" in {
+      val mono = Flux.just(1, 2, 3).as(Mono.from)
+      StepVerifier.create(mono)
+        .expectNext(1)
+        .verifyComplete()
+    }
+
+    ".compose should defer transformation of this flux to another publisher" in {
+      val flux = Flux.just(1, 2, 3).compose(Mono.from)
+      StepVerifier.create(flux)
+        .expectNext(1)
+        .verifyComplete()
+    }
+
+    ".transform should defer transformation of this flux to another publisher" in {
+      val flux = Flux.just(1, 2, 3).transform(Mono.from)
+      StepVerifier.create(flux)
+        .expectNext(1)
+        .verifyComplete()
+    }
 
     ".count should return Mono which emit the number of value in this flux" in {
       val mono = Flux.just(10, 9, 8).count()
       StepVerifier.create(mono)
         .expectNext(3)
+        .verifyComplete()
+    }
+
+    ".iterable should produce data from iterable" in {
+      val flux = Flux.fromIterable[Int](Iterable(1, 2, 3))
+      StepVerifier.create(flux)
+        .expectNext(1, 2, 3)
         .verifyComplete()
     }
 
