@@ -1012,6 +1012,45 @@ object Flux {
       .map(tupleSix2ScalaTuple6)
 
   /**
+    * "Step-Merge" especially useful in Scatter-Gather scenarios. The operator will forward all combinations
+    * produced by the passed combinator function of the
+    * most recent items emitted by each source until any of them completes. Errors will immediately be forwarded.
+    *
+    * The [[Iterable.iterator]] will be called on each [[Publisher.subscribe]].
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/zip.png" alt="">
+    *
+    * @param sources    the [[Iterable]] to iterate on [[Publisher.subscribe]]
+    * @param combinator The aggregate function that will receive a unique value from each upstream and return the value
+    *                   to signal downstream
+    * @tparam O the combined produced type
+    * @return a zipped [[Flux]]
+    */
+  def zip[O](sources: Iterable[_ <: Publisher[_]], combinator: Array[_] => O) =
+    Flux(JFlux.zip[O](sources, combinator))
+
+  /**
+    * "Step-Merge" especially useful in Scatter-Gather scenarios. The operator will forward all combinations
+    * produced by the passed combinator function of the
+    * most recent items emitted by each source until any of them completes. Errors will immediately be forwarded.
+    *
+    * The [[Iterable.iterator]] will be called on each [[Publisher.subscribe]].
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/zip.png" alt="">
+    *
+    * @param sources    the [[Iterable]] to iterate on [[Publisher.subscribe]]
+    * @param prefetch   the inner source request size
+    * @param combinator The aggregate function that will receive a unique value from each upstream and return the value
+    *                   to signal downstream
+    * @tparam O the combined produced type
+    * @return a zipped [[Flux]]
+    */
+  def zip[O](sources: Iterable[_ <: Publisher[_]], prefetch: Int, combinator: Array[_] => O) =
+    Flux(JFlux.zip[O](sources, prefetch, combinator))
+
+  /**
     * Create a [[Flux]] that emits the items contained in the provided [[Iterable]].
     * A new iterator will be created for each subscriber.
     * <p>

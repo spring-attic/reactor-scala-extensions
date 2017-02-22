@@ -364,7 +364,18 @@ class FluxTest extends FreeSpec with Matchers {
           .expectNext((1, "one", 1l, BigDecimal("1"), "a", "a"), (2, "two", 2l, BigDecimal("2"), "i", "b"), (3, "three", 3l, BigDecimal("3"), "u", "c"))
           .verifyComplete()
       }
-    }
+      "with iterable and combinator should emit flux of combined data" in {
+        val flux = Flux.zip[String](Iterable(Flux.just(1, 2, 3), Flux.just("one", "two", "three")), (array: Array[_]) => s"${array(0)}-${array(1)}")
+        StepVerifier.create(flux)
+          .expectNext("1-one", "2-two", "3-three")
+          .verifyComplete()
+      }
+      "with iterable, prefetch and combinator should emit flux of combined data" in {
+        val flux = Flux.zip[String](Iterable(Flux.just(1, 2, 3), Flux.just("one", "two", "three")), 2, (array: Array[_]) => s"${array(0)}-${array(1)}")
+        StepVerifier.create(flux)
+          .expectNext("1-one", "2-two", "3-three")
+          .verifyComplete()
+      }    }
 
     ".iterable should produce data from iterable" in {
       val flux = Flux.fromIterable[Int](Iterable(1, 2, 3))
