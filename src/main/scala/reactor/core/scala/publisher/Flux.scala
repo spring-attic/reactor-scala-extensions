@@ -924,6 +924,94 @@ object Flux {
       .map(tupleTwo2ScalaTuple2)
 
   /**
+    * "Step-Merge" especially useful in Scatter-Gather scenarios. The operator will forward all combinations of the
+    * most recent items emitted by each source until any of them completes. Errors will immediately be forwarded.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/zipt.png" alt="">
+    * <p>
+    *
+    * @param source1 The first upstream [[Publisher]] to subscribe to.
+    * @param source2 The second upstream [[Publisher]] to subscribe to.
+    * @param source3 The third upstream [[Publisher]] to subscribe to.
+    * @tparam T1 type of the value from source1
+    * @tparam T2 type of the value from source2
+    * @tparam T3 type of the value from source3
+    * @return a zipped [[Flux]]
+    */
+  def zip[T1, T2, T3](source1: Publisher[_ <: T1], source2: Publisher[_ <: T2], source3: Publisher[_ <: T3]): Flux[(T1, T2, T3)] =
+    Flux(JFlux.zip[T1, T2, T3](source1, source2, source3))
+      .map(tupleThree2ScalaTuple3)
+
+  /**
+    * "Step-Merge" especially useful in Scatter-Gather scenarios. The operator will forward all combinations of the
+    * most recent items emitted by each source until any of them completes. Errors will immediately be forwarded.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/zipt.png" alt="">
+    * <p>
+    *
+    * @param source1 The first upstream [[Publisher]] to subscribe to.
+    * @param source2 The second upstream [[Publisher]] to subscribe to.
+    * @param source3 The third upstream [[Publisher]] to subscribe to.
+    * @param source4 The fourth upstream [[Publisher]] to subscribe to.
+    * @tparam T1 type of the value from source1
+    * @tparam T2 type of the value from source2
+    * @tparam T3 type of the value from source3
+    * @tparam T4 type of the value from source4
+    * @return a zipped [[Flux]]
+    */
+  def zip[T1, T2, T3, T4](source1: Publisher[_ <: T1], source2: Publisher[_ <: T2], source3: Publisher[_ <: T3], source4: Publisher[_ <: T4]): Flux[(T1, T2, T3, T4)] =
+    Flux(JFlux.zip[T1, T2, T3, T4](source1, source2, source3, source4))
+      .map(tupleFour2ScalaTuple4)
+
+  /**
+    * "Step-Merge" especially useful in Scatter-Gather scenarios. The operator will forward all combinations of the
+    * most recent items emitted by each source until any of them completes. Errors will immediately be forwarded.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/zipt.png" alt="">
+    * <p>
+    *
+    * @param source1 The first upstream [[Publisher]] to subscribe to.
+    * @param source2 The second upstream [[Publisher]] to subscribe to.
+    * @param source3 The third upstream [[Publisher]] to subscribe to.
+    * @param source4 The fourth upstream [[Publisher]] to subscribe to.
+    * @param source5 The fifth upstream [[Publisher]] to subscribe to.
+    * @tparam T1 type of the value from source1
+    * @tparam T2 type of the value from source2
+    * @tparam T3 type of the value from source3
+    * @tparam T4 type of the value from source4
+    * @tparam T5 type of the value from source5
+    * @return a zipped [[Flux]]
+    */
+  def zip[T1, T2, T3, T4, T5](source1: Publisher[_ <: T1], source2: Publisher[_ <: T2], source3: Publisher[_ <: T3], source4: Publisher[_ <: T4], source5: Publisher[_ <: T5]): Flux[(T1, T2, T3, T4, T5)] =
+    Flux(JFlux.zip[T1, T2, T3, T4, T5](source1, source2, source3, source4, source5))
+      .map(tupleFive2ScalaTuple5)
+
+  /**
+    * "Step-Merge" especially useful in Scatter-Gather scenarios. The operator will forward all combinations of the
+    * most recent items emitted by each source until any of them completes. Errors will immediately be forwarded.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/zipt.png" alt="">
+    * <p>
+    *
+    * @param source1 The first upstream [[Publisher]] to subscribe to.
+    * @param source2 The second upstream [[Publisher]] to subscribe to.
+    * @param source3 The third upstream [[Publisher]] to subscribe to.
+    * @param source4 The fourth upstream [[Publisher]] to subscribe to.
+    * @param source5 The fifth upstream [[Publisher]] to subscribe to.
+    * @param source6 The sixth upstream [[Publisher]] to subscribe to.
+    * @tparam T1 type of the value from source1
+    * @tparam T2 type of the value from source2
+    * @tparam T3 type of the value from source3
+    * @tparam T4 type of the value from source4
+    * @tparam T5 type of the value from source5
+    * @tparam T6 type of the value from source6
+    * @return a zipped [[Flux]]
+    */
+  def zip[T1, T2, T3, T4, T5, T6](source1: Publisher[_ <: T1], source2: Publisher[_ <: T2], source3: Publisher[_ <: T3], source4: Publisher[_ <: T4], source5: Publisher[_ <: T5], source6: Publisher[_ <: T6]): Flux[(T1, T2, T3, T4, T5, T6)] =
+    Flux(JFlux.zip[T1, T2, T3, T4, T5, T6](source1, source2, source3, source4, source5, source6))
+      .map(tupleSix2ScalaTuple6)
+
+  /**
     * Create a [[Flux]] that emits the items contained in the provided [[Iterable]].
     * A new iterator will be created for each subscriber.
     * <p>

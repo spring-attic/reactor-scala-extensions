@@ -787,7 +787,7 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
             .delaySubscriptionMillis(1000)
             .elapsed()
         }, new Supplier[VirtualTimeScheduler] {
-          override def get(): VirtualTimeScheduler = VirtualTimeScheduler.enable(true)
+          override def get(): VirtualTimeScheduler = VirtualTimeScheduler.getOrSet(true)
         }, 1)
           .thenAwait(Duration(1, "second"))
           .expectNextMatches(new Predicate[(Long, Long)] {

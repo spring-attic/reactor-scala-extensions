@@ -340,6 +340,30 @@ class FluxTest extends FreeSpec with Matchers {
           .expectNext((1, "one"), (2, "two"), (3, "three"))
           .verifyComplete()
       }
+      "with source1, source2, source3 should emit flux with tuple3" in {
+        val flux = Flux.zip(Flux.just(1, 2, 3), Flux.just("one", "two", "three"), Flux.just(1l, 2l, 3l))
+        StepVerifier.create(flux)
+          .expectNext((1, "one", 1l), (2, "two", 2l), (3, "three", 3l))
+          .verifyComplete()
+      }
+      "with source1, source2, source3, source4 should emit flux with tuple4" in {
+        val flux = Flux.zip(Flux.just(1, 2, 3), Flux.just("one", "two", "three"), Flux.just(1l, 2l, 3l), Flux.just(BigDecimal("1"), BigDecimal("2"), BigDecimal("3")))
+        StepVerifier.create(flux)
+          .expectNext((1, "one", 1l, BigDecimal("1")), (2, "two", 2l, BigDecimal("2")), (3, "three", 3l, BigDecimal("3")))
+          .verifyComplete()
+      }
+      "with source1, source2, source3, source4, source5 should emit flux with tuple5" in {
+        val flux = Flux.zip(Flux.just(1, 2, 3), Flux.just("one", "two", "three"), Flux.just(1l, 2l, 3l), Flux.just(BigDecimal("1"), BigDecimal("2"), BigDecimal("3")), Flux.just("a", "i", "u"))
+        StepVerifier.create(flux)
+          .expectNext((1, "one", 1l, BigDecimal("1"), "a"), (2, "two", 2l, BigDecimal("2"), "i"), (3, "three", 3l, BigDecimal("3"), "u"))
+          .verifyComplete()
+      }
+      "with source1, source2, source3, source4, source5, source6 should emit flux with tuple6" in {
+        val flux = Flux.zip(Flux.just(1, 2, 3), Flux.just("one", "two", "three"), Flux.just(1l, 2l, 3l), Flux.just(BigDecimal("1"), BigDecimal("2"), BigDecimal("3")), Flux.just("a", "i", "u"), Flux.just("a", "b", "c"))
+        StepVerifier.create(flux)
+          .expectNext((1, "one", 1l, BigDecimal("1"), "a", "a"), (2, "two", 2l, BigDecimal("2"), "i", "b"), (3, "three", 3l, BigDecimal("3"), "u", "c"))
+          .verifyComplete()
+      }
     }
 
     ".iterable should produce data from iterable" in {
