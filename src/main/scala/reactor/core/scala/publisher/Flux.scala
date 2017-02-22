@@ -887,6 +887,26 @@ object Flux {
     Flux(JFlux.using[T, D](resourceSupplier, sourceSupplier, resourceCleanup, eager))
 
   /**
+    * "Step-Merge" especially useful in Scatter-Gather scenarios. The operator will forward all combinations
+    * produced by the passed combinator function of the
+    * most recent items emitted by each source until any of them completes. Errors will immediately be forwarded.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/zip.png" alt="">
+    * <p>
+    *
+    * @param source1 The first upstream [[Publisher]] to subscribe to.
+    * @param source2 The second upstream [[Publisher]] to subscribe to.
+    * @param combinator The aggregate function that will receive a unique value from each upstream and return the
+    *                   value to signal downstream
+    * @tparam T1 type of the value from source1
+    * @tparam T2 type of the value from source2
+    * @tparam O The produced output after transformation by the combinator
+    * @return a zipped [[Flux]]
+    */
+  def zip[T1, T2, O](source1: Publisher[_ <: T1], source2: Publisher[_ <: T2], combinator: (T1, T2) => O) =
+    Flux(JFlux.zip[T1, T2, O](source1, source2, combinator))
+
+  /**
     * Create a [[Flux]] that emits the items contained in the provided [[Iterable]].
     * A new iterator will be created for each subscriber.
     * <p>

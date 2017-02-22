@@ -327,6 +327,15 @@ class FluxTest extends FreeSpec with Matchers {
       }
     }
 
+    ".zip" - {
+      ".with source1, source2 and combinator should combine the data" in {
+        val flux = Flux.zip(Flux.just(1, 2, 3), Flux.just("one", "two", "three"), (i: Int, str: String) => s"$i-$str")
+        StepVerifier.create(flux)
+          .expectNext("1-one", "2-two", "3-three")
+          .verifyComplete()
+      }
+    }
+
     ".iterable should produce data from iterable" in {
       val flux = Flux.fromIterable[Int](Iterable(1, 2, 3))
       StepVerifier.create(flux)
