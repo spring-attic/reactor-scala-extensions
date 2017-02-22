@@ -123,7 +123,7 @@ class FluxTest extends FreeSpec with Matchers {
       }
       "with publisher of publisher, delayUntilEnd and prefetch should concatenate all sources emitted from parents" in {
         val flag = new AtomicBoolean(false)
-        val flux = Flux.concatDelayError[Int](Flux.just(Mono.just(1), Mono.error(new RuntimeException()), Mono.just(3).doOnNext(i => flag.compareAndSet(false, true))): Publisher[Publisher[Int]], delayUntilEnd = true, 2)
+        val flux = Flux.concatDelayError[Int](Flux.just(Mono.just(1), Mono.error(new RuntimeException()), Mono.just(3).doOnNext(_ => flag.compareAndSet(false, true))): Publisher[Publisher[Int]], delayUntilEnd = true, 2)
         StepVerifier.create(flux)
           .expectNext(1, 3)
           .expectError(classOf[RuntimeException])
@@ -328,10 +328,16 @@ class FluxTest extends FreeSpec with Matchers {
     }
 
     ".zip" - {
-      ".with source1, source2 and combinator should combine the data" in {
+      "with source1, source2 and combinator should combine the data" in {
         val flux = Flux.zip(Flux.just(1, 2, 3), Flux.just("one", "two", "three"), (i: Int, str: String) => s"$i-$str")
         StepVerifier.create(flux)
           .expectNext("1-one", "2-two", "3-three")
+          .verifyComplete()
+      }
+      "with source1 and source2 should emit flux with tuple2" in {
+        val flux = Flux.zip(Flux.just(1, 2, 3), Flux.just("one", "two", "three"))
+        StepVerifier.create(flux)
+          .expectNext((1, "one"), (2, "two"), (3, "three"))
           .verifyComplete()
       }
     }
@@ -399,7 +405,7 @@ class FluxTest extends FreeSpec with Matchers {
     ".doOnSubscribe should be called upon subscribe" in {
       val atomicBoolean = new AtomicBoolean(false)
       val mono = Flux.just[Long](1L)
-        .doOnSubscribe(s => atomicBoolean.compareAndSet(false, true))
+        .doOnSubscribe(_ => atomicBoolean.compareAndSet(false, true))
       StepVerifier.create(mono)
         .expectNextCount(1)
         .verifyComplete()
