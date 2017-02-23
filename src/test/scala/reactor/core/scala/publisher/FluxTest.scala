@@ -421,8 +421,8 @@ class FluxTest extends FreeSpec with Matchers {
         element shouldBe Option(1)
       }
       "with duration should wait up to maximum provided duration" in {
-        val element = Mono.delayMillis(100).as(Flux.from).blockFirst(Duration(10, "seconds"))
-        element shouldBe Option(0)
+        val element = Flux.just(1,2,3).blockFirst(Duration(10, "seconds"))
+        element shouldBe Option(1)
       }
     }
 
