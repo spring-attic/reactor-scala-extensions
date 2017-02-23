@@ -80,6 +80,35 @@ class Flux[T](private[publisher] val jFlux: JFlux[T]) extends Publisher[T] with 
   final def as[P](transformer: Flux[T] => P): P = jFlux.as(transformer)
 
   /**
+    * Intercepts the onSubscribe call and makes sure calls to Subscription methods
+    * only happen after the child Subscriber has returned from its onSubscribe method.
+    *
+    * <p>This helps with child Subscribers that don't expect a recursive call from
+    * onSubscribe into their onNext because, for example, they request immediately from
+    * their onSubscribe but don't finish their preparation before that and onNext
+    * runs into a half-prepared state. This can happen with non Reactor mentality based Subscribers.
+    *
+    * @return non reentrant onSubscribe [[Flux]]
+    */
+//  TODO: How to test?
+  final def awaitOnSubscribe() = Flux(jFlux.awaitOnSubscribe())
+
+  /**
+    * Blocks until the upstream signals its first value or completes.
+    *
+    * @return the [[Some]] value or [[None]]
+    */
+  final def blockFirst(): Option[T] = Option(jFlux.blockFirst())
+
+  /**
+    * Blocks until the upstream signals its first value or completes.
+    *
+    * @param d max duration timeout to wait for.
+    * @return the first value or null
+    */
+  final def blockFirst(d: Duration) = Option(jFlux.blockFirst(d))
+
+  /**
     * Defer the transformation of this [[Flux]] in order to generate a target [[Flux]] for each
     * new [[Subscriber]].
     *

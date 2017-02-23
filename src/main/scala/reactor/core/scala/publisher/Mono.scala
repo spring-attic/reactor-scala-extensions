@@ -952,14 +952,23 @@ object Mono {
     )
   }
 
-  def delayMillis(duration: Long): Mono[Long] = {
-    new Mono[Long](
-      JMono.delayMillis(Long2long(duration))
-        .map(new Function[JLong, Long] {
-          override def apply(t: JLong): Long = t
-        })
-    )
-  }
+  /**
+    * Create a Mono which delays an onNext signal of `duration` milliseconds and complete.
+    * If the demand cannot be produced in time, an onError will be signalled instead.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/delay.png" alt="">
+    * <p>
+    *
+    * @param duration the duration in milliseconds of the delay
+    * @return a new [[Mono]]
+    */
+  def delayMillis(duration: Long) = new Mono[Long](
+    JMono.delayMillis(Long2long(duration))
+      .map(new Function[JLong, Long] {
+        override def apply(t: JLong): Long = t
+      })
+  )
 
   def delayMillis(duration: Long, timedScheduler: TimedScheduler): Mono[Long] = {
     new Mono[Long](
