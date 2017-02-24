@@ -1,6 +1,7 @@
 package reactor.core.scala.publisher
 
 import java.lang.{Iterable => JIterable, Long => JLong}
+import java.util
 import java.util.function.Function
 
 import org.reactivestreams.{Publisher, Subscriber, Subscription}
@@ -104,9 +105,54 @@ class Flux[T](private[publisher] val jFlux: JFlux[T]) extends Publisher[T] with 
     * Blocks until the upstream signals its first value or completes.
     *
     * @param d max duration timeout to wait for.
-    * @return the first value or null
+    * @return the [[Some]] value or [[None]]
     */
-  final def blockFirst(d: Duration) = Option(jFlux.blockFirst(d))
+  final def blockFirst(d: Duration): Option[T] = Option(jFlux.blockFirst(d))
+
+  /**
+    * Blocks until the upstream signals its first value or completes.
+    *
+    * @param timeout max duration timeout in millis to wait for.
+    * @return the [[Some]] value or [[None]]
+    */
+  final def blockFirstMillis(timeout: Long) = Option(jFlux.blockFirstMillis(timeout))
+
+  /**
+    * Blocks until the upstream completes and return the last emitted value.
+    *
+    * @return the last [[Some value]] or [[None]]
+    */
+  final def blockLast() = Option(jFlux.blockLast())
+
+  /**
+    * Blocks until the upstream completes and return the last emitted value.
+    *
+    * @param d max duration timeout to wait for.
+    * @return the last [[Some value]] or [[None]]
+    */
+  final def blockLast(d: Duration) = Option(jFlux.blockLast(d))
+
+  /**
+    * Blocks until the upstream completes and return the last emitted value.
+    *
+    * @param timeout max duration timeout in millis to wait for.
+    * @return the last [[Some value]] or [[None]]
+    */
+  final def blockLastMillis(timeout: Long) = Option(jFlux.blockLastMillis(timeout))
+
+  /**
+    * Collect incoming values into a [[Seq]] that will be pushed into the returned [[Flux]] on complete only.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/buffer.png"
+    * alt="">
+    *
+    * @return a buffered { @link Flux} of at most one [[Seq]]
+    * @see #collectList() for an alternative collecting algorithm returning [[Mono]]
+    */
+  final def buffer(): Flux[Seq[T]] = {
+    import scala.collection.JavaConverters._
+    Flux(jFlux.buffer()).map(_.asScala)
+  }
 
   /**
     * Defer the transformation of this [[Flux]] in order to generate a target [[Flux]] for each

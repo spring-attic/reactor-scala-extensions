@@ -11,7 +11,9 @@ import reactor.core.publisher.{BaseSubscriber, FluxSink}
 import reactor.test.StepVerifier
 
 import scala.concurrent.duration.Duration
+import scala.concurrent.duration.DurationInt
 import scala.io.Source
+import scala.language.postfixOps
 import scala.util.{Failure, Try}
 
 /**
@@ -421,9 +423,30 @@ class FluxTest extends FreeSpec with Matchers {
         element shouldBe Option(1)
       }
       "with duration should wait up to maximum provided duration" in {
-        val element = Flux.just(1,2,3).blockFirst(Duration(10, "seconds"))
+        val element = Flux.just(1, 2, 3).blockFirst(Duration(10, "seconds"))
         element shouldBe Option(1)
       }
+    }
+
+    ".blockFirstMillis should block with parameter timeout in millis" in {
+      val element = Flux.just(1, 2, 3).blockFirstMillis(10000)
+      element shouldBe Option(1)
+    }
+
+    ".blockLast" - {
+      "should block and return the last element" in {
+        val element = Flux.just(1, 2, 3).blockLast()
+        element shouldBe Option(3)
+      }
+      "with duration should wait up to the maximum provided duration to get the last element" in {
+        val element = Flux.just(1, 2, 3).blockLast(10 seconds)
+        element shouldBe Option(3)
+      }
+    }
+
+    ".blockLastMillis should block with parameter timeout in millis until the last element is emitted" in {
+      val element = Flux.just(1, 2, 3).blockLastMillis(10000)
+      element shouldBe Option(3)
     }
 
     ".compose should defer transformation of this flux to another publisher" in {
