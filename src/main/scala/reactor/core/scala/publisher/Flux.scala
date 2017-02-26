@@ -1,14 +1,20 @@
 package reactor.core.scala.publisher
 
-import java.lang.{Iterable => JIterable, Long => JLong}
+import java.lang.{Long => JLong}
 import java.util
-import java.util.function.Function
+import java.util.function.{Function, Supplier}
 
 import org.reactivestreams.{Publisher, Subscriber, Subscription}
 import reactor.core.publisher.FluxSink.OverflowStrategy
 import reactor.core.publisher.{FluxSink, Flux => JFlux}
 
+import scala.collection.JavaConverters._
+import scala.collection.mutable
 import scala.concurrent.duration.Duration
+import java.util.{List => JList}
+
+import scala.collection.mutable.ListBuffer
+
 
 /**
   * A Reactive Streams [[Publisher]] with rx operators that emits 0 to N elements, and then completes
@@ -91,7 +97,7 @@ class Flux[T](private[publisher] val jFlux: JFlux[T]) extends Publisher[T] with 
     *
     * @return non reentrant onSubscribe [[Flux]]
     */
-//  TODO: How to test?
+  //  TODO: How to test?
   final def awaitOnSubscribe() = Flux(jFlux.awaitOnSubscribe())
 
   /**
@@ -150,8 +156,38 @@ class Flux[T](private[publisher] val jFlux: JFlux[T]) extends Publisher[T] with 
     * @see #collectList() for an alternative collecting algorithm returning [[Mono]]
     */
   final def buffer(): Flux[Seq[T]] = {
-    import scala.collection.JavaConverters._
     Flux(jFlux.buffer()).map(_.asScala)
+  }
+
+  /**
+    * Collect incoming values into multiple [[Seq]] buckets that will be pushed into the returned [[Flux]]
+    * when the given max size is reached or onComplete is received.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/buffersize.png"
+    * alt="">
+    *
+    * @param maxSize the maximum collected size
+    * @return a microbatched [[Flux]] of [[Seq]]
+    */
+  final def buffer(maxSize: Int): Flux[Seq[T]] = Flux(jFlux.buffer(maxSize)).map(_.asScala)
+
+  /**
+    * Collect incoming values into multiple [[Seq]] buckets that will be
+    * pushed into the returned [[Flux]]
+    * when the given max size is reached or onComplete is received.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/buffersize.png"
+    * alt="">
+    *
+    * @param maxSize        the maximum collected size
+    * @param bufferSupplier the collection to use for each data segment
+    * @tparam C the supplied [[Seq]] type
+    * @return a microbatched [[Flux]] of [[Seq]]
+    */
+  final def buffer[C <: mutable.ListBuffer[T]](maxSize: Int, bufferSupplier: () => C): Flux[mutable.Seq[T]] = {
+    Flux(jFlux.buffer(maxSize, new Supplier[JList[T]] {
+      override def get(): JList[T] = bufferSupplier().asJava
+    })).map(_.asScala)
   }
 
   /**
@@ -176,7 +212,6 @@ class Flux[T](private[publisher] val jFlux: JFlux[T]) extends Publisher[T] with 
     *
     * @example val applySchedulers = flux => flux.subscribeOn(Schedulers.elastic()).publishOn(Schedulers.parallel());
     *          flux.transform(applySchedulers).map(v => v * v).subscribe()
-    *
     * @param transformer the [[Function1]] to immediately map this [[Flux]] into a target [[Flux]]
     *                    instance.
     * @tparam V the item type in the returned [[Flux]]

@@ -10,8 +10,9 @@ import org.scalatest.{FreeSpec, Matchers}
 import reactor.core.publisher.{BaseSubscriber, FluxSink}
 import reactor.test.StepVerifier
 
-import scala.concurrent.duration.Duration
-import scala.concurrent.duration.DurationInt
+import scala.collection.mutable
+import scala.collection.mutable.ListBuffer
+import scala.concurrent.duration.{Duration, DurationInt}
 import scala.io.Source
 import scala.language.postfixOps
 import scala.util.{Failure, Try}
@@ -447,6 +448,32 @@ class FluxTest extends FreeSpec with Matchers {
     ".blockLastMillis should block with parameter timeout in millis until the last element is emitted" in {
       val element = Flux.just(1, 2, 3).blockLastMillis(10000)
       element shouldBe Option(3)
+    }
+
+    ".buffer" - {
+      "should buffer all element into a Seq" in {
+        val flux = Flux.just(1, 2, 3).buffer()
+        StepVerifier.create(flux)
+          .expectNext(Seq(1, 2, 3))
+          .verifyComplete()
+      }
+      "with maxSize should buffer element into a batch of Seqs" in {
+        val flux = Flux.just(1, 2, 3).buffer(2)
+        StepVerifier.create(flux)
+          .expectNext(Seq(1, 2), Seq(3))
+          .verifyComplete()
+      }
+      "with maxSize and sequence supplier should buffer element into a batch of sequences provided by supplier" in {
+        val seqSet = mutable.Set[mutable.ListBuffer[Int]]()
+        val flux = Flux.just(1, 2, 3).buffer(2, () => {
+          val seq = mutable.ListBuffer[Int]()
+          seqSet += seq
+          seq
+        })
+        StepVerifier.create(flux)
+          .expectNextSequence(Iterable(ListBuffer(1, 2), ListBuffer(3)))
+          .verifyComplete()
+      }
     }
 
     ".compose should defer transformation of this flux to another publisher" in {
