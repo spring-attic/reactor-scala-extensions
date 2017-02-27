@@ -1,8 +1,8 @@
 package reactor.core.scala.publisher
 
 import java.lang.{Long => JLong}
-import java.util
 import java.util.function.{Function, Supplier}
+import java.util.{List => JList}
 
 import org.reactivestreams.{Publisher, Subscriber, Subscription}
 import reactor.core.publisher.FluxSink.OverflowStrategy
@@ -11,9 +11,6 @@ import reactor.core.publisher.{FluxSink, Flux => JFlux}
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.concurrent.duration.Duration
-import java.util.{List => JList}
-
-import scala.collection.mutable.ListBuffer
 
 
 /**
@@ -189,6 +186,32 @@ class Flux[T](private[publisher] val jFlux: JFlux[T]) extends Publisher[T] with 
       override def get(): JList[T] = bufferSupplier().asJava
     })).map(_.asScala)
   }
+
+  /**
+    * Collect incoming values into multiple [[Seq]] that will be pushed into the returned [[Flux]] when the
+    * given max size is reached or onComplete is received. A new container [[Seq]] will be created every given
+    * skip count.
+    * <p>
+    * When Skip > Max Size : dropping buffers
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/buffersizeskip.png"
+    * alt="">
+    * <p>
+    * When Skip < Max Size : overlapping buffers
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/buffersizeskipover.png"
+    * alt="">
+    * <p>
+    * When Skip == Max Size : exact buffers
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/buffersize.png"
+    * alt="">
+    *
+    * @param skip    the number of items to skip before creating a new bucket
+    * @param maxSize the max collected size
+    * @return a microbatched [[Flux]] of possibly overlapped or gapped [[Seq]]
+    */
+  final def buffer(maxSize: Int, skip: Int): Flux[Seq[T]] = Flux(jFlux.buffer(maxSize, skip)).map(_.asScala)
 
   /**
     * Defer the transformation of this [[Flux]] in order to generate a target [[Flux]] for each

@@ -6,6 +6,7 @@ import java.util.concurrent.atomic.{AtomicBoolean, AtomicLong}
 import java.util.concurrent.{CountDownLatch, TimeUnit}
 
 import org.reactivestreams.{Publisher, Subscription}
+import org.scalatest.prop.TableDrivenPropertyChecks
 import org.scalatest.{FreeSpec, Matchers}
 import reactor.core.publisher.{BaseSubscriber, FluxSink}
 import reactor.test.StepVerifier
@@ -20,7 +21,7 @@ import scala.util.{Failure, Try}
 /**
   * Created by winarto on 1/10/17.
   */
-class FluxTest extends FreeSpec with Matchers {
+class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
   "Flux" - {
     ".combineLatest" - {
       "with combinator and sources should produce latest elements into a single element" in {
@@ -304,8 +305,8 @@ class FluxTest extends FreeSpec with Matchers {
         val tempFile = Files.createTempFile("fluxtest-", ".tmp")
         tempFile.toFile.deleteOnExit()
         new PrintWriter(tempFile.toFile) {
-          write(s"1${sys.props("line.separator")}2");
-          flush();
+          write(s"1${sys.props("line.separator")}2")
+          flush()
           close()
         }
         val flux: Flux[String] = Flux.using[String, File](() => tempFile.toFile, (file: File) => Flux.fromIterable[String](Source.fromFile(file).getLines().toIterable), (file: File) => {
@@ -320,8 +321,8 @@ class FluxTest extends FreeSpec with Matchers {
         val tempFile = Files.createTempFile("fluxtest-", ".tmp")
         tempFile.toFile.deleteOnExit()
         new PrintWriter(tempFile.toFile) {
-          write(s"1${sys.props("line.separator")}2");
-          flush();
+          write(s"1${sys.props("line.separator")}2")
+          flush()
           close()
         }
         val flux: Flux[String] = Flux.using[String, File](() => tempFile.toFile, (file: File) => Flux.fromIterable[String](Source.fromFile(file).getLines().toIterable), (file: File) => {
@@ -471,8 +472,34 @@ class FluxTest extends FreeSpec with Matchers {
           seq
         })
         StepVerifier.create(flux)
-          .expectNextSequence(Iterable(ListBuffer(1, 2), ListBuffer(3)))
+            .expectNextMatches((seq: Seq[Int]) => {
+              seq shouldBe Seq(1, 2)
+              seqSet should contain(seq)
+              true
+            })
+          .expectNextMatches((seq: Seq[Int]) => {
+            seq shouldBe Seq(3)
+            seqSet should contain(seq)
+            true
+          })
           .verifyComplete()
+      }
+      "with maxSize and skip" - {
+        val originalFlux = Flux.just(1, 2, 3, 4, 5)
+        val data = Table(
+          ("scenario", "maxSize", "skip", "expectedSequence"),
+          ("maxSize < skip", 2, 3, Iterable(ListBuffer(1, 2), ListBuffer(4, 5))),
+          ("maxSize > skip", 3, 2, Iterable(ListBuffer(1, 2, 3), ListBuffer(3, 4, 5), ListBuffer(5))),
+          ("maxSize = skip", 2, 2, Iterable(ListBuffer(1, 2), ListBuffer(3, 4), ListBuffer(5)))
+        )
+        forAll(data){(scenario, maxSize, skip, expectedSequence) => {
+          s"when $scenario" in {
+            val flux = originalFlux.buffer(maxSize, skip)
+            StepVerifier.create(flux)
+              .expectNextSequence(expectedSequence)
+              .verifyComplete()
+          }
+        }}
       }
     }
 
