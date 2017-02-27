@@ -233,8 +233,10 @@ class Flux[T](private[publisher] val jFlux: JFlux[T]) extends Publisher[T] with 
     * provided function is executed as part of assembly.
     * *
     *
-    * @example val applySchedulers = flux => flux.subscribeOn(Schedulers.elastic()).publishOn(Schedulers.parallel());
-    *          flux.transform(applySchedulers).map(v => v * v).subscribe()
+    * @example {{{
+    * val applySchedulers = flux => flux.subscribeOn(Schedulers.elastic()).publishOn(Schedulers.parallel());
+    * flux.transform(applySchedulers).map(v => v * v).subscribe()
+    *          }}}
     * @param transformer the [[Function1]] to immediately map this [[Flux]] into a target [[Flux]]
     *                    instance.
     * @tparam V the item type in the returned [[Flux]]

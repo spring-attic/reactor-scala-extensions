@@ -533,45 +533,100 @@ class Mono[T] private(private val jMono: JMono[T]) extends Publisher[T] with Map
     jMono.doOnError(predicate: Predicate[Throwable], onError: Consumer[Throwable])
   )
 
-  final def doOnRequest(onRequest: Long => Unit): Mono[T] = {
-    new Mono[T](
-      jMono.doOnRequest(onRequest)
-    )
-  }
+  /**
+    * Attach a `Long consumer` to this [[Mono]] that will observe any request to this [[Mono]].
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/doonrequest1.png" alt="">
+    *
+    * @param consumer the consumer to invoke on each request
+    * @return an observed  [[Mono]]
+    */
+  final def doOnRequest(consumer: Long => Unit) = new Mono[T](
+    jMono.doOnRequest(consumer)
+  )
 
-  final def doOnSubscribe(onSubscribe: Subscription => Unit): Mono[T] = {
-    new Mono[T](
-      jMono.doOnSubscribe(onSubscribe)
-    )
-  }
+  /**
+    * Triggered when the [[Mono]] is subscribed.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/doonsubscribe.png" alt="">
+    * <p>
+    *
+    * @param onSubscribe the callback to call on [[Subscriber#onSubscribe]]
+    * @return a new [[Mono]]
+    */
+  final def doOnSubscribe(onSubscribe: Subscription => Unit) = new Mono[T](
+    jMono.doOnSubscribe(onSubscribe)
+  )
 
-  final def doOnTerminate(onTerminate: (T, Throwable) => Unit): Mono[T] = {
-    Mono(jMono.doOnTerminate(new BiConsumer[T, Throwable] {
-      override def accept(t: T, u: Throwable): Unit = onTerminate(t, u)
-    }))
-  }
+  /**
+    * Triggered when the [[Mono]] terminates, either by completing successfully or with an error.
+    *
+    * <ul>
+    * <li>null, null : completing without data</li>
+    * <li>T, null : completing with data</li>
+    * <li>null, Throwable : failing with/without data</li>
+    * </ul>
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/doonterminate1.png" alt="">
+    * <p>
+    *
+    * @param onTerminate the callback to call [[Subscriber.onNext]], [[Subscriber.onComplete]] without preceding [[Subscriber.onNext]] or [[Subscriber.onError]]
+    * @return a new [[Mono]]
+    */
+  final def doOnTerminate(onTerminate: (T, Throwable) => Unit) = Mono(jMono.doOnTerminate(new BiConsumer[T, Throwable] {
+    override def accept(t: T, u: Throwable): Unit = onTerminate(t, u)
+  }))
 
   val javaTupleLongAndT2ScalaTupleLongAndT = new Function[Tuple2[JLong, T], (Long, T)] {
     override def apply(t: Tuple2[JLong, T]): (Long, T) = (Long2long(t.getT1), t.getT2)
   }
 
-  final def elapsed(): Mono[(Long, T)] = {
-    new Mono[(Long, T)](
-      jMono.elapsed().map(javaTupleLongAndT2ScalaTupleLongAndT)
-    )
-  }
+  /**
+    * Map this [[Mono]] sequence into [[scala.Tuple2]] of T1 [[Long]] timemillis and T2
+    * `T` associated data. The timemillis corresponds to the elapsed time between the subscribe and the first
+    * next signal.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/elapsed1.png" alt="">
+    *
+    * @return a transforming [[Mono]]that emits a tuple of time elapsed in milliseconds and matching data
+    */
+  final def elapsed() = new Mono[(Long, T)](
+    jMono.elapsed().map(javaTupleLongAndT2ScalaTupleLongAndT)
+  )
 
-  final def elapsed(scheduler: TimedScheduler): Mono[(Long, T)] = {
-    new Mono[(Long, T)](
-      jMono.elapsed(scheduler).map(javaTupleLongAndT2ScalaTupleLongAndT)
-    )
-  }
+  /**
+    * Map this [[Mono]] sequence into [[scala.Tuple2]] of T1 [[Long]] timemillis and T2
+    * `T` associated data. The timemillis corresponds to the elapsed time between the subscribe and the first
+    * next signal.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/elapsed1.png" alt="">
+    *
+    * @param scheduler the [[TimedScheduler]] to read time from
+    * @return a transforming [[Mono]] that emits a tuple of time elapsed in milliseconds and matching data
+    */
+  final def elapsed(scheduler: TimedScheduler) = new Mono[(Long, T)](
+    jMono.elapsed(scheduler).map(javaTupleLongAndT2ScalaTupleLongAndT)
+  )
 
-  final def filter(tester: T => Boolean): Mono[T] = {
-    new Mono[T](
-      jMono.filter(tester)
-    )
-  }
+  /**
+    * Test the result if any of this [[Mono]] and replay it if predicate returns true.
+    * Otherwise complete without value.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/filter1.png" alt="">
+    * <p>
+    *
+    * @param tester the predicate to evaluate
+    * @return a filtered [[Mono]]
+    */
+  final def filter(tester: T => Boolean) = new Mono[T](
+    jMono.filter(tester)
+  )
 
   final def flatMap[R](mapper: T => Publisher[R]): Flux[R] = {
     new Flux[R](
