@@ -248,6 +248,35 @@ class Flux[T](private[publisher] val jFlux: JFlux[T]) extends Publisher[T] with 
   })).map(_.asScala)
 
   /**
+    * Collect incoming values into multiple [[Seq]] delimited by the given [[Publisher]] signals.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/bufferboundary.png"
+    * alt="">
+    *
+    * @param other the other [[Publisher]] to subscribe to for emiting and recycling receiving bucket
+    * @return a microbatched [[Flux]] of [[Seq]] delimited by a
+    *         [[Publisher]]
+    */
+  //TODO: How to test this?
+  final def buffer(other: Publisher[_]): Flux[Seq[T]] = Flux(jFlux.buffer(other)).map(_.asScala)
+
+  /**
+    * Collect incoming values into multiple [[Seq]] delimited by the given [[Publisher]] signals.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/bufferboundary.png"
+    * alt="">
+    *
+    * @param other the other [[Publisher]]  to subscribe to for emitting and recycling receiving bucket
+    * @param bufferSupplier the collection to use for each data segment
+    * @tparam C the supplied [[Seq]] type
+    * @return a microbatched [[Flux]] of [[Seq]] delimited by a [[Publisher]]
+    */
+  //TODO: How to test?
+  final def buffer[C <: ListBuffer[T]](other: Publisher[_], bufferSupplier: () => C): Flux[Seq[T]] = Flux(jFlux.buffer(other, new Supplier[JList[T]] {
+    override def get(): JList[T] = bufferSupplier().asJava
+  })).map(_.asScala)
+
+  /**
     * Defer the transformation of this [[Flux]] in order to generate a target [[Flux]] for each
     * new [[Subscriber]].
     *
@@ -268,8 +297,8 @@ class Flux[T](private[publisher] val jFlux: JFlux[T]) extends Publisher[T] with 
     * *
     *
     * @example {{{
-    *           val applySchedulers = flux => flux.subscribeOn(Schedulers.elastic()).publishOn(Schedulers.parallel());
-    *           flux.transform(applySchedulers).map(v => v * v).subscribe()
+    *                     val applySchedulers = flux => flux.subscribeOn(Schedulers.elastic()).publishOn(Schedulers.parallel());
+    *                     flux.transform(applySchedulers).map(v => v * v).subscribe()
     *          }}}
     * @param transformer the [[Function1]] to immediately map this [[Flux]] into a target [[Flux]]
     *                    instance.
