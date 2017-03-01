@@ -10,6 +10,7 @@ import reactor.core.publisher.{FluxSink, Flux => JFlux}
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
+import scala.collection.mutable.ListBuffer
 import scala.concurrent.duration.Duration
 
 
@@ -214,6 +215,39 @@ class Flux[T](private[publisher] val jFlux: JFlux[T]) extends Publisher[T] with 
   final def buffer(maxSize: Int, skip: Int): Flux[Seq[T]] = Flux(jFlux.buffer(maxSize, skip)).map(_.asScala)
 
   /**
+    * Collect incoming values into multiple [[mutable.Seq]] that will be pushed into
+    * the returned [[Flux]] when the
+    * given max size is reached or onComplete is received. A new container
+    * [[mutable.Seq]] will be created every given
+    * skip count.
+    * <p>
+    * When Skip > Max Size : dropping buffers
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/buffersizeskip.png"
+    * alt="">
+    * <p>
+    * When Skip < Max Size : overlapping buffers
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/buffersizeskipover.png"
+    * alt="">
+    * <p>
+    * When Skip == Max Size : exact buffers
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/buffersize.png"
+    * alt="">
+    *
+    * @param skip           the number of items to skip before creating a new bucket
+    * @param maxSize        the max collected size
+    * @param bufferSupplier the collection to use for each data segment
+    * @tparam C the supplied [[mutable.Seq]] type
+    * @return a microbatched [[Flux]] of possibly overlapped or gapped
+    *         [[mutable.Seq]]
+    */
+  final def buffer[C <: ListBuffer[T]](maxSize: Int, skip: Int, bufferSupplier: () => C): Flux[mutable.Seq[T]] = Flux(jFlux.buffer(maxSize, skip, new Supplier[JList[T]] {
+    override def get(): JList[T] = bufferSupplier().asJava
+  })).map(_.asScala)
+
+  /**
     * Defer the transformation of this [[Flux]] in order to generate a target [[Flux]] for each
     * new [[Subscriber]].
     *
@@ -234,8 +268,8 @@ class Flux[T](private[publisher] val jFlux: JFlux[T]) extends Publisher[T] with 
     * *
     *
     * @example {{{
-    * val applySchedulers = flux => flux.subscribeOn(Schedulers.elastic()).publishOn(Schedulers.parallel());
-    * flux.transform(applySchedulers).map(v => v * v).subscribe()
+    *           val applySchedulers = flux => flux.subscribeOn(Schedulers.elastic()).publishOn(Schedulers.parallel());
+    *           flux.transform(applySchedulers).map(v => v * v).subscribe()
     *          }}}
     * @param transformer the [[Function1]] to immediately map this [[Flux]] into a target [[Flux]]
     *                    instance.
