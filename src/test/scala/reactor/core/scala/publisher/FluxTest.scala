@@ -488,7 +488,7 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         val originalFlux = Flux.just(1, 2, 3, 4, 5)
         val data = Table(
           ("scenario", "maxSize", "skip", "expectedSequence"),
-          ("maxSize < skip", 1, 2, Iterable(ListBuffer(1), ListBuffer(3), ListBuffer(5))),
+          ("maxSize < skip", 2, 3, Iterable(ListBuffer(1, 2), ListBuffer(4, 5))),
           ("maxSize > skip", 3, 2, Iterable(ListBuffer(1, 2, 3), ListBuffer(3, 4, 5), ListBuffer(5))),
           ("maxSize = skip", 2, 2, Iterable(ListBuffer(1, 2), ListBuffer(3, 4), ListBuffer(5)))
         )
@@ -503,16 +503,16 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         }
       }
       "with maxSize, skip and buffer supplier" - {
-        val originalFlux = Flux.just(1, 2, 3, 4, 5)
         val data = Table(
           ("scenario", "maxSize", "skip", "expectedSequence"),
-          ("maxSize < skip", 2, 3, Iterable(ListBuffer(1, 2), ListBuffer(4, 5))),
+          ("maxSize < skip", 1, 2, Iterable(ListBuffer(1), ListBuffer(3), ListBuffer(5))),
           ("maxSize > skip", 3, 2, Iterable(ListBuffer(1, 2, 3), ListBuffer(3, 4, 5), ListBuffer(5))),
           ("maxSize = skip", 2, 2, Iterable(ListBuffer(1, 2), ListBuffer(3, 4), ListBuffer(5)))
         )
         forAll(data) { (scenario, maxSize, skip, expectedSequence) => {
           val iterator = expectedSequence.iterator
           s"when $scenario" in {
+            val originalFlux = Flux.just(1, 2, 3, 4, 5)
             val seqSet = mutable.Set[mutable.ListBuffer[Int]]()
             val flux = originalFlux.buffer(maxSize, skip, () => {
               val seq = mutable.ListBuffer[Int]()
