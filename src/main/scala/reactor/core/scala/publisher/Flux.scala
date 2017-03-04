@@ -1,12 +1,13 @@
 package reactor.core.scala.publisher
 
 import java.lang.{Long => JLong}
+import java.util.concurrent.Callable
 import java.util.function.{Function, Supplier}
 import java.util.{List => JList}
 
 import org.reactivestreams.{Publisher, Subscriber, Subscription}
 import reactor.core.publisher.FluxSink.OverflowStrategy
-import reactor.core.publisher.{FluxSink, Flux => JFlux}
+import reactor.core.publisher.{FluxSink, SynchronousSink, Flux => JFlux}
 import reactor.core.scheduler.TimedScheduler
 
 import scala.collection.JavaConverters._
@@ -1001,6 +1002,35 @@ object Flux {
   def fromArray[T <: AnyRef](array: Array[T]): Flux[T] = {
     Flux(JFlux.fromArray[T](array))
   }
+
+  /**
+    * Generate signals one-by-one via a consumer callback.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/generate.png" alt="">
+    * <p>
+    *
+    * @tparam T the value type emitted
+    * @param generator the consumer called with the SynchronousSink
+    *                  API instance
+    * @return a Reactive [[Flux]] publisher ready to be subscribed
+    */
+  def generate[T](generator: SynchronousSink[T] => Unit) = Flux(JFlux.generate[T](generator))
+
+  /**
+    * Generate signals one-by-one via a function callback.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/generate.png" alt="">
+    * <p>
+    *
+    * @tparam T the value type emitted
+    * @tparam S the custom state per subscriber
+    * @param stateSupplier called for each incoming Supplier to provide the initial state for the generator bifunction
+    * @param generator     the bifunction called with the current state, the SynchronousSink API instance and is
+    *                      expected to return a (new) state.
+    * @return a Reactive [[Flux]] publisher ready to be subscribed
+    */
+  def generate[T, S](stateSupplier: Option[Callable[S]], generator: (S, SynchronousSink[T]) => S) = Flux(JFlux.generate[T, S](stateSupplier.orNull, generator))
 
   /**
     * Create a new [[Flux]] that emits an ever incrementing long starting with 0 every period on

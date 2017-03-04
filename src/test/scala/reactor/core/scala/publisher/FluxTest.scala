@@ -233,6 +233,16 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         .verifyComplete()
     }
 
+    ".generate" in {
+      val counter = new AtomicLong()
+      val flux = Flux.generate[Long](sink => {
+        sink.next(counter.incrementAndGet())
+      }).take(5)
+      StepVerifier.create(flux)
+        .expectNext(1, 2, 3, 4, 5)
+        .verifyComplete()
+    }
+
     ".interval" - {
       "without delay should produce flux of Long starting from 0 every provided timespan immediately" in {
         StepVerifier.withVirtualTime(() => Flux.interval(1 second).take(5))
