@@ -9,6 +9,7 @@ import org.reactivestreams.{Publisher, Subscription}
 import org.scalatest.prop.TableDrivenPropertyChecks
 import org.scalatest.{FreeSpec, Matchers}
 import reactor.core.publisher.{BaseSubscriber, FluxSink}
+import reactor.core.scheduler.Schedulers
 import reactor.test.StepVerifier
 
 import scala.collection.mutable
@@ -230,6 +231,48 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       StepVerifier.create(flux)
         .expectNext("1", "2", "3")
         .verifyComplete()
+    }
+
+    ".interval" - {
+      "without delay should produce flux of Long starting from 0 every provided timespan immediately" in {
+        StepVerifier.withVirtualTime(() => Flux.interval(1 second).take(5))
+          .thenAwait(5 seconds)
+          .expectNext(0, 1, 2, 3, 4)
+          .verifyComplete()
+      }
+      "with delay should produce flux of Long starting from 0 every provided timespan after provided delay" in {
+        StepVerifier.withVirtualTime(() => Flux.interval(1 second, 2 seconds).take(5))
+          .thenAwait(11 seconds)
+          .expectNext(0, 1, 2, 3, 4)
+          .verifyComplete()
+      }
+    }
+
+    ".intervalMillis" - {
+      "without delay should produce flux of Long starting from 0 every provided period in millis immediately" in {
+        StepVerifier.withVirtualTime(() => Flux.intervalMillis(1000).take(5))
+          .thenAwait(5 seconds)
+          .expectNext(0, 1, 2, 3, 4)
+          .verifyComplete()
+      }
+      "with TimedScheduler should use the provided timed scheduler" in {
+        StepVerifier.withVirtualTime(() => Flux.intervalMillis(1000, Schedulers.timer()).take(5))
+          .thenAwait(5 seconds)
+          .expectNext(0, 1, 2, 3, 4)
+          .verifyComplete()
+      }
+      "with delay should produce flux after provided delay" in {
+        StepVerifier.withVirtualTime(() => Flux.intervalMillis(1000, 2000).take(5))
+          .thenAwait(11 seconds)
+          .expectNext(0, 1, 2, 3, 4)
+          .verifyComplete()
+      }
+      "with delay and TimedScheduler should use the provided time scheduler after delay" in {
+        StepVerifier.withVirtualTime(() => Flux.intervalMillis(1000, 2000, Schedulers.timer()).take(5))
+          .thenAwait(11 seconds)
+          .expectNext(0, 1, 2, 3, 4)
+          .verifyComplete()
+      }
     }
 
     ".just" - {
@@ -538,6 +581,13 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         }
         }
       }
+    }
+
+    ".bufferMillis should split the values every timespan" in {
+      StepVerifier.withVirtualTime(() => Flux.interval(1 second).take(5).bufferMillis(1500))
+        .thenAwait(5 seconds)
+        .expectNext(Seq(0), Seq(1), Seq(2, 3), Seq(4))
+        .verifyComplete()
     }
 
     ".compose should defer transformation of this flux to another publisher" in {

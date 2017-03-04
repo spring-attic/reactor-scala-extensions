@@ -7,6 +7,7 @@ import java.util.{List => JList}
 import org.reactivestreams.{Publisher, Subscriber, Subscription}
 import reactor.core.publisher.FluxSink.OverflowStrategy
 import reactor.core.publisher.{FluxSink, Flux => JFlux}
+import reactor.core.scheduler.TimedScheduler
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
@@ -266,7 +267,7 @@ class Flux[T](private[publisher] val jFlux: JFlux[T]) extends Publisher[T] with 
     * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/bufferboundary.png"
     * alt="">
     *
-    * @param other the other [[Publisher]]  to subscribe to for emitting and recycling receiving bucket
+    * @param other          the other [[Publisher]]  to subscribe to for emitting and recycling receiving bucket
     * @param bufferSupplier the collection to use for each data segment
     * @tparam C the supplied [[Seq]] type
     * @return a microbatched [[Flux]] of [[Seq]] delimited by a [[Publisher]]
@@ -275,6 +276,157 @@ class Flux[T](private[publisher] val jFlux: JFlux[T]) extends Publisher[T] with 
   final def buffer[C <: ListBuffer[T]](other: Publisher[_], bufferSupplier: () => C): Flux[Seq[T]] = Flux(jFlux.buffer(other, new Supplier[JList[T]] {
     override def get(): JList[T] = bufferSupplier().asJava
   })).map(_.asScala)
+
+  /**
+    * Collect incoming values into multiple [[Seq]] delimited by the given [[Publisher]] signals. Each
+    * [[Seq]] bucket will last until the mapped [[Publisher]] receiving the boundary signal emits, thus releasing the
+    * bucket to the returned [[Flux]].
+    * <p>
+    * When Open signal is strictly not overlapping Close signal : dropping buffers
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/bufferopenclose.png"
+    * alt="">
+    * <p>
+    * When Open signal is strictly more frequent than Close signal : overlapping buffers
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/bufferopencloseover.png"
+    * alt="">
+    * <p>
+    * When Open signal is exactly coordinated with Close signal : exact buffers
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/bufferboundary.png"
+    * alt="">
+    *
+    * @param bucketOpening a [[Publisher]] to subscribe to for creating new receiving bucket signals.
+    * @param closeSelector a [[Publisher]] factory provided the opening signal and returning a [[Publisher]] to
+    *                      subscribe to for emitting relative bucket.
+    * @tparam U the element type of the bucket-opening sequence
+    * @tparam V the element type of the bucket-closing sequence
+    * @return a microbatched [[Flux]] of [[Seq]] delimited by an opening [[Publisher]] and a relative
+    *         closing [[Publisher]]
+    */
+  //TODO: How to test?
+  final def buffer[U, V](bucketOpening: Publisher[U], closeSelector: U => Publisher[V]): Flux[Seq[T]] = Flux(jFlux.buffer[U, V](bucketOpening, closeSelector)).map(_.asScala)
+
+  /**
+    * Collect incoming values into multiple [[Seq]] delimited by the given [[Publisher]] signals. Each [[Seq]]
+    * bucket will last until the mapped [[Publisher]] receiving the boundary signal emits, thus releasing the
+    * bucket to the returned [[Flux]].
+    * <p>
+    * When Open signal is strictly not overlapping Close signal : dropping buffers
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/bufferopenclose.png"
+    * alt="">
+    * <p>
+    * When Open signal is strictly more frequent than Close signal : overlapping buffers
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/bufferopencloseover.png"
+    * alt="">
+    * <p>
+    * When Open signal is exactly coordinated with Close signal : exact buffers
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/bufferboundary.png"
+    * alt="">
+    *
+    * @param bucketOpening  a [[Publisher]] to subscribe to for creating new receiving bucket signals.
+    * @param closeSelector  a [[Publisher]] factory provided the opening signal and returning a { @link Publisher} to
+    *                       subscribe to for emitting relative bucket.
+    * @param bufferSupplier the collection to use for each data segment
+    * @tparam U the element type of the bucket-opening sequence
+    * @tparam V the element type of the bucket-closing sequence
+    * @tparam C the supplied [[Seq]] type
+    * @return a microbatched [[Flux]] of [[Seq]] delimited by an opening [[Publisher]] and a relative
+    *         closing [[Publisher]]
+    */
+  //TODO: How to test?
+  final def buffer[U, V, C <: ListBuffer[T]](bucketOpening: Publisher[U],
+                                             closeSelector: U => Publisher[V],
+                                             bufferSupplier: () => C): Flux[Seq[T]] = Flux(jFlux.buffer(bucketOpening, closeSelector, new Supplier[JList[T]] {
+    override def get(): JList[T] = bufferSupplier().asJava
+  })).map(_.asScala)
+
+  /**
+    * Collect incoming values into multiple [[Seq]] that will be pushed into the returned [[Flux]] every
+    * timespan.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/buffertimespan.png"
+    * alt="">
+    *
+    * @param timespan the duration to use to release a buffered list
+    * @return a microbatched [[Flux]] of [[Seq]] delimited by the given period
+    */
+  //TODO: Test this
+  final def buffer(timespan: Duration): Flux[Seq[T]] = Flux(jFlux.buffer(timespan)).map(_.asScala)
+
+  /**
+    * Collect incoming values into multiple [[Seq]] delimited by the given `timeshift` period. Each [[Seq]]
+    * bucket will last until the `timespan` has elapsed, thus releasing the bucket to the returned [[Flux]].
+    * <p>
+    * When timeshift > timespan : dropping buffers
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/buffertimeshift.png"
+    * alt="">
+    * <p>
+    * When timeshift < timespan : overlapping buffers
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/buffertimeshiftover.png"
+    * alt="">
+    * <p>
+    * When timeshift == timespan : exact buffers
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/buffertimespan.png"
+    * alt="">
+    *
+    * @param timespan  the duration to use to release buffered lists
+    * @param timeshift the duration to use to create a new bucket
+    * @return a microbatched [[Flux]] of [[Seq]] delimited by the given period timeshift and sized by timespan
+    */
+  //TODO: Test this
+  final def buffer(timespan: Duration, timeshift: Duration): Flux[Seq[T]] = Flux(jFlux.buffer(timespan, timeshift)).map(_.asScala)
+
+  /**
+    * Collect incoming values into a [[Seq]] that will be pushed into the returned [[Flux]] every timespan OR
+    * maxSize items.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/buffertimespansize.png"
+    * alt="">
+    *
+    * @param maxSize  the max collected size
+    * @param timespan the timeout to use to release a buffered list
+    * @return a microbatched [[Flux]] of [[Seq]] delimited by given size or a given period timeout
+    */
+  //TODO: Test this
+  final def bufferTimeout(maxSize: Int, timespan: Duration): Flux[Seq[T]] = Flux(jFlux.bufferTimeout(maxSize, timespan)).map(_.asScala)
+
+  /**
+    * Collect incoming values into a [[Seq]] that will be pushed into the returned [[Flux]] every timespan OR
+    * maxSize items.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/buffertimespansize.png"
+    * alt="">
+    *
+    * @param maxSize        the max collected size
+    * @param timespan       the timeout to use to release a buffered list
+    * @param bufferSupplier the collection to use for each data segment
+    * @tparam C the supplied [[Seq]] type
+    * @return a microbatched [[Flux]] of [[Seq]] delimited by given size or a given period timeout
+    */
+  //TODO: Test this
+  final def bufferTimeout[C <: ListBuffer[T]](maxSize: Int, timespan: Duration, bufferSupplier: () => C): Flux[Seq[T]] = Flux(jFlux.bufferTimeout(maxSize, timespan, new Supplier[JList[T]] {
+    override def get(): JList[T] = bufferSupplier().asJava
+  })).map(_.asScala)
+
+  /**
+    * Collect incoming values into multiple [[Seq]] that will be pushed into the returned [[Flux]] every
+    * timespan.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/buffertimespan.png"
+    * alt="">
+    *
+    * @param timespan the duration to use to release a buffered list in milliseconds
+    * @return a microbatched [[Flux]] of [[Seq]] delimited by the given period
+    */
+  final def bufferMillis(timespan: Long): Flux[Seq[T]] = Flux(jFlux.bufferMillis(timespan)).map(_.asScala)
 
   /**
     * Defer the transformation of this [[Flux]] in order to generate a target [[Flux]] for each
@@ -297,8 +449,8 @@ class Flux[T](private[publisher] val jFlux: JFlux[T]) extends Publisher[T] with 
     * *
     *
     * @example {{{
-    *                     val applySchedulers = flux => flux.subscribeOn(Schedulers.elastic()).publishOn(Schedulers.parallel());
-    *                     flux.transform(applySchedulers).map(v => v * v).subscribe()
+    *                                         val applySchedulers = flux => flux.subscribeOn(Schedulers.elastic()).publishOn(Schedulers.parallel());
+    *                                         flux.transform(applySchedulers).map(v => v * v).subscribe()
     *          }}}
     * @param transformer the [[Function1]] to immediately map this [[Flux]] into a target [[Flux]]
     *                    instance.
@@ -849,6 +1001,89 @@ object Flux {
   def fromArray[T <: AnyRef](array: Array[T]): Flux[T] = {
     Flux(JFlux.fromArray[T](array))
   }
+
+  /**
+    * Create a new [[Flux]] that emits an ever incrementing long starting with 0 every period on
+    * the global timer. If demand is not produced in time, an onError will be signalled. The [[Flux]] will never
+    * complete.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/interval.png" alt="">
+    * <p>
+    *
+    * @param period The duration to wait before the next increment
+    * @return a new timed [[Flux]]
+    */
+  def interval(period: Duration): Flux[Long] = Flux(JFlux.interval(period)).map(Long2long)
+
+  /**
+    * Create a new [[Flux]] that emits an ever incrementing long starting with 0 every N period of time unit on
+    * a global timer. If demand is not produced in time, an onError will be signalled. The [[Flux]] will never
+    * complete.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/intervald.png" alt="">
+    *
+    * @param delay  the delay to wait before emitting 0l
+    * @param period the period before each following increment
+    * @return a new timed [[Flux]]
+    */
+  def interval(delay: Duration, period: Duration): Flux[Long] = Flux(JFlux.interval(delay, period)).map(Long2long)
+
+  /**
+    * Create a new [[Flux]] that emits an ever incrementing long starting with 0 every N milliseconds on
+    * the given timer. If demand is not produced in time, an onError will be signalled. The [[Flux]] will never
+    * complete.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/interval.png" alt="">
+    * <p>
+    *
+    * @param period The number of milliseconds to wait before the next increment
+    * @return a new timed [[Flux]]
+    */
+  def intervalMillis(period: Long): Flux[Long] = Flux(JFlux.intervalMillis(period)).map(Long2long)
+
+  /**
+    * Create a new [[Flux]] that emits an ever incrementing long starting with 0 every N milliseconds on
+    * the given timer. If demand is not produced in time, an onError will be signalled. The [[Flux]] will never
+    * complete.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/interval.png" alt="">
+    * <p>
+    *
+    * @param period The duration in milliseconds to wait before the next increment
+    * @param timer  a [[TimedScheduler]] instance
+    * @return a new timed [[Flux]]
+    */
+  def intervalMillis(period: Long, timer: TimedScheduler): Flux[Long] = Flux(JFlux.intervalMillis(period, timer)).map(Long2long)
+
+  /**
+    * Create a new [[Flux]] that emits an ever incrementing long starting with 0 every N period of time unit on
+    * a global timer. If demand is not produced in time, an onError will be signalled. The [[Flux]] will never
+    * complete.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/intervald.png" alt="">
+    *
+    * @param delay  the delay in milliseconds to wait before emitting 0l
+    * @param period the period in milliseconds before each following increment
+    * @return a new timed [[Flux]]
+    */
+  def intervalMillis(delay: Long, period: Long): Flux[Long] = Flux(JFlux.intervalMillis(delay, period)).map(Long2long)
+
+  /**
+    * Create a new [[Flux]] that emits an ever incrementing long starting with 0 every N period of time unit on
+    * the given timer. If demand is not produced in time, an onError will be signalled. The [[Flux]] will never
+    * complete.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/intervald.png" alt="">
+    *
+    * @param delay  the timespan in milliseconds to wait before emitting 0l
+    * @param period the period in milliseconds before each following increment
+    * @param timer  the [[TimedScheduler]] to schedule on
+    * @return a new timed [[Flux]]
+    */
+  def intervalMillis(delay: Long, period: Long, timer: TimedScheduler): Flux[Long] = Flux(JFlux.intervalMillis(delay, period, timer)).map(Long2long)
 
   /**
     * Create a new [[Flux]] that emits the specified items and then complete.
