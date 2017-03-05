@@ -233,6 +233,20 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         .verifyComplete()
     }
 
+    ".fromIterable should create flux that emit the items contained in the provided iterable" in {
+      val flux = Flux.fromIterable(Iterable(1, 2, 3))
+      StepVerifier.create(flux)
+        .expectNext(1, 2, 3)
+        .verifyComplete()
+    }
+
+    ".fromStream should create flux that emit items contained in the provided stream" in {
+      val flux = Flux.fromStream(Stream(1, 2, 3))
+      StepVerifier.create(flux)
+        .expectNext(1, 2, 3)
+        .verifyComplete()
+    }
+
     ".generate" - {
       "without state supplier" in {
         val counter = new AtomicLong()
@@ -652,13 +666,6 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       val mono = Flux.just(10, 9, 8).count()
       StepVerifier.create(mono)
         .expectNext(3)
-        .verifyComplete()
-    }
-
-    ".iterable should produce data from iterable" in {
-      val flux = Flux.fromIterable[Int](Iterable(1, 2, 3))
-      StepVerifier.create(flux)
-        .expectNext(1, 2, 3)
         .verifyComplete()
     }
 

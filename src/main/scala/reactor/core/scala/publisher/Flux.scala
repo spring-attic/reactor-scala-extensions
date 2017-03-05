@@ -1004,6 +1004,32 @@ object Flux {
   }
 
   /**
+    * Create a [[Flux]] that emits the items contained in the provided [[Iterable]].
+    * A new iterator will be created for each subscriber.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/fromiterable.png" alt="">
+    * <p>
+    *
+    * @param it the [[Iterable]] to read data from
+    * @tparam T the [[Iterable]] type to stream
+    * @return a new [[Flux]]
+    */
+  def fromIterable[T](it: Iterable[T]) = Flux(JFlux.fromIterable(it))
+
+  /**
+    * Create a [[Flux]] that emits the items contained in the provided [[Stream]].
+    * A new iterator will be created for each subscriber.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/fromstream.png" alt="">
+    * <p>
+    *
+    * @param s the [[Stream]] to read data from
+    * @tparam T the [[Stream]] type to flux
+    * @return a new [[Flux]]
+    */
+  def fromStream[T](s: Stream[T]): Flux[T] = Flux.fromIterable(s)
+
+  /**
     * Generate signals one-by-one via a consumer callback.
     * <p>
     * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/generate.png" alt="">
@@ -1649,17 +1675,4 @@ object Flux {
     */
   def zip[I, O](combinator: Array[AnyRef] => O, prefetch: Int, sources: Publisher[_ <: I]*) =
     Flux(JFlux.zip[I, O](combinator, prefetch, sources: _*))
-
-  /**
-    * Create a [[Flux]] that emits the items contained in the provided [[Iterable]].
-    * A new iterator will be created for each subscriber.
-    * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/fromiterable.png" alt="">
-    * <p>
-    *
-    * @param it the [[Iterable]] to read data from
-    * @tparam T the [[Iterable]] type to stream
-    * @return a new [[Flux]]
-    */
-  def fromIterable[T](it: Iterable[T]) = Flux(JFlux.fromIterable(it))
 }
