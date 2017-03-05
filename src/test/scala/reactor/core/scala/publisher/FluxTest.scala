@@ -1,14 +1,14 @@
 package reactor.core.scala.publisher
 
-import java.io.{File, PrintWriter}
+import java.io.{BufferedReader, File, FileInputStream, InputStreamReader, PrintWriter}
 import java.nio.file.Files
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicLong}
-import java.util.concurrent.{CountDownLatch, TimeUnit}
+import java.util.concurrent.{Callable, CountDownLatch, TimeUnit}
 
 import org.reactivestreams.{Publisher, Subscription}
 import org.scalatest.prop.TableDrivenPropertyChecks
 import org.scalatest.{FreeSpec, Matchers}
-import reactor.core.publisher.{BaseSubscriber, FluxSink}
+import reactor.core.publisher.{BaseSubscriber, FluxSink, SynchronousSink}
 import reactor.core.scheduler.Schedulers
 import reactor.test.StepVerifier
 
@@ -233,16 +233,50 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         .verifyComplete()
     }
 
-    ".generate" in {
-      val counter = new AtomicLong()
-      val flux = Flux.generate[Long](sink => {
-        sink.next(counter.incrementAndGet())
-      }).take(5)
-      StepVerifier.create(flux)
-        .expectNext(1, 2, 3, 4, 5)
-        .verifyComplete()
+    ".generate" - {
+      "without state supplier" in {
+        val counter = new AtomicLong()
+        val flux = Flux.generate[Long](sink => {
+          sink.next(counter.incrementAndGet())
+        }).take(5)
+        StepVerifier.create(flux)
+          .expectNext(1, 2, 3, 4, 5)
+          .verifyComplete()
+      }
+      "with state supplier" in {
+        val iterator = Iterator(1, 2, 3, 4, 5)
+        val flux = Flux.generate(stateSupplier = Option((() => iterator): Callable[Iterator[Int]]),
+          generator = (it: Iterator[Int], sink: SynchronousSink[Int]) => {
+            if (it.hasNext) sink.next(it.next())
+            else sink.complete()
+            it
+          })
+        StepVerifier.create(flux)
+          .expectNext(1, 2, 3, 4, 5)
+          .verifyComplete()
+      }
+      "with state supplier and state consumer" in {
+        val tempFile = Files.createTempFile("fluxtest-", ".tmp").toFile
+        tempFile.deleteOnExit()
+        new PrintWriter(tempFile) {
+          write(Range(1, 6).mkString(s"${sys.props("line.separator")}"))
+          flush()
+          close()
+        }
+        val flux = Flux.generate[Int, BufferedReader](Option((() => new BufferedReader(new InputStreamReader(new FileInputStream(tempFile)))): Callable[BufferedReader]),
+          (reader: BufferedReader, sink: SynchronousSink[Int]) => {
+            Option(reader.readLine()).filterNot(_.isEmpty).map(_.toInt) match {
+              case Some(x) => sink.next(x)
+              case None => sink.complete()
+            }
+            reader
+          }, (possibleBufferredReader: Option[BufferedReader]) => possibleBufferredReader.foreach(_.close())
+        )
+        StepVerifier.create(flux)
+          .expectNext(1, 2, 3, 4, 5)
+          .verifyComplete()
+      }
     }
-
     ".interval" - {
       "without delay should produce flux of Long starting from 0 every provided timespan immediately" in {
         StepVerifier.withVirtualTime(() => Flux.interval(1 second).take(5))
