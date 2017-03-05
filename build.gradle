@@ -6,9 +6,9 @@ apply plugin: "com.github.maiflai.scalatest"
 apply plugin: 'signing'
 apply plugin: 'maven'
 apply plugin: 'org.scoverage'
-apply plugin: 'com.updateimpact.updateimpact'
 apply plugin: 'net.researchgate.release'
 apply plugin: 'io.codearte.nexus-staging'
+apply plugin: 'org.owasp.dependencycheck'
 
 repositories {
     mavenCentral()
@@ -45,17 +45,14 @@ buildscript {
     dependencies {
         classpath "gradle.plugin.com.github.maiflai:gradle-scalatest:0.14"
         classpath "gradle.plugin.org.scoverage:gradle-scoverage:2.1.0"
-        classpath 'com.updateimpact:updateimpact-gradle-plugin:1.1.6'
         classpath 'net.researchgate:gradle-release:2.5.0'
         classpath 'io.codearte.gradle.nexus:gradle-nexus-staging-plugin:0.5.3'
+        classpath 'org.owasp:dependency-check-gradle:1.4.5'
     }
 }
 
-ext.uiApiKey = hasProperty("updateimpactApiKey") ? updateimpactApiKey : System.getenv("updateimpactApiKey")
-
-updateImpactSubmit {
-    apiKey = uiApiKey
-    openBrowser = false
+dependencyCheck {
+    skipConfigurations=["apiElements", "implementation", "runtimeElements", "runtimeOnly", "testImplementation", "testRuntimeOnly", "scoverageImplementation", "scoverageRuntimeOnly"]
 }
 
 ext.isReleaseVersion = !version.endsWith("SNAPSHOT")
