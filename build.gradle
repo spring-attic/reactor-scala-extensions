@@ -138,3 +138,7 @@ release {
         requireBranch = ''
     }
 }
+
+test {
+    maxParallelForks = 1
+}

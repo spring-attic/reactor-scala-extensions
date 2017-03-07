@@ -430,6 +430,20 @@ class Flux[T](private[publisher] val jFlux: JFlux[T]) extends Publisher[T] with 
   final def bufferMillis(timespan: Long): Flux[Seq[T]] = Flux(jFlux.bufferMillis(timespan)).map(_.asScala)
 
   /**
+    * Collect incoming values into multiple [[Seq]] that will be pushed into the returned [[Flux]] every
+    * timespan.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/buffertimespan.png"
+    * alt="">
+    *
+    * @param timespan theduration to use to release a buffered list in milliseconds
+    * @param timer    the [[TimedScheduler]] to run on
+    * @return a microbatched [Flux]] of [[Seq]] delimited by the given period
+    */
+  final def bufferMillis(timespan: Long, timer: TimedScheduler): Flux[Seq[T]] =
+    Flux(jFlux.bufferMillis(timespan, timer)).map(_.asScala)
+
+  /**
     * Defer the transformation of this [[Flux]] in order to generate a target [[Flux]] for each
     * new [[Subscriber]].
     *
