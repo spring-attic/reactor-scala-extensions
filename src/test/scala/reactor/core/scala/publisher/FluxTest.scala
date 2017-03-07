@@ -11,6 +11,7 @@ import org.scalatest.{FreeSpec, Matchers}
 import reactor.core.publisher.{BaseSubscriber, FluxSink, SynchronousSink}
 import reactor.core.scheduler.Schedulers
 import reactor.test.StepVerifier
+import reactor.test.scheduler.VirtualTimeScheduler
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
@@ -641,11 +642,51 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       }
     }
 
-    ".bufferMillis should split the values every timespan" in {
-      StepVerifier.withVirtualTime(() => Flux.interval(1 second).take(5).bufferMillis(1500))
-        .thenAwait(5 seconds)
-        .expectNext(Seq(0), Seq(1), Seq(2, 3), Seq(4))
-        .verifyComplete()
+    ".bufferMillis" -{
+      "should split the values every timespan" in {
+        StepVerifier.withVirtualTime(() => Flux.interval(1 second).take(5).bufferMillis(1500))
+          .thenAwait(5 seconds)
+          .expectNext(Seq(0), Seq(1), Seq(2, 3), Seq(4))
+          .verifyComplete()
+      }
+      "with timedScheduler should split the values every timespan" in {
+        StepVerifier.withVirtualTime(() => Flux.interval(1 second).take(5).bufferMillis(1500, Schedulers.timer()))
+          .thenAwait(5 seconds)
+          .expectNext(Seq(0), Seq(1), Seq(2, 3), Seq(4))
+          .verifyComplete()
+      }
+      "with timespan and timeshift" - {
+        val data = Table(
+          ("scenario", "timespan", "timeshift", "expected"),
+          ("timeshift > timespan", 1500, 2000, Seq(Seq(0l), Seq(1l, 2l), Seq(3l, 4l))),
+          ("timeshift < timespan", 1500, 1000, Seq(Seq(0l), Seq(1l), Seq(2l), Seq(3l), Seq(4l))),
+          ("timeshift = timespan", 1500, 1500, Seq(Seq(0l), Seq(1l), Seq(2l, 3l), Seq(4l)))
+        )
+        forAll(data){(scenario, timespan, timeshift, expected) => {
+          s"when $scenario" in {
+            StepVerifier.withVirtualTime(() => Flux.interval(1 second).take(5).bufferMillis(timespan, timeshift))
+              .thenAwait(5 seconds)
+              .expectNext(expected:_*)
+              .verifyComplete()
+          }
+        }}
+      }
+      "with timespan, timeshift and timed scheduler" - {
+        val data = Table(
+          ("scenario", "timespan", "timeshift", "expected"),
+          ("timeshift > timespan", 1500, 2000, Seq(Seq(0l), Seq(1l, 2l), Seq(3l, 4l))),
+          ("timeshift < timespan", 1500, 1000, Seq(Seq(0l), Seq(1l), Seq(2l), Seq(3l), Seq(4l))),
+          ("timeshift = timespan", 1500, 1500, Seq(Seq(0l), Seq(1l), Seq(2l, 3l), Seq(4l)))
+        )
+        forAll(data){(scenario, timespan, timeshift, expected) => {
+          s"when $scenario" in {
+            StepVerifier.withVirtualTime(() => Flux.interval(1 second).take(5).bufferMillis(timespan, timeshift, Schedulers.timer()))
+              .thenAwait(5 seconds)
+              .expectNext(expected:_*)
+              .verifyComplete()
+          }
+        }}
+      }
     }
 
     ".compose should defer transformation of this flux to another publisher" in {

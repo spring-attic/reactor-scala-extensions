@@ -438,10 +438,61 @@ class Flux[T](private[publisher] val jFlux: JFlux[T]) extends Publisher[T] with 
     *
     * @param timespan theduration to use to release a buffered list in milliseconds
     * @param timer    the [[TimedScheduler]] to run on
-    * @return a microbatched [Flux]] of [[Seq]] delimited by the given period
+    * @return a microbatched [[Flux]] of [[Seq]] delimited by the given period
     */
   final def bufferMillis(timespan: Long, timer: TimedScheduler): Flux[Seq[T]] =
     Flux(jFlux.bufferMillis(timespan, timer)).map(_.asScala)
+
+  /**
+    * Collect incoming values into multiple [[Seq]] delimited by the given `timeshift` period. Each [[Seq]]
+    * bucket will last until the `timespan` has elapsed, thus releasing the bucket to the returned [[Flux]].
+    * <p>
+    * When timeshift > timespan : dropping buffers
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/buffertimeshift.png"
+    * alt="">
+    * <p>
+    * When timeshift < timespan : overlapping buffers
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/buffertimeshiftover.png"
+    * alt="">
+    * <p>
+    * When timeshift == timespan : exact buffers
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/buffertimespan.png"
+    * alt="">
+    *
+    * @param timespan  the duration to use to release buffered lists
+    * @param timeshift the duration to use to create a new bucket
+    * @return a microbatched [[Flux]] of [[Seq]] delimited by the given period timeshift and sized by timespan
+    */
+  final def bufferMillis(timespan: Long, timeshift: Long): Flux[Seq[T]] = Flux(jFlux.bufferMillis(timespan, timeshift)).map(_.asScala)
+
+  /**
+    * Collect incoming values into multiple [[Seq]] delimited by the given `timeshift` period. Each [[Seq]]
+    * bucket will last until the `timespan` has elapsed, thus releasing the bucket to the returned [[Flux]].
+    * <p>
+    * When timeshift > timespan : dropping buffers
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/buffertimeshift.png"
+    * alt="">
+    * <p>
+    * When timeshift < timespan : overlapping buffers
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/buffertimeshiftover.png"
+    * alt="">
+    * <p>
+    * When timeshift == timespan : exact buffers
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/buffertimespan.png"
+    * alt="">
+    *
+    * @param timespan  the duration to use to release buffered lists
+    * @param timeshift the duration to use to create a new bucket
+    * @param timer     the [[TimedScheduler]] to run on
+    * @return a microbatched [[Flux]] of [[Seq]] delimited by the given period timeshift and sized by timespan
+    */
+  final def bufferMillis(timespan: Long, timeshift: Long, timer: TimedScheduler): Flux[Seq[T]] = Flux(jFlux.bufferMillis(timespan, timeshift, timer)).map(_.asScala)
 
   /**
     * Defer the transformation of this [[Flux]] in order to generate a target [[Flux]] for each
