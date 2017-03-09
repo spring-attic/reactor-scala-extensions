@@ -356,7 +356,6 @@ class Flux[T](private[publisher] val jFlux: JFlux[T]) extends Publisher[T] with 
     * @param timespan the duration to use to release a buffered list
     * @return a microbatched [[Flux]] of [[Seq]] delimited by the given period
     */
-  //TODO: Test this
   final def buffer(timespan: Duration): Flux[Seq[T]] = Flux(jFlux.buffer(timespan)).map(_.asScala)
 
   /**
@@ -382,7 +381,6 @@ class Flux[T](private[publisher] val jFlux: JFlux[T]) extends Publisher[T] with 
     * @param timeshift the duration to use to create a new bucket
     * @return a microbatched [[Flux]] of [[Seq]] delimited by the given period timeshift and sized by timespan
     */
-  //TODO: Test this
   final def buffer(timespan: Duration, timeshift: Duration): Flux[Seq[T]] = Flux(jFlux.buffer(timespan, timeshift)).map(_.asScala)
 
   /**
@@ -396,7 +394,6 @@ class Flux[T](private[publisher] val jFlux: JFlux[T]) extends Publisher[T] with 
     * @param timespan the timeout to use to release a buffered list
     * @return a microbatched [[Flux]] of [[Seq]] delimited by given size or a given period timeout
     */
-  //TODO: Test this
   final def bufferTimeout(maxSize: Int, timespan: Duration): Flux[Seq[T]] = Flux(jFlux.bufferTimeout(maxSize, timespan)).map(_.asScala)
 
   /**
@@ -493,6 +490,19 @@ class Flux[T](private[publisher] val jFlux: JFlux[T]) extends Publisher[T] with 
     * @return a microbatched [[Flux]] of [[Seq]] delimited by the given period timeshift and sized by timespan
     */
   final def bufferMillis(timespan: Long, timeshift: Long, timer: TimedScheduler): Flux[Seq[T]] = Flux(jFlux.bufferMillis(timespan, timeshift, timer)).map(_.asScala)
+
+  /**
+    * Collect incoming values into a [[Seq]] that will be pushed into the returned [[Flux]] every timespan OR
+    * maxSize items.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/buffertimespansize.png"
+    * alt="">
+    *
+    * @param maxSize  the max collected size
+    * @param timespan the timeout in milliseconds to use to release a buffered list
+    * @return a microbatched [[Flux]] of [[Seq]] delimited by given size or a given period timeout
+    */
+  final def bufferTimeoutMillis(maxSize: Int, timespan: Long): Flux[Seq[T]] = Flux(jFlux.bufferTimeoutMillis(maxSize, timespan)).map(_.asScala)
 
   /**
     * Defer the transformation of this [[Flux]] in order to generate a target [[Flux]] for each

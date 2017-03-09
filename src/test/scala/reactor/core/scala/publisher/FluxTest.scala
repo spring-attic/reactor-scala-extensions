@@ -11,7 +11,6 @@ import org.scalatest.{FreeSpec, Matchers}
 import reactor.core.publisher.{BaseSubscriber, FluxSink, SynchronousSink}
 import reactor.core.scheduler.Schedulers
 import reactor.test.StepVerifier
-import reactor.test.scheduler.VirtualTimeScheduler
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
@@ -640,9 +639,34 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         }
         }
       }
+
+      "with timespan should split values every timespan" in {
+        StepVerifier.withVirtualTime(() => Flux.interval(1 second).take(5).buffer(1500 milliseconds))
+          .thenAwait(5 seconds)
+          .expectNext(Seq(0), Seq(1), Seq(2, 3), Seq(4))
+          .verifyComplete()
+      }
+
+      "with timespan duration and timeshift duration should split the values every timespan" - {
+        val data = Table(
+          ("scenario", "timespan", "timeshift", "expected"),
+          ("timeshift > timespan", 1500 milliseconds, 2 seconds, Seq(Seq(0l), Seq(1l, 2l), Seq(3l, 4l))),
+          ("timeshift < timespan", 1500 milliseconds, 1 second, Seq(Seq(0l), Seq(1l), Seq(2l), Seq(3l), Seq(4l))),
+          ("timeshift = timespan", 1500 milliseconds, 1500 milliseconds, Seq(Seq(0l), Seq(1l), Seq(2l, 3l), Seq(4l)))
+        )
+        forAll(data) { (scenario, timespan, timeshift, expected) => {
+          s"when $scenario" in {
+            StepVerifier.withVirtualTime(() => Flux.interval(1 second).take(5).buffer(timespan, timeshift))
+              .thenAwait(5 seconds)
+              .expectNext(expected: _*)
+              .verifyComplete()
+          }
+        }
+        }
+      }
     }
 
-    ".bufferMillis" -{
+    ".bufferMillis" - {
       "should split the values every timespan" in {
         StepVerifier.withVirtualTime(() => Flux.interval(1 second).take(5).bufferMillis(1500))
           .thenAwait(5 seconds)
@@ -662,14 +686,15 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
           ("timeshift < timespan", 1500, 1000, Seq(Seq(0l), Seq(1l), Seq(2l), Seq(3l), Seq(4l))),
           ("timeshift = timespan", 1500, 1500, Seq(Seq(0l), Seq(1l), Seq(2l, 3l), Seq(4l)))
         )
-        forAll(data){(scenario, timespan, timeshift, expected) => {
+        forAll(data) { (scenario, timespan, timeshift, expected) => {
           s"when $scenario" in {
             StepVerifier.withVirtualTime(() => Flux.interval(1 second).take(5).bufferMillis(timespan, timeshift))
               .thenAwait(5 seconds)
-              .expectNext(expected:_*)
+              .expectNext(expected: _*)
               .verifyComplete()
           }
-        }}
+        }
+        }
       }
       "with timespan, timeshift and timed scheduler" - {
         val data = Table(
@@ -678,14 +703,33 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
           ("timeshift < timespan", 1500, 1000, Seq(Seq(0l), Seq(1l), Seq(2l), Seq(3l), Seq(4l))),
           ("timeshift = timespan", 1500, 1500, Seq(Seq(0l), Seq(1l), Seq(2l, 3l), Seq(4l)))
         )
-        forAll(data){(scenario, timespan, timeshift, expected) => {
+        forAll(data) { (scenario, timespan, timeshift, expected) => {
           s"when $scenario" in {
             StepVerifier.withVirtualTime(() => Flux.interval(1 second).take(5).bufferMillis(timespan, timeshift, Schedulers.timer()))
               .thenAwait(5 seconds)
-              .expectNext(expected:_*)
+              .expectNext(expected: _*)
               .verifyComplete()
           }
-        }}
+        }
+        }
+      }
+    }
+
+    ".bufferTimeout" - {
+      "with maxSize and duration should aplit values every duration or after maximum has been reached" in {
+        StepVerifier.withVirtualTime(() => Flux.interval(1 second).take(5).bufferTimeout(1, 1500 milliseconds))
+          .thenAwait(5 seconds)
+          .expectNext(Seq(0), Seq(1), Seq(2), Seq(3), Seq(4))
+          .verifyComplete()
+      }
+    }
+
+    ".bufferTimeoutMillis" - {
+      "with maxSize and timespan should split values every timespan or after maximum has been reached" in {
+        StepVerifier.withVirtualTime(() => Flux.interval(1 second).take(5).bufferTimeoutMillis(1, 1500))
+          .thenAwait(5 seconds)
+          .expectNext(Seq(0), Seq(1), Seq(2), Seq(3), Seq(4))
+          .verifyComplete()
       }
     }
 
