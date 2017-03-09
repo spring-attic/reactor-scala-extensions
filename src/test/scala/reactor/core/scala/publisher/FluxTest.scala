@@ -11,6 +11,7 @@ import org.scalatest.{FreeSpec, Matchers}
 import reactor.core.publisher.{BaseSubscriber, FluxSink, SynchronousSink}
 import reactor.core.scheduler.Schedulers
 import reactor.test.StepVerifier
+import reactor.test.scheduler.VirtualTimeScheduler
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
@@ -731,6 +732,69 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
           .expectNext(Seq(0), Seq(1), Seq(2), Seq(3), Seq(4))
           .verifyComplete()
       }
+      "with maxSize, timespan and timer should split values every timespan or after maximum has been reached using provided timer" in {
+        StepVerifier.withVirtualTime(() => Flux.interval(1 second).take(5).bufferTimeoutMillis(1, 1500, VirtualTimeScheduler.create()))
+          .thenAwait(5 seconds)
+          .expectNext(Seq(0), Seq(1), Seq(2), Seq(3), Seq(4))
+          .verifyComplete()
+      }
+      "with maxSize, timespan, timer and bufferSupplier should split values and using the buffer supplied by the supplier" in {
+        val seqSet = mutable.Set[mutable.ListBuffer[Long]]()
+        StepVerifier.withVirtualTime(() => Flux.interval(1 second).take(5).bufferTimeoutMillis(1, 1500, VirtualTimeScheduler.create(), () => {
+          val seq = mutable.ListBuffer[Long]()
+          seqSet += seq
+          seq
+        }))
+          .thenAwait(5 seconds)
+          .expectNextMatches((seq: Seq[Long]) => {
+            seq shouldBe Seq(0)
+            seqSet should contain(seq)
+            true
+          })
+          .expectNextMatches((seq: Seq[Long]) => {
+            seq shouldBe Seq(1)
+            seqSet should contain(seq)
+            true
+          })
+          .expectNextMatches((seq: Seq[Long]) => {
+            seq shouldBe Seq(2)
+            seqSet should contain(seq)
+            true
+          })
+          .expectNextMatches((seq: Seq[Long]) => {
+            seq shouldBe Seq(3)
+            seqSet should contain(seq)
+            true
+          })
+          .expectNextMatches((seq: Seq[Long]) => {
+            seq shouldBe Seq(4)
+            seqSet should contain(seq)
+            true
+          })
+          .verifyComplete()
+      }
+    }
+
+    ".bufferUntil" - {
+      "should buffer until predicate expression returns true" in {
+        StepVerifier.withVirtualTime(() => Flux.interval(1 second).take(5).bufferUntil(l => l % 3 == 0))
+          .thenAwait(5 seconds)
+          .expectNext(Seq(0), Seq(1, 2, 3), Seq(4))
+          .verifyComplete()
+      }
+      "with cutBefore should control if the value that trigger the predicate be included in the previous or after sequence" in {
+        StepVerifier.withVirtualTime(() => Flux.interval(1 second).take(5).bufferUntil(l => l % 3 == 0, cutBefore = true))
+          .thenAwait(5 seconds)
+          .expectNext(Seq(0, 1, 2), Seq(3, 4))
+          .verifyComplete()
+      }
+    }
+
+    ".bufferWhile should buffer while the predicate is true" in {
+      StepVerifier.withVirtualTime(() => Flux.interval(1 second).take(10).bufferWhile(l => l %2 == 0 ||  l %3 == 0))
+        .thenAwait(10 seconds)
+        .expectNext(Seq(0), Seq(2, 3, 4), Seq(6), Seq(8, 9))
+        .verifyComplete()
     }
 
     ".compose should defer transformation of this flux to another publisher" in {

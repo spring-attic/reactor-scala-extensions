@@ -505,6 +505,96 @@ class Flux[T](private[publisher] val jFlux: JFlux[T]) extends Publisher[T] with 
   final def bufferTimeoutMillis(maxSize: Int, timespan: Long): Flux[Seq[T]] = Flux(jFlux.bufferTimeoutMillis(maxSize, timespan)).map(_.asScala)
 
   /**
+    * Collect incoming values into a [[Seq]] that will be pushed into the returned [[Flux]] every timespan OR
+    * maxSize items
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/buffertimespansize.png"
+    * alt="">
+    *
+    * @param maxSize  the max collected size
+    * @param timespan the timeout to use to release a buffered list
+    * @param timer    the [[TimedScheduler]] to run on
+    * @return a microbatched [[Flux]] of [[Seq]] delimited by given size or a given period timeout
+    */
+  final def bufferTimeoutMillis(maxSize: Int, timespan: Long, timer: TimedScheduler): Flux[Seq[T]] = Flux(jFlux.bufferTimeoutMillis(maxSize, timespan, timer)).map(_.asScala)
+
+  /**
+    * Collect incoming values into a [[Seq]] that will be pushed into the returned [[Flux]] every timespan OR
+    * maxSize items
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/buffertimespansize.png"
+    * alt="">
+    *
+    * @param maxSize  the max collected size
+    * @param timespan the timeout to use to release a buffered collection
+    * @param timer    the [[TimedScheduler]] to run on
+    * @param bufferSupplier the collection to use for each data segment
+    * @tparam C the supplied [[Seq]] type
+    * @return a microbatched [[Seq]] delimited by given size or a given period timeout
+    */
+  final def bufferTimeoutMillis[C <: ListBuffer[T]](maxSize: Int, timespan: Long, timer: TimedScheduler, bufferSupplier: () => C): Flux[Seq[T]] = Flux(jFlux.bufferTimeoutMillis(maxSize, timespan, timer, new Supplier[JList[T]] {
+    override def get(): JList[T] = bufferSupplier().asJava
+  })).map(_.asScala)
+
+  /**
+    * Collect incoming values into multiple [[Seq]] that will be pushed into
+    * the returned [[Flux]] each time the given predicate returns true. Note that
+    * the element that triggers the predicate to return true (and thus closes a buffer)
+    * is included as last element in the emitted buffer.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/buffersize.png"
+    * alt="">
+    * <p>
+    * On completion, if the latest buffer is non-empty and has not been closed it is
+    * emitted. However, such a "partial" buffer isn't emitted in case of onError
+    * termination.
+    *
+    * @param predicate a predicate that triggers the next buffer when it becomes true.
+    * @return a microbatched [[Flux]] of [[Seq]]
+    */
+  final def bufferUntil(predicate: T => Boolean): Flux[Seq[T]] = Flux(jFlux.bufferUntil(predicate)).map(_.asScala)
+
+  /**
+    * Collect incoming values into multiple [[Seq]] that will be pushed into
+    * the returned [[Flux]] each time the given predicate returns true. Note that
+    * the buffer into which the element that triggers the predicate to return true
+    * (and thus closes a buffer) is included depends on the `cutBefore` parameter:
+    * set it to true to include the boundary element in the newly opened buffer, false to
+    * include it in the closed buffer (as in [[Flux.bufferUntil]]).
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/buffersize.png"
+    * alt="">
+    * <p>
+    * On completion, if the latest buffer is non-empty and has not been closed it is
+    * emitted. However, such a "partial" buffer isn't emitted in case of onError
+    * termination.
+    *
+    * @param predicate a predicate that triggers the next buffer when it becomes true.
+    * @param cutBefore set to true to include the triggering element in the new buffer rather than the old.
+    * @return a microbatched [[Flux]] of [[Seq]]
+    */
+  final def bufferUntil(predicate: T => Boolean, cutBefore: Boolean): Flux[Seq[T]] = Flux(jFlux.bufferUntil(predicate, cutBefore)).map(_.asScala)
+
+  /**
+    * Collect incoming values into multiple [[Seq]] that will be pushed into
+    * the returned [[Flux]]. Each buffer continues aggregating values while the
+    * given predicate returns true, and a new buffer is created as soon as the
+    * predicate returns false... Note that the element that triggers the predicate
+    * to return false (and thus closes a buffer) is NOT included in any emitted buffer.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/buffersize.png"
+    * alt="">
+    * <p>
+    * On completion, if the latest buffer is non-empty and has not been closed it is
+    * emitted. However, such a "partial" buffer isn't emitted in case of onError
+    * termination.
+    *
+    * @param predicate a predicate that triggers the next buffer when it becomes false.
+    * @return a microbatched [[Flux]] of [[Seq]]
+    */
+  final def bufferWhile(predicate: T=> Boolean): Flux[Seq[T]] = Flux(jFlux.bufferWhile(predicate)).map(_.asScala)
+
+  /**
     * Defer the transformation of this [[Flux]] in order to generate a target [[Flux]] for each
     * new [[Subscriber]].
     *
