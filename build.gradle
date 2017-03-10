@@ -142,3 +142,7 @@ release {
 test {
     maxParallelForks = 1
 }
+
+testScoverage {
+    maxParallelForks = 1
+}
