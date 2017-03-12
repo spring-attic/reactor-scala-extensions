@@ -1,6 +1,7 @@
 package reactor.core.scala.publisher
 
 import java.lang.{Long => JLong}
+import java.util
 import java.util.concurrent.Callable
 import java.util.function.{Consumer, Function, Supplier}
 import java.util.{List => JList}
@@ -737,7 +738,7 @@ class Flux[T](private[publisher] val jFlux: JFlux[T]) extends Publisher[T] with 
     * <p>
     * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/collectmap.png" alt="">
     *
-    * @param keyExtractor a [[Function1]] to route items into a keyed [[Seq]]
+    * @param keyExtractor a [[Function1]] to route items into a keyed [[Traversable]]
     * @tparam K the key extracted from each value of this Flux instance
     * @return a [[Mono]] of all last matched key-values from this [[Flux]]
     *
@@ -751,7 +752,7 @@ class Flux[T](private[publisher] val jFlux: JFlux[T]) extends Publisher[T] with 
     * <p>
     * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/collectmap.png" alt="">
     *
-    * @param keyExtractor a [[Function1]] to route items into a keyed [[Seq]]
+    * @param keyExtractor a [[Function1]] to route items into a keyed [[Traversable]]
     * @param valueExtractor a [[Function1]] to select the data to store from each item
     * @tparam K the key extracted from each value of this Flux instance
     * @tparam V the value extracted from each value of this Flux instance
@@ -759,6 +760,25 @@ class Flux[T](private[publisher] val jFlux: JFlux[T]) extends Publisher[T] with 
     *
     */
   final def collectMap[K, V](keyExtractor: T => K, valueExtractor: T => V): Mono[Map[K, V]] = Mono(jFlux.collectMap[K, V](keyExtractor, valueExtractor)).map(_.asScala.toMap)
+
+  /**
+    * Convert all this [[Flux]] sequence into a supplied map where the key is extracted by the given function and the value will
+    * be the most recent extracted item for this key.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/collectmap.png" alt="">
+    *
+    * @param keyExtractor   a [[Function1]] to route items into a keyed [[Traversable]]
+    * @param valueExtractor a [[Function1]] to select the data to store from each item
+    * @param mapSupplier    a [[mutable.Map]] factory called for each [[Subscriber]]
+    * @tparam K the key extracted from each value of this Flux instance
+    * @tparam V the value extracted from each value of this Flux instance
+    * @return a [[Mono]] of all last matched key-values from this [[Flux]]
+    *
+    */
+  final def collectMap[K, V](keyExtractor: T => K, valueExtractor: T => V, mapSupplier: () => mutable.Map[K, V]): Mono[Map[K, V]] = Mono(jFlux.collectMap[K, V](keyExtractor, valueExtractor, new Supplier[util.Map[K, V]] {
+    override def get(): util.Map[K, V] = mapSupplier().asJava
+  })).map(_.asScala.toMap)
 
   /**
     * Defer the transformation of this [[Flux]] in order to generate a target [[Flux]] for each

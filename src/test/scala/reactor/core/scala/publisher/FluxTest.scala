@@ -871,7 +871,13 @@ How to test noEvent?
           .expectNext(Map((6, 7), (7, 8), (8, 9)))
           .verifyComplete()
       }
-
+      "with keyExtractor, valueExtractor and mapSupplier should collect value, extract the key and value from it and put in the provided map" in {
+        val map = mutable.HashMap[Int, Int]()
+        val mono = Flux.just(1, 2, 3).collectMap(i => i + 5, i => i + 6, () => map)
+        StepVerifier.create(mono)
+          .expectNextMatches((m: Map[Int, Int]) => m == Map((6, 7), (7, 8), (8, 9)) && m == map)
+          .verifyComplete()
+      }
     }
 
     ".compose should defer transformation of this flux to another publisher" in {
