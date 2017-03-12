@@ -4,7 +4,7 @@ import java.lang.{Long => JLong}
 import java.util
 import java.util.concurrent.Callable
 import java.util.function.{Consumer, Function, Supplier}
-import java.util.{List => JList}
+import java.util.{Comparator, List => JList}
 
 import org.reactivestreams.{Publisher, Subscriber, Subscription}
 import reactor.core.publisher.FluxSink.OverflowStrategy
@@ -12,6 +12,7 @@ import reactor.core.publisher.{FluxSink, SynchronousSink, Flux => JFlux}
 import reactor.core.scheduler.{Scheduler, TimedScheduler}
 
 import scala.collection.JavaConverters._
+import scala.collection.immutable.TreeMap
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.duration.Duration
@@ -835,6 +836,34 @@ class Flux[T](private[publisher] val jFlux: JFlux[T]) extends Publisher[T] with 
         mapSupplier().asJava
       }
     })).map(_.asScala.toMap.mapValues(vs => vs.asScala.toSeq))
+
+  /**
+    * Accumulate and sort this [[Flux]] sequence in a [[Seq]] that is emitted to the returned [[Mono]] on
+    * onComplete.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/collectsortedlist.png" alt="">
+    *
+    * @return a [[Mono]] of all sorted values from this [[Flux]]
+    *
+    */
+  final def collectSortedSeq(): Mono[Seq[T]] = Mono(jFlux.collectSortedList()).map(_.asScala)
+
+  /**
+    * Accumulate and sort using the given comparator this
+    * [[Flux]] sequence in a [[Seq]] that is emitted to the returned [[Mono]] on
+    * onComplete.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/collectsortedlist.png" alt="">
+    *
+    * @param ordering a [[Ordering]] to sort the items of this sequences
+    * @return a [[Mono]] of all sorted values from this [[Flux]]
+    *
+    */
+  final def collectSortedSeq(ordering: Ordering[T]): Mono[Seq[T]] = Mono(jFlux.collectSortedList(new Comparator[T] {
+    override def compare(o1: T, o2: T): Int = ordering.compare(o1, o2)
+  })).map(_.asScala)
 
   /**
     * Defer the transformation of this [[Flux]] in order to generate a target [[Flux]] for each

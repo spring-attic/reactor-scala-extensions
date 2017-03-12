@@ -20,6 +20,7 @@ import scala.collection.mutable.ListBuffer
 import scala.concurrent.duration.{Duration, DurationInt}
 import scala.io.Source
 import scala.language.postfixOps
+import scala.math.Ordering.IntOrdering
 import scala.math.ScalaNumber
 import scala.util.{Failure, Try}
 
@@ -904,6 +905,23 @@ How to test noEvent?
             m shouldBe Map((0, Seq(9, 12, 15)), (1, Seq(7, 10, 13, 16)), (2, Seq(8, 11, 14)))
             true
           })
+          .verifyComplete()
+      }
+    }
+
+    ".collectSortedList" - {
+      "should collect and sort the elements" in {
+        val mono = Flux.just(5,2,3,1,4).collectSortedSeq()
+        StepVerifier.create(mono)
+          .expectNext(Seq(1, 2, 3, 4, 5))
+          .verifyComplete()
+      }
+      "with ordering should collect and sort the elements based on the provided ordering" in {
+        val mono = Flux.just(2,3,1,4,5).collectSortedSeq(new IntOrdering {
+          override def compare(x: Int, y: Int): Int = Ordering.Int.compare(x, y) * -1
+        })
+        StepVerifier.create(mono)
+          .expectNext(Seq(5, 4, 3, 2, 1))
           .verifyComplete()
       }
     }
