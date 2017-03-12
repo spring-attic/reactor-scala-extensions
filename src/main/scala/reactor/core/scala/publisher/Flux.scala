@@ -12,7 +12,6 @@ import reactor.core.publisher.{FluxSink, SynchronousSink, Flux => JFlux}
 import reactor.core.scheduler.{Scheduler, TimedScheduler}
 
 import scala.collection.JavaConverters._
-import scala.collection.immutable.TreeMap
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.duration.Duration
@@ -881,13 +880,56 @@ class Flux[T](private[publisher] val jFlux: JFlux[T]) extends Publisher[T] with 
   final def compose[V](transformer: Flux[T] => Publisher[V]) = Flux(jFlux.compose[V](transformer))
 
   /**
+    * Bind dynamic sequences given this input sequence like [[Flux.flatMap]], but preserve
+    * ordering and concatenate emissions instead of merging (no interleave).
+    * Errors will immediately short circuit current concat backlog.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/concatmap.png" alt="">
+    *
+    * @param mapper the function to transform this sequence of T into concatenated sequences of V
+    * @tparam V the produced concatenated type
+    * @return a concatenated [[Flux]]
+    */
+  final def concatMap[V](mapper: T => Publisher[_ <: V]) = Flux(jFlux.concatMap[V](mapper))
+
+  /**
+    * Bind dynamic sequences given this input sequence like [[Flux.flatMap]], but preserve
+    * ordering and concatenate emissions instead of merging (no interleave).
+    * Errors will immediately short circuit current concat backlog.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/concatmap.png" alt="">
+    *
+    * @param mapper   the function to transform this sequence of T into concatenated sequences of V
+    * @param prefetch the inner source produced demand
+    * @tparam V the produced concatenated type
+    * @return a concatenated [[Flux]]
+    */
+  final def concatMap[V](mapper: T => Publisher[_ <: V], prefetch: Int) = Flux(jFlux.concatMap[V](mapper, prefetch))
+
+  /**
+    * Transform the items emitted by this [[Flux]] into Publishers, then flatten the emissions from those by
+    * merging them into a single [[Flux]], so that they may interleave.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/flatmap.png" alt="">
+    * <p>
+    *
+    * @param mapper the [[Function1]] to transform input sequence into N sequences [[Publisher]]
+    * @tparam R the merged output sequence type
+    * @return a new [[Flux]]
+    */
+//  TODO: how to test if the result may not be sequence
+  final def flatMap[R](mapper: T => Publisher[_ <: R]) = Flux(jFlux.flatMap[R](mapper))
+
+  /**
     * Transform this [[Flux]] in order to generate a target [[Flux]]. Unlike [[Flux.compose]], the
     * provided function is executed as part of assembly.
     * *
     *
     * @example {{{
-    *                                                                                                     val applySchedulers = flux => flux.subscribeOn(Schedulers.elastic()).publishOn(Schedulers.parallel());
-    *                                                                                                     flux.transform(applySchedulers).map(v => v * v).subscribe()
+    *                                                                                                               val applySchedulers = flux => flux.subscribeOn(Schedulers.elastic()).publishOn(Schedulers.parallel());
+    *                                                                                                               flux.transform(applySchedulers).map(v => v * v).subscribe()
     *          }}}
     * @param transformer the [[Function1]] to immediately map this [[Flux]] into a target [[Flux]]
     *                    instance.

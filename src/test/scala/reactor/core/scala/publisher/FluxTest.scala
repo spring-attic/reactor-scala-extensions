@@ -933,6 +933,21 @@ How to test noEvent?
         .verifyComplete()
     }
 
+    ".concatMap" - {
+      "with mapper should map the element sequentially" in {
+        val flux = Flux.just(1, 2, 3).concatMap(i => Flux.just(i * 2, i * 3))
+        StepVerifier.create(flux)
+          .expectNext(2, 3, 4, 6, 6, 9)
+          .verifyComplete()
+      }
+      "with mapper and prefetch should map the element sequentially" in {
+        val flux = Flux.just(1, 2, 3).concatMap(i => Flux.just(i * 2, i * 3), 2)
+        StepVerifier.create(flux)
+          .expectNext(2, 3, 4, 6, 6, 9)
+          .verifyComplete()
+      }
+    }
+
     ".transform should defer transformation of this flux to another publisher" in {
       val flux = Flux.just(1, 2, 3).transform(Mono.from)
       StepVerifier.create(flux)
