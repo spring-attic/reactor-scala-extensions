@@ -1,6 +1,6 @@
 package reactor.core.scala.publisher
 
-import java.lang.{Long => JLong}
+import java.lang.{Iterable => JIterable, Long => JLong}
 import java.util
 import java.util.concurrent.Callable
 import java.util.function.{Consumer, Function, Supplier}
@@ -909,6 +909,97 @@ class Flux[T](private[publisher] val jFlux: JFlux[T]) extends Publisher[T] with 
   final def concatMap[V](mapper: T => Publisher[_ <: V], prefetch: Int) = Flux(jFlux.concatMap[V](mapper, prefetch))
 
   /**
+    * Bind dynamic sequences given this input sequence like [[Flux.flatMap]], but preserve
+    * ordering and concatenate emissions instead of merging (no interleave).
+    *
+    * Errors will be delayed after the current concat backlog.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/concatmap.png" alt="">
+    *
+    * @param mapper the function to transform this sequence of T into concatenated sequences of V
+    * @tparam V the produced concatenated type
+    * @return a concatenated [[Flux]]
+    *
+    */
+  //  TODO: How to test?
+  final def concatMapDelayError[V](mapper: T => Publisher[_ <: V]) = Flux(jFlux.concatMapDelayError[V](mapper))
+
+  /**
+    * Bind dynamic sequences given this input sequence like [[Flux.flatMap]], but preserve
+    * ordering and concatenate emissions instead of merging (no interleave).
+    *
+    * Errors will be delayed after all concated sources terminate.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/concatmap.png" alt="">
+    *
+    * @param mapper   the function to transform this sequence of T into concatenated sequences of V
+    * @param prefetch the inner source produced demand
+    * @tparam V the produced concatenated type
+    * @return a concatenated [[Flux]]
+    *
+    */
+  //  TODO: How to test?
+  final def concatMapDelayError[V](mapper: T => Publisher[_ <: V], prefetch: Int) = Flux(jFlux.concatMapDelayError[V](mapper, prefetch))
+
+  /**
+    * Bind dynamic sequences given this input sequence like [[Flux.flatMap]], but preserve
+    * ordering and concatenate emissions instead of merging (no interleave).
+    *
+    * Errors will be delayed after the current concat backlog if delayUntilEnd is
+    * false or after all sources if delayUntilEnd is true.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/concatmap.png" alt="">
+    *
+    * @param mapper        the function to transform this sequence of T into concatenated sequences of V
+    * @param delayUntilEnd delay error until all sources have been consumed instead of
+    *                      after the current source
+    * @param prefetch      the inner source produced demand
+    * @tparam V the produced concatenated type
+    * @return a concatenated [[Flux]]
+    *
+    */
+  final def concatMapDelayError[V](mapper: T => Publisher[_ <: V], delayUntilEnd: Boolean, prefetch: Int) = Flux(jFlux.concatMapDelayError[V](mapper, delayUntilEnd, prefetch))
+
+  /**
+    * Bind [[Iterable]] sequences given this input sequence like [[Flux.flatMapIterable]], but preserve
+    * ordering and concatenate emissions instead of merging (no interleave).
+    * <p>
+    * Errors will be delayed after the current concat backlog.
+    * <p>
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/concatmap.png"
+    * alt="">
+    *
+    * @param mapper the function to transform this sequence of T into concatenated sequences of R
+    * @tparam R the produced concatenated type
+    * @return a concatenated [[Flux]]
+    */
+  final def concatMapIterable[R](mapper: T => Iterable[_ <: R]): Flux[R] = Flux(jFlux.concatMapIterable(new Function[T, JIterable[R]] {
+    override def apply(t: T): JIterable[R] = mapper(t)
+  }))
+
+  /**
+    * Bind [[Iterable]] sequences given this input sequence like [[Flux.flatMapIterable]], but preserve
+    * ordering and concatenate emissions instead of merging (no interleave).
+    * <p>
+    * Errors will be delayed after the current concat backlog.
+    * <p>
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/concatmap.png"
+    * alt="">
+    *
+    * @param mapper   the function to transform this sequence of T into concatenated sequences of R
+    * @param prefetch the inner source produced demand
+    * @tparam R the produced concatenated type
+    * @return a concatenated [[Flux]]
+    */
+  final def concatMapIterable[R](mapper: T => Iterable[_ <: R], prefetch: Int): Flux[R] = Flux(jFlux.concatMapIterable(new Function[T, JIterable[R]] {
+    override def apply(t: T): JIterable[R] = mapper(t)
+  }, prefetch))
+  /**
     * Transform the items emitted by this [[Flux]] into Publishers, then flatten the emissions from those by
     * merging them into a single [[Flux]], so that they may interleave.
     * <p>
@@ -919,8 +1010,25 @@ class Flux[T](private[publisher] val jFlux: JFlux[T]) extends Publisher[T] with 
     * @tparam R the merged output sequence type
     * @return a new [[Flux]]
     */
-//  TODO: how to test if the result may not be sequence
+  //  TODO: how to test if the result may not be sequence
   final def flatMap[R](mapper: T => Publisher[_ <: R]) = Flux(jFlux.flatMap[R](mapper))
+
+  /**
+    * Transform the items emitted by this [[Flux]] into [[Iterable]], then flatten the elements from those by
+    * merging them into a single [[Flux]]. The prefetch argument allows to give an
+    * arbitrary prefetch size to the merged [[Iterable]].
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/flatmapsequential.png" alt="">
+    *
+    * @param mapper the [[Function1]] to transform input sequence into N sequences [[Iterable]]
+    * @tparam R the merged output sequence type
+    * @return a merged [[Flux]]
+    */
+//  TODO: What's the difference with concatMapIterable?
+  final def flatMapIterable[R](mapper: T => Iterable[_ <: R]): Flux[R] = Flux(jFlux.flatMapIterable(new Function[T, JIterable[R]] {
+    override def apply(t: T): JIterable[R] = mapper(t)
+  }))
 
   /**
     * Transform this [[Flux]] in order to generate a target [[Flux]]. Unlike [[Flux.compose]], the
@@ -928,8 +1036,8 @@ class Flux[T](private[publisher] val jFlux: JFlux[T]) extends Publisher[T] with 
     * *
     *
     * @example {{{
-    *                                                                                                               val applySchedulers = flux => flux.subscribeOn(Schedulers.elastic()).publishOn(Schedulers.parallel());
-    *                                                                                                               flux.transform(applySchedulers).map(v => v * v).subscribe()
+    *                                                                                                                                                       val applySchedulers = flux => flux.subscribeOn(Schedulers.elastic()).publishOn(Schedulers.parallel());
+    *                                                                                                                                                       flux.transform(applySchedulers).map(v => v * v).subscribe()
     *          }}}
     * @param transformer the [[Function1]] to immediately map this [[Flux]] into a target [[Flux]]
     *                    instance.

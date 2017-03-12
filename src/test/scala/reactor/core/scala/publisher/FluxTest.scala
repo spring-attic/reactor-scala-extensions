@@ -14,7 +14,6 @@ import reactor.core.scheduler.Schedulers
 import reactor.test.StepVerifier
 import reactor.test.scheduler.VirtualTimeScheduler
 
-import scala.collection.immutable.{HashMap, TreeMap}
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.duration.{Duration, DurationInt}
@@ -795,7 +794,7 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
     }
 
     ".bufferWhile should buffer while the predicate is true" in {
-      StepVerifier.withVirtualTime(() => Flux.interval(1 second).take(10).bufferWhile(l => l %2 == 0 ||  l %3 == 0))
+      StepVerifier.withVirtualTime(() => Flux.interval(1 second).take(10).bufferWhile(l => l % 2 == 0 || l % 3 == 0))
         .thenAwait(10 seconds)
         .expectNext(Seq(0), Seq(2, 3, 4), Seq(6), Seq(8, 9))
         .verifyComplete()
@@ -826,14 +825,14 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
           .thenAwait(5 seconds)
           .expectNext(1, 2, 3)
           .verifyComplete()
-/*
-How to test noEvent?
-        StepVerifier.withVirtualTime(fluxSupplier)
-          .thenAwait(11 seconds)
-          .expectNoEvent(1 second)
-*/
+        /*
+        How to test noEvent?
+                StepVerifier.withVirtualTime(fluxSupplier)
+                  .thenAwait(11 seconds)
+                  .expectNoEvent(1 second)
+        */
       }
-//      TODO: un-ignore this once the underlying flux has been fixed
+      //      TODO: un-ignore this once the underlying flux has been fixed
       "with history and ttl should retain the cache up to ttl and max history" ignore {
         StepVerifier.withVirtualTime(() => Flux.just(1, 2, 3).cache(2, 10 seconds))
           .thenAwait(5 seconds)
@@ -911,13 +910,13 @@ How to test noEvent?
 
     ".collectSortedList" - {
       "should collect and sort the elements" in {
-        val mono = Flux.just(5,2,3,1,4).collectSortedSeq()
+        val mono = Flux.just(5, 2, 3, 1, 4).collectSortedSeq()
         StepVerifier.create(mono)
           .expectNext(Seq(1, 2, 3, 4, 5))
           .verifyComplete()
       }
       "with ordering should collect and sort the elements based on the provided ordering" in {
-        val mono = Flux.just(2,3,1,4,5).collectSortedSeq(new IntOrdering {
+        val mono = Flux.just(2, 3, 1, 4, 5).collectSortedSeq(new IntOrdering {
           override def compare(x: Int, y: Int): Int = Ordering.Int.compare(x, y) * -1
         })
         StepVerifier.create(mono)
@@ -942,6 +941,34 @@ How to test noEvent?
       }
       "with mapper and prefetch should map the element sequentially" in {
         val flux = Flux.just(1, 2, 3).concatMap(i => Flux.just(i * 2, i * 3), 2)
+        StepVerifier.create(flux)
+          .expectNext(2, 3, 4, 6, 6, 9)
+          .verifyComplete()
+      }
+    }
+
+    ".concatMapDelayError" - {
+      "with mapper, delayUntilEnd and prefetch" in {
+        val flux = Flux.just(1, 2, 3).concatMapDelayError(i => {
+          if (i == 2) Flux.error[Int](new RuntimeException("runtime ex"))
+          else Flux.just(i * 2, i * 3)
+        }, delayUntilEnd = true, 2)
+        StepVerifier.create(flux)
+          .expectNext(2, 3, 6, 9)
+          .expectError(classOf[RuntimeException])
+          .verify()
+      }
+    }
+
+    ".concatMapIterable" - {
+      "with mapper should concat and map an iterable" in {
+        val flux = Flux.just(1, 2, 3).concatMapIterable(i => Iterable(i *2, i * 3))
+        StepVerifier.create(flux)
+          .expectNext(2, 3, 4, 6, 6, 9)
+          .verifyComplete()
+      }
+      "with mapper and prefetch should concat and map an iterable" in {
+        val flux = Flux.just(1, 2, 3).concatMapIterable(i => Iterable(i *2, i * 3), 2)
         StepVerifier.create(flux)
           .expectNext(2, 3, 4, 6, 6, 9)
           .verifyComplete()
