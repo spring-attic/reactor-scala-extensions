@@ -2,6 +2,7 @@ package reactor.core.scala.publisher
 
 import java.io.{BufferedReader, File, FileInputStream, InputStreamReader, PrintWriter}
 import java.nio.file.Files
+import java.util
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicLong}
 import java.util.concurrent.{Callable, CountDownLatch, TimeUnit}
 
@@ -13,6 +14,7 @@ import reactor.core.scheduler.Schedulers
 import reactor.test.StepVerifier
 import reactor.test.scheduler.VirtualTimeScheduler
 
+import scala.collection.immutable.{HashMap, TreeMap}
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.duration.{Duration, DurationInt}
@@ -876,6 +878,32 @@ How to test noEvent?
         val mono = Flux.just(1, 2, 3).collectMap(i => i + 5, i => i + 6, () => map)
         StepVerifier.create(mono)
           .expectNextMatches((m: Map[Int, Int]) => m == Map((6, 7), (7, 8), (8, 9)) && m == map)
+          .verifyComplete()
+      }
+    }
+
+    ".collectMultimap" - {
+      "with keyExtractor should group the value based on the keyExtractor" in {
+        val mono = Flux.just(1, 2, 3, 4, 5, 6, 7, 8, 9, 10).collectMultimap(i => i % 3)
+        StepVerifier.create(mono)
+          .expectNext(Map((0, Seq(3, 6, 9)), (1, Seq(1, 4, 7, 10)), (2, Seq(2, 5, 8))))
+          .verifyComplete()
+      }
+      "with keyExtractor and valueExtractor should collect the value, extract the key and value from it" in {
+        val mono = Flux.just(1, 2, 3, 4, 5, 6, 7, 8, 9, 10).collectMultimap(i => i % 3, i => i + 6)
+        StepVerifier.create(mono)
+          .expectNext(Map((0, Seq(9, 12, 15)), (1, Seq(7, 10, 13, 16)), (2, Seq(8, 11, 14))))
+          .verifyComplete()
+      }
+      "with keyExtractor, valueExtractor and map supplier should collect the value, extract the key and value from it and put in the provided map" in {
+        val map = mutable.HashMap[Int, util.Collection[Int]]()
+        val mono = Flux.just(1, 2, 3, 4, 5, 6, 7, 8, 9, 10).collectMultimap(i => i % 3, i => i + 6, () => map)
+        StepVerifier.create(mono)
+          .expectNextMatches((m: Map[Int, Traversable[Int]]) => {
+            m shouldBe map.mapValues(vs => vs.toArray().toSeq)
+            m shouldBe Map((0, Seq(9, 12, 15)), (1, Seq(7, 10, 13, 16)), (2, Seq(8, 11, 14)))
+            true
+          })
           .verifyComplete()
       }
     }

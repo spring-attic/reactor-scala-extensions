@@ -670,7 +670,7 @@ class Flux[T](private[publisher] val jFlux: JFlux[T]) extends Publisher[T] with 
     * @param scheduler the [[Scheduler]] to signal cancel  on
     * @return a scheduled cancel [[Flux]]
     */
-//  TODO: how to test this?
+  //  TODO: how to test this?
   final def cancelOn(scheduler: Scheduler) = Flux(jFlux.cancelOn(scheduler))
 
   /**
@@ -682,7 +682,7 @@ class Flux[T](private[publisher] val jFlux: JFlux[T]) extends Publisher[T] with 
     *
     * @return the assembly tracing [[Flux]].
     */
-//  TODO: how to test?
+  //  TODO: how to test?
   final def checkpoint() = Flux(jFlux.checkpoint())
 
   /**
@@ -743,7 +743,7 @@ class Flux[T](private[publisher] val jFlux: JFlux[T]) extends Publisher[T] with 
     * @return a [[Mono]] of all last matched key-values from this [[Flux]]
     *
     */
-  final def collectMap[K](keyExtractor: T => K):Mono[Map[K, T]] = Mono(jFlux.collectMap[K](keyExtractor)).map(_.asScala.toMap)
+  final def collectMap[K](keyExtractor: T => K): Mono[Map[K, T]] = Mono(jFlux.collectMap[K](keyExtractor)).map(_.asScala.toMap)
 
   /**
     * Convert all this [[Flux]] sequence into a hashed map where the key is extracted by the given function and the value will be
@@ -752,7 +752,7 @@ class Flux[T](private[publisher] val jFlux: JFlux[T]) extends Publisher[T] with 
     * <p>
     * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/collectmap.png" alt="">
     *
-    * @param keyExtractor a [[Function1]] to route items into a keyed [[Traversable]]
+    * @param keyExtractor   a [[Function1]] to route items into a keyed [[Traversable]]
     * @param valueExtractor a [[Function1]] to select the data to store from each item
     * @tparam K the key extracted from each value of this Flux instance
     * @tparam V the value extracted from each value of this Flux instance
@@ -781,6 +781,62 @@ class Flux[T](private[publisher] val jFlux: JFlux[T]) extends Publisher[T] with 
   })).map(_.asScala.toMap)
 
   /**
+    * Convert this [[Flux]] sequence into a hashed map where the key is extracted by the given function and the value will be
+    * all the emitted item for this key.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/collectmultimap.png" alt="">
+    *
+    * @param keyExtractor a [[Function1]] to route items into a keyed [[Traversable]]
+    * @tparam K the key extracted from each value of this Flux instance
+    * @return a [[Mono]] of all matched key-values from this [[Flux]]
+    *
+    */
+  final def collectMultimap[K](keyExtractor: T => K): Mono[Map[K, Traversable[T]]] = Mono(jFlux.collectMultimap[K](keyExtractor)).map(_.asScala.toMap.map {
+    case (k, v) => k -> v.asScala.toSeq
+  })
+
+  /**
+    * Convert this [[Flux]] sequence into a hashed map where the key is extracted by the given function and the value will be
+    * all the extracted items for this key.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/collectmultimap.png" alt="">
+    *
+    * @param keyExtractor   a [[Function1]] to route items into a keyed [[Traversable]]
+    * @param valueExtractor a [[Function1]] to select the data to store from each item
+    * @tparam K the key extracted from each value of this Flux instance
+    * @tparam V the value extracted from each value of this Flux instance
+    * @return a [[Mono]] of all matched key-values from this [[Flux]]
+    *
+    */
+  final def collectMultimap[K, V](keyExtractor: T => K, valueExtractor: T => V): Mono[Map[K, Traversable[V]]] = Mono(jFlux.collectMultimap[K, V](keyExtractor, valueExtractor)).map(_.asScala.toMap.map {
+    case (k, v) => k -> v.asScala.toSeq
+  })
+
+  /**
+    * Convert this [[Flux]] sequence into a supplied map where the key is extracted by the given function and the value will
+    * be all the extracted items for this key.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/collectmultimap.png" alt="">
+    *
+    * @param keyExtractor   a [[Function1]] to route items into a keyed [[Traversable]]
+    * @param valueExtractor a [[Function1]] to select the data to store from each item
+    * @param mapSupplier    a [[Map]] factory called for each [[Subscriber]]
+    * @tparam K the key extracted from each value of this Flux instance
+    * @tparam V the value extracted from each value of this Flux instance
+    * @return a [[Mono]] of all matched key-values from this [[Flux]]
+    *
+    */
+  final def collectMultimap[K, V](keyExtractor: T => K, valueExtractor: T => V, mapSupplier: () => mutable.Map[K, util.Collection[V]]): Mono[Map[K, Traversable[V]]] = Mono(jFlux.collectMultimap[K, V](keyExtractor, valueExtractor,
+    new Supplier[util.Map[K, util.Collection[V]]] {
+      override def get(): util.Map[K, util.Collection[V]] = {
+        mapSupplier().asJava
+      }
+    })).map(_.asScala.toMap.mapValues(vs => vs.asScala.toSeq))
+
+  /**
     * Defer the transformation of this [[Flux]] in order to generate a target [[Flux]] for each
     * new [[Subscriber]].
     *
@@ -801,8 +857,8 @@ class Flux[T](private[publisher] val jFlux: JFlux[T]) extends Publisher[T] with 
     * *
     *
     * @example {{{
-    *                                                                       val applySchedulers = flux => flux.subscribeOn(Schedulers.elastic()).publishOn(Schedulers.parallel());
-    *                                                                       flux.transform(applySchedulers).map(v => v * v).subscribe()
+    *                                                                                                     val applySchedulers = flux => flux.subscribeOn(Schedulers.elastic()).publishOn(Schedulers.parallel());
+    *                                                                                                     flux.transform(applySchedulers).map(v => v * v).subscribe()
     *          }}}
     * @param transformer the [[Function1]] to immediately map this [[Flux]] into a target [[Flux]]
     *                    instance.
