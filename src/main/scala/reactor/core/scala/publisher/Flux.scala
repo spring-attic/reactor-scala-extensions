@@ -8,7 +8,7 @@ import java.util.{List => JList}
 import org.reactivestreams.{Publisher, Subscriber, Subscription}
 import reactor.core.publisher.FluxSink.OverflowStrategy
 import reactor.core.publisher.{FluxSink, SynchronousSink, Flux => JFlux}
-import reactor.core.scheduler.TimedScheduler
+import reactor.core.scheduler.{Scheduler, TimedScheduler}
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
@@ -525,9 +525,9 @@ class Flux[T](private[publisher] val jFlux: JFlux[T]) extends Publisher[T] with 
     * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/buffertimespansize.png"
     * alt="">
     *
-    * @param maxSize  the max collected size
-    * @param timespan the timeout to use to release a buffered collection
-    * @param timer    the [[TimedScheduler]] to run on
+    * @param maxSize        the max collected size
+    * @param timespan       the timeout to use to release a buffered collection
+    * @param timer          the [[TimedScheduler]] to run on
     * @param bufferSupplier the collection to use for each data segment
     * @tparam C the supplied [[Seq]] type
     * @return a microbatched [[Seq]] delimited by given size or a given period timeout
@@ -592,7 +592,173 @@ class Flux[T](private[publisher] val jFlux: JFlux[T]) extends Publisher[T] with 
     * @param predicate a predicate that triggers the next buffer when it becomes false.
     * @return a microbatched [[Flux]] of [[Seq]]
     */
-  final def bufferWhile(predicate: T=> Boolean): Flux[Seq[T]] = Flux(jFlux.bufferWhile(predicate)).map(_.asScala)
+  final def bufferWhile(predicate: T => Boolean): Flux[Seq[T]] = Flux(jFlux.bufferWhile(predicate)).map(_.asScala)
+
+  /**
+    * Turn this [[Flux]] into a hot source and cache last emitted signals for further [[Subscriber]]. Will
+    * retain up an unbounded volume of onNext signals. Completion and Error will also be
+    * replayed.
+    * <p>
+    * <img width="500" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/cache.png"
+    * alt="">
+    *
+    * @return a replaying [[Flux]]
+    */
+  final def cache() = Flux(jFlux.cache())
+
+  /**
+    * Turn this [[Flux]] into a hot source and cache last emitted signals for further [[Subscriber]].
+    * Will retain up to the given history size onNext signals. Completion and Error will also be
+    * replayed.
+    *
+    * <p>
+    * <img width="500" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/cache.png" alt="">
+    *
+    * @param history number of events retained in history excluding complete and error
+    * @return a replaying [[Flux]]
+    *
+    */
+  final def cache(history: Int) = Flux(jFlux.cache(history))
+
+  /**
+    * Turn this [[Flux]] into a hot source and cache last emitted signals for further
+    * [[Subscriber]]. Will retain an unbounded history with per-item expiry timeout
+    * Completion and Error will also be replayed.
+    * <p>
+    * <p>
+    * <img width="500" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/cache.png"
+    * alt="">
+    *
+    * @param ttl Time-to-live for each cached item.
+    * @return a replaying [[Flux]]
+    */
+  final def cache(ttl: Duration) = Flux(jFlux.cache(ttl))
+
+  /**
+    * Turn this [[Flux]] into a hot source and cache last emitted signals for further
+    * [[Subscriber]]. Will retain up to the given history size  with per-item expiry
+    * timeout.
+    * <p>
+    * <p>
+    * <img width="500" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/cache.png"
+    * alt="">
+    *
+    * @param history number of events retained in history excluding complete and error
+    * @param ttl     Time-to-live for each cached item.
+    * @return a replaying [[Flux]]
+    */
+  final def cache(history: Int, ttl: Duration) = Flux(jFlux.cache(history, ttl))
+
+  /**
+    * Cast the current [[Flux]] produced type into a target produced type.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/cast.png" alt="">
+    *
+    * @tparam E the [[Flux]] output type
+    * @param clazz the target class to cast to
+    * @return a casted [[Flux]]
+    */
+  final def cast[E](clazz: Class[E]) = Flux(jFlux.cast(clazz))
+
+  /**
+    * Prepare this [[Flux]] so that subscribers will cancel from it on a
+    * specified
+    * [[Scheduler]].
+    *
+    * @param scheduler the [[Scheduler]] to signal cancel  on
+    * @return a scheduled cancel [[Flux]]
+    */
+//  TODO: how to test this?
+  final def cancelOn(scheduler: Scheduler) = Flux(jFlux.cancelOn(scheduler))
+
+  /**
+    * Activate assembly tracing for this particular [[Flux]], in case of an error
+    * upstream of the checkpoint.
+    * <p>
+    * It should be placed towards the end of the reactive chain, as errors
+    * triggered downstream of it cannot be observed and augmented with assembly trace.
+    *
+    * @return the assembly tracing [[Flux]].
+    */
+//  TODO: how to test?
+  final def checkpoint() = Flux(jFlux.checkpoint())
+
+  /**
+    * Activate assembly tracing for this particular [[Flux]] and give it
+    * a description that will be reflected in the assembly traceback in case
+    * of an error upstream of the checkpoint.
+    * <p>
+    * It should be placed towards the end of the reactive chain, as errors
+    * triggered downstream of it cannot be observed and augmented with assembly trace.
+    * <p>
+    * The description could for example be a meaningful name for the assembled
+    * flux or a wider correlation ID.
+    *
+    * @param description a description to include in the assembly traceback.
+    * @return the assembly tracing [[Flux]].
+    */
+  //  TODO: how to test?
+  final def checkpoint(description: String) = Flux(jFlux.checkpoint(description))
+
+  /**
+    * Collect the [[Flux]] sequence with the given collector and supplied container on subscribe.
+    * The collected result will be emitted when this sequence completes.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/collect.png" alt="">
+    *
+    * @tparam E the [[Flux]] collected container type
+    * @param containerSupplier the supplier of the container instance for each Subscriber
+    * @param collector         the consumer of both the container instance and the current value
+    * @return a [[Mono]] sequence of the collected value on complete
+    *
+    */
+  final def collect[E](containerSupplier: () => E, collector: (E, T) => Unit) = Mono(jFlux.collect(containerSupplier, collector: JBiConsumer[E, T]))
+
+  /**
+    * Accumulate this [[Flux]] sequence in a [[Seq]] that is emitted to the returned [[Mono]] on
+    * onComplete.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/collectlist.png" alt="">
+    *
+    * @return a [[Mono]] of all values from this [[Flux]]
+    *
+    *
+    */
+  final def collectSeq(): Mono[Seq[T]] = Mono(jFlux.collectList()).map(_.asScala)
+
+  /**
+    * Convert all this
+    * [[Flux]] sequence into a hashed map where the key is extracted by the given [[Function1]] and the
+    * value will be the most recent emitted item for this key.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/collectmap.png" alt="">
+    *
+    * @param keyExtractor a [[Function1]] to route items into a keyed [[Seq]]
+    * @tparam K the key extracted from each value of this Flux instance
+    * @return a [[Mono]] of all last matched key-values from this [[Flux]]
+    *
+    */
+  final def collectMap[K](keyExtractor: T => K):Mono[Map[K, T]] = Mono(jFlux.collectMap[K](keyExtractor)).map(_.asScala.toMap)
+
+  /**
+    * Convert all this [[Flux]] sequence into a hashed map where the key is extracted by the given function and the value will be
+    * the most recent extracted item for this key.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/collectmap.png" alt="">
+    *
+    * @param keyExtractor a [[Function1]] to route items into a keyed [[Seq]]
+    * @param valueExtractor a [[Function1]] to select the data to store from each item
+    * @tparam K the key extracted from each value of this Flux instance
+    * @tparam V the value extracted from each value of this Flux instance
+    * @return a [[Mono]] of all last matched key-values from this [[Flux]]
+    *
+    */
+  final def collectMap[K, V](keyExtractor: T => K, valueExtractor: T => V): Mono[Map[K, V]] = Mono(jFlux.collectMap[K, V](keyExtractor, valueExtractor)).map(_.asScala.toMap)
 
   /**
     * Defer the transformation of this [[Flux]] in order to generate a target [[Flux]] for each
@@ -615,8 +781,8 @@ class Flux[T](private[publisher] val jFlux: JFlux[T]) extends Publisher[T] with 
     * *
     *
     * @example {{{
-    *                                                             val applySchedulers = flux => flux.subscribeOn(Schedulers.elastic()).publishOn(Schedulers.parallel());
-    *                                                             flux.transform(applySchedulers).map(v => v * v).subscribe()
+    *                                                                       val applySchedulers = flux => flux.subscribeOn(Schedulers.elastic()).publishOn(Schedulers.parallel());
+    *                                                                       flux.transform(applySchedulers).map(v => v * v).subscribe()
     *          }}}
     * @param transformer the [[Function1]] to immediately map this [[Flux]] into a target [[Flux]]
     *                    instance.

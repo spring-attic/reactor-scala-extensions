@@ -18,6 +18,7 @@ import scala.collection.mutable.ListBuffer
 import scala.concurrent.duration.{Duration, DurationInt}
 import scala.io.Source
 import scala.language.postfixOps
+import scala.math.ScalaNumber
 import scala.util.{Failure, Try}
 
 /**
@@ -795,6 +796,82 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         .thenAwait(10 seconds)
         .expectNext(Seq(0), Seq(2, 3, 4), Seq(6), Seq(8, 9))
         .verifyComplete()
+    }
+
+    ".cache" - {
+      "should turn this into a hot source" in {
+        val flux = Flux.just(1, 2, 3).cache()
+        StepVerifier.create(flux)
+          .expectNext(1, 2, 3)
+          .verifyComplete()
+        StepVerifier.create(flux)
+          .expectNext(1, 2, 3)
+          .verifyComplete()
+      }
+      "with history should just retain up to history" in {
+        val flux = Flux.just(1, 2, 3).cache(2)
+        StepVerifier.create(flux)
+          .expectNext(1, 2, 3)
+          .verifyComplete()
+        StepVerifier.create(flux)
+          .expectNext(2, 3)
+          .verifyComplete()
+      }
+      "with ttl should retain the cache as long as the provided duration" in {
+        val fluxSupplier = () => Flux.just(1, 2, 3).cache(10 seconds)
+        StepVerifier.withVirtualTime(fluxSupplier)
+          .thenAwait(5 seconds)
+          .expectNext(1, 2, 3)
+          .verifyComplete()
+/*
+How to test noEvent?
+        StepVerifier.withVirtualTime(fluxSupplier)
+          .thenAwait(11 seconds)
+          .expectNoEvent(1 second)
+*/
+      }
+//      TODO: un-ignore this once the underlying flux has been fixed
+      "with history and ttl should retain the cache up to ttl and max history" ignore {
+        StepVerifier.withVirtualTime(() => Flux.just(1, 2, 3).cache(2, 10 seconds))
+          .thenAwait(5 seconds)
+          .expectNext(2, 3)
+          .verifyComplete()
+      }
+    }
+
+    ".cast should cast the underlying value to a different type" in {
+      val number = Flux.just(BigDecimal("1"), BigDecimal("2"), BigDecimal("3")).cast(classOf[ScalaNumber]).blockLast()
+      number.get shouldBe a[ScalaNumber]
+    }
+
+    ".collect should collect the value into the supplied container" in {
+      val mono = Flux.just(1, 2, 3).collect[ListBuffer[Int]](() => ListBuffer.empty, (buffer, v) => buffer += v)
+      StepVerifier.create(mono)
+        .expectNext(ListBuffer(1, 2, 3))
+        .verifyComplete()
+    }
+
+    ".collectList should collect the value into a sequence" in {
+      val mono = Flux.just(1, 2, 3).collectSeq()
+      StepVerifier.create(mono)
+        .expectNext(Seq(1, 2, 3))
+        .verifyComplete()
+    }
+
+    ".collectMap" - {
+      "with keyExtractor should collect the value and extract the key to return as Map" in {
+        val mono = Flux.just(1, 2, 3).collectMap(i => i + 5)
+        StepVerifier.create(mono)
+          .expectNext(Map((6, 1), (7, 2), (8, 3)))
+          .verifyComplete()
+      }
+      "with keyExtractor and valueExtractor should collect the value, extract the key and value from it" in {
+        val mono = Flux.just(1, 2, 3).collectMap(i => i + 5, i => i + 6)
+        StepVerifier.create(mono)
+          .expectNext(Map((6, 7), (7, 8), (8, 9)))
+          .verifyComplete()
+      }
+
     }
 
     ".compose should defer transformation of this flux to another publisher" in {
