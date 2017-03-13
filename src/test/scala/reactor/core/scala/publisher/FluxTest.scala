@@ -820,21 +820,35 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
           .verifyComplete()
       }
       "with ttl should retain the cache as long as the provided duration" in {
-        val fluxSupplier = () => Flux.just(1, 2, 3).cache(10 seconds)
-        StepVerifier.withVirtualTime(fluxSupplier)
-          .thenAwait(5 seconds)
-          .expectNext(1, 2, 3)
-          .verifyComplete()
-        /*
-        How to test noEvent?
-                StepVerifier.withVirtualTime(fluxSupplier)
-                  .thenAwait(11 seconds)
-                  .expectNoEvent(1 second)
-        */
+        try {
+
+          val vts = VirtualTimeScheduler.getOrSet(true)
+
+          val flux = Flux.just(1, 2, 3).delayElements(1 second) cache (2 seconds)
+
+          StepVerifier.create(flux)
+            .`then`(() => vts.advanceTimeBy(3 seconds))
+            .expectNext(1, 2, 3)
+            .verifyComplete()
+
+/*This does not make sense
+          StepVerifier.create(flux)
+            .`then`(() => vts.advanceTimeBy(20 seconds))
+            .expectNext(2, 3)
+            .verifyComplete()
+*/
+        } finally {
+          VirtualTimeScheduler.reset()
+        }
+
       }
-      //      TODO: un-ignore this once the underlying flux has been fixed
-      "with history and ttl should retain the cache up to ttl and max history" ignore {
-        StepVerifier.withVirtualTime(() => Flux.just(1, 2, 3).cache(2, 10 seconds))
+      "with history and ttl should retain the cache up to ttl and max history" in {
+        val supplier = () => {
+          val tested = Flux.just(1, 2, 3).cache(2, 10 seconds)
+          tested.subscribe()
+          tested
+        }
+        StepVerifier.withVirtualTime(supplier)
           .thenAwait(5 seconds)
           .expectNext(2, 3)
           .verifyComplete()
@@ -962,16 +976,43 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
 
     ".concatMapIterable" - {
       "with mapper should concat and map an iterable" in {
-        val flux = Flux.just(1, 2, 3).concatMapIterable(i => Iterable(i *2, i * 3))
+        val flux = Flux.just(1, 2, 3).concatMapIterable(i => Iterable(i * 2, i * 3))
         StepVerifier.create(flux)
           .expectNext(2, 3, 4, 6, 6, 9)
           .verifyComplete()
       }
       "with mapper and prefetch should concat and map an iterable" in {
-        val flux = Flux.just(1, 2, 3).concatMapIterable(i => Iterable(i *2, i * 3), 2)
+        val flux = Flux.just(1, 2, 3).concatMapIterable(i => Iterable(i * 2, i * 3), 2)
         StepVerifier.create(flux)
           .expectNext(2, 3, 4, 6, 6, 9)
           .verifyComplete()
+      }
+    }
+
+    ".delayElement should delay every elements by provided delay in Duration" in {
+      val vts = VirtualTimeScheduler.getOrSet(true)
+      try {
+        val flux = Flux.just(1, 2, 3).delayElements(1 second).elapsed()
+        StepVerifier.create(flux)
+          .`then`(() => vts.advanceTimeBy(3 seconds))
+          .expectNext((1000, 1), (1000, 2), (1000, 3))
+          .verifyComplete()
+      } finally {
+        VirtualTimeScheduler.reset()
+      }
+
+    }
+
+    ".delayElementMillis should delay every elements by provided delay in millis" in {
+      val vts = VirtualTimeScheduler.getOrSet(true)
+      try {
+        val flux = Flux.just(1, 2, 3).delayElementsMillis(1000).elapsed()
+        StepVerifier.create(flux)
+          .`then`(() => vts.advanceTimeBy(3 seconds))
+          .expectNext((1000, 1), (1000, 2), (1000, 3))
+          .verifyComplete()
+      } finally {
+        VirtualTimeScheduler.reset()
       }
     }
 

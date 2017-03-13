@@ -7,9 +7,11 @@ import java.util.function.{Consumer, Function, Supplier}
 import java.util.{Comparator, List => JList}
 
 import org.reactivestreams.{Publisher, Subscriber, Subscription}
+import reactor.core.Disposable
 import reactor.core.publisher.FluxSink.OverflowStrategy
 import reactor.core.publisher.{FluxSink, SynchronousSink, Flux => JFlux}
 import reactor.core.scheduler.{Scheduler, TimedScheduler}
+import reactor.util.function.Tuple2
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
@@ -999,6 +1001,92 @@ class Flux[T](private[publisher] val jFlux: JFlux[T]) extends Publisher[T] with 
   final def concatMapIterable[R](mapper: T => Iterable[_ <: R], prefetch: Int): Flux[R] = Flux(jFlux.concatMapIterable(new Function[T, JIterable[R]] {
     override def apply(t: T): JIterable[R] = mapper(t)
   }, prefetch))
+
+  /**
+    * Concatenate emissions of this [[Flux]] with the provided [[Publisher]] (no interleave).
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/concat.png"
+    * alt="">
+    *
+    * @param other the { @link Publisher} sequence to concat after this { @link Flux}
+    * @return a concatenated [[Flux]]
+    */
+  final def concatWith(other: Publisher[_ <: T]) = Flux(jFlux.concatWith(other))
+
+  /**
+    * Counts the number of values in this [[Flux]].
+    * The count will be emitted when onComplete is observed.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/count.png" alt="">
+    *
+    * @return a new [[Mono]] of [[Long]] count
+    */
+  def count(): Mono[Long] = Mono[Long](jFlux.count().map(new Function[JLong, Long] {
+    override def apply(t: JLong) = Long2long(t)
+  }))
+
+  /**
+    * Provide a default unique value if this sequence is completed without any data
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/defaultifempty.png" alt="">
+    * <p>
+    *
+    * @param defaultV the alternate value if this sequence is empty
+    * @return a new [[Flux]]
+    */
+  final def defaultIfEmpty(defaultV: T) = new Flux[T](jFlux.defaultIfEmpty(defaultV))
+
+  /**
+    * Delay each of this [[Flux]] elements ([[Subscriber.onNext]] signals)
+    * by a given duration.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/delayonnext.png" alt="">
+    *
+    * @param delay duration to delay each [[Subscriber.onNext]] signal
+    * @return a delayed [[Flux]]
+    * @see #delaySubscription(Duration) delaySubscription to introduce a delay at the beginning of the sequence only
+    */
+  final def delayElements(delay: Duration) = Flux(jFlux.delayElements(delay))
+
+  /**
+    * Delay each of this [[Flux]] elements ([[Subscriber.onNext]] signals)
+    * by a given duration in milliseconds.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/delayonnext.png" alt="">
+    *
+    * @param delay period to delay each [[Subscriber.onNext]] signal, in milliseconds
+    * @return a delayed [[Flux]]
+    */
+  final def delayElementsMillis(delay: Long) = Flux(jFlux.delayElementsMillis(delay))
+
+  /**
+    * Attach a Long customer to this [[Flux]] that will observe any request to this [[Flux]].
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/doonrequest.png" alt="">
+    *
+    * @param consumer the consumer to invoke on each request
+    * @return an observed  [[Flux]]
+    */
+  final def doOnRequest(consumer: Long => Unit): Flux[T] = Flux(jFlux.doOnRequest(consumer))
+
+  /**
+    * Map this [[Flux]] sequence into [[Tuple2]] of T1 [[Long]] timemillis and T2
+    * `T` associated data. The timemillis corresponds to the elapsed time between the subscribe and the first
+    * next signal OR between two next signals.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/elapsed.png" alt="">
+    *
+    * @return a transforming [[Flux]] that emits tuples of time elapsed in milliseconds and matching data
+    */
+  final def elapsed(): Flux[(Long, T)] = Flux(jFlux.elapsed()).map(tupleTwo2ScalaTuple2[JLong, T]).map {
+    case (k, v) => (Long2long(k), v)
+  }
+
   /**
     * Transform the items emitted by this [[Flux]] into Publishers, then flatten the emissions from those by
     * merging them into a single [[Flux]], so that they may interleave.
@@ -1025,10 +1113,60 @@ class Flux[T](private[publisher] val jFlux: JFlux[T]) extends Publisher[T] with 
     * @tparam R the merged output sequence type
     * @return a merged [[Flux]]
     */
-//  TODO: What's the difference with concatMapIterable?
   final def flatMapIterable[R](mapper: T => Iterable[_ <: R]): Flux[R] = Flux(jFlux.flatMapIterable(new Function[T, JIterable[R]] {
     override def apply(t: T): JIterable[R] = mapper(t)
   }))
+
+  /**
+    * Transform the items emitted by this [[Flux]] by applying a function to each item.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/map.png" alt="">
+    * <p>
+    *
+    * @param mapper the transforming [[Function1]]
+    * @tparam V the transformed type
+    * @return a transformed [[Flux]]
+    */
+  override def map[V](mapper: (T) => V) = new Flux[V](jFlux.map(mapper))
+
+  /**
+    * Emit latest value for every given period of time.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/sampletimespan.png" alt="">
+    *
+    * @param timespan the duration to emit the latest observed item
+    * @return a sampled [[Flux]] by last item over a period of time
+    */
+  def sample(timespan: Duration) = new Flux[T](jFlux.sample(timespan))
+
+  /**
+    * Start the chain and request unbounded demand.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/unbounded.png" alt="">
+    * <p>
+    *
+    * @return a [[Disposable]] task to execute to dispose and cancel the underlying [[Subscription
+    *         ]]
+    */
+  final def subscribe(): Disposable = jFlux.subscribe()
+
+  /**
+    * Take only the first N values from this [[Flux]].
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/take.png" alt="">
+    * <p>
+    * If N is zero, the [[Subscriber]] gets completed if this [[Flux]] completes, signals an error or
+    * signals its first value (which is not not relayed though).
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/take0.png" alt="">
+    *
+    * @param n the number of items to emit from this [[Flux]]
+    * @return a size limited [[Flux]]
+    */
+  def take(n: Long) = new Flux[T](jFlux.take(n))
 
   /**
     * Transform this [[Flux]] in order to generate a target [[Flux]]. Unlike [[Flux.compose]], the
@@ -1047,38 +1185,6 @@ class Flux[T](private[publisher] val jFlux: JFlux[T]) extends Publisher[T] with 
     * @see [[Flux.as]] for a loose conversion to an arbitrary type
     */
   final def transform[V](transformer: Flux[T] => Publisher[V]) = Flux(jFlux.transform[V](transformer))
-
-  def count(): Mono[Long] = Mono[Long](jFlux.count().map(new Function[JLong, Long] {
-    override def apply(t: JLong) = Long2long(t)
-  }))
-
-  def take(n: Long) = new Flux[T](jFlux.take(n))
-
-  def sample(duration: Duration) = new Flux[T](jFlux.sample(duration))
-
-  override def map[U](mapper: (T) => U) = new Flux[U](jFlux.map(mapper))
-
-  /**
-    * Provide a default unique value if this sequence is completed without any data
-    * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/defaultifempty.png" alt="">
-    * <p>
-    *
-    * @param defaultV the alternate value if this sequence is empty
-    * @return a new [[Flux]]
-    */
-  final def defaultIfEmpty(defaultV: T) = new Flux[T](jFlux.defaultIfEmpty(defaultV))
-
-  /**
-    * Attach a Long customer to this [[Flux]] that will observe any request to this [[Flux]].
-    *
-    * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/doonrequest.png" alt="">
-    *
-    * @param consumer the consumer to invoke on each request
-    * @return an observed  [[Flux]]
-    */
-  final def doOnRequest(consumer: Long => Unit): Flux[T] = Flux(jFlux.doOnRequest(consumer))
 
   /**
     * Triggered when the [[Flux]] is subscribed.

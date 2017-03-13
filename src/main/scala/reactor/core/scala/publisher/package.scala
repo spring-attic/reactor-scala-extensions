@@ -3,6 +3,7 @@ package reactor.core.scala
 import java.lang.{Boolean => JBoolean, Iterable => JIterable, Long => JLong}
 import java.time.{Duration => JDuration}
 import java.util.Optional
+import java.util.Optional.empty
 import java.util.concurrent.Callable
 import java.util.function.{BiConsumer, BiFunction, BooleanSupplier, Consumer, Function, LongConsumer, Predicate, Supplier}
 
@@ -21,9 +22,7 @@ package object publisher {
     JDuration.ofNanos(duration.toNanos)
   }
 
-  implicit def scalaOption2JavaOptional[T](option: Option[T]): Optional[T] = {
-    option.map(Optional.of[T]).getOrElse(Optional.empty())
-  }
+  implicit def scalaOption2JavaOptional[T](option: Option[T]): Optional[T] = option.map(Optional.of[T]).getOrElse(empty())
 
   implicit def tupleTwo2ScalaTuple2[T1, T2](javaTuple2: Tuple2[T1, T2]): (T1, T2) = {
     (javaTuple2.getT1, javaTuple2.getT2)
@@ -147,6 +146,12 @@ Uncomment this when used. It is not used for now and reduce the code coverage
   implicit def scalaFunction2JavaCallable[T] (scalaFunction: () => T): Callable[T] = {
     new Callable[T] {
       override def call(): T = scalaFunction()
+    }
+  }
+
+  implicit def scalaFunction2JavaRunnable(scalaFunction: () => Unit): Runnable = {
+    new Runnable {
+      override def run(): Unit = scalaFunction()
     }
   }
 }
