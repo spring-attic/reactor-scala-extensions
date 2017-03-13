@@ -9,7 +9,7 @@ import java.util.concurrent.{Callable, CountDownLatch, TimeUnit}
 import org.reactivestreams.{Publisher, Subscription}
 import org.scalatest.prop.TableDrivenPropertyChecks
 import org.scalatest.{FreeSpec, Matchers}
-import reactor.core.publisher.{BaseSubscriber, FluxSink, SynchronousSink}
+import reactor.core.publisher.{BaseSubscriber, FluxSink, Signal, SynchronousSink}
 import reactor.core.scheduler.Schedulers
 import reactor.test.StepVerifier
 import reactor.test.scheduler.VirtualTimeScheduler
@@ -210,7 +210,7 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
 
     ".firstEmitting" - {
       "with varargs of publisher should create Flux based on the publisher that emit first onNext or onComplete or onError" in {
-        val flux = Flux.firstEmitting(Mono.delay(Duration("10 seconds")), Mono.just(1L))
+        val flux = Flux.firstEmitting(Mono.delay(10 seconds), Mono.just(1L))
         StepVerifier.create(flux)
           .expectNext(1)
           .verifyComplete()
@@ -831,12 +831,12 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
             .expectNext(1, 2, 3)
             .verifyComplete()
 
-/*This does not make sense
-          StepVerifier.create(flux)
-            .`then`(() => vts.advanceTimeBy(20 seconds))
-            .expectNext(2, 3)
-            .verifyComplete()
-*/
+          /*This does not make sense
+                    StepVerifier.create(flux)
+                      .`then`(() => vts.advanceTimeBy(20 seconds))
+                      .expectNext(2, 3)
+                      .verifyComplete()
+          */
         } finally {
           VirtualTimeScheduler.reset()
         }
@@ -1003,17 +1003,69 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
 
     }
 
-    ".delayElementMillis should delay every elements by provided delay in millis" in {
-      val vts = VirtualTimeScheduler.getOrSet(true)
-      try {
-        val flux = Flux.just(1, 2, 3).delayElementsMillis(1000).elapsed()
-        StepVerifier.create(flux)
-          .`then`(() => vts.advanceTimeBy(3 seconds))
-          .expectNext((1000, 1), (1000, 2), (1000, 3))
-          .verifyComplete()
-      } finally {
-        VirtualTimeScheduler.reset()
+    ".delayElementMillis" - {
+      "should delay every elements by provided delay in millis" in {
+        val vts = VirtualTimeScheduler.getOrSet(true)
+        try {
+          val flux = Flux.just(1, 2, 3).delayElementsMillis(1000).elapsed()
+          StepVerifier.create(flux)
+            .`then`(() => vts.advanceTimeBy(3 seconds))
+            .expectNext((1000, 1), (1000, 2), (1000, 3))
+            .verifyComplete()
+        } finally {
+          VirtualTimeScheduler.reset()
+        }
       }
+      "with timer should use the provided timer" in {
+        val vts = VirtualTimeScheduler.getOrSet(true)
+        try {
+          val flux = Flux.just(1, 2, 3).delayElementsMillis(1000, Schedulers.timer()).elapsed()
+          StepVerifier.create(flux)
+            .`then`(() => vts.advanceTimeBy(3 seconds))
+            .expectNext((1000, 1), (1000, 2), (1000, 3))
+            .verifyComplete()
+        } finally {
+          VirtualTimeScheduler.reset()
+        }
+      }
+    }
+
+    ".delaySubscription" - {
+      "with delay duration should delay subscription as long as the provided duration" in {
+        StepVerifier.withVirtualTime(() => Flux.just(1, 2, 3).delaySubscription(1 hour))
+          .thenAwait(1 hour)
+          .expectNext(1, 2, 3)
+          .verifyComplete()
+      }
+      "with another publisher should delay the current subscription until the other publisher completes" in {
+        StepVerifier.withVirtualTime(() => Flux.just(1, 2, 3).delaySubscription(Mono.just("one").delaySubscription(1 hour)))
+          .thenAwait(1 hour)
+          .expectNext(1, 2, 3)
+          .verifyComplete()
+
+      }
+    }
+
+    ".delaySubscriptionMillis" - {
+      "with delay duration should delay subscription as long as the provided duration" in {
+        StepVerifier.withVirtualTime(() => Flux.just(1, 2, 3).delaySubscriptionMillis(60000))
+          .thenAwait(1 minute)
+          .expectNext(1, 2, 3)
+          .verifyComplete()
+      }
+      "with delay duration and timer should delay subscription as long as the provided duration using the provided timer" in {
+        StepVerifier.withVirtualTime(() => Flux.just(1, 2, 3).delaySubscriptionMillis(60000, Schedulers.timer()))
+          .thenAwait(1 minute)
+          .expectNext(1, 2, 3)
+          .verifyComplete()
+      }
+    }
+
+    ".dematerialize should dematerialize the underlying flux" in {
+      val flux = Flux.just(Signal.next(1), Signal.next(2))
+      StepVerifier.create(flux.dematerialize())
+        .expectNext(1, 2)
+        .verifyComplete
     }
 
     ".transform should defer transformation of this flux to another publisher" in {

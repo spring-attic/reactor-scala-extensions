@@ -1063,6 +1063,88 @@ class Flux[T](private[publisher] val jFlux: JFlux[T]) extends Publisher[T] with 
   final def delayElementsMillis(delay: Long) = Flux(jFlux.delayElementsMillis(delay))
 
   /**
+    * Delay each of this [[Flux]] elements ([[Subscriber.onNext]] signals)
+    * by a given duration in milliseconds.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/delayonnext.png" alt="">
+    *
+    * @param delay period to delay each [[Subscriber.onNext]] signal, in milliseconds
+    * @param timer the timed scheduler to use for delaying each signal
+    * @return a delayed [[Flux]]
+    */
+  final def delayElementsMillis(delay: Long, timer: TimedScheduler) = Flux(jFlux.delayElementsMillis(delay, timer))
+
+  /**
+    * Delay the [[Flux.subscribe subscription]] to this [[Flux]] source until the given
+    * period elapses.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/delaysubscription.png" alt="">
+    *
+    * @param delay duration before subscribing this [[Flux]]
+    * @return a delayed [[Flux]]
+    *
+    */
+  final def delaySubscription(delay: Duration) = Flux(jFlux.delaySubscription(delay))
+
+  /**
+    * Delay the subscription to the main source until another Publisher
+    * signals a value or completes.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/delaysubscriptionp.png" alt="">
+    *
+    * @param subscriptionDelay a
+    *                          [[Publisher]] to signal by next or complete this [[Flux.subscribe]]
+    * @tparam U the other source type
+    * @return a delayed [[Flux]]
+    *
+    */
+  final def delaySubscription[U](subscriptionDelay: Publisher[U]) = Flux(jFlux.delaySubscription(subscriptionDelay))
+
+  /**
+    * Delay the [[Flux.subscribe subscription]] to this [[Flux]] source until the given
+    * period elapses.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/delaysubscription.png" alt="">
+    *
+    * @param delay period in milliseconds before subscribing this [[Flux]]
+    * @return a delayed [[Flux]]
+    *
+    */
+  final def delaySubscriptionMillis(delay: Long) = Flux(jFlux.delaySubscriptionMillis(delay))
+
+  /**
+    * Delay the [[Flux.subscribe subscription]] to this [[Flux]] source until the given
+    * period elapses.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/delaysubscription.png" alt="">
+    *
+    * @param delay period in milliseconds before subscribing this [[Flux]]
+    * @param timer the [[TimedScheduler]] to run on
+    * @return a delayed [[Flux]]
+    *
+    */
+  final def delaySubscriptionMillis(delay: Long, timer: TimedScheduler) = Flux(jFlux.delaySubscriptionMillis(delay, timer))
+
+  /**
+    * A "phantom-operator" working only if this
+    * [[Flux]] is a emits onNext, onError or onComplete [[reactor.core.publisher.Signal]]. The relative [[Subscriber]]
+    * callback will be invoked, error [[reactor.core.publisher.Signal]] will trigger onError and complete [[reactor.core.publisher.Signal]] will trigger
+    * onComplete.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/dematerialize.png" alt="">
+    *
+    * @tparam X the dematerialized type
+    * @return a dematerialized [[Flux]]
+    */
+  final def dematerialize[X](): Flux[X] = Flux(jFlux.dematerialize[X]())
+
+  /**
     * Attach a Long customer to this [[Flux]] that will observe any request to this [[Flux]].
     *
     * <p>
@@ -1860,12 +1942,13 @@ object Flux {
     * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/justn.png" alt="">
     * <p>
     *
+    * @param firstData the first data object to emit
     * @param data the consecutive data objects to emit
     * @tparam T the emitted data type
     * @return a new [[Flux]]
     */
-  def just[T](data: T*): Flux[T] = {
-    Flux(JFlux.just(data: _*))
+  def just[T](firstData: T, data: T*): Flux[T] = {
+    Flux(JFlux.just(Seq(firstData) ++ data: _*))
   }
 
   /**

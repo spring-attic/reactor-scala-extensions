@@ -998,7 +998,7 @@ object Mono {
     )
   }
 
-  def delay(duration: scala.concurrent.duration.Duration): Mono[Long] = {
+  def delay(duration: Duration): Mono[Long] = {
     new Mono[Long](
       JMono.delay(JDuration.ofNanos(duration.toNanos))
         .map(new Function[JLong, Long] {
