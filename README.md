@@ -24,6 +24,7 @@ it becomes
     val mono = Mono.just(1).map(_.toString)
 
 ##Getting it
+
 It is still in preliminary stage and requires a lot of refinement. No release has been made so far.
 Those who wanted to try, can get the SNAPSHOT version from snapshot repository as below:
 
