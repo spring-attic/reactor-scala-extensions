@@ -1,5 +1,4 @@
-#Reactor Core Scala
-
+# Reactor Core Scala
 [![Reactor Core Scala](https://maven-badges.herokuapp.com/maven-central/com.github.sinwe/reactor-core-scala/badge.svg?style=plastic)](http://mvnrepository.com/artifact/com.github.sinwe/reactor-core-scala) 
 [![Travis CI](https://travis-ci.org/sinwe/reactor-core-scala.svg?branch=master)](https://travis-ci.org/sinwe/reactor-core-scala)
 [![codecov](https://codecov.io/gh/sinwe/reactor-core-scala/branch/master/graph/badge.svg)](https://codecov.io/gh/sinwe/reactor-core-scala)
@@ -23,8 +22,7 @@ it becomes
 
     val mono = Mono.just(1).map(_.toString)
 
-##Getting it
-
+## Getting it
 It is still in preliminary stage and requires a lot of refinement. No release has been made so far.
 Those who wanted to try, can get the SNAPSHOT version from snapshot repository as below:
 
@@ -67,7 +65,6 @@ With Maven:
         <version>0.1.9</version>
     </dependency>
 
-##Contributing
-
+## Contributing
 Contributions are welcome. Simply fork this project, make some modification, push and 
 create a pull request.
