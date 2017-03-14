@@ -9,7 +9,7 @@ import java.util.{Comparator, List => JList}
 import org.reactivestreams.{Publisher, Subscriber, Subscription}
 import reactor.core.Disposable
 import reactor.core.publisher.FluxSink.OverflowStrategy
-import reactor.core.publisher.{FluxSink, SynchronousSink, Flux => JFlux}
+import reactor.core.publisher.{FluxSink, Signal, SynchronousSink, Flux => JFlux}
 import reactor.core.scheduler.{Scheduler, TimedScheduler}
 import reactor.util.function.Tuple2
 
@@ -1143,6 +1143,114 @@ class Flux[T](private[publisher] val jFlux: JFlux[T]) extends Publisher[T] with 
     * @return a dematerialized [[Flux]]
     */
   final def dematerialize[X](): Flux[X] = Flux(jFlux.dematerialize[X]())
+
+  /**
+    * For each [[Subscriber]], tracks this [[Flux]] values that have been seen and
+    * filters out duplicates.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/distinct.png" alt="">
+    *
+    * @return a filtering [[Flux]] with unique values
+    */
+  final def distinct() = Flux(jFlux.distinct())
+
+  /**
+    * For each [[Subscriber]], tracks this [[Flux]] values that have been seen and
+    * filters out duplicates given the extracted key.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/distinctk.png" alt="">
+    *
+    * @param keySelector function to compute comparison key for each element
+    * @tparam V the type of the key extracted from each value in this sequence
+    * @return a filtering [[Flux]] with values having distinct keys
+    */
+  final def distinct[V](keySelector: T => V) = Flux(jFlux.distinct[V](keySelector))
+
+  /**
+    * Filters out subsequent and repeated elements.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/distinctuntilchanged.png" alt="">
+    *
+    * @return a filtering [[Flux]] with conflated repeated elements
+    */
+  final def distinctUntilChanged() = Flux(jFlux.distinctUntilChanged())
+
+  /**
+    * Filters out subsequent and repeated elements provided a matching extracted key.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/distinctuntilchangedk.png" alt="">
+    *
+    * @param keySelector function to compute comparison key for each element
+    * @tparam V the type of the key extracted from each value in this sequence
+    * @return a filtering [[Flux]] with conflated repeated elements given a comparison key
+    */
+  final def distinctUntilChanged[V](keySelector: T => V) = Flux(jFlux.distinctUntilChanged[V](keySelector))
+
+  /**
+    * Triggered after the [[Flux]] terminates, either by completing downstream successfully or with an error.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/doafterterminate.png" alt="">
+    * <p>
+    *
+    * @param afterTerminate the callback to call after [[Subscriber.onComplete]] or [[Subscriber.onError]]
+    * @return an observed  [[Flux]]
+    */
+  final def doAfterTerminate(afterTerminate: Runnable) = Flux(jFlux.doAfterTerminate(afterTerminate))
+
+  /**
+    * Triggered when the [[Flux]] is cancelled.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/dooncancel.png" alt="">
+    * <p>
+    *
+    * @param onCancel the callback to call on [[Subscription.cancel]]
+    * @return an observed  [[Flux]]
+    */
+  final def doOnCancel(onCancel: Runnable) = Flux(jFlux.doOnCancel(onCancel))
+
+  /**
+    * Triggered when the [[Flux]] completes successfully.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/dooncomplete.png" alt="">
+    * <p>
+    *
+    * @param onComplete the callback to call on [[Subscriber#onComplete]]
+    * @return an observed  [[Flux]]
+    */
+  final def doOnComplete(onComplete: Runnable) = Flux(jFlux.doOnComplete(onComplete))
+
+  /**
+    * Triggers side-effects when the [[Flux]] emits an item, fails with an error
+    * or completes successfully. All these events are represented as a [[Signal]]
+    * that is passed to the side-effect callback. Note that this is an advanced operator,
+    * typically used for monitoring of a Flux.
+    *
+    * @param signalConsumer the mandatory callback to call on
+    *                       [[Subscriber.onNext]], [[Subscriber.onError]] and
+    *                               [[Subscriber#onComplete]]
+    * @return an observed [[Flux]]
+    * @see [[Flux.doOnNext]]
+    * @see [[Flux.doOnError]]
+    * @see [[Flux.doOnComplete]]
+    * @see [[Flux.materialize]]
+    * @see [[Signal]]
+    */
+  final def doOnEach(signalConsumer: Signal[T] => Unit) = Flux(jFlux.doOnEach(signalConsumer))
+
+  /**
+    * Triggered when the [[Flux]] completes with an error.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/doonerror.png" alt="">
+    * <p>
+    *
+    * @param onError the callback to call on [[Subscriber.onError]]
+    * @return an observed  [[Flux]]
+    */
+  final def doOnError(onError: Throwable => Unit) = Flux(jFlux.doOnError(onError))
 
   /**
     * Attach a Long customer to this [[Flux]] that will observe any request to this [[Flux]].

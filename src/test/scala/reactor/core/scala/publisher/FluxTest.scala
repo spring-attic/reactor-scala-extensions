@@ -3,7 +3,7 @@ package reactor.core.scala.publisher
 import java.io.{BufferedReader, File, FileInputStream, InputStreamReader, PrintWriter}
 import java.nio.file.Files
 import java.util
-import java.util.concurrent.atomic.{AtomicBoolean, AtomicLong}
+import java.util.concurrent.atomic.{AtomicBoolean, AtomicLong, AtomicReference}
 import java.util.concurrent.{Callable, CountDownLatch, TimeUnit}
 
 import org.reactivestreams.{Publisher, Subscription}
@@ -11,7 +11,7 @@ import org.scalatest.prop.TableDrivenPropertyChecks
 import org.scalatest.{FreeSpec, Matchers}
 import reactor.core.publisher.{BaseSubscriber, FluxSink, Signal, SynchronousSink}
 import reactor.core.scheduler.Schedulers
-import reactor.test.StepVerifier
+import reactor.test.{StepVerifier, StepVerifierOptions}
 import reactor.test.scheduler.VirtualTimeScheduler
 
 import scala.collection.mutable
@@ -1066,6 +1066,100 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       StepVerifier.create(flux.dematerialize())
         .expectNext(1, 2)
         .verifyComplete
+    }
+
+    ".distinct" - {
+      "should make the flux distinct" in {
+        val flux = Flux.just(1, 2, 3, 2, 4, 3, 6).distinct()
+        StepVerifier.create(flux)
+          .expectNext(1, 2, 3, 4, 6)
+          .verifyComplete()
+      }
+      "with keySelector should make the flux distinct by using the keySelector" in {
+        val flux = Flux.just(1, 2, 3, 4, 5, 6, 7, 8, 9).distinct(i => i % 3)
+        StepVerifier.create(flux)
+          .expectNext(1, 2, 3)
+          .verifyComplete()
+      }
+    }
+
+    ".distinctUntilChanged" - {
+      "should make the flux always return different subsequent value" in {
+        val flux = Flux.just(1, 2, 2, 3, 3, 3, 3, 2, 2, 5).distinctUntilChanged()
+        StepVerifier.create(flux)
+          .expectNext(1, 2, 3, 2, 5)
+          .verifyComplete()
+      }
+      "with keySelector should make the flux always return different subsequent value based on keySelector" in {
+        val flux = Flux.just(1, 2, 5, 8, 7, 4, 9, 6, 7).distinctUntilChanged(i => i % 3)
+        StepVerifier.create(flux)
+          .expectNext(1, 2, 7, 9, 7)
+          .verifyComplete()
+      }
+    }
+
+    ".doAfterTerminate should perform an action after it is terminated" in {
+      val flag = new AtomicBoolean(false)
+      val flux = Flux.just(1, 2, 3).doAfterTerminate(() => {
+        flag.compareAndSet(false, true)
+        ()
+      })
+      StepVerifier.create(flux)
+        .expectNext(1, 2, 3)
+        .verifyComplete()
+      flag shouldBe 'get
+    }
+
+    ".doOnCancel should perform an action after it is cancelled" in {
+      val atomicBoolean = new AtomicBoolean(false)
+      val flux = Flux.just(1, 2, 3).delayElements(1 minute)
+        .doOnCancel(() => {
+          atomicBoolean.compareAndSet(false, true) shouldBe true
+          ()
+        })
+
+      val subscriptionReference = new AtomicReference[Subscription]()
+      flux.subscribe(new BaseSubscriber[Int] {
+        override def hookOnSubscribe(subscription: Subscription): Unit = {
+          subscriptionReference.set(subscription)
+          subscription.request(3)
+        }
+
+        override def hookOnNext(value: Int): Unit = ()
+      })
+      subscriptionReference.get().cancel()
+      atomicBoolean shouldBe 'get
+    }
+
+    ".doOnComplete should perform action after the flux is completed" in {
+      val flag = new AtomicBoolean(false)
+      val flux = Flux.just(1, 2, 3).doOnComplete(() => {
+        flag.compareAndSet(false, true) shouldBe true
+        ()
+      })
+      StepVerifier.create(flux)
+        .expectNext(1, 2, 3)
+        .verifyComplete()
+      flag shouldBe 'get
+    }
+
+    ".doOnEach should perform an action for every signal" in {
+      val buffer = ListBuffer[String]()
+      val flux = Flux.just(1, 2, 3).doOnEach(s => buffer += s"${s.getType.toString}-${s.get()}")
+      StepVerifier.create(flux)
+        .expectNext(1, 2, 3)
+        .verifyComplete()
+      buffer shouldBe Seq("onNext-1", "onNext-2", "onNext-3", "onComplete-null")
+    }
+
+    ".doOnError" - {
+      "with callback function should call the callback function when the mono encounter error" in {
+        val atomicBoolean = new AtomicBoolean(false)
+        val flux = Flux.error(new RuntimeException())
+          .doOnError(t => atomicBoolean.compareAndSet(false, true) shouldBe true)
+        StepVerifier.create(flux)
+          .expectError(classOf[RuntimeException])
+      }
     }
 
     ".transform should defer transformation of this flux to another publisher" in {
