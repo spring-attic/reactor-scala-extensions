@@ -1257,27 +1257,31 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
           })
           .verifyComplete()
       }
-/*
       "with TimedScheduler should provide the time elapsed using the provided scheduler when this mono emit value" in {
         val virtualTimeScheduler = VirtualTimeScheduler.create()
-        StepVerifier.withVirtualTime(new Supplier[Mono[(Long, Long)]] {
-          override def get(): Mono[(Long, Long)] = Mono.just(randomValue)
+        StepVerifier.withVirtualTime(() => Flux.just(1, 2, 3)
             .delaySubscriptionMillis(1000)
-            .elapsed(virtualTimeScheduler)
-        }, new Supplier[VirtualTimeScheduler] {
-          override def get(): VirtualTimeScheduler = {
-            virtualTimeScheduler
-          }
-        }, 1)
-          .thenAwait(Duration(1, "second"))
-          .expectNextMatches(new Predicate[(Long, Long)] {
-            override def test(t: (Long, Long)): Boolean = t match {
-              case (time, data) => time >= 1000 && data == randomValue
+            .delayElements(1 second)
+            .elapsed(virtualTimeScheduler),
+        () => virtualTimeScheduler, 3)
+          .thenAwait(4 seconds)
+          .expectNextMatches(new Predicate[(Long, Int)] {
+            override def test(t: (Long, Int)): Boolean = t match {
+              case (time, data) => time >= 1000 && data == 1
+            }
+          })
+          .expectNextMatches(new Predicate[(Long, Int)] {
+            override def test(t: (Long, Int)): Boolean = t match {
+              case (time, data) => time >= 1000 && data == 2
+            }
+          })
+          .expectNextMatches(new Predicate[(Long, Int)] {
+            override def test(t: (Long, Int)): Boolean = t match {
+              case (time, data) => time >= 1000 && data == 3
             }
           })
           .verifyComplete()
       }
-*/
     }
 
 
