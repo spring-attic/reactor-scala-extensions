@@ -9,7 +9,7 @@ import java.util.{Comparator, List => JList}
 import org.reactivestreams.{Publisher, Subscriber, Subscription}
 import reactor.core.Disposable
 import reactor.core.publisher.FluxSink.OverflowStrategy
-import reactor.core.publisher.{FluxSink, Signal, SynchronousSink, Flux => JFlux}
+import reactor.core.publisher.{FluxSink, Signal, SignalType, SynchronousSink, Flux => JFlux}
 import reactor.core.scheduler.{Scheduler, TimedScheduler}
 import reactor.util.function.Tuple2
 
@@ -1199,7 +1199,7 @@ class Flux[T](private[publisher] val jFlux: JFlux[T]) extends Publisher[T] with 
     * @param afterTerminate the callback to call after [[Subscriber.onComplete]] or [[Subscriber.onError]]
     * @return an observed  [[Flux]]
     */
-  final def doAfterTerminate(afterTerminate: Runnable) = Flux(jFlux.doAfterTerminate(afterTerminate))
+  final def doAfterTerminate(afterTerminate: () => Unit) = Flux(jFlux.doAfterTerminate(afterTerminate))
 
   /**
     * Triggered when the [[Flux]] is cancelled.
@@ -1210,7 +1210,7 @@ class Flux[T](private[publisher] val jFlux: JFlux[T]) extends Publisher[T] with 
     * @param onCancel the callback to call on [[Subscription.cancel]]
     * @return an observed  [[Flux]]
     */
-  final def doOnCancel(onCancel: Runnable) = Flux(jFlux.doOnCancel(onCancel))
+  final def doOnCancel(onCancel: () => Unit) = Flux(jFlux.doOnCancel(onCancel))
 
   /**
     * Triggered when the [[Flux]] completes successfully.
@@ -1221,7 +1221,7 @@ class Flux[T](private[publisher] val jFlux: JFlux[T]) extends Publisher[T] with 
     * @param onComplete the callback to call on [[Subscriber#onComplete]]
     * @return an observed  [[Flux]]
     */
-  final def doOnComplete(onComplete: Runnable) = Flux(jFlux.doOnComplete(onComplete))
+  final def doOnComplete(onComplete: () => Unit) = Flux(jFlux.doOnComplete(onComplete))
 
   /**
     * Triggers side-effects when the [[Flux]] emits an item, fails with an error
@@ -1278,6 +1278,17 @@ class Flux[T](private[publisher] val jFlux: JFlux[T]) extends Publisher[T] with 
   final def doOnError(predicate: Throwable => Boolean, onError: Throwable => Unit) = Flux(jFlux.doOnError(predicate, onError))
 
   /**
+    * Triggered when the [[Flux]] emits an item.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/doonnext.png" alt="">
+    * <p>
+    *
+    * @param onNext the callback to call on [[Subscriber.onNext]]
+    * @return an observed  [[Flux]]
+    */
+  final def doOnNext(onNext: T => Unit) = Flux(jFlux.doOnNext(onNext))
+
+  /**
     * Attach a Long customer to this [[Flux]] that will observe any request to this [[Flux]].
     *
     * <p>
@@ -1287,6 +1298,30 @@ class Flux[T](private[publisher] val jFlux: JFlux[T]) extends Publisher[T] with 
     * @return an observed  [[Flux]]
     */
   final def doOnRequest(consumer: Long => Unit): Flux[T] = Flux(jFlux.doOnRequest(consumer))
+
+  /**
+    * Triggered when the [[Flux]] is subscribed.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/doonsubscribe.png" alt="">
+    * <p>
+    *
+    * @param onSubscribe the callback to call on [[org.reactivestreams.Subscriber.onSubscribe]]
+    * @return an observed  [[Flux]]
+    */
+  final def doOnSubscribe(onSubscribe: Subscription => Unit): Flux[T] = Flux(jFlux.doOnSubscribe(onSubscribe))
+
+  /**
+    * Triggered when the [[Flux]] terminates, either by completing successfully or with an error.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/doonterminate.png" alt="">
+    * <p>
+    *
+    * @param onTerminate the callback to call on [[Subscriber.onComplete]] or [[Subscriber.onError]]
+    * @return an observed  [[Flux]]
+    */
+  final def doOnTerminate(onTerminate: () => Unit) = Flux(jFlux.doOnTerminate(onTerminate))
+
+  final def doFinally(onFinally: SignalType => Unit) = Flux(jFlux.doFinally(onFinally))
 
   /**
     * Map this [[Flux]] sequence into [[Tuple2]] of T1 [[Long]] timemillis and T2
@@ -1299,6 +1334,24 @@ class Flux[T](private[publisher] val jFlux: JFlux[T]) extends Publisher[T] with 
     * @return a transforming [[Flux]] that emits tuples of time elapsed in milliseconds and matching data
     */
   final def elapsed(): Flux[(Long, T)] = Flux(jFlux.elapsed()).map(tupleTwo2ScalaTuple2[JLong, T]).map {
+    case (k, v) => (Long2long(k), v)
+  }
+
+  /**
+    * Map this [[Flux]] sequence into [[Tuple2]] of T1
+    * [[Long]] timemillis and T2 `T` associated data. The timemillis
+    * corresponds to the elapsed time between the subscribe and the first next signal OR
+    * between two next signals.
+    * <p>
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/elapsed.png"
+    * alt="">
+    *
+    * @param scheduler the [[TimedScheduler]] to read time from
+    * @return a transforming [[Flux]] that emits tuples of time elapsed in
+    *         milliseconds and matching data
+    */
+  final def elapsed(scheduler: TimedScheduler) = Flux(jFlux.elapsed(scheduler)).map(tupleTwo2ScalaTuple2[JLong, T]).map {
     case (k, v) => (Long2long(k), v)
   }
 
@@ -1389,8 +1442,8 @@ class Flux[T](private[publisher] val jFlux: JFlux[T]) extends Publisher[T] with 
     * *
     *
     * @example {{{
-    *                                                                                                                                                                 val applySchedulers = flux => flux.subscribeOn(Schedulers.elastic()).publishOn(Schedulers.parallel());
-    *                                                                                                                                                                 flux.transform(applySchedulers).map(v => v * v).subscribe()
+    *                                                                                                                                                                           val applySchedulers = flux => flux.subscribeOn(Schedulers.elastic()).publishOn(Schedulers.parallel());
+    *                                                                                                                                                                           flux.transform(applySchedulers).map(v => v * v).subscribe()
     *          }}}
     * @param transformer the [[Function1]] to immediately map this [[Flux]] into a target [[Flux]]
     *                    instance.
@@ -1400,17 +1453,6 @@ class Flux[T](private[publisher] val jFlux: JFlux[T]) extends Publisher[T] with 
     * @see [[Flux.as]] for a loose conversion to an arbitrary type
     */
   final def transform[V](transformer: Flux[T] => Publisher[V]) = Flux(jFlux.transform[V](transformer))
-
-  /**
-    * Triggered when the [[Flux]] is subscribed.
-    * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/doonsubscribe.png" alt="">
-    * <p>
-    *
-    * @param onSubscribe the callback to call on [[org.reactivestreams.Subscriber.onSubscribe]]
-    * @return an observed  [[Flux]]
-    */
-  final def doOnSubscribe(onSubscribe: Subscription => Unit): Flux[T] = Flux(jFlux.doOnSubscribe(onSubscribe))
 
   final def asJava(): JFlux[T] = jFlux
 }

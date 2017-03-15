@@ -5,6 +5,7 @@ import java.nio.file.Files
 import java.util
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicLong, AtomicReference}
 import java.util.concurrent.{Callable, CountDownLatch, TimeUnit}
+import java.util.function.Predicate
 
 import org.reactivestreams.{Publisher, Subscription}
 import org.scalatest.prop.TableDrivenPropertyChecks
@@ -1179,6 +1180,107 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       }
     }
 
+    ".doOnNext should call the callback function when the flux emit data successfully" in {
+      val buffer = ListBuffer[Int]()
+      val flux = Flux.just(1, 2, 3)
+        .doOnNext(t => buffer += t)
+      StepVerifier.create(flux)
+        .expectNext(1, 2, 3)
+        .verifyComplete()
+      buffer shouldBe Seq(1, 2, 3)
+    }
+
+    ".doOnRequest should be called upon request" in {
+      val atomicLong = new AtomicLong(0)
+      val mono = Flux.just[Long](1L)
+        .doOnRequest(l => atomicLong.compareAndSet(0, l))
+      mono.subscribe(new BaseSubscriber[Long] {
+        override def hookOnSubscribe(subscription: Subscription): Unit = {
+          subscription.request(1)
+          ()
+        }
+
+        override def hookOnNext(value: Long): Unit = ()
+      })
+      atomicLong.get() shouldBe 1
+    }
+
+    ".doOnSubscribe should be called upon subscribe" in {
+      val atomicBoolean = new AtomicBoolean(false)
+      val mono = Flux.just[Long](1L)
+        .doOnSubscribe(_ => atomicBoolean.compareAndSet(false, true))
+      StepVerifier.create(mono)
+        .expectNextCount(1)
+        .verifyComplete()
+      atomicBoolean shouldBe 'get
+    }
+
+    ".doOnTerminate should do something on terminate" in {
+      val flag = new AtomicBoolean(false)
+      val flux = Flux.just(1, 2, 3).doOnTerminate { () => flag.compareAndSet(false, true) }
+      StepVerifier.create(flux)
+        .expectNext(1, 2, 3)
+        .expectComplete()
+        .verify()
+      flag shouldBe 'get
+    }
+
+    ".doFinally should call the callback" in {
+      val atomicBoolean = new AtomicBoolean(false)
+      val flux = Flux.just(1, 2, 3)
+        .doFinally(st => atomicBoolean.compareAndSet(false, true) shouldBe true)
+      StepVerifier.create(flux)
+        .expectNext(1, 2, 3)
+        .verifyComplete()
+      atomicBoolean shouldBe 'get
+    }
+
+    ".elapsed" - {
+      "should provide the time elapse when this mono emit value" in {
+        StepVerifier.withVirtualTime(() => Flux.just(1, 2, 3).delaySubscription(1 second).delayElements(1 second).elapsed(),
+          () => VirtualTimeScheduler.getOrSet(true), 3)
+          .thenAwait(4 seconds)
+          .expectNextMatches(new Predicate[(Long, Int)] {
+            override def test(t: (Long, Int)): Boolean = t match {
+              case (time, data) => time >= 1000 && data == 1
+            }
+          })
+          .expectNextMatches(new Predicate[(Long, Int)] {
+            override def test(t: (Long, Int)): Boolean = t match {
+              case (time, data) => time >= 1000 && data == 2
+            }
+          })
+          .expectNextMatches(new Predicate[(Long, Int)] {
+            override def test(t: (Long, Int)): Boolean = t match {
+              case (time, data) => time >= 1000 && data == 3
+            }
+          })
+          .verifyComplete()
+      }
+/*
+      "with TimedScheduler should provide the time elapsed using the provided scheduler when this mono emit value" in {
+        val virtualTimeScheduler = VirtualTimeScheduler.create()
+        StepVerifier.withVirtualTime(new Supplier[Mono[(Long, Long)]] {
+          override def get(): Mono[(Long, Long)] = Mono.just(randomValue)
+            .delaySubscriptionMillis(1000)
+            .elapsed(virtualTimeScheduler)
+        }, new Supplier[VirtualTimeScheduler] {
+          override def get(): VirtualTimeScheduler = {
+            virtualTimeScheduler
+          }
+        }, 1)
+          .thenAwait(Duration(1, "second"))
+          .expectNextMatches(new Predicate[(Long, Long)] {
+            override def test(t: (Long, Long)): Boolean = t match {
+              case (time, data) => time >= 1000 && data == randomValue
+            }
+          })
+          .verifyComplete()
+      }
+*/
+    }
+
+
     ".transform should defer transformation of this flux to another publisher" in {
       val flux = Flux.just(1, 2, 3).transform(Mono.from)
       StepVerifier.create(flux)
@@ -1221,31 +1323,6 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         }
       })
       counter.await(4, TimeUnit.SECONDS)
-    }
-
-    ".doOnRequest should be called upon request" in {
-      val atomicLong = new AtomicLong(0)
-      val mono = Flux.just[Long](1L)
-        .doOnRequest(l => atomicLong.compareAndSet(0, l))
-      mono.subscribe(new BaseSubscriber[Long] {
-        override def hookOnSubscribe(subscription: Subscription): Unit = {
-          subscription.request(1)
-          ()
-        }
-
-        override def hookOnNext(value: Long): Unit = ()
-      })
-      atomicLong.get() shouldBe 1
-    }
-
-    ".doOnSubscribe should be called upon subscribe" in {
-      val atomicBoolean = new AtomicBoolean(false)
-      val mono = Flux.just[Long](1L)
-        .doOnSubscribe(_ => atomicBoolean.compareAndSet(false, true))
-      StepVerifier.create(mono)
-        .expectNextCount(1)
-        .verifyComplete()
-      atomicBoolean shouldBe 'get
     }
   }
 }
