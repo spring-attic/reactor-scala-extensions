@@ -1231,7 +1231,7 @@ class Flux[T](private[publisher] val jFlux: JFlux[T]) extends Publisher[T] with 
     *
     * @param signalConsumer the mandatory callback to call on
     *                       [[Subscriber.onNext]], [[Subscriber.onError]] and
-    *                               [[Subscriber#onComplete]]
+    *                       [[Subscriber#onComplete]]
     * @return an observed [[Flux]]
     * @see [[Flux.doOnNext]]
     * @see [[Flux.doOnError]]
@@ -1251,6 +1251,31 @@ class Flux[T](private[publisher] val jFlux: JFlux[T]) extends Publisher[T] with 
     * @return an observed  [[Flux]]
     */
   final def doOnError(onError: Throwable => Unit) = Flux(jFlux.doOnError(onError))
+
+  /**
+    * Triggered when the [[Flux]] completes with an error matching the given exception type.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/doonerrorw.png" alt="">
+    *
+    * @param exceptionType the type of exceptions to handle
+    * @param onError       the error handler for each error
+    * @tparam E type of the error to handle
+    * @return an observed  [[Flux]]
+    *
+    */
+  final def doOnError[E <: Throwable](exceptionType: Class[E], onError: E => Unit) = Flux(jFlux.doOnError[E](exceptionType, onError))
+
+  /**
+    * Triggered when the [[Flux]] completes with an error matching the given exception.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/doonerrorw.png" alt="">
+    *
+    * @param predicate the matcher for exceptions to handle
+    * @param onError   the error handler for each error
+    * @return an observed  [[Flux]]
+    *
+    */
+  final def doOnError(predicate: Throwable => Boolean, onError: Throwable => Unit) = Flux(jFlux.doOnError(predicate, onError))
 
   /**
     * Attach a Long customer to this [[Flux]] that will observe any request to this [[Flux]].
@@ -1339,7 +1364,7 @@ class Flux[T](private[publisher] val jFlux: JFlux[T]) extends Publisher[T] with 
     *
     * @return a [[Disposable]] task to execute to dispose and cancel the underlying [[Subscription
     *         ]]
-    */
+    **/
   final def subscribe(): Disposable = jFlux.subscribe()
 
   /**
@@ -1364,8 +1389,8 @@ class Flux[T](private[publisher] val jFlux: JFlux[T]) extends Publisher[T] with 
     * *
     *
     * @example {{{
-    *                                                                                                                                                       val applySchedulers = flux => flux.subscribeOn(Schedulers.elastic()).publishOn(Schedulers.parallel());
-    *                                                                                                                                                       flux.transform(applySchedulers).map(v => v * v).subscribe()
+    *                                                                                                                                                                 val applySchedulers = flux => flux.subscribeOn(Schedulers.elastic()).publishOn(Schedulers.parallel());
+    *                                                                                                                                                                 flux.transform(applySchedulers).map(v => v * v).subscribe()
     *          }}}
     * @param transformer the [[Function1]] to immediately map this [[Flux]] into a target [[Flux]]
     *                    instance.
@@ -2051,7 +2076,7 @@ object Flux {
     * <p>
     *
     * @param firstData the first data object to emit
-    * @param data the consecutive data objects to emit
+    * @param data      the consecutive data objects to emit
     * @tparam T the emitted data type
     * @return a new [[Flux]]
     */

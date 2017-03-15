@@ -11,7 +11,7 @@ import org.scalatest.prop.TableDrivenPropertyChecks
 import org.scalatest.{FreeSpec, Matchers}
 import reactor.core.publisher.{BaseSubscriber, FluxSink, Signal, SynchronousSink}
 import reactor.core.scheduler.Schedulers
-import reactor.test.{StepVerifier, StepVerifierOptions}
+import reactor.test.StepVerifier
 import reactor.test.scheduler.VirtualTimeScheduler
 
 import scala.collection.mutable
@@ -1159,6 +1159,23 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
           .doOnError(t => atomicBoolean.compareAndSet(false, true) shouldBe true)
         StepVerifier.create(flux)
           .expectError(classOf[RuntimeException])
+      }
+      "with exception type and callback function should call the callback function when the mono encounter exception with the provided type" in {
+        val atomicBoolean = new AtomicBoolean(false)
+        val flux = Flux.error(new RuntimeException())
+          .doOnError(classOf[RuntimeException]: Class[RuntimeException],
+            ((t: RuntimeException) => atomicBoolean.compareAndSet(false, true) shouldBe true): SConsumer[RuntimeException])
+        StepVerifier.create(flux)
+          .expectError(classOf[RuntimeException])
+      }
+      "with predicate and callback fnction should call the callback function when the predicate returns true" in {
+        val atomicBoolean = new AtomicBoolean(false)
+        val flux = Flux.error[Int](new RuntimeException("Whatever"))
+          .doOnError((_: Throwable) => true,
+            ((t: Throwable) => atomicBoolean.compareAndSet(false, true) shouldBe true): SConsumer[Throwable])
+        StepVerifier.create(flux)
+          .expectError(classOf[RuntimeException])
+
       }
     }
 
