@@ -1483,8 +1483,8 @@ class Flux[T](private[publisher] val jFlux: JFlux[T]) extends Publisher[T] with 
     * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/flatmaps.png" alt="">
     * <p>
     *
-    * @param mapperOnNext the [[Function1]] to call on next data and returning a sequence to merge
-    * @param mapperOnError the [[Function]] to call on error signal and returning a sequence to merge
+    * @param mapperOnNext     the [[Function1]] to call on next data and returning a sequence to merge
+    * @param mapperOnError    the [[Function]] to call on error signal and returning a sequence to merge
     * @param mapperOnComplete the [[Function1]] to call on complete signal and returning a sequence to merge
     * @tparam R the output [[Publisher]] type target
     * @return a new [[Flux]]
@@ -1508,6 +1508,23 @@ class Flux[T](private[publisher] val jFlux: JFlux[T]) extends Publisher[T] with 
   final def flatMapIterable[R](mapper: T => Iterable[_ <: R]): Flux[R] = Flux(jFlux.flatMapIterable(new Function[T, JIterable[R]] {
     override def apply(t: T): JIterable[R] = mapper(t)
   }))
+
+  /**
+    * Transform the items emitted by this [[Flux]] into [[Iterable]], then flatten the emissions from those by
+    * merging them into a single [[Flux]]. The prefetch argument allows to give an
+    * arbitrary prefetch size to the merged [[Iterable]].
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/flatmapsequential.png" alt="">
+    *
+    * @param mapper   the { @link Function} to transform input sequence into N sequences [[Iterable]]
+    * @param prefetch the maximum in-flight elements from each inner [[Iterable]] sequence
+    * @tparam R the merged output sequence type
+    * @return a merged [[Flux]]
+    */
+  final def flatMapIterable[R](mapper: T => Iterable[_ <: R], prefetch: Int) = Flux(jFlux.flatMapIterable(new Function[T, JIterable[R]] {
+    override def apply(t: T): JIterable[R] = mapper(t)
+  }, prefetch))
 
   /**
     * Transform the items emitted by this [[Flux]] by applying a function to each item.
@@ -1577,8 +1594,8 @@ class Flux[T](private[publisher] val jFlux: JFlux[T]) extends Publisher[T] with 
     * *
     *
     * @example {{{
-    *                                                                                                                                                                                                         val applySchedulers = flux => flux.subscribeOn(Schedulers.elastic()).publishOn(Schedulers.parallel());
-    *                                                                                                                                                                                                         flux.transform(applySchedulers).map(v => v * v).subscribe()
+    *                                                                                                                                                                                                                   val applySchedulers = flux => flux.subscribeOn(Schedulers.elastic()).publishOn(Schedulers.parallel());
+    *                                                                                                                                                                                                                   flux.transform(applySchedulers).map(v => v * v).subscribe()
     *          }}}
     * @param transformer the [[Function1]] to immediately map this [[Flux]] into a target [[Flux]]
     *                    instance.

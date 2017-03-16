@@ -1267,10 +1267,10 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       "with TimedScheduler should provide the time elapsed using the provided scheduler when this mono emit value" in {
         val virtualTimeScheduler = VirtualTimeScheduler.create()
         StepVerifier.withVirtualTime(() => Flux.just(1, 2, 3)
-            .delaySubscriptionMillis(1000)
-            .delayElements(1 second)
-            .elapsed(virtualTimeScheduler),
-        () => virtualTimeScheduler, 3)
+          .delaySubscriptionMillis(1000)
+          .delayElements(1 second)
+          .elapsed(virtualTimeScheduler),
+          () => virtualTimeScheduler, 3)
           .thenAwait(4 seconds)
           .expectNextMatches(new Predicate[(Long, Int)] {
             override def test(t: (Long, Int)): Boolean = t match {
@@ -1325,6 +1325,21 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       StepVerifier.create(flux)
         .expectNext("next", "next", "next", "complete")
         .verifyComplete()
+    }
+
+    ".flatMapIterable" - {
+      "should transform the items emitted by this flux into iterable" in {
+        val flux = Flux.just(1, 2, 3).flatMapIterable(i => Iterable(i * 2, i * 3))
+        StepVerifier.create(flux)
+          .expectNext(2, 3, 4, 6, 6, 9)
+          .verifyComplete()
+      }
+      "with prefetch should transform the items and prefetch" in {
+        val flux = Flux.just(1, 2, 3).flatMapIterable(i => Iterable(i * 2, i * 3), 2)
+        StepVerifier.create(flux)
+          .expectNext(2, 3, 4, 6, 6, 9)
+          .verifyComplete()
+      }
     }
 
     ".map should map the type of Flux from T to R" in {
