@@ -1448,6 +1448,18 @@ class Flux[T](private[publisher] val jFlux: JFlux[T]) extends Publisher[T] with 
   override def map[V](mapper: (T) => V) = new Flux[V](jFlux.map(mapper))
 
   /**
+    * Transform the incoming onNext, onError and onComplete signals into [[Signal]].
+    * Since the error is materialized as a [[Signal]], the propagation will be stopped and onComplete will be
+    * emitted. Complete signal will first emit a [[Signal.complete]] and then effectively complete the flux.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/materialize.png" alt="">
+    *
+    * @return a [[Flux]] of materialized [[Signal]]
+    */
+  final def materialize() = Flux(jFlux.materialize())
+
+  /**
     * Emit latest value for every given period of time.
     *
     * <p>

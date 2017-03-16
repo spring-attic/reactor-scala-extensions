@@ -1004,6 +1004,13 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
 
     }
 
+    ".count should return Mono which emit the number of value in this flux" in {
+      val mono = Flux.just(10, 9, 8).count()
+      StepVerifier.create(mono)
+        .expectNext(3)
+        .verifyComplete()
+    }
+
     ".delayElementMillis" - {
       "should delay every elements by provided delay in millis" in {
         val vts = VirtualTimeScheduler.getOrSet(true)
@@ -1157,7 +1164,7 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       "with callback function should call the callback function when the mono encounter error" in {
         val atomicBoolean = new AtomicBoolean(false)
         val flux = Flux.error(new RuntimeException())
-          .doOnError(t => atomicBoolean.compareAndSet(false, true) shouldBe true)
+          .doOnError(_ => atomicBoolean.compareAndSet(false, true) shouldBe true)
         StepVerifier.create(flux)
           .expectError(classOf[RuntimeException])
       }
@@ -1165,7 +1172,7 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         val atomicBoolean = new AtomicBoolean(false)
         val flux = Flux.error(new RuntimeException())
           .doOnError(classOf[RuntimeException]: Class[RuntimeException],
-            ((t: RuntimeException) => atomicBoolean.compareAndSet(false, true) shouldBe true): SConsumer[RuntimeException])
+            ((_: RuntimeException) => atomicBoolean.compareAndSet(false, true) shouldBe true): SConsumer[RuntimeException])
         StepVerifier.create(flux)
           .expectError(classOf[RuntimeException])
       }
@@ -1173,7 +1180,7 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         val atomicBoolean = new AtomicBoolean(false)
         val flux = Flux.error[Int](new RuntimeException("Whatever"))
           .doOnError((_: Throwable) => true,
-            ((t: Throwable) => atomicBoolean.compareAndSet(false, true) shouldBe true): SConsumer[Throwable])
+            ((_: Throwable) => atomicBoolean.compareAndSet(false, true) shouldBe true): SConsumer[Throwable])
         StepVerifier.create(flux)
           .expectError(classOf[RuntimeException])
 
@@ -1228,7 +1235,7 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
     ".doFinally should call the callback" in {
       val atomicBoolean = new AtomicBoolean(false)
       val flux = Flux.just(1, 2, 3)
-        .doFinally(st => atomicBoolean.compareAndSet(false, true) shouldBe true)
+        .doFinally(_ => atomicBoolean.compareAndSet(false, true) shouldBe true)
       StepVerifier.create(flux)
         .expectNext(1, 2, 3)
         .verifyComplete()
@@ -1313,20 +1320,6 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         .verifyComplete()
     }
 
-    ".transform should defer transformation of this flux to another publisher" in {
-      val flux = Flux.just(1, 2, 3).transform(Mono.from)
-      StepVerifier.create(flux)
-        .expectNext(1)
-        .verifyComplete()
-    }
-
-    ".count should return Mono which emit the number of value in this flux" in {
-      val mono = Flux.just(10, 9, 8).count()
-      StepVerifier.create(mono)
-        .expectNext(3)
-        .verifyComplete()
-    }
-
     ".map should map the type of Flux from T to R" in {
       val flux = Flux.just(1, 2, 3).map(_.toString)
 
@@ -1334,6 +1327,20 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         .expectNext("1", "2", "3")
         .expectComplete()
         .verify()
+    }
+
+    ".materialize should convert the flux into a flux that emit its signal" in {
+      val flux = Flux.just(1, 2, 3).materialize()
+      StepVerifier.create(flux)
+        .expectNext(Signal.next(1), Signal.next(2), Signal.next(3), Signal.complete())
+        .verifyComplete()
+    }
+
+    ".transform should defer transformation of this flux to another publisher" in {
+      val flux = Flux.just(1, 2, 3).transform(Mono.from)
+      StepVerifier.create(flux)
+        .expectNext(1)
+        .verifyComplete()
     }
 
     ".take should emit only n values" in {
