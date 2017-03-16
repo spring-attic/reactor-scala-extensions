@@ -1284,6 +1284,20 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       }
     }
 
+    ".elementAt" - {
+      "should emit only the element at given index position" in {
+        val mono = Flux.just(1, 2, 3).elementAt(2)
+        StepVerifier.create(mono)
+          .expectNext(3)
+          .verifyComplete()
+      }
+      "should emit only the element at given index position or default value if the sequence is shorter" in {
+        val mono = Flux.just(1, 2, 3, 4).elementAt(10, -1)
+        StepVerifier.create(mono)
+          .expectNext(-1)
+          .verifyComplete()
+      }
+    }
 
     ".transform should defer transformation of this flux to another publisher" in {
       val flux = Flux.just(1, 2, 3).transform(Mono.from)

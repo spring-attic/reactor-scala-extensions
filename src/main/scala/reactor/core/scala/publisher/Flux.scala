@@ -1351,9 +1351,33 @@ class Flux[T](private[publisher] val jFlux: JFlux[T]) extends Publisher[T] with 
     * @return a transforming [[Flux]] that emits tuples of time elapsed in
     *         milliseconds and matching data
     */
-  final def elapsed(scheduler: TimedScheduler) = Flux(jFlux.elapsed(scheduler)).map(tupleTwo2ScalaTuple2[JLong, T]).map {
+  final def elapsed(scheduler: TimedScheduler): Flux[(Long, T)] = Flux(jFlux.elapsed(scheduler)).map(tupleTwo2ScalaTuple2[JLong, T]).map {
     case (k, v) => (Long2long(k), v)
   }
+
+  /**
+    * Emit only the element at the given index position or [[IndexOutOfBoundsException]] if the sequence is shorter.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/elementat.png" alt="">
+    *
+    * @param index index of an item
+    * @return a [[Mono]] of the item at a specified index
+    */
+  final def elementAt(index: Int) = Mono(jFlux.elementAt(index))
+
+  /**
+    * Emit only the element at the given index position or signals a
+    * default value if specified if the sequence is shorter.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/elementatd.png" alt="">
+    *
+    * @param index        index of an item
+    * @param defaultValue supply a default value if not found
+    * @return a [[Mono]] of the item at a specified index or a default value
+    */
+  final def elementAt(index: Int, defaultValue: T) = Mono(jFlux.elementAt(index, defaultValue))
 
   /**
     * Transform the items emitted by this [[Flux]] into Publishers, then flatten the emissions from those by
@@ -1415,8 +1439,7 @@ class Flux[T](private[publisher] val jFlux: JFlux[T]) extends Publisher[T] with 
     * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/unbounded.png" alt="">
     * <p>
     *
-    * @return a [[Disposable]] task to execute to dispose and cancel the underlying [[Subscription
-    *         ]]
+    * @return a [[Disposable]] task to execute to dispose and cancel the underlying [[Subscription]]
     **/
   final def subscribe(): Disposable = jFlux.subscribe()
 
