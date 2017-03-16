@@ -1380,6 +1380,19 @@ class Flux[T](private[publisher] val jFlux: JFlux[T]) extends Publisher[T] with 
   final def elementAt(index: Int, defaultValue: T) = Mono(jFlux.elementAt(index, defaultValue))
 
   /**
+    * Evaluate each accepted value against the given predicate T => Boolean. If the predicate test succeeds, the value is
+    * passed into the new [[Flux]]. If the predicate test fails, the value is ignored and a request of 1 is
+    * emitted.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/filter.png" alt="">
+    *
+    * @param p the [[Function1]] predicate to test values against
+    * @return a new [[Flux]] containing only values that pass the predicate test
+    */
+  final def filter(p: T => Boolean) = Flux(jFlux.filter(p))
+
+  /**
     * Transform the items emitted by this [[Flux]] into Publishers, then flatten the emissions from those by
     * merging them into a single [[Flux]], so that they may interleave.
     * <p>

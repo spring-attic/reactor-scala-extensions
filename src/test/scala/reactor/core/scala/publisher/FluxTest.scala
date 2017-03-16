@@ -1299,6 +1299,13 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       }
     }
 
+    ".filter should evaluate each value against given predicate" in {
+      val flux = Flux.just(1, 2, 3).filter(i => i > 1)
+      StepVerifier.create(flux)
+        .expectNext(2, 3)
+        .verifyComplete()
+    }
+
     ".transform should defer transformation of this flux to another publisher" in {
       val flux = Flux.just(1, 2, 3).transform(Mono.from)
       StepVerifier.create(flux)
