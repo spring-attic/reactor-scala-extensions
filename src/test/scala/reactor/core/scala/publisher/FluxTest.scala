@@ -1320,6 +1320,13 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         .verifyComplete()
     }
 
+    ".flatMap should transform signal emitted by this flux into publishers" in {
+      val flux = Flux.just(1, 2, 3).flatMap(_ => Mono.just("next"), _ => Mono.just("error"), () => Mono.just("complete"))
+      StepVerifier.create(flux)
+        .expectNext("next", "next", "next", "complete")
+        .verifyComplete()
+    }
+
     ".map should map the type of Flux from T to R" in {
       val flux = Flux.just(1, 2, 3).map(_.toString)
 

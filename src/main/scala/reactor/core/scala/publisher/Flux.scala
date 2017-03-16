@@ -1420,6 +1420,80 @@ class Flux[T](private[publisher] val jFlux: JFlux[T]) extends Publisher[T] with 
   final def flatMap[R](mapper: T => Publisher[_ <: R]) = Flux(jFlux.flatMap[R](mapper))
 
   /**
+    * Transform the items emitted by this [[Flux]] into Publishers, then flatten the emissions from those by
+    * merging them into a single [[Flux]], so that they may interleave. The concurrency argument allows to
+    * control how many merged [[Publisher]] can happen in parallel.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/flatmapc.png" alt="">
+    *
+    * @param mapper      the [[Function1]] to transform input sequence into N sequences [[Publisher]]
+    * @param concurrency the maximum in-flight elements from this [[Flux]] sequence
+    * @tparam V the merged output sequence type
+    * @return a new [[Flux]]
+    *
+    */
+  //  TODO: How to test if the result may not be sequence
+  final def flatMap[V](mapper: T => Publisher[_ <: V], concurrency: Int) = Flux(jFlux.flatMap[V](mapper, concurrency))
+
+  /**
+    * Transform the items emitted by this [[Flux]] into Publishers, then flatten the emissions from those by
+    * merging them into a single [[Flux]], so that they may interleave. The concurrency argument allows to
+    * control how many merged [[Publisher]] can happen in parallel. The prefetch argument allows to give an
+    * arbitrary prefetch size to the merged [[Publisher]].
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/flatmapc.png" alt="">
+    *
+    * @param mapper      the [[Function1]] to transform input sequence into N sequences [[Publisher]]
+    * @param concurrency the maximum in-flight elements from this { @link Flux} sequence
+    * @param prefetch    the maximum in-flight elements from each inner [[Publisher]] sequence
+    * @tparam V the merged output sequence type
+    * @return a merged [[Flux]]
+    *
+    */
+  //  TODO: How to test if the result may not be sequence
+  final def flatMap[V](mapper: T => Publisher[_ <: V], concurrency: Int, prefetch: Int) = Flux(jFlux.flatMap[V](mapper, concurrency, prefetch))
+
+  /**
+    * Transform the items emitted by this [[Flux]] into Publishers, then flatten the emissions from those by
+    * merging them into a single [[Flux]], so that they may interleave. The concurrency argument allows to
+    * control how many merged [[Publisher]] can happen in parallel. The prefetch argument allows to give an
+    * arbitrary prefetch size to the merged [[Publisher]].
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/flatmapc.png" alt="">
+    *
+    * @param mapper      the [[Function1]] to transform input sequence into N sequences [[Publisher]]
+    * @param delayError  should any error be delayed after current merge backlog
+    * @param concurrency the maximum in-flight elements from this [[Flux]] sequence
+    * @param prefetch    the maximum in-flight elements from each inner [[Publisher]] sequence
+    * @tparam V the merged output sequence type
+    * @return a merged [[Flux]]
+    *
+    */
+  //  TODO: How to test if the result may not be sequence
+  final def flatMap[V](mapper: T => Publisher[_ <: V], delayError: Boolean, concurrency: Int, prefetch: Int) = Flux(jFlux.flatMap[V](mapper, delayError, concurrency, prefetch))
+
+  /**
+    * Transform the signals emitted by this [[Flux]] into Publishers, then flatten the emissions from those by
+    * merging them into a single [[Flux]], so that they may interleave.
+    * OnError will be transformed into completion signal after its mapping callback has been applied.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/flatmaps.png" alt="">
+    * <p>
+    *
+    * @param mapperOnNext the [[Function1]] to call on next data and returning a sequence to merge
+    * @param mapperOnError the [[Function]] to call on error signal and returning a sequence to merge
+    * @param mapperOnComplete the [[Function1]] to call on complete signal and returning a sequence to merge
+    * @tparam R the output [[Publisher]] type target
+    * @return a new [[Flux]]
+    */
+  final def flatMap[R](mapperOnNext: T => Publisher[_ <: R],
+                       mapperOnError: Throwable => Publisher[_ <: R],
+                       mapperOnComplete: () => Publisher[_ <: R]) = Flux(jFlux.flatMap[R](mapperOnNext, mapperOnError, mapperOnComplete))
+
+  /**
     * Transform the items emitted by this [[Flux]] into [[Iterable]], then flatten the elements from those by
     * merging them into a single [[Flux]]. The prefetch argument allows to give an
     * arbitrary prefetch size to the merged [[Iterable]].
@@ -1503,8 +1577,8 @@ class Flux[T](private[publisher] val jFlux: JFlux[T]) extends Publisher[T] with 
     * *
     *
     * @example {{{
-    *                                                                                                                                                                           val applySchedulers = flux => flux.subscribeOn(Schedulers.elastic()).publishOn(Schedulers.parallel());
-    *                                                                                                                                                                           flux.transform(applySchedulers).map(v => v * v).subscribe()
+    *                                                                                                                                                                                                         val applySchedulers = flux => flux.subscribeOn(Schedulers.elastic()).publishOn(Schedulers.parallel());
+    *                                                                                                                                                                                                         flux.transform(applySchedulers).map(v => v * v).subscribe()
     *          }}}
     * @param transformer the [[Function1]] to immediately map this [[Flux]] into a target [[Flux]]
     *                    instance.
