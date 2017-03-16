@@ -1393,6 +1393,19 @@ class Flux[T](private[publisher] val jFlux: JFlux[T]) extends Publisher[T] with 
   final def filter(p: T => Boolean) = Flux(jFlux.filter(p))
 
   /**
+    * Emit from the fastest first sequence between this publisher and the given publisher
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/firstemitting.png" alt="">
+    * <p>
+    *
+    * @param other the [[Publisher]] to race with
+    * @return the fastest sequence
+    * @see [[Flux.firstEmitting]]
+    */
+  final def firstEmittingWith(other: Publisher[_ <: T]) = Flux(jFlux.firstEmittingWith(other))
+
+  /**
     * Transform the items emitted by this [[Flux]] into Publishers, then flatten the emissions from those by
     * merging them into a single [[Flux]], so that they may interleave.
     * <p>

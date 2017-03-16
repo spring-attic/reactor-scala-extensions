@@ -1306,6 +1306,13 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         .verifyComplete()
     }
 
+    ".firstEmittingWith should emit from the fastest first sequence" in {
+      val flux = Flux.just(10, 20, 30).firstEmittingWith(Flux.just(1, 2, 3).delayElements(1 second))
+      StepVerifier.create(flux)
+        .expectNext(10, 20, 30)
+        .verifyComplete()
+    }
+
     ".transform should defer transformation of this flux to another publisher" in {
       val flux = Flux.just(1, 2, 3).transform(Mono.from)
       StepVerifier.create(flux)
