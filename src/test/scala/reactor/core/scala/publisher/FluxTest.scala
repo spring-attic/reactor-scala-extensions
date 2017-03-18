@@ -10,7 +10,7 @@ import java.util.function.Predicate
 import org.reactivestreams.{Publisher, Subscription}
 import org.scalatest.prop.TableDrivenPropertyChecks
 import org.scalatest.{FreeSpec, Matchers}
-import reactor.core.publisher.{BaseSubscriber, FluxSink, Signal, SynchronousSink}
+import reactor.core.publisher._
 import reactor.core.scheduler.Schedulers
 import reactor.test.StepVerifier
 import reactor.test.scheduler.VirtualTimeScheduler
@@ -1338,6 +1338,77 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         val flux = Flux.just(1, 2, 3).flatMapIterable(i => Iterable(i * 2, i * 3), 2)
         StepVerifier.create(flux)
           .expectNext(2, 3, 4, 6, 6, 9)
+          .verifyComplete()
+      }
+    }
+
+    ".flatMapSequential" - {
+      "should transform items emitted by this flux into publisher then flatten them, in order" in {
+        val flux = Flux.just(1, 2, 3).flatMapSequential(i => Flux.just(i * 2, i * 3))
+        StepVerifier.create(flux)
+          .expectNext(2, 3, 4, 6, 6, 9)
+          .verifyComplete()
+      }
+      "with maxConcurrency, should do the same as before just with provided maxConcurrency" in {
+        val flux = Flux.just(1, 2, 3).flatMapSequential(i => Flux.just(i * 2, i * 3), 2)
+        StepVerifier.create(flux)
+          .expectNext(2, 3, 4, 6, 6, 9)
+          .verifyComplete()
+      }
+      "with maxConcurrency and prefetch, should do the same as before just with provided maxConcurrency and prefetch" in {
+        val flux = Flux.just(1, 2, 3).flatMapSequential(i => Flux.just(i * 2, i * 3), 2, 2)
+        StepVerifier.create(flux)
+          .expectNext(2, 3, 4, 6, 6, 9)
+          .verifyComplete()
+      }
+      "with delayError should respect whether error be delayed after current merge backlog" in {
+        val flux = Flux.just(1, 2, 3).flatMapSequential(i => {
+          if (i == 2) Flux.error[Int](new RuntimeException("just an error"))
+          else Flux.just(i * 2, i * 3)
+        }, delayError = true, 2, 2)
+        StepVerifier.create(flux)
+          .expectNext(2, 3, 6, 9)
+          .verifyError(classOf[RuntimeException])
+      }
+    }
+
+    ".groupBy" - {
+      "with keyMapper should group the flux by the key mapper" in {
+        val flux = Flux.just(1, 2, 3, 4, 5, 6).groupBy {
+          case even: Int if even % 2 == 0 => "even"
+          case _: Int => "odd"
+        }
+        StepVerifier.create(flux)
+          .expectNextMatches(new Predicate[GroupedFlux[String, Int]] {
+            override def test(t: GroupedFlux[String, Int]): Boolean = {
+                t.key() == "odd"
+            }
+          })
+          .expectNextMatches(new Predicate[GroupedFlux[String, Int]] {
+            override def test(t: GroupedFlux[String, Int]): Boolean = {
+                t.key() == "even"
+            }
+          })
+          .verifyComplete()
+      }
+      "with keyMapper and prefetch should group the flux by the key mapper and prefetch the elements from the source" in {
+        val flux = Flux.just(1, 2, 3, 4, 5, 6).groupBy(i => {
+          i match {
+            case even: Int if even % 2 == 0 => "even"
+            case _: Int => "odd"
+          }
+        }, 6)
+        StepVerifier.create(flux)
+          .expectNextMatches(new Predicate[GroupedFlux[String, Int]] {
+            override def test(t: GroupedFlux[String, Int]): Boolean = {
+              t.key() == "odd"
+            }
+          })
+          .expectNextMatches(new Predicate[GroupedFlux[String, Int]] {
+            override def test(t: GroupedFlux[String, Int]): Boolean = {
+              t.key() == "even"
+            }
+          })
           .verifyComplete()
       }
     }

@@ -9,7 +9,7 @@ import java.util.{Comparator, List => JList}
 import org.reactivestreams.{Publisher, Subscriber, Subscription}
 import reactor.core.Disposable
 import reactor.core.publisher.FluxSink.OverflowStrategy
-import reactor.core.publisher.{FluxSink, Signal, SignalType, SynchronousSink, Flux => JFlux}
+import reactor.core.publisher.{FluxSink, GroupedFlux, Signal, SignalType, SynchronousSink, Flux => JFlux}
 import reactor.core.scheduler.{Scheduler, TimedScheduler}
 import reactor.util.function.Tuple2
 
@@ -39,7 +39,7 @@ import scala.concurrent.duration.Duration
   * @tparam T the element type of this Reactive Streams [[Publisher]]
   * @see [[Mono]]
   */
-class Flux[T](private[publisher] val jFlux: JFlux[T]) extends Publisher[T] with MapablePublisher[T] {
+class Flux[T]private (private[publisher] val jFlux: JFlux[T]) extends Publisher[T] with MapablePublisher[T] {
   override def subscribe(s: Subscriber[_ >: T]): Unit = jFlux.subscribe(s)
 
   /**
@@ -1527,6 +1527,115 @@ class Flux[T](private[publisher] val jFlux: JFlux[T]) extends Publisher[T] with 
   }, prefetch))
 
   /**
+    * Transform the items emitted by this [[Flux]] into Publishers, then flatten the
+    * emissions from those by merging them into a single [[Flux]], in order.
+    * Unlike concatMap, transformed inner Publishers are subscribed to eagerly. Unlike
+    * flatMap, their emitted elements are merged respecting the order of the original sequence.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/flatmapsequential.png" alt="">
+    *
+    * @param mapper the [[Function1]] to transform input sequence into N sequences [[Publisher]]
+    * @tparam R the merged output sequence type
+    * @return a merged [[Flux]]
+    */
+  final def flatMapSequential[R](mapper: T => Publisher[_ <: R]) = Flux(jFlux.flatMapSequential[R](mapper))
+
+  /**
+    * Transform the items emitted by this [[Flux]] Flux} into Publishers, then flatten the
+    * emissions from those by merging them into a single [[Flux]], in order.
+    * Unlike concatMap, transformed inner Publishers are subscribed to eagerly. Unlike
+    * flatMap, their emitted elements are merged respecting the order of the original
+    * sequence. The concurrency argument allows to control how many merged
+    * [[Publisher]] can happen in parallel.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/flatmapsequential.png" alt="">
+    *
+    * @param mapper         the [[Function1]] to transform input sequence into N sequences { @link Publisher}
+    * @param maxConcurrency the maximum in-flight elements from this [[Flux]] sequence
+    * @tparam R the merged output sequence type
+    * @return a merged [[Flux]]
+    */
+  final def flatMapSequential[R](mapper: T => Publisher[_ <: R], maxConcurrency: Int) = Flux(jFlux.flatMapSequential[R](mapper, maxConcurrency))
+
+  /**
+    * Transform the items emitted by this [[Flux]] into Publishers, then flatten the
+    * emissions from those by merging them into a single [[Flux]], in order.
+    * Unlike concatMap, transformed inner Publishers are subscribed to eagerly. Unlike
+    * flatMap, their emitted elements are merged respecting the order of the original
+    * sequence. The concurrency argument allows to control how many merged [[Publisher]]
+    * can happen in parallel. The prefetch argument allows to give an arbitrary prefetch
+    * size to the merged [[Publisher]].
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/flatmapsequential.png" alt="">
+    *
+    * @param mapper         the [[Function1]] to transform input sequence into N sequences [[Publisher]]
+    * @param maxConcurrency the maximum in-flight elements from this [[Flux]] sequence
+    * @param prefetch       the maximum in-flight elements from each inner [[Publisher]] sequence
+    * @tparam R the merged output sequence type
+    * @return a merged [[Flux]]
+    */
+  final def flatMapSequential[R](mapper: T => Publisher[_ <: R], maxConcurrency: Int, prefetch: Int) = Flux(jFlux.flatMapSequential[R](mapper, maxConcurrency, prefetch))
+
+  /**
+    * Transform the items emitted by this [[Flux]] into Publishers, then flatten the
+    * emissions from those by merging them into a single [[Flux]], in order.
+    * Unlike concatMap, transformed inner Publishers are subscribed to eagerly. Unlike
+    * flatMap, their emitted elements are merged respecting the order of the original
+    * sequence. The concurrency argument allows to control how many merged [[Publisher]]
+    * can happen in parallel. The prefetch argument allows to give an arbitrary prefetch
+    * size to the merged [[Publisher]].
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/flatmapsequential.png" alt="">
+    *
+    * @param mapper         the [[Function1]] to transform input sequence into N sequences [[Publisher]]
+    * @param delayError     should any error be delayed after current merge backlog
+    * @param maxConcurrency the maximum in-flight elements from this { @link Flux} sequence
+    * @param prefetch       the maximum in-flight elements from each inner [[Publisher]] sequence
+    * @tparam R the merged output sequence type
+    * @return a merged [[Flux]]
+    */
+  final def flatMapSequential[R](mapper: T => Publisher[_ <: R], delayError: Boolean, maxConcurrency: Int, prefetch: Int) = Flux(jFlux.flatMapSequential[R](mapper, delayError, maxConcurrency, prefetch))
+
+  /**
+    * The prefetch configuration of the [[Flux]]
+    *
+    * @return the prefetch configuration of the [[Flux]], -1L if unspecified
+    */
+  def getPrefetch(): Long = jFlux.getPrefetch
+
+  /**
+    * Re-route this sequence into dynamically created [[Flux]] for each unique key evaluated by the given
+    * key mapper.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/groupby.png" alt="">
+    *
+    * @param keyMapper the key mapping [[Function1]] that evaluates an incoming data and returns a key.
+    * @tparam K the key type extracted from each value of this sequence
+    * @return a [[Flux]] of [[GroupedFlux]] grouped sequences
+    */
+  final def groupBy[K](keyMapper: T => K) = Flux(jFlux.groupBy[K](keyMapper))
+
+  /**
+    * Re-route this sequence into dynamically created [[Flux]] for each unique key evaluated by the given
+    * key mapper.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/groupby.png" alt="">
+    *
+    * @param keyMapper the key mapping [[Function1]] that evaluates an incoming data and returns a key.
+    * @param prefetch the number of values to prefetch from the source
+    * @tparam K the key type extracted from each value of this sequence
+    * @return a [[Flux]] of [[GroupedFlux]] grouped sequences
+    */
+  final def groupBy[K](keyMapper: T => K, prefetch: Int) = Flux(jFlux.groupBy[K](keyMapper, prefetch))
+
+
+  /**
     * Transform the items emitted by this [[Flux]] by applying a function to each item.
     * <p>
     * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/map.png" alt="">
@@ -1594,8 +1703,8 @@ class Flux[T](private[publisher] val jFlux: JFlux[T]) extends Publisher[T] with 
     * *
     *
     * @example {{{
-    *                                                                                                                                                                                                                   val applySchedulers = flux => flux.subscribeOn(Schedulers.elastic()).publishOn(Schedulers.parallel());
-    *                                                                                                                                                                                                                   flux.transform(applySchedulers).map(v => v * v).subscribe()
+    *                                                                                                                                                                                                                                       val applySchedulers = flux => flux.subscribeOn(Schedulers.elastic()).publishOn(Schedulers.parallel());
+    *                                                                                                                                                                                                                                       flux.transform(applySchedulers).map(v => v * v).subscribe()
     *          }}}
     * @param transformer the [[Function1]] to immediately map this [[Flux]] into a target [[Flux]]
     *                    instance.
@@ -1611,7 +1720,7 @@ class Flux[T](private[publisher] val jFlux: JFlux[T]) extends Publisher[T] with 
 
 object Flux {
 
-  private def apply[T](jFlux: JFlux[T]): Flux[T] = new Flux[T](jFlux)
+  private[publisher] def apply[T](jFlux: JFlux[T]): Flux[T] = new Flux[T](jFlux)
 
   /**
     * Build a [[Flux]] whose data are generated by the combination of the most recent published values from all
