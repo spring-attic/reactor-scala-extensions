@@ -119,11 +119,11 @@ class Mono[T] private(private val jMono: JMono[T]) extends Publisher[T] with Map
     * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/and.png" alt="">
     * <p>
     *
-    * @param other the [[Mono]] to combine with
+    * @param other      the [[Mono]] to combine with
     * @param combinator a [[scala.Function2]] combinator function when both sources
-    *                             complete
+    *                   complete
     * @tparam T2 the element type of the other Mono instance
-    * @tparam O the element type of the combination
+    * @tparam O  the element type of the combination
     * @return a new combined Mono
     * @see [[Mono.when]]
     */
@@ -159,9 +159,9 @@ class Mono[T] private(private val jMono: JMono[T]) extends Publisher[T] with Map
     * <p>
     *
     * @param rightGenerator the [[scala.Function1]] to generate a `Mono` to combine with
-    * @param combinator a [[scala.Function2]] combinator function when both sources complete
+    * @param combinator     a [[scala.Function2]] combinator function when both sources complete
     * @tparam T2 the element type of the other Mono instance
-    * @tparam O the element type of the combination
+    * @tparam O  the element type of the combination
     * @return a new combined Mono
     */
 
@@ -303,9 +303,7 @@ class Mono[T] private(private val jMono: JMono[T]) extends Publisher[T] with Map
     * @param other the [[Publisher]] sequence to concat after this [[Flux]]
     * @return a concatenated [[Flux]]
     */
-  final def concatWith(other: Publisher[T]): Flux[T] = new Flux[T](
-    jMono.concatWith(other)
-  )
+  final def concatWith(other: Publisher[T]): Flux[T] = Flux(jMono.concatWith(other))
 
   /**
     * Provide a default unique value if this mono is completed without any data
@@ -477,8 +475,8 @@ class Mono[T] private(private val jMono: JMono[T]) extends Publisher[T] with Map
     * <p>
     *
     * @param onSuccess the callback to call on, argument is null if the [[Mono]]
-    *                                                                           completes without data
-    *                                                                           [[org.reactivestreams.Subscriber.onNext]] or [[org.reactivestreams.Subscriber.onComplete]] without preceding [[org.reactivestreams.Subscriber.onNext]]
+    *                  completes without data
+    *                  [[org.reactivestreams.Subscriber.onNext]] or [[org.reactivestreams.Subscriber.onComplete]] without preceding [[org.reactivestreams.Subscriber.onNext]]
     * @return a new [[Mono]]
     */
   final def doOnSuccess(onSuccess: (T => Unit)): Mono[T] = {
@@ -628,32 +626,65 @@ class Mono[T] private(private val jMono: JMono[T]) extends Publisher[T] with Map
     jMono.filter(tester)
   )
 
-  final def flatMap[R](mapper: T => Publisher[R]): Flux[R] = {
-    new Flux[R](
-      jMono.flatMap(mapper)
-    )
-  }
+  /**
+    * Transform the item emitted by this [[Mono]] into a Publisher, then forward
+    * its emissions into the returned [[Flux]].
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/flatmap1.png" alt="">
+    * <p>
+    *
+    * @param mapper the
+    *               [[Function1]] to produce a sequence of R from the the eventual passed [[Subscriber.onNext]]
+    * @tparam R the merged sequence type
+    * @return a new [[Flux]] as the sequence is not guaranteed to be single at most
+    */
+  final def flatMap[R](mapper: T => Publisher[R]): Flux[R] = Flux(jMono.flatMap(mapper))
 
+  /**
+    * Transform the signals emitted by this [[Mono]] into a Publisher, then forward
+    * its emissions into the returned [[Flux]].
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/flatmaps1.png" alt="">
+    * <p>
+    *
+    * @param mapperOnNext     the [[Function1]] to call on next data and returning a sequence to merge
+    * @param mapperOnError    the[[Function1]] to call on error signal and returning a sequence to merge
+    * @param mapperOnComplete the [[Function1]] to call on complete signal and returning a sequence to merge
+    * @tparam R the type of the produced inner sequence
+    * @return a new [[Flux]] as the sequence is not guaranteed to be single at most
+    * @see [[Flux.flatMap]]
+    */
   final def flatMap[R](mapperOnNext: T => Publisher[R],
                        mapperOnError: Throwable => Publisher[R],
-                       mapperOnComplete: () => Publisher[R]): Flux[R] = {
-    new Flux[R](
-      jMono.flatMap(mapperOnNext, mapperOnError, mapperOnComplete)
-    )
-  }
+                       mapperOnComplete: () => Publisher[R]) =
+    Flux(jMono.flatMap(mapperOnNext, mapperOnError, mapperOnComplete))
 
-  final def flatMapIterable[R](mapper: T => Iterable[R]): Flux[R] = {
-    val mapperFunction: Function[T, JIterable[R]] = mapper.andThen(it => it.asJava)
-    new Flux[R](
-      jMono.flatMapIterable(mapperFunction)
-    )
-  }
+  /**
+    * Transform the item emitted by this [[Mono]] into [[Iterable]], , then forward
+    * its elements into the returned [[Flux]]. The prefetch argument allows to
+    * give an
+    * arbitrary prefetch size to the inner [[Iterable]].
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/flatmap.png" alt="">
+    *
+    * @param mapper the [[Function1]] to transform input item into a sequence [[Iterable]]
+    * @tparam R the merged output sequence type
+    * @return a merged [[Flux]]
+    *
+    */
+  final def flatMapIterable[R](mapper: T => Iterable[R]): Flux[R] = Flux(
+    jMono.flatMapIterable(mapper.andThen(it => it.asJava))
+  )
 
-  final def flux(): Flux[T] = {
-    new Flux[T](
-      jMono.flux()
-    )
-  }
+  /**
+    * Convert this [[Mono]] to a [[Flux]]
+    *
+    * @return a [[Flux]] variant of this [[Mono]]
+    */
+  final def flux(): Flux[T] = Flux(jMono.flux())
 
   final def hasElement: Mono[Boolean] = {
     new Mono[Boolean](
@@ -717,9 +748,17 @@ class Mono[T] private(private val jMono: JMono[T]) extends Publisher[T] with Map
     new Mono[Signal[T]](jMono.materialize())
   }
 
-  final def mergeWith(other: Publisher[_ <: T]): Flux[T] = {
-    new Flux[T](jMono.mergeWith(other))
-  }
+  /**
+    * Merge emissions of this [[Mono]] with the provided [[Publisher]].
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/merge1.png" alt="">
+    * <p>
+    *
+    * @param other the other [[Publisher]] to merge with
+    * @return a new [[Flux]] as the sequence is not guaranteed to be at most 1
+    */
+  final def mergeWith(other: Publisher[_ <: T]) = Flux(jMono.mergeWith(other))
 
   final def or(other: Mono[_ <: T]): Mono[T] = {
     new Mono[T](jMono.or(other.jMono))
@@ -783,21 +822,54 @@ class Mono[T] private(private val jMono: JMono[T]) extends Publisher[T] with Map
     new Mono[T](jMono.publishOn(scheduler))
   }
 
-  final def repeat(): Flux[T] = {
-    new Flux[T](jMono.repeat())
-  }
+  /**
+    * Repeatedly subscribe to the source completion of the previous subscription.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/repeat.png" alt="">
+    *
+    * @return an indefinitively repeated [[Flux]] on onComplete
+    */
+  final def repeat() = Flux(jMono.repeat())
 
-  final def repeat(predicate: () => Boolean): Flux[T] = {
-    new Flux[T](jMono.repeat(predicate))
-  }
+  /**
+    * Repeatedly subscribe to the source if the predicate returns true after completion of the previous subscription.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/repeatb.png" alt="">
+    *
+    * @param predicate the boolean to evaluate on onComplete.
+    * @return an eventually repeated [[Flux]] on onComplete
+    *
+    */
+  final def repeat(predicate: () => Boolean) = Flux(jMono.repeat(predicate))
 
-  final def repeat(n: Long): Flux[T] = {
-    new Flux[T](jMono.repeat(n))
-  }
+  /**
+    * Repeatedly subscribe to the source if the predicate returns true after completion of the previous subscription.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/repeatn.png" alt="">
+    *
+    * @param numRepeat the number of times to re-subscribe on onComplete
+    * @return an eventually repeated [[Flux]] on onComplete up to number of repeat specified
+    *
+    */
+  final def repeat(numRepeat: Long) = Flux(jMono.repeat(numRepeat))
 
-  final def repeat(n: Long, predicate: () => Boolean): Flux[T] = {
-    new Flux[T](jMono.repeat(n, predicate))
-  }
+  /**
+    * Repeatedly subscribe to the source if the predicate returns true after completion of the previous
+    * subscription. A specified maximum of repeat will limit the number of re-subscribe.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/repeatnb.png" alt="">
+    *
+    * @param numRepeat the number of times to re-subscribe on complete
+    * @param predicate the boolean to evaluate on onComplete
+    * @return an eventually repeated [[Flux]] on onComplete up to number of repeat specified OR matching
+    *                                        predicate
+    *
+    */
+  final def repeat(numRepeat: Long, predicate: () => Boolean) = Flux(jMono.repeat(numRepeat, predicate))
 
   private implicit def fluxLong2PublisherAnyToJFluxJLong2PublisherAny(mapper: (Flux[Long] => Publisher[_])): Function[JFlux[JLong], Publisher[_]] = {
     new Function[JFlux[JLong], Publisher[_]] {
@@ -805,10 +877,24 @@ class Mono[T] private(private val jMono: JMono[T]) extends Publisher[T] with Map
     }
   }
 
+  /**
+    * Repeatedly subscribe to this [[Mono]] when a companion sequence signals a number of emitted elements in
+    * response to the flux completion signal.
+    * <p>If the companion sequence signals when this [[Mono]] is active, the repeat
+    * attempt is suppressed and any terminal signal will terminate this [[Flux]] with
+    * the same signal immediately.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/repeatwhen.png" alt="">
+    *
+    * @param whenFactory the [[Function1]] providing a [[Flux]] signalling an exclusive number of
+    *                                emitted elements on onComplete and returning a [[Publisher]] companion.
+    * @return an eventually repeated [[Flux]] on onComplete when the companion [[Publisher]] produces an
+    *                                        onNext signal
+    *
+    */
   //  TODO: How to test this?
-  final def repeatWhen(whenFactory: Flux[Long] => _ <: Publisher[_]): Flux[T] = {
-    new Flux[T](jMono.repeatWhen(whenFactory))
-  }
+  final def repeatWhen(whenFactory: Flux[Long] => _ <: Publisher[_]) = Flux(jMono.repeatWhen(whenFactory))
 
   //  TODO: How to test this?
   final def repeatWhenEmpty(repeatFactory: Flux[Long] => Publisher[_]): Mono[T] = {
@@ -905,13 +991,33 @@ class Mono[T] private(private val jMono: JMono[T]) extends Publisher[T] with Map
     new Mono[Unit]((jMono: JMono[T]).thenEmpty(other))
   }
 
-  final def thenMany[V](other: Publisher[V]): Flux[V] = {
-    new Flux[V](jMono.thenMany(other))
-  }
+  /**
+    * Ignore element from this mono and transform the completion signal into a
+    * `Flux[V]` that will emit elements from the provided [[Publisher]].
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/ignorethens.png" alt="">
+    *
+    * @param other a [[Publisher]] to emit from after termination
+    * @tparam V the element type of the supplied Publisher
+    * @return a new [[Flux]] that emits from the supplied [[Publisher]] after
+    *                       this Mono completes.
+    */
+  final def thenMany[V](other: Publisher[V]): Flux[V] = Flux(jMono.thenMany(other))
 
-  final def thenMany[V](afterSupplier: () => Publisher[V]): Flux[V] = {
-    new Flux[V](jMono.thenMany(afterSupplier))
-  }
+  /**
+    * Ignore element from this mono and transform the completion signal into a
+    * `Flux[V]` that will emit elements from the supplier-provided [[Publisher]].
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/ignorethens.png" alt="">
+    *
+    * @param afterSupplier a supplier of [[Publisher]] to emit from after
+    *                                completion
+    * @tparam V the element type of the supplied Publisher
+    * @return a new [[Flux]] that emits from the supplied [[Publisher]]
+    */
+  final def thenMany[V](afterSupplier: () => Publisher[V]) = Flux(jMono.thenMany(afterSupplier))
 
   final def timeout(duration: Duration): Mono[T] = {
     Mono(jMono.timeout(duration))
@@ -1164,13 +1270,13 @@ object Mono {
     * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/whent.png" alt="">
     * <p>
     *
-    * @param p1 The first upstream { @link org.reactivestreams.Publisher} to subscribe to.
-    * @param p2 The second upstream { @link org.reactivestreams.Publisher} to subscribe to.
+    * @param p1         The first upstream { @link org.reactivestreams.Publisher} to subscribe to.
+    * @param p2         The second upstream { @link org.reactivestreams.Publisher} to subscribe to.
     * @param combinator a [[scala.Function2]] combinator function when both sources
-    *                             complete
+    *                   complete
     * @tparam T1 type of the value from source1
     * @tparam T2 type of the value from source2
-    * @tparam O output value
+    * @tparam O  output value
     * @return a [[Mono]].
     */
   def when[T1, T2, O](p1: Mono[_ <: T1], p2: Mono[_ <: T2], combinator: (T1, T2) => O): Mono[O] = {
@@ -1224,7 +1330,7 @@ object Mono {
     * @tparam T3 type of the value from source3
     * @tparam T4 type of the value from source4
     * @return a { @link Mono}.
-    */  
+    */
   def when[T1, T2, T3, T4](p1: Mono[_ <: T1], p2: Mono[_ <: T2], p3: Mono[_ <: T3], p4: Mono[_ <: T4]): Mono[(T1, T2, T3, T4)] = {
     val jMono: JMono[Tuple4[T1, T2, T3, T4]] = JMono.when(p1.jMono, p2.jMono, p3.jMono, p4.jMono)
     new Mono[(T1, T2, T3, T4)](
@@ -1577,7 +1683,7 @@ object Mono {
     * <p>
     *
     * @param combinator the combinator [[scala.Function]]
-    * @param monos The monos to use.
+    * @param monos      The monos to use.
     * @tparam T The super incoming type
     * @tparam V The type of the function result.
     * @return a [[Mono]].
@@ -1598,7 +1704,7 @@ object Mono {
     * <p>
     *
     * @param combinator the combinator [[scala.Function]]
-    * @param monos The monos to use.
+    * @param monos      The monos to use.
     * @tparam T The type of the function result.
     * @tparam V The result type
     * @return a [[Mono]].
