@@ -1392,12 +1392,10 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
           .verifyComplete()
       }
       "with keyMapper and prefetch should group the flux by the key mapper and prefetch the elements from the source" in {
-        val flux = Flux.just(1, 2, 3, 4, 5, 6).groupBy(i => {
-          i match {
-            case even: Int if even % 2 == 0 => "even"
-            case _: Int => "odd"
-          }
-        }, 6)
+        val flux = Flux.just(1, 2, 3, 4, 5, 6).groupBy[String]({
+          case even: Int if even % 2 == 0 => "even"
+          case _: Int => "odd"
+        }: Int => String, 6: Int)
         StepVerifier.create(flux)
           .expectNextMatches(new Predicate[GroupedFlux[String, Int]] {
             override def test(t: GroupedFlux[String, Int]): Boolean = {
@@ -1406,6 +1404,42 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
           })
           .expectNextMatches(new Predicate[GroupedFlux[String, Int]] {
             override def test(t: GroupedFlux[String, Int]): Boolean = {
+              t.key() == "even"
+            }
+          })
+          .verifyComplete()
+      }
+      "with keyMapper and valueMapper should group the flux by the key mapper and convert the value by value mapper" in {
+        val flux = Flux.just(1, 2, 3, 4, 5, 6).groupBy[String, String]({
+          case even: Int if even % 2 == 0 => "even"
+          case _: Int => "odd"
+        }: Int => String, (i => i.toString): Int => String)
+        StepVerifier.create(flux)
+          .expectNextMatches(new Predicate[GroupedFlux[String, String]] {
+            override def test(t: GroupedFlux[String, String]): Boolean = {
+              t.key() == "odd"
+            }
+          })
+          .expectNextMatches(new Predicate[GroupedFlux[String, String]] {
+            override def test(t: GroupedFlux[String, String]): Boolean = {
+              t.key() == "even"
+            }
+          })
+          .verifyComplete()
+      }
+      "with keyMapper, valueMapper and prefetch should do the above with prefetch" in {
+        val flux = Flux.just(1, 2, 3, 4, 5, 6).groupBy[String, String]({
+          case even: Int if even % 2 == 0 => "even"
+          case _: Int => "odd"
+        }: Int => String, (i => i.toString): Int => String, 6)
+        StepVerifier.create(flux)
+          .expectNextMatches(new Predicate[GroupedFlux[String, String]] {
+            override def test(t: GroupedFlux[String, String]): Boolean = {
+              t.key() == "odd"
+            }
+          })
+          .expectNextMatches(new Predicate[GroupedFlux[String, String]] {
+            override def test(t: GroupedFlux[String, String]): Boolean = {
               t.key() == "even"
             }
           })

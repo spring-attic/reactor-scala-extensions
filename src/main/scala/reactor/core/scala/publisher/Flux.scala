@@ -1634,6 +1634,23 @@ class Flux[T]private (private[publisher] val jFlux: JFlux[T]) extends Publisher[
     */
   final def groupBy[K](keyMapper: T => K, prefetch: Int) = Flux(jFlux.groupBy[K](keyMapper, prefetch))
 
+  /**
+    * Re-route this sequence into dynamically created [[Flux]] for each unique key evaluated by the given
+    * key mapper. It will use the given value mapper to extract the element to route.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/groupby.png" alt="">
+    *
+    * @param keyMapper   the key mapping function that evaluates an incoming data and returns a key.
+    * @param valueMapper the value mapping function that evaluates which data to extract for re-routing.
+    * @tparam K the key type extracted from each value of this sequence
+    * @tparam V the value type extracted from each value of this sequence
+    * @return a [[Flux]] of [[GroupedFlux]] grouped sequences
+    *
+    */
+  final def groupBy[K, V](keyMapper: T => K, valueMapper: T => V) = Flux(jFlux.groupBy[K, V](keyMapper, valueMapper))
+
+  final def groupBy[K, V](keyMapper: T => K, valueMapper: T => V, prefetch: Int) = Flux(jFlux.groupBy[K, V](keyMapper, valueMapper, prefetch))
 
   /**
     * Transform the items emitted by this [[Flux]] by applying a function to each item.
