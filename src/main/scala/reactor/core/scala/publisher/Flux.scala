@@ -3,7 +3,7 @@ package reactor.core.scala.publisher
 import java.lang.{Iterable => JIterable, Long => JLong}
 import java.util
 import java.util.concurrent.Callable
-import java.util.function.{Consumer, Function, Supplier}
+import java.util.function.{BiFunction, Consumer, Function, Supplier}
 import java.util.{Comparator, List => JList}
 
 import org.reactivestreams.{Publisher, Subscriber, Subscription}
@@ -39,7 +39,7 @@ import scala.concurrent.duration.Duration
   * @tparam T the element type of this Reactive Streams [[Publisher]]
   * @see [[Mono]]
   */
-class Flux[T]private (private[publisher] val jFlux: JFlux[T]) extends Publisher[T] with MapablePublisher[T] {
+class Flux[T] private(private[publisher] val jFlux: JFlux[T]) extends Publisher[T] with MapablePublisher[T] {
   override def subscribe(s: Subscriber[_ >: T]): Unit = jFlux.subscribe(s)
 
   /**
@@ -1628,7 +1628,7 @@ class Flux[T]private (private[publisher] val jFlux: JFlux[T]) extends Publisher[
     * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/groupby.png" alt="">
     *
     * @param keyMapper the key mapping [[Function1]] that evaluates an incoming data and returns a key.
-    * @param prefetch the number of values to prefetch from the source
+    * @param prefetch  the number of values to prefetch from the source
     * @tparam K the key type extracted from each value of this sequence
     * @return a [[Flux]] of [[GroupedFlux]] grouped sequences
     */
@@ -1666,6 +1666,42 @@ class Flux[T]private (private[publisher] val jFlux: JFlux[T]) extends Publisher[
     *
     */
   final def groupBy[K, V](keyMapper: T => K, valueMapper: T => V, prefetch: Int) = Flux(jFlux.groupBy[K, V](keyMapper, valueMapper, prefetch))
+
+  /**
+    * Returns a [[Flux]] that correlates two Publishers when they overlap in time
+    * and groups the results.
+    * <p>
+    * There are no guarantees in what order the items get combined when multiple items from
+    * one or both source Publishers overlap.
+    * <p> Unlike [[Flux.join]], items from the right Publisher will be streamed
+    * into the right resultSelector argument [[Flux]].
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/groupjoin.png" alt="">
+    *
+    * @param other          the other Publisher to correlate items from the source Publisher with
+    * @param leftEnd        a function that returns a Publisher whose emissions indicate the
+    *                       duration of the values of the source Publisher
+    * @param rightEnd       a function that returns a Publisher whose emissions indicate the
+    *                       duration of the values of the `right` Publisher
+    * @param resultSelector a function that takes an item emitted by each Publisher and returns the
+    *                       value to be emitted by the resulting Publisher
+    * @tparam TRight    the type of the right Publisher
+    * @tparam TLeftEnd  this [[Flux]] timeout type
+    * @tparam TRightEnd the right Publisher timeout type
+    * @tparam R         the combined result type
+    * @return a joining [[Flux]]
+    */
+//  TODO: How to test this?
+  final def groupJoin[TRight, TLeftEnd, TRightEnd, R](other: Publisher[_ <: TRight],
+                                                      leftEnd: T => Publisher[TLeftEnd],
+                                                      rightEnd: TRight => Publisher[TRightEnd],
+                                                      resultSelector: (T, Flux[TRight]) => R) =
+    Flux(jFlux.groupJoin[TRight, TLeftEnd, TRightEnd, R](other, leftEnd, rightEnd,
+      new BiFunction[T, JFlux[TRight], R] {
+        override def apply(t: T, u: JFlux[TRight]): R = resultSelector(t, Flux(u))
+      }
+    ))
 
   /**
     * Transform the items emitted by this [[Flux]] by applying a function to each item.
@@ -1735,8 +1771,8 @@ class Flux[T]private (private[publisher] val jFlux: JFlux[T]) extends Publisher[
     * *
     *
     * @example {{{
-    *                                                                                                                                                                                                                                       val applySchedulers = flux => flux.subscribeOn(Schedulers.elastic()).publishOn(Schedulers.parallel());
-    *                                                                                                                                                                                                                                       flux.transform(applySchedulers).map(v => v * v).subscribe()
+    *                                                                                                                                                                                                                                                 val applySchedulers = flux => flux.subscribeOn(Schedulers.elastic()).publishOn(Schedulers.parallel());
+    *                                                                                                                                                                                                                                                 flux.transform(applySchedulers).map(v => v * v).subscribe()
     *          }}}
     * @param transformer the [[Function1]] to immediately map this [[Flux]] into a target [[Flux]]
     *                    instance.
