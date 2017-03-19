@@ -1728,6 +1728,56 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
   final def handle[R](handler: (T, SynchronousSink[R]) => Unit): Flux[R] = Flux(jFlux.handle[R](handler))
 
   /**
+    * Emit a single boolean true if any of the values of this [[Flux]] sequence match
+    * the  constant.
+    * <p>
+    * The implementation uses short-circuit logic and completes with true if
+    * the constant matches a value.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/haselement.png" alt="">
+    *
+    * @param value constant compared to incoming signals
+    * @return a new [[Mono]] with <code>true</code> if any value satisfies a predicate and <code>false</code>
+    *                       otherwise
+    *
+    */
+  final def hasElement(value: T): Mono[Boolean] = Mono(jFlux.hasElement(value)).map(Boolean2boolean)
+
+  /**
+    * Emit a single boolean true if this [[Flux]] sequence has at least one element.
+    * <p>
+    * The implementation uses short-circuit logic and completes with true on onNext.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/haselements.png" alt="">
+    *
+    * @return a new [[Mono]] with <code>true</code> if any value is emitted and <code>false</code>
+    *                       otherwise
+    */
+  final def hasElements(): Mono[Boolean] = Mono(jFlux.hasElements).map(Boolean2boolean)
+
+  /**
+    * Hides the identities of this [[Flux]] and its [[Subscription]]
+    * as well.
+    *
+    * @return a new [[Flux]] defeating any [[Publisher]] / [[Subscription]] feature-detection
+    */
+//  TODO: How to test???
+  final def hide() = Flux(jFlux.hide())
+
+  /**
+    * Ignores onNext signals (dropping them) and only reacts on termination.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/ignoreelements.png" alt="">
+    * <p>
+    *
+    * @return a new completable [[Mono.
+    */
+  final def ignoreElements() = Mono(jFlux.ignoreElements())
+
+  /**
     * Transform the items emitted by this [[Flux]] by applying a function to each item.
     * <p>
     * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/map.png" alt="">

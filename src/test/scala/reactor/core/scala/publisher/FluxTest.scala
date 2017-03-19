@@ -1493,6 +1493,26 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       }
     }
 
+    ".hasElement should return true if the flux has element matched" in {
+      val mono = Flux.just(1, 2, 3, 4, 5).hasElement(4)
+      StepVerifier.create(mono)
+        .expectNext(true)
+        .verifyComplete()
+    }
+
+    ".hasElements should return true if this flux has at least one element" in {
+      val mono = Flux.just(1, 2, 3).hasElements()
+      StepVerifier.create(mono)
+        .expectNext(true)
+        .verifyComplete()
+    }
+
+    ".ignoreElements should ignore all elements and only reacts on termination" in {
+      val mono = Flux.just(1, 2, 3).ignoreElements()
+      StepVerifier.create(mono)
+        .verifyComplete()
+    }
+
     ".map should map the type of Flux from T to R" in {
       val flux = Flux.just(1, 2, 3).map(_.toString)
 
