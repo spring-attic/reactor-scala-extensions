@@ -9,7 +9,7 @@ import java.util.{Comparator, List => JList}
 import org.reactivestreams.{Publisher, Subscriber, Subscription}
 import reactor.core.Disposable
 import reactor.core.publisher.FluxSink.OverflowStrategy
-import reactor.core.publisher.{FluxSink, GroupedFlux, Signal, SignalType, SynchronousSink, Flux => JFlux}
+import reactor.core.publisher.{FluxSink, GroupedFlux => JGroupedFlux, Signal, SignalType, SynchronousSink, Flux => JFlux}
 import reactor.core.scheduler.{Scheduler, TimedScheduler}
 import reactor.util.function.Tuple2
 
@@ -39,7 +39,7 @@ import scala.concurrent.duration.Duration
   * @tparam T the element type of this Reactive Streams [[Publisher]]
   * @see [[Mono]]
   */
-class Flux[T] private(private[publisher] val jFlux: JFlux[T]) extends Publisher[T] with MapablePublisher[T] {
+class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends Publisher[T] with MapablePublisher[T] {
   override def subscribe(s: Subscriber[_ >: T]): Unit = jFlux.subscribe(s)
 
   /**
@@ -1605,7 +1605,7 @@ class Flux[T] private(private[publisher] val jFlux: JFlux[T]) extends Publisher[
     *
     * @return the prefetch configuration of the [[Flux]], -1L if unspecified
     */
-  def getPrefetch(): Long = jFlux.getPrefetch
+  def getPrefetch: Long = jFlux.getPrefetch
 
   /**
     * Re-route this sequence into dynamically created [[Flux]] for each unique key evaluated by the given
@@ -1618,7 +1618,10 @@ class Flux[T] private(private[publisher] val jFlux: JFlux[T]) extends Publisher[
     * @tparam K the key type extracted from each value of this sequence
     * @return a [[Flux]] of [[GroupedFlux]] grouped sequences
     */
-  final def groupBy[K](keyMapper: T => K) = Flux(jFlux.groupBy[K](keyMapper))
+  final def groupBy[K](keyMapper: T => K): Flux[GroupedFlux[K, T]] = {
+    val jFluxOfGroupedFlux: JFlux[JGroupedFlux[K, T]] = jFlux.groupBy(keyMapper)
+    Flux(jFluxOfGroupedFlux.map((jGroupFlux: JGroupedFlux[K, T]) => GroupedFlux(jGroupFlux)))
+  }
 
   /**
     * Re-route this sequence into dynamically created [[Flux]] for each unique key evaluated by the given
@@ -1632,7 +1635,10 @@ class Flux[T] private(private[publisher] val jFlux: JFlux[T]) extends Publisher[
     * @tparam K the key type extracted from each value of this sequence
     * @return a [[Flux]] of [[GroupedFlux]] grouped sequences
     */
-  final def groupBy[K](keyMapper: T => K, prefetch: Int) = Flux(jFlux.groupBy[K](keyMapper, prefetch))
+  final def groupBy[K](keyMapper: T => K, prefetch: Int): Flux[GroupedFlux[K, T]] = {
+    val jFluxOfGroupedFlux: JFlux[JGroupedFlux[K, T]] = jFlux.groupBy(keyMapper)
+    Flux(jFluxOfGroupedFlux).map(GroupedFlux(_))
+  }
 
   /**
     * Re-route this sequence into dynamically created [[Flux]] for each unique key evaluated by the given
@@ -1648,7 +1654,10 @@ class Flux[T] private(private[publisher] val jFlux: JFlux[T]) extends Publisher[
     * @return a [[Flux]] of [[GroupedFlux]] grouped sequences
     *
     */
-  final def groupBy[K, V](keyMapper: T => K, valueMapper: T => V) = Flux(jFlux.groupBy[K, V](keyMapper, valueMapper))
+  final def groupBy[K, V](keyMapper: T => K, valueMapper: T => V): Flux[GroupedFlux[K, V]] = {
+    val jFluxOfGroupedFlux: JFlux[JGroupedFlux[K, V]] = jFlux.groupBy(keyMapper, valueMapper)
+    Flux(jFluxOfGroupedFlux).map(GroupedFlux(_))
+  }
 
   /**
     * Re-route this sequence into dynamically created [[Flux]] for each unique key evaluated by the given
@@ -1665,7 +1674,10 @@ class Flux[T] private(private[publisher] val jFlux: JFlux[T]) extends Publisher[
     * @return a [[Flux]] of [[GroupedFlux]] grouped sequences
     *
     */
-  final def groupBy[K, V](keyMapper: T => K, valueMapper: T => V, prefetch: Int) = Flux(jFlux.groupBy[K, V](keyMapper, valueMapper, prefetch))
+  final def groupBy[K, V](keyMapper: T => K, valueMapper: T => V, prefetch: Int): Flux[GroupedFlux[K, V]] = {
+    val jFluxOfGroupedFlux: JFlux[JGroupedFlux[K, V]] = jFlux.groupBy(keyMapper, valueMapper, prefetch)
+    Flux(jFluxOfGroupedFlux).map(GroupedFlux(_))
+  }
 
   /**
     * Returns a [[Flux]] that correlates two Publishers when they overlap in time
@@ -1748,6 +1760,22 @@ class Flux[T] private(private[publisher] val jFlux: JFlux[T]) extends Publisher[
     * @return a [[Disposable]] task to execute to dispose and cancel the underlying [[Subscription]]
     **/
   final def subscribe(): Disposable = jFlux.subscribe()
+
+  /**
+    * Subscribe a `consumer` to this [[Flux]] that will consume all the
+    * sequence. It will request an unbounded demand.
+    * <p>
+    * For a passive version that observe and forward incoming data see [[Flux.doOnNext]].
+    * <p>For a version that gives you more control over backpressure and the request, see
+    * [[Flux.subscribe]] with a [[reactor.core.publisher.BaseSubscriber]].
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/subscribe.png" alt="">
+    *
+    * @param consumer the consumer to invoke on each value
+    * @return a new [[Disposable]] to dispose the [[Subscription]]
+    */
+  final def subscribe(consumer: T => Unit): Disposable = jFlux.subscribe(consumer)
 
   /**
     * Take only the first N values from this [[Flux]].

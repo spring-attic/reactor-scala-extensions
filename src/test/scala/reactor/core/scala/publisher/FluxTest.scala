@@ -5,12 +5,12 @@ import java.nio.file.Files
 import java.util
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicLong, AtomicReference}
 import java.util.concurrent.{Callable, CountDownLatch, TimeUnit}
-import java.util.function.{Consumer, Predicate, Supplier}
+import java.util.function.Predicate
 
 import org.reactivestreams.{Publisher, Subscription}
 import org.scalatest.prop.TableDrivenPropertyChecks
 import org.scalatest.{FreeSpec, Matchers}
-import reactor.core.publisher._
+import reactor.core.publisher.{GroupedFlux => JGroupedFlux, _}
 import reactor.core.scheduler.Schedulers
 import reactor.test.StepVerifier
 import reactor.test.scheduler.VirtualTimeScheduler
@@ -1377,33 +1377,20 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         val oddBuffer = ListBuffer.empty[Int]
         val evenBuffer = ListBuffer.empty[Int]
 
-        import scala.collection.JavaConverters._
-
         val flux = Flux.just(1, 2, 3, 4, 5, 6).groupBy {
           case even: Int if even % 2 == 0 => "even"
           case _: Int => "odd"
-        }.doOnNext {
-          case gf: GroupedFlux[String, Int] if gf.key() == "odd" => gf.buffer(3, new Supplier[util.Collection[_ >: Int]] {
-            override def get(): util.Collection[Int] = oddBuffer.asJava
-          })
-          case gf: GroupedFlux[String, Int] if gf.key() == "even" => gf.buffer(3, new Supplier[util.Collection[_ >: Int]] {
-            override def get(): util.Collection[Int] = evenBuffer.asJava
-          })
         }
         StepVerifier.create(flux)
           .expectNextMatches(new Predicate[GroupedFlux[String, Int]] {
             override def test(t: GroupedFlux[String, Int]): Boolean = {
-                t.subscribe(new Consumer[Int] {
-                  override def accept(t: Int): Unit = oddBuffer += t
-                })
+              t.subscribe(oddBuffer += _)
               t.key() == "odd"
             }
           })
           .expectNextMatches(new Predicate[GroupedFlux[String, Int]] {
             override def test(t: GroupedFlux[String, Int]): Boolean = {
-              t.subscribe(new Consumer[Int] {
-                override def accept(t: Int): Unit = evenBuffer += t
-              })
+              t.subscribe(evenBuffer += _)
               t.key() == "even"
             }
           })
@@ -1413,24 +1400,36 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         evenBuffer shouldBe Seq(2, 4, 6)
       }
       "with keyMapper and prefetch should group the flux by the key mapper and prefetch the elements from the source" in {
-        val flux = Flux.just(1, 2, 3, 4, 5, 6).groupBy[String]({
+        val oddBuffer = ListBuffer.empty[Int]
+        val evenBuffer = ListBuffer.empty[Int]
+
+        val flux = Flux.just(1, 2, 3, 4, 5, 6).groupBy({
           case even: Int if even % 2 == 0 => "even"
           case _: Int => "odd"
-        }: Int => String, 6: Int)
+        }: Int => String, 6)
         StepVerifier.create(flux)
           .expectNextMatches(new Predicate[GroupedFlux[String, Int]] {
             override def test(t: GroupedFlux[String, Int]): Boolean = {
+              t.subscribe(oddBuffer += _)
               t.key() == "odd"
             }
           })
           .expectNextMatches(new Predicate[GroupedFlux[String, Int]] {
             override def test(t: GroupedFlux[String, Int]): Boolean = {
+              t.subscribe(evenBuffer += _)
               t.key() == "even"
             }
           })
           .verifyComplete()
+
+        oddBuffer shouldBe Seq(1, 3, 5)
+        evenBuffer shouldBe Seq(2, 4, 6)
       }
+
       "with keyMapper and valueMapper should group the flux by the key mapper and convert the value by value mapper" in {
+        val oddBuffer = ListBuffer.empty[String]
+        val evenBuffer = ListBuffer.empty[String]
+
         val flux = Flux.just(1, 2, 3, 4, 5, 6).groupBy[String, String]({
           case even: Int if even % 2 == 0 => "even"
           case _: Int => "odd"
@@ -1438,17 +1437,26 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         StepVerifier.create(flux)
           .expectNextMatches(new Predicate[GroupedFlux[String, String]] {
             override def test(t: GroupedFlux[String, String]): Boolean = {
+              t.subscribe(oddBuffer += _)
               t.key() == "odd"
             }
           })
           .expectNextMatches(new Predicate[GroupedFlux[String, String]] {
             override def test(t: GroupedFlux[String, String]): Boolean = {
+              t.subscribe(evenBuffer += _)
               t.key() == "even"
             }
           })
           .verifyComplete()
+
+        oddBuffer shouldBe Seq("1", "3", "5")
+        evenBuffer shouldBe Seq("2", "4", "6")
       }
+
       "with keyMapper, valueMapper and prefetch should do the above with prefetch" in {
+        val oddBuffer = ListBuffer.empty[String]
+        val evenBuffer = ListBuffer.empty[String]
+
         val flux = Flux.just(1, 2, 3, 4, 5, 6).groupBy[String, String]({
           case even: Int if even % 2 == 0 => "even"
           case _: Int => "odd"
@@ -1456,15 +1464,20 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         StepVerifier.create(flux)
           .expectNextMatches(new Predicate[GroupedFlux[String, String]] {
             override def test(t: GroupedFlux[String, String]): Boolean = {
+              t.subscribe(oddBuffer += _)
               t.key() == "odd"
             }
           })
           .expectNextMatches(new Predicate[GroupedFlux[String, String]] {
             override def test(t: GroupedFlux[String, String]): Boolean = {
+              t.subscribe(evenBuffer += _)
               t.key() == "even"
             }
           })
           .verifyComplete()
+
+        oddBuffer shouldBe Seq("1", "3", "5")
+        evenBuffer shouldBe Seq("2", "4", "6")
       }
     }
 
