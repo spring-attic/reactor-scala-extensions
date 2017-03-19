@@ -1814,7 +1814,7 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * <p>
     * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/last.png" alt="">
     *
-    * @return a limited { @link Flux}
+    * @return a limited [[Flux]]
     */
   final def last() = Mono(jFlux.last())
 
@@ -1830,6 +1830,24 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * @return a limited [[Flux]]
     */
   final def last(defaultValue: T) = Mono(jFlux.last(defaultValue))
+
+  /**
+    * Ensure that backpressure signals from downstream subscribers are capped at the
+    * provided `prefetchRate` when propagated upstream, effectively rate limiting
+    * the upstream [[Publisher]].
+    * <p>
+    * Typically used for scenarios where consumer(s) request a large amount of data
+    * (eg. `Long.MaxValue`) but the data source behaves better or can be optimized
+    * with smaller requests (eg. database paging, etc...). All data is still processed.
+    * <p>
+    * Equivalent to `flux.publishOn(Schedulers.immediate(), prefetchRate).subscribe()`
+    *
+    * @param prefetchRate the limit to apply to downstream's backpressure
+    * @return a [[Flux]] limiting downstream's backpressure
+    * @see [[[Flux.publishOn]]
+    */
+//  TODO: How to test this?
+  final def limitRate(prefetchRate: Int) = Flux(jFlux.limitRate(prefetchRate))
 
   /**
     * Transform the items emitted by this [[Flux]] by applying a function to each item.
@@ -1854,6 +1872,41 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * @return a [[Flux]] of materialized [[Signal]]
     */
   final def materialize() = Flux(jFlux.materialize())
+
+  /**
+    * Run onNext, onComplete and onError on a supplied [[Scheduler]]
+    * [[reactor.core.scheduler.Scheduler.Worker]].
+    *
+    * <p>
+    * Typically used for fast publisher, slow consumer(s) scenarios.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/publishon.png" alt="">
+    * <p>
+    * `flux.publishOn(Schedulers.single()).subscribe()`
+    *
+    * @param scheduler a checked [[reactor.core.scheduler.Scheduler.Worker]] factory
+    * @return a [[Flux]] producing asynchronously
+    */
+//  TODO: How to test
+  final def publishOn(scheduler: Scheduler) = Flux(jFlux.publishOn(scheduler))
+
+  /**
+    * Run onNext, onComplete and onError on a supplied [[Scheduler]]
+    * [[reactor.core.scheduler.Scheduler.Worker]].
+    *
+    * <p>
+    * Typically used for fast publisher, slow consumer(s) scenarios.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/publishon.png" alt="">
+    * <p>
+    * `flux.publishOn(Schedulers.single()).subscribe()`
+    *
+    * @param scheduler a checked [[reactor.core.scheduler.Scheduler.Worker]] factory
+    * @param prefetch the asynchronous boundary capacity
+    * @return a [[Flux]] producing asynchronously
+    */
+//  TODO: how to test this?
+  final def publishOn(scheduler: Scheduler, prefetch: Int): Flux[T] = Flux(jFlux.publishOn(scheduler, prefetch))
 
   /**
     * Emit latest value for every given period of time.
