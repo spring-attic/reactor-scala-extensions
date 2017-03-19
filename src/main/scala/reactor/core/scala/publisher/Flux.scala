@@ -1716,6 +1716,18 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     ))
 
   /**
+    * Handle the items emitted by this [[Flux]] by calling a biconsumer with the
+    * output sink for each onNext. At most one [[SynchronousSink.next]]
+    * call must be performed and/or 0 or 1 [[SynchronousSink.error]] or
+    * [[SynchronousSink.complete]].
+    *
+    * @param handler the handling `BiConsumer`
+    * @tparam R the transformed type
+    * @return a transformed [[Flux]]
+    */
+  final def handle[R](handler: (T, SynchronousSink[R]) => Unit): Flux[R] = Flux(jFlux.handle[R](handler))
+
+  /**
     * Transform the items emitted by this [[Flux]] by applying a function to each item.
     * <p>
     * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/map.png" alt="">
