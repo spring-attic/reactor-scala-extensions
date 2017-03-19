@@ -1773,9 +1773,63 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/ignoreelements.png" alt="">
     * <p>
     *
-    * @return a new completable [[Mono.
+    * @return a new completable [[Mono]].
     */
   final def ignoreElements() = Mono(jFlux.ignoreElements())
+
+  /**
+    * Returns a [[Flux]] that correlates two Publishers when they overlap in time
+    * and groups the results.
+    * <p>
+    * There are no guarantees in what order the items get combined when multiple items from
+    * one or both source Publishers overlap.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/join.png" alt="">
+    *
+    * @param other    the other Publisher to correlate items from the source Publisher with
+    * @param leftEnd  a function that returns a Publisher whose emissions indicate the
+    *                 duration of the values of the source Publisher
+    * @param rightEnd a function that returns a Publisher whose emissions indicate the
+    *                 duration of the values of the { @code right} Publisher
+    * @param resultSelector a function that takes an item emitted by each Publisher and returns the
+    *                       value to be emitted by the resulting Publisher
+    * @tparam TRight the type of the right Publisher
+    * @tparam TLeftEnd this [[Flux]] timeout type
+    * @tparam TRightEnd the right Publisher timeout type
+    * @tparam R the combined result type
+    * @return a joining [[Flux]]
+    */
+//  TODO: How to test this?
+  final def join[TRight, TLeftEnd, TRightEnd, R](other: Publisher[_ <: TRight],
+                                                 leftEnd: T => Publisher[TLeftEnd],
+                                                 rightEnd: TRight => Publisher[TRightEnd],
+                                                 resultSelector: (T, TRight) => R): Flux[R] = Flux(jFlux.join[TRight, TLeftEnd, TRightEnd, R](other, leftEnd, rightEnd, resultSelector))
+
+  /**
+    * Signal the last element observed before complete signal or emit
+    * [[NoSuchElementException]] error if the source was empty.
+    * For a passive version use [[Flux.takeLast]]
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/last.png" alt="">
+    *
+    * @return a limited { @link Flux}
+    */
+  final def last() = Mono(jFlux.last())
+
+  /**
+    * Signal the last element observed before complete signal or emit
+    * the defaultValue if empty.
+    * For a passive version use [[Flux.takeLast]]
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/last.png" alt="">
+    *
+    * @param defaultValue a single fallback item if this [[Flux]] is empty
+    * @return a limited [[Flux]]
+    */
+  final def last(defaultValue: T) = Mono(jFlux.last(defaultValue))
 
   /**
     * Transform the items emitted by this [[Flux]] by applying a function to each item.
@@ -1856,9 +1910,21 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
   def take(n: Long) = new Flux[T](jFlux.take(n))
 
   /**
+    * Emit the last N values this [[Flux]] emitted before its completion.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/takelast.png" alt="">
+    *
+    * @param n the number of items from this [[Flux]] to retain and emit on onComplete
+    * @return a terminating [[Flux]] sub-sequence
+    *
+    */
+  def takeLast(n: Int) = Flux(jFlux.takeLast(n))
+
+  /**
     * Transform this [[Flux]] in order to generate a target [[Flux]]. Unlike [[Flux.compose]], the
     * provided function is executed as part of assembly.
-    * *
+    *
     *
     * @example {{{
     *                                                                                                                                                                                                                                                 val applySchedulers = flux => flux.subscribeOn(Schedulers.elastic()).publishOn(Schedulers.parallel());

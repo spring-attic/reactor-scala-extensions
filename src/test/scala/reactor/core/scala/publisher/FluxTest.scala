@@ -1513,6 +1513,21 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         .verifyComplete()
     }
 
+    ".last" - {
+      "should give last element" in {
+        val mono = Flux.just(1, 2, 3).last()
+        StepVerifier.create(mono)
+          .expectNext(3)
+          .verifyComplete()
+      }
+      "with defaultValue should give the last element or defaultValue if the flux is empty" in {
+        val mono = Flux.empty().last(5)
+        StepVerifier.create(mono)
+          .expectNext(5)
+          .verifyComplete()
+      }
+    }
+
     ".map should map the type of Flux from T to R" in {
       val flux = Flux.just(1, 2, 3).map(_.toString)
 
@@ -1529,20 +1544,6 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         .verifyComplete()
     }
 
-    ".transform should defer transformation of this flux to another publisher" in {
-      val flux = Flux.just(1, 2, 3).transform(Mono.from)
-      StepVerifier.create(flux)
-        .expectNext(1)
-        .verifyComplete()
-    }
-
-    ".take should emit only n values" in {
-      val flux = Flux.just(1, 2, 3, 4, 5, 6, 7, 8, 9, 10).take(3)
-      StepVerifier.create(flux)
-        .expectNext(1, 2, 3)
-        .verifyComplete()
-    }
-
     ".sample should emit the last value for given interval" ignore {
       val flux = Flux.just[Long](1L).sample(Duration(1, "second"))
       val counter = new CountDownLatch(3)
@@ -1555,6 +1556,27 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         }
       })
       counter.await(4, TimeUnit.SECONDS)
+    }
+
+    ".take should emit only n values" in {
+      val flux = Flux.just(1, 2, 3, 4, 5, 6, 7, 8, 9, 10).take(3)
+      StepVerifier.create(flux)
+        .expectNext(1, 2, 3)
+        .verifyComplete()
+    }
+
+    ".takeLast should take the last n values" in {
+      val flux = Flux.just(1, 2, 3, 4, 5).takeLast(3)
+      StepVerifier.create(flux)
+        .expectNext(3, 4, 5)
+        .verifyComplete()
+    }
+
+    ".transform should defer transformation of this flux to another publisher" in {
+      val flux = Flux.just(1, 2, 3).transform(Mono.from)
+      StepVerifier.create(flux)
+        .expectNext(1)
+        .verifyComplete()
     }
   }
 }
