@@ -1537,6 +1537,16 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         .verify()
     }
 
+    ".mapError should map the error" in {
+      val flux = Flux.error[Int](new RuntimeException("runtime exception"))
+        .mapError((t: Throwable) => new UnsupportedOperationException(t.getMessage))
+
+      StepVerifier.create(flux)
+        .expectError(classOf[UnsupportedOperationException])
+        .verify()
+
+    }
+
     ".materialize should convert the flux into a flux that emit its signal" in {
       val flux = Flux.just(1, 2, 3).materialize()
       StepVerifier.create(flux)

@@ -4,13 +4,15 @@ import java.lang.{Iterable => JIterable, Long => JLong}
 import java.util
 import java.util.concurrent.Callable
 import java.util.function.{BiFunction, Consumer, Function, Supplier}
+import java.util.logging.Level
 import java.util.{Comparator, List => JList}
 
 import org.reactivestreams.{Publisher, Subscriber, Subscription}
 import reactor.core.Disposable
 import reactor.core.publisher.FluxSink.OverflowStrategy
-import reactor.core.publisher.{FluxSink, GroupedFlux => JGroupedFlux, Signal, SignalType, SynchronousSink, Flux => JFlux}
+import reactor.core.publisher.{FluxSink, Signal, SignalType, SynchronousSink, Flux => JFlux, GroupedFlux => JGroupedFlux}
 import reactor.core.scheduler.{Scheduler, TimedScheduler}
+import reactor.util.Logger
 import reactor.util.function.Tuple2
 
 import scala.collection.JavaConverters._
@@ -1704,16 +1706,16 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * @tparam R         the combined result type
     * @return a joining [[Flux]]
     */
-//  TODO: How to test this?
+  //  TODO: How to test this?
   final def groupJoin[TRight, TLeftEnd, TRightEnd, R](other: Publisher[_ <: TRight],
                                                       leftEnd: T => Publisher[TLeftEnd],
                                                       rightEnd: TRight => Publisher[TRightEnd],
                                                       resultSelector: (T, Flux[TRight]) => R) =
-    Flux(jFlux.groupJoin[TRight, TLeftEnd, TRightEnd, R](other, leftEnd, rightEnd,
-      new BiFunction[T, JFlux[TRight], R] {
-        override def apply(t: T, u: JFlux[TRight]): R = resultSelector(t, Flux(u))
-      }
-    ))
+  Flux(jFlux.groupJoin[TRight, TLeftEnd, TRightEnd, R](other, leftEnd, rightEnd,
+    new BiFunction[T, JFlux[TRight], R] {
+      override def apply(t: T, u: JFlux[TRight]): R = resultSelector(t, Flux(u))
+    }
+  ))
 
   /**
     * Handle the items emitted by this [[Flux]] by calling a biconsumer with the
@@ -1739,7 +1741,7 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     *
     * @param value constant compared to incoming signals
     * @return a new [[Mono]] with <code>true</code> if any value satisfies a predicate and <code>false</code>
-    *                       otherwise
+    *         otherwise
     *
     */
   final def hasElement(value: T): Mono[Boolean] = Mono(jFlux.hasElement(value)).map(Boolean2boolean)
@@ -1753,7 +1755,7 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/haselements.png" alt="">
     *
     * @return a new [[Mono]] with <code>true</code> if any value is emitted and <code>false</code>
-    *                       otherwise
+    *         otherwise
     */
   final def hasElements(): Mono[Boolean] = Mono(jFlux.hasElements).map(Boolean2boolean)
 
@@ -1763,7 +1765,7 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     *
     * @return a new [[Flux]] defeating any [[Publisher]] / [[Subscription]] feature-detection
     */
-//  TODO: How to test???
+  //  TODO: How to test???
   final def hide() = Flux(jFlux.hide())
 
   /**
@@ -1787,20 +1789,20 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * <p>
     * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/join.png" alt="">
     *
-    * @param other    the other Publisher to correlate items from the source Publisher with
-    * @param leftEnd  a function that returns a Publisher whose emissions indicate the
-    *                 duration of the values of the source Publisher
-    * @param rightEnd a function that returns a Publisher whose emissions indicate the
-    *                 duration of the values of the { @code right} Publisher
+    * @param other          the other Publisher to correlate items from the source Publisher with
+    * @param leftEnd        a function that returns a Publisher whose emissions indicate the
+    *                       duration of the values of the source Publisher
+    * @param rightEnd       a function that returns a Publisher whose emissions indicate the
+    *                       duration of the values of the { @code right} Publisher
     * @param resultSelector a function that takes an item emitted by each Publisher and returns the
     *                       value to be emitted by the resulting Publisher
-    * @tparam TRight the type of the right Publisher
-    * @tparam TLeftEnd this [[Flux]] timeout type
+    * @tparam TRight    the type of the right Publisher
+    * @tparam TLeftEnd  this [[Flux]] timeout type
     * @tparam TRightEnd the right Publisher timeout type
-    * @tparam R the combined result type
+    * @tparam R         the combined result type
     * @return a joining [[Flux]]
     */
-//  TODO: How to test this?
+  //  TODO: How to test this?
   final def join[TRight, TLeftEnd, TRightEnd, R](other: Publisher[_ <: TRight],
                                                  leftEnd: T => Publisher[TLeftEnd],
                                                  rightEnd: TRight => Publisher[TRightEnd],
@@ -1846,8 +1848,91 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * @return a [[Flux]] limiting downstream's backpressure
     * @see [[[Flux.publishOn]]
     */
-//  TODO: How to test this?
+  //  TODO: How to test this?
   final def limitRate(prefetchRate: Int) = Flux(jFlux.limitRate(prefetchRate))
+
+  /**
+    * Observe all Reactive Streams signals and use [[Logger]] support to handle trace implementation. Default will
+    * use [[Level.INFO]] and java.util.logging. If SLF4J is available, it will be used instead.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/log.png" alt="">
+    * <p>
+    * The default log category will be "reactor.*", a generated operator suffix will
+    * complete, e.g. "reactor.Flux.Map".
+    *
+    * @return a new unaltered [[Flux]]
+    */
+  //  TODO: How to test?
+  final def log() = Flux(jFlux.log())
+
+  /**
+    * Observe all Reactive Streams signals and use [[Logger]] support to handle trace implementation. Default will
+    * use [[Level.INFO]] and java.util.logging. If SLF4J is available, it will be used instead.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/log.png" alt="">
+    * <p>
+    *
+    * @param category to be mapped into logger configuration (e.g. org.springframework
+    *                 .reactor). If category ends with "." like "reactor.", a generated operator
+    *                 suffix will complete, e.g. "reactor.Flux.Map".
+    * @return a new unaltered [[Flux]]
+    */
+  //  TODO: How to test?
+  final def log(category: String) = Flux(jFlux.log(category))
+
+  /**
+    * Observe Reactive Streams signals matching the passed filter `options` and
+    * use [[Logger]] support to
+    * handle trace
+    * implementation. Default will
+    * use the passed [[Level]] and java.util.logging. If SLF4J is available, it will be used instead.
+    *
+    * Options allow fine grained filtering of the traced signal, for instance to only capture onNext and onError:
+    * <pre>
+    *     flux.log("category", Level.INFO, SignalType.ON_NEXT, SignalType.ON_ERROR)
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/log.png" alt="">
+    * <p>
+    *
+    * @param category to be mapped into logger configuration (e.g. org.springframework
+    *                 .reactor). If category ends with "." like "reactor.", a generated operator
+    *                 suffix will complete, e.g. "reactor.Flux.Map".
+    * @param level    the [[Level]] to enforce for this tracing Flux (only FINEST, FINE,
+    *                 INFO, WARNING and SEVERE are taken into account)
+    * @param options  a vararg [[SignalType]] option to filter log messages
+    * @return a new unaltered [[Flux]]
+    */
+  //  TODO: How to test?
+  final def log(category: String, level: Level, options: SignalType*) = Flux(jFlux.log(category, level, options: _*))
+
+  /**
+    * Observe Reactive Streams signals matching the passed filter `options` and use
+    * [[Logger]] support to handle trace implementation. Default will use the passed
+    * [[Level]] and java.util.logging. If SLF4J is available, it will be used
+    * instead.
+    * <p>
+    * Options allow fine grained filtering of the traced signal, for instance to only
+    * capture onNext and onError:
+    * <pre>
+    *     flux.log("category", Level.INFO, SignalType.ON_NEXT, SignalType.ON_ERROR)
+    *
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/log.png"
+    * alt="">
+    *
+    * @param category         to be mapped into logger configuration (e.g. org.springframework
+    *                         .reactor). If category ends with "." like "reactor.", a generated operator
+    *                         suffix will complete, e.g. "reactor.Flux.Map".
+    * @param level            the [[Level]] to enforce for this tracing Flux (only FINEST, FINE,
+    *                         INFO, WARNING and SEVERE are taken into account)
+    * @param showOperatorLine capture the current stack to display operator
+    *                         class/line number.
+    * @param options          a vararg [[SignalType]] option to filter log messages
+    * @return a new unaltered [[Flux]]
+    */
+  final def log(category: String,
+                level: Level,
+                showOperatorLine: Boolean,
+                options: SignalType*) = Flux(jFlux.log(category, level, showOperatorLine, options: _*))
 
   /**
     * Transform the items emitted by this [[Flux]] by applying a function to each item.
@@ -1859,7 +1944,19 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * @tparam V the transformed type
     * @return a transformed [[Flux]]
     */
-  override def map[V](mapper: (T) => V) = new Flux[V](jFlux.map(mapper))
+  override final def map[V](mapper: (T) => V) = new Flux[V](jFlux.map(mapper))
+
+  /**
+    * Transform the error emitted by this [[Flux]] by applying a function.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/maperror.png"
+    * alt="">
+    * <p>
+    *
+    * @param mapper the error transforming [[Function1]]
+    * @return a transformed [[Flux]]
+    */
+  final def mapError(mapper: Throwable => _ <: Throwable) = Flux(jFlux.mapError(mapper))
 
   /**
     * Transform the incoming onNext, onError and onComplete signals into [[Signal]].
@@ -1887,7 +1984,7 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * @param scheduler a checked [[reactor.core.scheduler.Scheduler.Worker]] factory
     * @return a [[Flux]] producing asynchronously
     */
-//  TODO: How to test
+  //  TODO: How to test
   final def publishOn(scheduler: Scheduler) = Flux(jFlux.publishOn(scheduler))
 
   /**
@@ -1902,10 +1999,10 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * `flux.publishOn(Schedulers.single()).subscribe()`
     *
     * @param scheduler a checked [[reactor.core.scheduler.Scheduler.Worker]] factory
-    * @param prefetch the asynchronous boundary capacity
+    * @param prefetch  the asynchronous boundary capacity
     * @return a [[Flux]] producing asynchronously
     */
-//  TODO: how to test this?
+  //  TODO: how to test this?
   final def publishOn(scheduler: Scheduler, prefetch: Int): Flux[T] = Flux(jFlux.publishOn(scheduler, prefetch))
 
   /**
@@ -1978,10 +2075,9 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * Transform this [[Flux]] in order to generate a target [[Flux]]. Unlike [[Flux.compose]], the
     * provided function is executed as part of assembly.
     *
-    *
     * @example {{{
-    *                                                                                                                                                                                                                                                 val applySchedulers = flux => flux.subscribeOn(Schedulers.elastic()).publishOn(Schedulers.parallel());
-    *                                                                                                                                                                                                                                                 flux.transform(applySchedulers).map(v => v * v).subscribe()
+    *                                                                                                                                                                                                                                                           val applySchedulers = flux => flux.subscribeOn(Schedulers.elastic()).publishOn(Schedulers.parallel());
+    *                                                                                                                                                                                                                                                           flux.transform(applySchedulers).map(v => v * v).subscribe()
     *          }}}
     * @param transformer the [[Function1]] to immediately map this [[Flux]] into a target [[Flux]]
     *                    instance.
