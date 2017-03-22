@@ -1537,14 +1537,31 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         .verify()
     }
 
-    ".mapError should map the error" in {
-      val flux = Flux.error[Int](new RuntimeException("runtime exception"))
-        .mapError((t: Throwable) => new UnsupportedOperationException(t.getMessage))
+    ".mapError" - {
+      "with mapper should map the error" in {
+        val flux = Flux.error[Int](new RuntimeException("runtime exception"))
+          .mapError((t: Throwable) => new UnsupportedOperationException(t.getMessage))
 
-      StepVerifier.create(flux)
-        .expectError(classOf[UnsupportedOperationException])
-        .verify()
+        StepVerifier.create(flux)
+          .expectError(classOf[UnsupportedOperationException])
+          .verify()
+      }
 
+      "with type and mapper should map the error if the error is of the provided type" in {
+        val flux = Flux.error[Int](new RuntimeException("runtime ex"))
+          .mapError(classOf[RuntimeException], (t: Throwable) => new UnsupportedOperationException(t.getMessage))
+        StepVerifier.create(flux)
+          .expectError(classOf[UnsupportedOperationException])
+          .verify()
+      }
+
+      "with predicate and mapper should map the error if the predicate pass" in {
+        val flux = Flux.error[Int](new RuntimeException("runtime exc"))
+          .mapError(t => t.getClass == classOf[RuntimeException], (t: Throwable) => new UnsupportedOperationException(t.getMessage))
+        StepVerifier.create(flux)
+          .expectError(classOf[UnsupportedOperationException])
+          .verify()
+      }
     }
 
     ".materialize should convert the flux into a flux that emit its signal" in {

@@ -1959,6 +1959,34 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
   final def mapError(mapper: Throwable => _ <: Throwable) = Flux(jFlux.mapError(mapper))
 
   /**
+    * Transform the error emitted by this [[Flux]] by applying a function if the
+    * error matches the given type, otherwise let the error flow.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/maperror.png" alt="">
+    * <p>
+    *
+    * @param type   the class of the exception type to react to
+    * @param mapper the error transforming [[Function1]]
+    * @tparam E the error type
+    * @return a transformed [[Flux]]
+    */
+  final def mapError[E <: Throwable](`type`: Class[E], mapper: E => _ <: Throwable): Flux[T] = Flux(jFlux.mapError(`type`, mapper))
+
+  /**
+    * Transform the error emitted by this [[Flux]] by applying a function if the
+    * error matches the given predicate, otherwise let the error flow.
+    * <p>
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/maperror.png"
+    * alt="">
+    *
+    * @param predicate the error predicate
+    * @param mapper    the error transforming [[Function1]]
+    * @return a transformed [[Flux]]
+    */
+  final def mapError(predicate: Throwable => Boolean, mapper: Throwable => _ <: Throwable) = Flux(jFlux.mapError(predicate, mapper))
+
+  /**
     * Transform the incoming onNext, onError and onComplete signals into [[Signal]].
     * Since the error is materialized as a [[Signal]], the propagation will be stopped and onComplete will be
     * emitted. Complete signal will first emit a [[Signal.complete]] and then effectively complete the flux.
@@ -2076,8 +2104,8 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * provided function is executed as part of assembly.
     *
     * @example {{{
-    *                                                                                                                                                                                                                                                           val applySchedulers = flux => flux.subscribeOn(Schedulers.elastic()).publishOn(Schedulers.parallel());
-    *                                                                                                                                                                                                                                                           flux.transform(applySchedulers).map(v => v * v).subscribe()
+    *                                                                                                                                                                                                                                                                     val applySchedulers = flux => flux.subscribeOn(Schedulers.elastic()).publishOn(Schedulers.parallel());
+    *                                                                                                                                                                                                                                                                     flux.transform(applySchedulers).map(v => v * v).subscribe()
     *          }}}
     * @param transformer the [[Function1]] to immediately map this [[Flux]] into a target [[Flux]]
     *                    instance.
