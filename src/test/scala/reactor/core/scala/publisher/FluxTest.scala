@@ -1564,6 +1564,28 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       }
     }
 
+    ".mergeWith should merge with the provided publisher so they may interleave" in {
+      StepVerifier.withVirtualTime(() => Flux.just(1, 3, 5).delayElements(1 second)
+        .mergeWith(Flux.just(2, 4, 6).delayElements(1 second).delaySubscription(500 milliseconds)))
+        .thenAwait(7 seconds)
+        .expectNext(1, 2, 3, 4, 5, 6)
+        .verifyComplete()
+    }
+
+    ".ofType should filter the value emitted by this flux according to the class" in {
+      val flux = Flux.just(1, "2", "3", 4).ofType(classOf[String])
+      StepVerifier.create(flux)
+        .expectNext("2", "3")
+        .verifyComplete()
+    }
+
+    ".next should emit only the first item" in {
+      val mono = Flux.just(1, 2, 3).next()
+      StepVerifier.create(mono)
+        .expectNext(1)
+        .verifyComplete()
+    }
+
     ".materialize should convert the flux into a flux that emit its signal" in {
       val flux = Flux.just(1, 2, 3).materialize()
       StepVerifier.create(flux)

@@ -1999,6 +1999,69 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
   final def materialize() = Flux(jFlux.materialize())
 
   /**
+    * Merge emissions of this [[Flux]] with the provided [[Publisher]], so that they may interleave.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/merge.png" alt="">
+    * <p>
+    *
+    * @param other the [[Publisher]] to merge with
+    * @return a new [[Flux]]
+    */
+  final def mergeWith(other: Publisher[_ <: T]) = Flux(jFlux.mergeWith(other))
+
+  /**
+    * Emit only the first item emitted by this [[Flux]].
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/next.png" alt="">
+    * <p>
+    *
+    * @return a new [[Mono]]
+    */
+  final def next(): Mono[T] = Mono(jFlux.next())
+
+  /**
+    * Evaluate each accepted value against the given [[Class]] type. If the
+    * predicate test succeeds, the value is
+    * passed into the new [[Flux]]. If the predicate test fails, the value is ignored and a request of 1 is
+    * emitted.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/filter.png" alt="">
+    *
+    * @param clazz the [[Class]] type to test values against
+    * @return a new [[Flux]] reduced to items converted to the matched type
+    */
+  final def ofType[U](clazz: Class[U]) = Flux(jFlux.ofType(clazz))
+
+  /**
+    * Request an unbounded demand and push the returned [[Flux]], or park the observed elements if not enough
+    * demand is requested downstream. Errors will be delayed until the buffer gets consumed.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/onbackpressurebuffer.png" alt="">
+    *
+    * @return a buffering [[Flux]]
+    *
+    */
+//  TODO: How to test?
+  final def onBackpressureBuffer() = Flux(jFlux.onBackpressureBuffer())
+
+  /**
+    * Request an unbounded demand and push the returned [[Flux]], or park the observed elements if not enough
+    * demand is requested downstream. Errors will be immediately emitted on overflow
+    * regardless of the pending buffer.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/onbackpressurebuffer.png" alt="">
+    *
+    * @param maxSize maximum buffer backlog size before immediate error
+    * @return a buffering [[Flux]]
+    *
+    */
+  //  TODO: How to test?
+  final def onBackpressureBuffer(maxSize: Int) = Flux(jFlux.onBackpressureBuffer(maxSize))
+
+  /**
     * Run onNext, onComplete and onError on a supplied [[Scheduler]]
     * [[reactor.core.scheduler.Scheduler.Worker]].
     *
