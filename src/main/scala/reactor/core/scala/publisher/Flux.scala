@@ -2119,7 +2119,61 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * @return a buffering [[Flux]]
     */
 //  TODO: How to test?
-  final def onBackpressureBuffer(maxSize: Int, onBufferOverflow: T => Unit, bufferOverflowStrategy: BufferOverflowStrategy) = Flux(jFlux.onBackpressureBuffer(maxSize, bufferOverflowStrategy))
+  final def onBackpressureBuffer(maxSize: Int, onBufferOverflow: T => Unit, bufferOverflowStrategy: BufferOverflowStrategy) = Flux(jFlux.onBackpressureBuffer(maxSize, onBufferOverflow, bufferOverflowStrategy))
+
+  /**
+    * Request an unbounded demand and push the returned [[Flux]], or drop the observed elements if not enough
+    * demand is requested downstream.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/onbackpressuredrop.png" alt="">
+    *
+    * @return a dropping [[Flux]]
+    *
+    */
+//  TODO: How to test?
+  final def onBackpressureDrop(): Flux[T] = Flux(jFlux.onBackpressureDrop())
+
+  /**
+    * Request an unbounded demand and push the returned [[Flux]], or drop and notify dropping `consumer`
+    * with the observed elements if not enough demand is requested downstream.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/onbackpressuredropc.png" alt="">
+    *
+    * @param onDropped the Consumer called when an value gets dropped due to lack of downstream requests
+    * @return a dropping [[Flux]]
+    *
+    */
+//  TODO: Test this
+  final def onBackpressureDrop(onDropped: T => Unit) = Flux(jFlux.onBackpressureDrop(onDropped))
+
+  /**
+    * Request an unbounded demand and push the returned
+    * [[Flux]], or emit onError fom [[reactor.core.Exceptions.failWithOverflow]] if not enough demand is requested
+    * downstream.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/onbackpressureerror.png" alt="">
+    *
+    * @return an erroring [[Flux]] on backpressure
+    *
+    */
+/// TODO: test this please
+  final def onBackpressureError() = Flux(jFlux.onBackpressureError())
+
+  /**
+    * Request an unbounded demand and push the returned [[Flux]], or only keep the most recent observed item
+    * if not enough demand is requested downstream.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/onbackpressurelatest.png" alt="">
+    *
+    * @return a dropping [[Flux]] that will only keep a reference to the last observed item
+    *
+    */
+  /// TODO: test this please
+  final def onBackpressureLatest() = Flux(jFlux.onBackpressureLatest())
 
   /**
     * Run onNext, onComplete and onError on a supplied [[Scheduler]]
