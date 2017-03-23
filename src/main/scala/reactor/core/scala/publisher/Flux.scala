@@ -10,7 +10,7 @@ import java.util.{Comparator, List => JList}
 import org.reactivestreams.{Publisher, Subscriber, Subscription}
 import reactor.core.Disposable
 import reactor.core.publisher.FluxSink.OverflowStrategy
-import reactor.core.publisher.{FluxSink, Signal, SignalType, SynchronousSink, Flux => JFlux, GroupedFlux => JGroupedFlux}
+import reactor.core.publisher.{BufferOverflowStrategy, FluxSink, Signal, SignalType, SynchronousSink, Flux => JFlux, GroupedFlux => JGroupedFlux}
 import reactor.core.scheduler.{Scheduler, TimedScheduler}
 import reactor.util.Logger
 import reactor.util.function.Tuple2
@@ -2060,6 +2060,66 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     */
   //  TODO: How to test?
   final def onBackpressureBuffer(maxSize: Int) = Flux(jFlux.onBackpressureBuffer(maxSize))
+
+  /**
+    * Request an unbounded demand and push the returned [[Flux]], or park the observed elements if not enough
+    * demand is requested downstream. Overflow error will be delayed after the current
+    * backlog is consumed. However the `onOverflow` will be immediately invoked.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/onbackpressurebuffer.png" alt="">
+    *
+    * @param maxSize    maximum buffer backlog size before overflow callback is called
+    * @param onOverflow callback to invoke on overflow
+    * @return a buffering [[Flux]]
+    *
+    */
+  //  TODO: How to test?
+  final def onBackpressureBuffer(maxSize: Int, onOverflow: T => Unit): Flux[T] = Flux(jFlux.onBackpressureBuffer(maxSize, onOverflow))
+
+  /**
+    * Request an unbounded demand and push the returned [[Flux]], or park the observed
+    * elements if not enough demand is requested downstream, within a `maxSize`
+    * limit. Over that limit, the overflow strategy is applied (see [[BufferOverflowStrategy]]).
+    * <p>
+    * Note that for the [[BufferOverflowStrategy.ERROR ERROR]] strategy, the overflow
+    * error will be delayed after the current backlog is consumed.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/onbackpressurebuffer.png" alt="">
+    *
+    * @param maxSize                maximum buffer backlog size before overflow strategy is applied
+    * @param bufferOverflowStrategy strategy to apply to overflowing elements
+    * @return a buffering [[Flux]]
+    */
+  //  TODO: How to test?
+  final def onBackpressureBuffer(maxSize: Int, bufferOverflowStrategy: BufferOverflowStrategy) = Flux(jFlux.onBackpressureBuffer(maxSize, bufferOverflowStrategy))
+
+  /**
+    * Request an unbounded demand and push the returned [[Flux]], or park the observed
+    * elements if not enough demand is requested downstream, within a `maxSize`
+    * limit. Over that limit, the overflow strategy is applied (see [[BufferOverflowStrategy]]).
+    * <p>
+    * A {@link Consumer} is immediately invoked when there is an overflow, receiving the
+    * value that was discarded because of the overflow (which can be different from the
+    * latest element emitted by the source in case of a
+    * [[BufferOverflowStrategy.DROP_LATEST DROP_LATEST]] strategy).
+    *
+    * <p>
+    * Note that for the [[BufferOverflowStrategy.ERROR ERROR]] strategy, the overflow
+    * error will be delayed after the current backlog is consumed. The consumer is still
+    * invoked immediately.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/onbackpressurebuffer.png" alt="">
+    *
+    * @param maxSize                maximum buffer backlog size before overflow callback is called
+    * @param onBufferOverflow       callback to invoke on overflow
+    * @param bufferOverflowStrategy strategy to apply to overflowing elements
+    * @return a buffering [[Flux]]
+    */
+//  TODO: How to test?
+  final def onBackpressureBuffer(maxSize: Int, onBufferOverflow: T => Unit, bufferOverflowStrategy: BufferOverflowStrategy) = Flux(jFlux.onBackpressureBuffer(maxSize, bufferOverflowStrategy))
 
   /**
     * Run onNext, onComplete and onError on a supplied [[Scheduler]]
