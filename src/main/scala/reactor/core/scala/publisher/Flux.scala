@@ -2210,10 +2210,47 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     *
     * @param predicate the error predicate to match
     * @param fallback  the [[Function1]] mapping the error to a new [[Publisher]]
-    *                              sequence
+    *                  sequence
     * @return a new [[Flux]]
     */
   final def onErrorResumeWith(predicate: Throwable => Boolean, fallback: Throwable => _ <: Publisher[_ <: T]) = Flux(jFlux.onErrorResumeWith(predicate, fallback))
+
+  /**
+    * Fallback to the given value if an error is observed on this [[Flux]]
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/onerrorreturn.png" alt="">
+    * <p>
+    *
+    * @param fallbackValue alternate value on fallback
+    * @return a new [[Flux]]
+    */
+  final def onErrorReturn(fallbackValue: T) = Flux(jFlux.onErrorReturn(fallbackValue))
+
+  /**
+    * Fallback to the given value if an error of a given type is observed on this
+    * [[Flux]]
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/onerrorreturn.png" alt="">
+    *
+    * @param type          the error type to match
+    * @param fallbackValue alternate value on fallback
+    * @tparam E the error type
+    * @return a new [[Flux]]
+    */
+  final def onErrorReturn[E <: Throwable](`type`: Class[E], fallbackValue: T) = Flux(jFlux.onErrorReturn(`type`, fallbackValue))
+
+  /**
+    * Fallback to the given value if an error matching the given predicate is
+    * observed on this
+    * [[Flux]]
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/onerrorreturn.png" alt="">
+    *
+    * @param predicate     the error predicate to match
+    * @param fallbackValue alternate value on fallback
+    * @return a new [[Flux]]
+    */
+  final def onErrorReturn(predicate: Throwable => Boolean, fallbackValue: T) = Flux(jFlux.onErrorReturn(predicate, fallbackValue))
 
   /**
     * Run onNext, onComplete and onError on a supplied [[Scheduler]]
@@ -2321,8 +2358,8 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * provided function is executed as part of assembly.
     *
     * @example {{{
-    *                                                                                                                                                                                                                                                                               val applySchedulers = flux => flux.subscribeOn(Schedulers.elastic()).publishOn(Schedulers.parallel());
-    *                                                                                                                                                                                                                                                                               flux.transform(applySchedulers).map(v => v * v).subscribe()
+    *                                                                                                                                                                                                                                                                                         val applySchedulers = flux => flux.subscribeOn(Schedulers.elastic()).publishOn(Schedulers.parallel());
+    *                                                                                                                                                                                                                                                                                         flux.transform(applySchedulers).map(v => v * v).subscribe()
     *          }}}
     * @param transformer the [[Function1]] to immediately map this [[Flux]] into a target [[Flux]]
     *                    instance.
