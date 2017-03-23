@@ -2253,6 +2253,17 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
   final def onErrorReturn(predicate: Throwable => Boolean, fallbackValue: T) = Flux(jFlux.onErrorReturn(predicate, fallbackValue))
 
   /**
+    * Detaches the both the child [[Subscriber]] and the [[Subscription]] on
+    * termination or cancellation.
+    * <p>This should help with odd retention scenarios when running
+    * with non-reactor [[Subscriber]].
+    *
+    * @return a detachable [[Flux]]
+    */
+//TODO: How to test?
+  final def onTerminateDetach() = Flux(jFlux.onTerminateDetach())
+
+  /**
     * Run onNext, onComplete and onError on a supplied [[Scheduler]]
     * [[reactor.core.scheduler.Scheduler.Worker]].
     *
