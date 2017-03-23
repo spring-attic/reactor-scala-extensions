@@ -2043,7 +2043,7 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * @return a buffering [[Flux]]
     *
     */
-//  TODO: How to test?
+  //  TODO: How to test?
   final def onBackpressureBuffer() = Flux(jFlux.onBackpressureBuffer())
 
   /**
@@ -2118,7 +2118,7 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * @param bufferOverflowStrategy strategy to apply to overflowing elements
     * @return a buffering [[Flux]]
     */
-//  TODO: How to test?
+  //  TODO: How to test?
   final def onBackpressureBuffer(maxSize: Int, onBufferOverflow: T => Unit, bufferOverflowStrategy: BufferOverflowStrategy) = Flux(jFlux.onBackpressureBuffer(maxSize, onBufferOverflow, bufferOverflowStrategy))
 
   /**
@@ -2131,7 +2131,7 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * @return a dropping [[Flux]]
     *
     */
-//  TODO: How to test?
+  //  TODO: How to test?
   final def onBackpressureDrop(): Flux[T] = Flux(jFlux.onBackpressureDrop())
 
   /**
@@ -2145,7 +2145,7 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * @return a dropping [[Flux]]
     *
     */
-//  TODO: Test this
+  //  TODO: Test this
   final def onBackpressureDrop(onDropped: T => Unit) = Flux(jFlux.onBackpressureDrop(onDropped))
 
   /**
@@ -2159,7 +2159,7 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * @return an erroring [[Flux]] on backpressure
     *
     */
-/// TODO: test this please
+  /// TODO: test this please
   final def onBackpressureError() = Flux(jFlux.onBackpressureError())
 
   /**
@@ -2174,6 +2174,46 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     */
   /// TODO: test this please
   final def onBackpressureLatest() = Flux(jFlux.onBackpressureLatest())
+
+  /**
+    * Subscribe to a returned fallback publisher when any error occurs.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/onerrorresumewith.png" alt="">
+    * <p>
+    *
+    * @param fallback the [[Function1]] mapping the error to a new [[Publisher]] sequence
+    * @return a new [[Flux]]
+    */
+  final def onErrorResumeWith(fallback: Throwable => _ <: Publisher[_ <: T]) = Flux(jFlux.onErrorResumeWith(fallback))
+
+  /**
+    * Subscribe to a returned fallback publisher when an error matching the given type
+    * occurs.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/onerrorresumewith.png"
+    * alt="">
+    *
+    * @param type     the error type to match
+    * @param fallback the [[Function1]] mapping the error to a new [[Publisher]]
+    *                 sequence
+    * @tparam E the error type
+    * @return a new [[Flux]]
+    */
+  final def onErrorResumeWith[E <: Throwable](`type`: Class[E], fallback: E => _ <: Publisher[_ <: T]) = Flux(jFlux.onErrorResumeWith[E](`type`, fallback))
+
+  /**
+    * Subscribe to a returned fallback publisher when an error matching the given type
+    * occurs.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/onerrorresumewith.png"
+    * alt="">
+    *
+    * @param predicate the error predicate to match
+    * @param fallback  the [[Function1]] mapping the error to a new [[Publisher]]
+    *                              sequence
+    * @return a new [[Flux]]
+    */
+  final def onErrorResumeWith(predicate: Throwable => Boolean, fallback: Throwable => _ <: Publisher[_ <: T]) = Flux(jFlux.onErrorResumeWith(predicate, fallback))
 
   /**
     * Run onNext, onComplete and onError on a supplied [[Scheduler]]
@@ -2281,8 +2321,8 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * provided function is executed as part of assembly.
     *
     * @example {{{
-    *                                                                                                                                                                                                                                                                     val applySchedulers = flux => flux.subscribeOn(Schedulers.elastic()).publishOn(Schedulers.parallel());
-    *                                                                                                                                                                                                                                                                     flux.transform(applySchedulers).map(v => v * v).subscribe()
+    *                                                                                                                                                                                                                                                                               val applySchedulers = flux => flux.subscribeOn(Schedulers.elastic()).publishOn(Schedulers.parallel());
+    *                                                                                                                                                                                                                                                                               flux.transform(applySchedulers).map(v => v * v).subscribe()
     *          }}}
     * @param transformer the [[Function1]] to immediately map this [[Flux]] into a target [[Flux]]
     *                    instance.
