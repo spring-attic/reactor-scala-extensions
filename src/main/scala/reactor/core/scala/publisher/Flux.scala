@@ -2264,6 +2264,43 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
   final def onTerminateDetach() = Flux(jFlux.onTerminateDetach())
 
   /**
+    * Prepare to consume this [[Flux]] on number of 'rails' matching number of CPU
+    * in round-robin fashion.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/parallel.png" alt="">
+    *
+    * @return a new [[ParallelFlux]] instance
+    */
+  final def parallel() = ParallelFlux(jFlux.parallel())
+
+  /**
+    * Prepare to consume this [[Flux]] on parallelism number of 'rails'
+    * in round-robin fashion.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/parallel.png" alt="">
+    *
+    * @param parallelism the number of parallel rails
+    * @return a new [[ParallelFlux]] instance
+    */
+  final def parallel(parallelism: Int): ParallelFlux[T] = ParallelFlux(jFlux.parallel(parallelism))
+
+  /**
+    * Prepare to consume this [[Flux]] on parallelism number of 'rails'
+    * in round-robin fashion and use custom prefetch amount and queue
+    * for dealing with the source [[Flux]]'s values.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/parallel.png" alt="">
+    *
+    * @param parallelism the number of parallel rails
+    * @param prefetch    the number of values to prefetch from the source
+    * @return a new [[ParallelFlux]] instance
+    */
+  final def parallel(parallelism: Int, prefetch: Int) = ParallelFlux(jFlux.parallel(parallelism, prefetch))
+
+  /**
     * Run onNext, onComplete and onError on a supplied [[Scheduler]]
     * [[reactor.core.scheduler.Scheduler.Worker]].
     *
