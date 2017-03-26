@@ -3,7 +3,7 @@ package reactor.core.scala.publisher
 import java.io.{BufferedReader, File, FileInputStream, InputStreamReader, PrintWriter}
 import java.nio.file.Files
 import java.util
-import java.util.concurrent.atomic.{AtomicBoolean, AtomicLong, AtomicReference}
+import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger, AtomicLong, AtomicReference}
 import java.util.concurrent.{Callable, CountDownLatch, TimeUnit}
 import java.util.function.Predicate
 
@@ -1626,6 +1626,13 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       }
     }
 
+    ".materialize should convert the flux into a flux that emit its signal" in {
+      val flux = Flux.just(1, 2, 3).materialize()
+      StepVerifier.create(flux)
+        .expectNext(Signal.next(1), Signal.next(2), Signal.next(3), Signal.complete())
+        .verifyComplete()
+    }
+
     ".next should emit only the first item" in {
       val mono = Flux.just(1, 2, 3).next()
       StepVerifier.create(mono)
@@ -1633,11 +1640,58 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         .verifyComplete()
     }
 
-    ".materialize should convert the flux into a flux that emit its signal" in {
-      val flux = Flux.just(1, 2, 3).materialize()
-      StepVerifier.create(flux)
-        .expectNext(Signal.next(1), Signal.next(2), Signal.next(3), Signal.complete())
+    ".publishNext should make this flux a hot mono" in {
+      val mono = Flux.just(1, 2, 3).publishNext()
+      StepVerifier.create(mono)
+        .expectNext(1)
         .verifyComplete()
+    }
+
+    ".reduce" - {
+      "should aggregate the values" in {
+        val mono = Flux.just(1, 2, 3).reduce(_ + _)
+        StepVerifier.create(mono)
+          .expectNext(6)
+          .verifyComplete()
+      }
+      "with initial value should aggregate the values with initial one" in {
+        val mono = Flux.just(1, 2, 3).reduce[String]("0", (agg, v) => s"$agg-${v.toString}")
+        StepVerifier.create(mono)
+          .expectNext("0-1-2-3")
+          .verifyComplete()
+      }
+    }
+
+    ".reduceWith should aggregate the values with initial one" in {
+      val mono = Flux.just(1, 2, 3).reduceWith[String](() => "0", (agg, v) => s"$agg-${v.toString}")
+      StepVerifier.create(mono)
+        .expectNext("0-1-2-3")
+        .verifyComplete()
+    }
+
+    ".repeat" - {
+      "with predicate should repeat the subscription if the predicate returns true" in {
+        val counter = new AtomicInteger(0)
+        val flux = Flux.just(1, 2, 3).repeat(() => {
+          if(counter.getAndIncrement() == 0) true
+          else false
+        })
+        StepVerifier.create(flux)
+          .expectNext(1, 2, 3, 1, 2, 3)
+          .verifyComplete()
+      }
+      "with numRepeat should repeat as many as the provided parameter" in {
+        val flux = Flux.just(1, 2, 3).repeat(3)
+        StepVerifier.create(flux)
+          .expectNext(1, 2, 3, 1, 2, 3, 1, 2, 3)
+          .verifyComplete()
+      }
+      "with numRepeat and predicate should repeat as many as provided parameter and as long as the predicate returns true" ignore {
+        val flux = Flux.just(1, 2, 3).repeat(3, () => true)
+        StepVerifier.create(flux)
+          .expectNext(1, 2, 3, 1, 2, 3, 1, 2, 3)
+          .verifyComplete()
+      }
     }
 
     ".sample should emit the last value for given interval" ignore {

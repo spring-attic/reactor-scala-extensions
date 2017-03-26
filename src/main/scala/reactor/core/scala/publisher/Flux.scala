@@ -2308,7 +2308,7 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * Backpressure will be coordinated on [[Subscription.request]] and if any [[Subscriber]] is missing
     * demand (requested = 0), multicast will pause pushing/pulling.
     * <p>
-    * <img width="500" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/publish.png" alt="">
+    * <img src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/publish.png" alt="">
     *
     * @return a new [[ConnectableFlux]]
     */
@@ -2349,7 +2349,18 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * @tparam R the output value type
     * @return a new [[Flux]]
     */
-  final def publish[R](transform: Flux[T] => _ <: Publisher[_ <: R], prefetch: Int) = Flux(jFlux.publish(transform, prefetch))
+  final def publish[R](transform: Flux[T] => _ <: Publisher[_ <: R], prefetch: Int) = Flux(jFlux.publish[R](transform, prefetch))
+
+  /**
+    * Prepare a [[Mono]] which shares this [[Flux]] sequence and dispatches the first observed item to
+    * subscribers in a backpressure-aware manner.
+    * This will effectively turn any type of sequence into a hot sequence when the first [[Subscriber]] subscribes.
+    * <p>
+    * <img src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/publishnext.png" alt="">
+    *
+    * @return a new [[Mono]]
+    */
+  final def publishNext() = Mono(jFlux.publishNext())
 
   /**
     * Run onNext, onComplete and onError on a supplied [[Scheduler]]
@@ -2385,6 +2396,120 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     */
   //  TODO: how to test this?
   final def publishOn(scheduler: Scheduler, prefetch: Int): Flux[T] = Flux(jFlux.publishOn(scheduler, prefetch))
+
+  /**
+    * Run onNext, onComplete and onError on a supplied [[Scheduler]]
+    * [[reactor.core.scheduler.Scheduler.Worker]].
+    *
+    * <p>
+    * Typically used for fast publisher, slow consumer(s) scenarios.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/publishon.png" alt="">
+    * <p>
+    * `flux.publishOn(Schedulers.single()).subscribe()`
+    *
+    * @param scheduler a checked { @link reactor.core.scheduler.Scheduler.Worker} factory
+    * @param delayError should the buffer be consumed before forwarding any error
+    * @param prefetch   the asynchronous boundary capacity
+    * @return a [[Flux]] producing asynchronously
+    */
+  //  TODO: how to test this?
+  final def publishOn(scheduler: Scheduler, delayError: Boolean, prefetch: Int) = Flux(jFlux.publishOn(scheduler, delayError, prefetch))
+
+  /**
+    * Aggregate the values from this [[Flux]] sequence into an object of the same type than the
+    * emitted items. The left/right `BiFunction` arguments are the N-1 and N item, ignoring sequence
+    * with 0 or 1 element only.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/aggregate.png" alt="">
+    *
+    * @param aggregator the aggregating `BiFunction`
+    * @return a reduced [[Flux]]
+    *
+    *
+    */
+  final def reduce(aggregator: (T, T) => T) = Mono(jFlux.reduce(aggregator))
+
+  /**
+    * Accumulate the values from this [[Flux]] sequence into an object matching an initial value type.
+    * The arguments are the N-1 or `initial` value and N current item .
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/reduce.png" alt="">
+    *
+    * @param accumulator the reducing `BiFunction`
+    * @param initial the initial left argument to pass to the reducing `BiFunction`
+    * @tparam A the type of the initial and reduced object
+    * @return a reduced [[Flux]]
+    *
+    */
+  final def reduce[A](initial: A, accumulator: (A, T) => A): Mono[A] = Mono(jFlux.reduce[A](initial, accumulator))
+
+  /**
+    * Accumulate the values from this [[Flux]] sequence into an object matching an initial value type.
+    * The arguments are the N-1 or `initial` value and N current item .
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/reduce.png" alt="">
+    *
+    * @param accumulator the reducing `BiFunction`
+    * @param initial the initial left argument supplied on subscription to the reducing `BiFunction`
+    * @tparam A the type of the initial and reduced object
+    * @return a reduced [[Flux]]
+    *
+    */
+  final def reduceWith[A](initial: () => A, accumulator: (A, T) => A) = Mono(jFlux.reduceWith[A](initial, accumulator))
+
+  /**
+    * Repeatedly subscribe to the source completion of the previous subscription.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/repeat.png" alt="">
+    *
+    * @return an indefinitely repeated [[Flux]] on onComplete
+    */
+//  TODO: How to test?
+  final def repeat() = Flux(jFlux.repeat())
+
+  /**
+    * Repeatedly subscribe to the source if the predicate returns true after completion of the previous subscription.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/repeatb.png" alt="">
+    *
+    * @param predicate the boolean to evaluate on onComplete.
+    * @return an eventually repeated [[Flux]] on onComplete
+    *
+    */
+  final def repeat(predicate: () => Boolean) = Flux(jFlux.repeat(predicate))
+
+  /**
+    * Repeatedly subscribe to the source if the predicate returns true after completion of the previous subscription.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/repeatn.png" alt="">
+    *
+    * @param numRepeat the number of times to re-subscribe on onComplete
+    * @return an eventually repeated [[Flux]] on onComplete up to number of repeat specified
+    *
+    */
+  final def repeat(numRepeat: Long) = Flux(jFlux.repeat(numRepeat))
+
+  /**
+    * Repeatedly subscribe to the source if the predicate returns true after completion of the previous
+    * subscription. A specified maximum of repeat will limit the number of re-subscribe.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/repeatnb.png" alt="">
+    *
+    * @param numRepeat the number of times to re-subscribe on complete
+    * @param predicate the boolean to evaluate on onComplete
+    * @return an eventually repeated [[Flux]] on onComplete up to number of repeat specified OR matching
+    *                                        predicate
+    *
+    */
+  final def repeat(numRepeat: Long, predicate: () => Boolean) = Flux(jFlux.repeat(numRepeat, predicate))
 
   /**
     * Emit latest value for every given period of time.
