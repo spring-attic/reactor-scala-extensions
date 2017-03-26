@@ -2301,6 +2301,45 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
   final def parallel(parallelism: Int, prefetch: Int) = ParallelFlux(jFlux.parallel(parallelism, prefetch))
 
   /**
+    * Prepare a [[ConnectableFlux]] which shares this [[Flux]] sequence and dispatches values to
+    * subscribers in a backpressure-aware manner. Prefetch will default to [[reactor.util.concurrent.QueueSupplier.SMALL_BUFFER_SIZE]].
+    * This will effectively turn any type of sequence into a hot sequence.
+    * <p>
+    * Backpressure will be coordinated on [[Subscription.request]] and if any [[Subscriber]] is missing
+    * demand (requested = 0), multicast will pause pushing/pulling.
+    * <p>
+    * <img width="500" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/publish.png" alt="">
+    *
+    * @return a new [[ConnectableFlux]]
+    */
+  final def publish() = ConnectableFlux(jFlux.publish())
+
+  /**
+    * Prepare a [[ConnectableFlux]] which shares this [[Flux]] sequence and dispatches values to
+    * subscribers in a backpressure-aware manner. This will effectively turn any type of sequence into a hot sequence.
+    * <p>
+    * Backpressure will be coordinated on [[Subscription.request]] and if any [[Subscriber]] is missing
+    * demand (requested = 0), multicast will pause pushing/pulling.
+    * <p>
+    * <img width="500" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/publish.png" alt="">
+    *
+    * @param prefetch bounded requested demand
+    * @return a new [[ConnectableFlux]]
+    */
+  final def publish(prefetch: Int) = ConnectableFlux(jFlux.publish(prefetch))
+
+  /**
+    * Shares a sequence for the duration of a function that may transform it and
+    * consume it as many times as necessary without causing multiple subscriptions
+    * to the upstream.
+    *
+    * @param transform the transformation function
+    * @tparam R the output value type
+    * @return a new [[Flux]]
+    */
+  final def publish[R](transform: Flux[T] => _ <: Publisher[_ <: R]) = Flux(jFlux.publish[R](transform))
+
+  /**
     * Run onNext, onComplete and onError on a supplied [[Scheduler]]
     * [[reactor.core.scheduler.Scheduler.Worker]].
     *
