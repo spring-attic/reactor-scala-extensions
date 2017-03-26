@@ -2512,6 +2512,86 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
   final def repeat(numRepeat: Long, predicate: () => Boolean) = Flux(jFlux.repeat(numRepeat, predicate))
 
   /**
+    * Repeatedly subscribe to this [[Flux]] when a companion sequence signals a number of emitted elements in
+    * response to the flux completion signal.
+    * <p>If the companion sequence signals when this [[Flux]] is active, the repeat
+    * attempt is suppressed and any terminal signal will terminate this [[Flux]] with the same signal immediately.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/repeatwhen.png" alt="">
+    *
+    * @param whenFactory the [[Function1]] providing a [[Flux]] signalling an exclusive number of
+    *                                emitted elements on onComplete and returning a [[Publisher]] companion.
+    * @return an eventually repeated [[Flux]] on onComplete when the companion [[Publisher]] produces an
+    *                                        onNext signal
+    *
+    */
+//  TODO: How to test?
+  final def repeatWhen(whenFactory: Flux[Long] => _ <: Publisher[_]): Flux[T] = Flux(jFlux.repeatWhen(new Function[JFlux[JLong], Publisher[_]] {
+    override def apply(t: JFlux[JLong]): Publisher[_] = whenFactory(Flux(t).map(Long2long))
+  }))
+
+  /**
+    * Turn this [[Flux]] into a hot source and cache last emitted signals for further [[Subscriber]]. Will
+    * retain an unbounded amount of onNext signals. Completion and Error will also be
+    * replayed.
+    * <p>
+    * <img src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/replay.png"
+    * alt="">
+    *
+    * @return a replaying [[ConnectableFlux]]
+    */
+//  TODO: How to test?
+  final def replay() = ConnectableFlux(jFlux.replay())
+
+  /**
+    * Turn this [[Flux]] into a connectable hot source and cache last emitted
+    * signals for further [[Subscriber]].
+    * Will retain up to the given history size onNext signals. Completion and Error will also be
+    * replayed.
+    *
+    * <p>
+    * <img src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/replay.png" alt="">
+    *
+    * @param history number of events retained in history excluding complete and
+    *                error
+    * @return a replaying [[ConnectableFlux]]
+    *
+    */
+  final def replay(history: Int) = ConnectableFlux(jFlux.replay(history))
+
+  /**
+    * Turn this [[Flux]] into a connectable hot source and cache last emitted signals
+    * for further [[Subscriber]]. Will retain each onNext up to the given per-item
+    * expiry
+    * timeout. Completion and Error will also be replayed.
+    * <p>
+    * <p>
+    * <img src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/replay.png"
+    * alt="">
+    *
+    * @param ttl Per-item timeout duration
+    * @return a replaying [[ConnectableFlux]]
+    */
+  final def replay(ttl: Duration) = ConnectableFlux(jFlux.replay(ttl))
+
+  /**
+    * Turn this [[Flux]] into a connectable hot source and cache last emitted signals
+    * for further [[Subscriber]]. Will retain up to the given history size onNext
+    * signals and given a per-item ttl. Completion and Error will also be
+    * replayed.
+    * <p>
+    * <p>
+    * <img src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/replay.png"
+    * alt="">
+    *
+    * @param history number of events retained in history excluding complete and error
+    * @param ttl     Per-item timeout duration
+    * @return a replaying [[ConnectableFlux]]
+    */
+  final def replay(history: Int, ttl: Duration) = ConnectableFlux(jFlux.replay(history, ttl))
+
+  /**
     * Emit latest value for every given period of time.
     *
     * <p>
