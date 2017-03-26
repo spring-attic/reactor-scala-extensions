@@ -2260,7 +2260,7 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     *
     * @return a detachable [[Flux]]
     */
-//TODO: How to test?
+  //TODO: How to test?
   final def onTerminateDetach() = Flux(jFlux.onTerminateDetach())
 
   /**
@@ -2338,6 +2338,18 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * @return a new [[Flux]]
     */
   final def publish[R](transform: Flux[T] => _ <: Publisher[_ <: R]) = Flux(jFlux.publish[R](transform))
+
+  /**
+    * Shares a sequence for the duration of a function that may transform it and
+    * consume it as many times as necessary without causing multiple subscriptions
+    * to the upstream.
+    *
+    * @param transform the transformation function
+    * @param prefetch  the request size
+    * @tparam R the output value type
+    * @return a new [[Flux]]
+    */
+  final def publish[R](transform: Flux[T] => _ <: Publisher[_ <: R], prefetch: Int) = Flux(jFlux.publish(transform, prefetch))
 
   /**
     * Run onNext, onComplete and onError on a supplied [[Scheduler]]
@@ -2445,8 +2457,8 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * provided function is executed as part of assembly.
     *
     * @example {{{
-    *                                                                                                                                                                                                                                                                                         val applySchedulers = flux => flux.subscribeOn(Schedulers.elastic()).publishOn(Schedulers.parallel());
-    *                                                                                                                                                                                                                                                                                         flux.transform(applySchedulers).map(v => v * v).subscribe()
+    *                                                                                                                                                                                                                                                                                                   val applySchedulers = flux => flux.subscribeOn(Schedulers.elastic()).publishOn(Schedulers.parallel());
+    *                                                                                                                                                                                                                                                                                                   flux.transform(applySchedulers).map(v => v * v).subscribe()
     *          }}}
     * @param transformer the [[Function1]] to immediately map this [[Flux]] into a target [[Flux]]
     *                    instance.
