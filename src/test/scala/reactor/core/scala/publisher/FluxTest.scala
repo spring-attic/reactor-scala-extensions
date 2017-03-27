@@ -1776,7 +1776,7 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
     ".sampleMillis should emit the last value during that timespan" in {
       StepVerifier.withVirtualTime(() => Flux.just(1, 2, 3, 4, 5).delayElements(1 second).sampleMillis(1500))
         .thenAwait(6 seconds)
-        .expectNext(1, 2, 5)
+        .expectNext(1, 2, 4)
         .verifyComplete()
     }
 
