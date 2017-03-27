@@ -1686,10 +1686,13 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
           .expectNext(1, 2, 3, 1, 2, 3, 1, 2, 3)
           .verifyComplete()
       }
-      "with numRepeat and predicate should repeat as many as provided parameter and as long as the predicate returns true" ignore {
+      "with numRepeat and predicate should repeat as many as provided parameter and as long as the predicate returns true" in {
         val flux = Flux.just(1, 2, 3).repeat(3, () => true)
         StepVerifier.create(flux)
-          .expectNext(1, 2, 3, 1, 2, 3, 1, 2, 3)
+          .expectNext(1, 2, 3)
+          .expectNext(1, 2, 3)
+          .expectNext(1, 2, 3)
+          .expectNext(1, 2, 3)
           .verifyComplete()
       }
     }
@@ -1728,6 +1731,18 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
           .expectError(classOf[RuntimeException])
           .verify()
       }
+    }
+
+    ".retryWhen should retry the companion publisher produces onNext signal" in {
+      val counter = new AtomicInteger(0)
+      val flux = Flux.just(1, 2, 3).concatWith(Mono.error(new RuntimeException("ex"))).retryWhen { _ =>
+        if (counter.getAndIncrement() > 0) Mono.error[Int](new RuntimeException("another ex"))
+        else Mono.just(1)
+      }
+      StepVerifier.create(flux)
+        .expectNext(1, 2, 3)
+        .expectNext(1, 2, 3)
+        .verifyComplete()
     }
 
     ".sample should emit the last value for given interval" ignore {

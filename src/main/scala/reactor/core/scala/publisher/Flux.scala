@@ -2678,6 +2678,23 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
   final def retry(numRetries: Long, retryMatcher: Throwable => Boolean) = Flux(jFlux.retry(numRetries, retryMatcher))
 
   /**
+    * Retries this [[Flux]] when a companion sequence signals
+    * an item in response to this [[Flux]] error signal
+    * <p>If the companion sequence signals when the [[Flux]] is active, the retry
+    * attempt is suppressed and any terminal signal will terminate the [[Flux]] source with the same signal
+    * immediately.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/retrywhen.png" alt="">
+    *
+    * @param whenFactory the
+    *                    [[Function1]] providing a [[Flux]] signalling any error from the source sequence and returning a { @link Publisher} companion.
+    * @return a re-subscribing [[Flux]] on onError when the companion [[Publisher]] produces an
+    *                                  onNext signal
+    */
+  final def retryWhen(whenFactory: Flux[Throwable] => Publisher[_]) = Flux(jFlux.retryWhen(whenFactory))
+
+  /**
     * Emit latest value for every given period of time.
     *
     * <p>
