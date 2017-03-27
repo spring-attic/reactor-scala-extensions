@@ -1484,9 +1484,9 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
     ".handle should handle the values" in {
       val buffer = ListBuffer.empty[Int]
       val flux = Flux.just(1, 2, 3, 4, 5, 6).handle[Seq[Int]] {
-        case (value, sink) =>
-          buffer += value
-          if (value == 6) {
+        case (v, sink) =>
+          buffer += v
+          if (v == 6) {
             sink.next(buffer)
             sink.complete()
           }
