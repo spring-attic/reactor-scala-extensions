@@ -1486,7 +1486,7 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       val flux = Flux.just(1, 2, 3, 4, 5, 6).handle[Seq[Int]] {
         case (value, sink) =>
           buffer += value
-          if(value == 6) {
+          if (value == 6) {
             sink.next(buffer)
             sink.complete()
           }
@@ -1673,7 +1673,7 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       "with predicate should repeat the subscription if the predicate returns true" in {
         val counter = new AtomicInteger(0)
         val flux = Flux.just(1, 2, 3).repeat(() => {
-          if(counter.getAndIncrement() == 0) true
+          if (counter.getAndIncrement() == 0) true
           else false
         })
         StepVerifier.create(flux)
@@ -1691,6 +1691,42 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         StepVerifier.create(flux)
           .expectNext(1, 2, 3, 1, 2, 3, 1, 2, 3)
           .verifyComplete()
+      }
+    }
+
+    ".retry" - {
+      "with numRetries will retry a number of times according to provided parameter" in {
+        val flux = Flux.just(1, 2, 3).concatWith(Mono.error(new RuntimeException("ex"))).retry(2)
+        StepVerifier.create(flux)
+          .expectNext(1, 2, 3)
+          .expectNext(1, 2, 3)
+          .expectNext(1, 2, 3)
+          .expectError(classOf[RuntimeException])
+          .verify()
+      }
+      "with predicate will retry until the predicate returns false" in {
+        val counter = new AtomicInteger(0)
+        val flux = Flux.just(1, 2, 3).concatWith(Mono.error(new RuntimeException("ex"))).retry { _ =>
+          if(counter.getAndIncrement() > 0) false
+          else true
+        }
+        StepVerifier.create(flux)
+          .expectNext(1, 2, 3)
+          .expectNext(1, 2, 3)
+          .expectError(classOf[RuntimeException])
+          .verify()
+      }
+      "with numRetries and predicate should retry as many as provided numRetries and predicate returns true" in {
+        val counter = new AtomicInteger(0)
+        val flux = Flux.just(1, 2, 3).concatWith(Mono.error(new RuntimeException("ex"))).retry (3,  {_ =>
+          if(counter.getAndIncrement() > 0) false
+          else true
+        })
+        StepVerifier.create(flux)
+          .expectNext(1, 2, 3)
+          .expectNext(1, 2, 3)
+          .expectError(classOf[RuntimeException])
+          .verify()
       }
     }
 

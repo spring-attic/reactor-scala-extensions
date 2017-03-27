@@ -2408,7 +2408,7 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * <p>
     * `flux.publishOn(Schedulers.single()).subscribe()`
     *
-    * @param scheduler a checked { @link reactor.core.scheduler.Scheduler.Worker} factory
+    * @param scheduler  a checked { @link reactor.core.scheduler.Scheduler.Worker} factory
     * @param delayError should the buffer be consumed before forwarding any error
     * @param prefetch   the asynchronous boundary capacity
     * @return a [[Flux]] producing asynchronously
@@ -2439,7 +2439,7 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/reduce.png" alt="">
     *
     * @param accumulator the reducing `BiFunction`
-    * @param initial the initial left argument to pass to the reducing `BiFunction`
+    * @param initial     the initial left argument to pass to the reducing `BiFunction`
     * @tparam A the type of the initial and reduced object
     * @return a reduced [[Flux]]
     *
@@ -2454,7 +2454,7 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/reduce.png" alt="">
     *
     * @param accumulator the reducing `BiFunction`
-    * @param initial the initial left argument supplied on subscription to the reducing `BiFunction`
+    * @param initial     the initial left argument supplied on subscription to the reducing `BiFunction`
     * @tparam A the type of the initial and reduced object
     * @return a reduced [[Flux]]
     *
@@ -2469,7 +2469,7 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     *
     * @return an indefinitely repeated [[Flux]] on onComplete
     */
-//  TODO: How to test?
+  //  TODO: How to test?
   final def repeat() = Flux(jFlux.repeat())
 
   /**
@@ -2506,7 +2506,7 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * @param numRepeat the number of times to re-subscribe on complete
     * @param predicate the boolean to evaluate on onComplete
     * @return an eventually repeated [[Flux]] on onComplete up to number of repeat specified OR matching
-    *                                        predicate
+    *         predicate
     *
     */
   final def repeat(numRepeat: Long, predicate: () => Boolean) = Flux(jFlux.repeat(numRepeat, predicate))
@@ -2521,12 +2521,12 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/repeatwhen.png" alt="">
     *
     * @param whenFactory the [[Function1]] providing a [[Flux]] signalling an exclusive number of
-    *                                emitted elements on onComplete and returning a [[Publisher]] companion.
+    *                    emitted elements on onComplete and returning a [[Publisher]] companion.
     * @return an eventually repeated [[Flux]] on onComplete when the companion [[Publisher]] produces an
-    *                                        onNext signal
+    *         onNext signal
     *
     */
-//  TODO: How to test?
+  //  TODO: How to test?
   final def repeatWhen(whenFactory: Flux[Long] => _ <: Publisher[_]): Flux[T] = Flux(jFlux.repeatWhen(new Function[JFlux[JLong], Publisher[_]] {
     override def apply(t: JFlux[JLong]): Publisher[_] = whenFactory(Flux(t).map(Long2long))
   }))
@@ -2541,7 +2541,7 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     *
     * @return a replaying [[ConnectableFlux]]
     */
-//  TODO: How to test?
+  //  TODO: How to test?
   final def replay() = ConnectableFlux(jFlux.replay())
 
   /**
@@ -2590,6 +2590,92 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * @return a replaying [[ConnectableFlux]]
     */
   final def replay(history: Int, ttl: Duration) = ConnectableFlux(jFlux.replay(history, ttl))
+
+  /**
+    * Turn this [[Flux]] into a connectable hot source and cache last emitted signals
+    * for further [[Subscriber]]. Will retain up to the given history size onNext
+    * signals. Completion and Error will also be replayed.
+    * <p>
+    * <p>
+    * <img width="500" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/replay.png"
+    * alt="">
+    *
+    * @param ttl   Per-item timeout duration in milliseconds
+    * @param timer [[TimedScheduler]] to read current time from
+    * @return a replaying [[ConnectableFlux]]
+    */
+  final def replayMillis(ttl: Long, timer: TimedScheduler) = ConnectableFlux(jFlux.replayMillis(ttl, timer))
+
+  /**
+    * Turn this [[Flux]] into a connectable hot source and cache last emitted signals
+    * for further [[Subscriber]]. Will retain up to the given history size onNext
+    * signals. Completion and Error will also be replayed.
+    * <p>
+    * <p>
+    * <img width="500" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/replay.png"
+    * alt="">
+    *
+    * @param history number of events retained in history excluding complete and error
+    * @param ttl     Per-item timeout duration in milliseconds
+    * @param timer   [[TimedScheduler]] to read current time from
+    * @return a replaying [[ConnectableFlux]]
+    */
+  final def replayMillis(history: Int, ttl: Long, timer: TimedScheduler) = ConnectableFlux(jFlux.replayMillis(history, ttl, timer))
+
+  /**
+    * Re-subscribes to this [[Flux]] sequence if it signals any error
+    * either indefinitely.
+    * <p>
+    * The times == Long.MAX_VALUE is treated as infinite retry.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/retry.png" alt="">
+    *
+    * @return a re-subscribing [[Flux]] on onError
+    */
+  final def retry() = Flux(jFlux.retry())
+
+  /**
+    * Re-subscribes to this [[Flux]] sequence if it signals any error
+    * either indefinitely or a fixed number of times.
+    * <p>
+    * The times == Long.MAX_VALUE is treated as infinite retry.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/retryn.png" alt="">
+    *
+    * @param numRetries the number of times to tolerate an error
+    * @return a re-subscribing [[Flux]] on onError up to the specified number of retries.
+    *
+    */
+  final def retry(numRetries: Long) = Flux(jFlux.retry(numRetries))
+
+  /**
+    * Re-subscribes to this [[Flux]] sequence if it signals any error
+    * and the given `Predicate` matches otherwise push the error downstream.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/retryb.png" alt="">
+    *
+    * @param retryMatcher the predicate to evaluate if retry should occur based on a given error signal
+    * @return a re-subscribing [[Flux]] on onError if the predicates matches.
+    */
+  final def retry(retryMatcher: Throwable => Boolean) = Flux(jFlux.retry(retryMatcher))
+
+  /**
+    * Re-subscribes to this [[Flux]] sequence up to the specified number of retries if it signals any
+    * error and the given `Predicate` matches otherwise push the error downstream.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/retrynb.png" alt="">
+    *
+    * @param numRetries   the number of times to tolerate an error
+    * @param retryMatcher the predicate to evaluate if retry should occur based on a given error signal
+    * @return a re-subscribing [[Flux]] on onError up to the specified number of retries and if the predicate
+    *                                  matches.
+    *
+    */
+  final def retry(numRetries: Long, retryMatcher: Throwable => Boolean) = Flux(jFlux.retry(numRetries, retryMatcher))
 
   /**
     * Emit latest value for every given period of time.
@@ -2662,8 +2748,8 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * provided function is executed as part of assembly.
     *
     * @example {{{
-    *                                                                                                                                                                                                                                                                                                   val applySchedulers = flux => flux.subscribeOn(Schedulers.elastic()).publishOn(Schedulers.parallel());
-    *                                                                                                                                                                                                                                                                                                   flux.transform(applySchedulers).map(v => v * v).subscribe()
+    *                                                                                                                                                                                                                                                                                                             val applySchedulers = flux => flux.subscribeOn(Schedulers.elastic()).publishOn(Schedulers.parallel());
+    *                                                                                                                                                                                                                                                                                                             flux.transform(applySchedulers).map(v => v * v).subscribe()
     *          }}}
     * @param transformer the [[Function1]] to immediately map this [[Flux]] into a target [[Flux]]
     *                    instance.
