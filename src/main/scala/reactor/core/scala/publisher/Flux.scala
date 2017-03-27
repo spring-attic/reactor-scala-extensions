@@ -2672,7 +2672,7 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * @param numRetries   the number of times to tolerate an error
     * @param retryMatcher the predicate to evaluate if retry should occur based on a given error signal
     * @return a re-subscribing [[Flux]] on onError up to the specified number of retries and if the predicate
-    *                                  matches.
+    *         matches.
     *
     */
   final def retry(numRetries: Long, retryMatcher: Throwable => Boolean) = Flux(jFlux.retry(numRetries, retryMatcher))
@@ -2690,7 +2690,7 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * @param whenFactory the
     *                    [[Function1]] providing a [[Flux]] signalling any error from the source sequence and returning a { @link Publisher} companion.
     * @return a re-subscribing [[Flux]] on onError when the companion [[Publisher]] produces an
-    *                                  onNext signal
+    *         onNext signal
     */
   final def retryWhen(whenFactory: Flux[Throwable] => Publisher[_]) = Flux(jFlux.retryWhen(whenFactory))
 
@@ -2703,7 +2703,178 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * @param timespan the duration to emit the latest observed item
     * @return a sampled [[Flux]] by last item over a period of time
     */
-  def sample(timespan: Duration) = new Flux[T](jFlux.sample(timespan))
+  final def sample(timespan: Duration) = Flux(jFlux.sample(timespan))
+
+  /**
+    * Sample this [[Flux]] and emit its latest value whenever the sampler [[Publisher]]
+    * signals a value.
+    * <p>
+    * Termination of either [[Publisher]] will result in termination for the [[Subscriber]]
+    * as well.
+    * <p>
+    * Both [[Publisher]] will run in unbounded mode because the backpressure
+    * would interfere with the sampling precision.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/sample.png" alt="">
+    *
+    * @param sampler the sampler [[Publisher]]
+    * @tparam U the type of the sampler sequence
+    * @return a sampled [[Flux]] by last item observed when the sampler [[Publisher]] signals
+    */
+  final def sample[U](sampler: Publisher[U]) = Flux(jFlux.sample[U](sampler))
+
+  /**
+    * Take a value from this [[Flux]] then use the duration provided to skip other values.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/samplefirsttimespan.png" alt="">
+    *
+    * @param timespan the duration to exclude others values from this sequence
+    * @return a sampled [[Flux]] by first item over a period of time
+    */
+  final def sampleFirst(timespan: Duration) = Flux(jFlux.sampleFirst(timespan))
+
+  /**
+    * Take a value from this [[Flux]] then use the duration provided by a
+    * generated Publisher to skip other values until that sampler [[Publisher]] signals.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/samplefirst.png" alt="">
+    *
+    * @param samplerFactory select a [[Publisher]] companion to signal onNext or onComplete to stop excluding
+    *                                        others values from this sequence
+    * @tparam U the companion reified type
+    * @return a sampled [[Flux]] by last item observed when the sampler signals
+    */
+  final def sampleFirst[U](samplerFactory: T => Publisher[U]) = Flux(jFlux.sampleFirst[U](samplerFactory))
+
+  /**
+    * Take a value from this [[Flux]] then use the duration provided to skip other values.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/samplefirsttimespan.png" alt="">
+    *
+    * @param timespan the period in milliseconds to exclude others values from this sequence
+    * @return a sampled [[Flux]] by first item over a period of time
+    */
+  final def sampleFirstMillis(timespan: Long) = Flux(jFlux.sampleFirstMillis(timespan))
+
+  /**
+    * Emit latest value for every given period of ti,e.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/sampletimespan.png" alt="">
+    *
+    * @param timespan the period in second to emit the latest observed item
+    * @return a sampled [[Flux]] by last item over a period of time
+    */
+  final def sampleMillis(timespan: Long) = Flux(jFlux.sampleMillis(timespan))
+
+  /**
+    * Emit the last value from this [[Flux]] only if there were no new values emitted
+    * during the time window provided by a publisher for that particular last value.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/sampletimeout.png" alt="">
+    *
+    * @param throttlerFactory select a [[Publisher]] companion to signal onNext or onComplete to stop checking
+    *                                          others values from this sequence and emit the selecting item
+    * @tparam U the companion reified type
+    * @return a sampled [[Flux]] by last single item observed before a companion [[Publisher]] emits
+    */
+  final def sampleTimeout[U](throttlerFactory: T => Publisher[U]) = Flux(jFlux.sampleTimeout(throttlerFactory))
+
+  /**
+    * Emit the last value from this [[Flux]] only if there were no newer values emitted
+    * during the time window provided by a publisher for that particular last value.
+    * <p>The provided `maxConcurrency` will keep a bounded maximum of concurrent timeouts and drop any new
+    * items until at least one timeout terminates.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/sampletimeoutm.png" alt="">
+    *
+    * @param throttlerFactory select a [[Publisher]] companion to signal onNext or onComplete to stop checking
+    *                                          others values from this sequence and emit the selecting item
+    * @param maxConcurrency the maximum number of concurrent timeouts
+    * @tparam U the throttling type
+    * @return a sampled [[Flux]] by last single item observed before a companion [[Publisher]] emits
+    */
+  final def sampleTimeout[U](throttlerFactory: T => Publisher[U], maxConcurrency: Int) = Flux(jFlux.sampleTimeout(throttlerFactory, maxConcurrency))
+
+  /**
+    * Accumulate this [[Flux]] values with an accumulator `BiFunction` and
+    * returns the intermediate results of this function.
+    * <p>
+    * Unlike [[Flux.scan(Object, BiFunction)]], this operator doesn't take an initial value
+    * but treats the first [[Flux]] value as initial value.
+    * <br>
+    * The accumulation works as follows:
+    * <pre><code>
+    * result[0] = accumulator(source[0], source[1])
+    * result[1] = accumulator(result[0], source[2])
+    * result[2] = accumulator(result[1], source[3])
+    * ...
+    * </code></pre>
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/accumulate.png" alt="">
+    *
+    * @param accumulator the accumulating `BiFunction`
+    * @return an accumulating [[Flux]]
+    *
+    */
+
+  final def scan(accumulator: (T, T) => T) = Flux(jFlux.scan(accumulator))
+
+  /**
+    * Aggregate this [[Flux]] values with the help of an accumulator `BiFunction`
+    * and emits the intermediate results.
+    * <p>
+    * The accumulation works as follows:
+    * <pre><code>
+    * result[0] = initialValue;
+    * result[1] = accumulator(result[0], source[0])
+    * result[2] = accumulator(result[1], source[1])
+    * result[3] = accumulator(result[2], source[2])
+    * ...
+    * </code></pre>
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/scan.png" alt="">
+    *
+    * @param initial     the initial argument to pass to the reduce function
+    * @param accumulator the accumulating `BiFunction`
+    * @tparam A the accumulated type
+    * @return an accumulating [[Flux]] starting with initial state
+    *
+    */
+  final def scan[A](initial: A, accumulator: (A, T) => A) = Flux(jFlux.scan(initial, accumulator))
+
+  /**
+    * Aggregate this [[Flux]] values with the help of an accumulator `BiFunction`
+    * and emits the intermediate results.
+    * <p>
+    * The accumulation works as follows:
+    * <pre><code>
+    * result[0] = initialValue;
+    * result[1] = accumulator(result[0], source[0])
+    * result[2] = accumulator(result[1], source[1])
+    * result[3] = accumulator(result[2], source[2])
+    * ...
+    * </code></pre>
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/scan.png" alt="">
+    *
+    * @param initial     the initial supplier to init the first value to pass to the reduce
+    *                    function
+    * @param accumulator the accumulating `BiFunction`
+    * @tparam A the accumulated type
+    * @return an accumulating [[Flux]] starting with initial state
+    *
+    */
+  final def scanWith[A](initial: () => A, accumulator: (A, T) => A) = Flux(jFlux.scanWith(initial, accumulator))
 
   /**
     * Start the chain and request unbounded demand.
@@ -2765,8 +2936,8 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * provided function is executed as part of assembly.
     *
     * @example {{{
-    *                                                                                                                                                                                                                                                                                                             val applySchedulers = flux => flux.subscribeOn(Schedulers.elastic()).publishOn(Schedulers.parallel());
-    *                                                                                                                                                                                                                                                                                                             flux.transform(applySchedulers).map(v => v * v).subscribe()
+    *                                                                                                                                                                                                                                                                                                                       val applySchedulers = flux => flux.subscribeOn(Schedulers.elastic()).publishOn(Schedulers.parallel());
+    *                                                                                                                                                                                                                                                                                                                       flux.transform(applySchedulers).map(v => v * v).subscribe()
     *          }}}
     * @param transformer the [[Function1]] to immediately map this [[Flux]] into a target [[Flux]]
     *                    instance.

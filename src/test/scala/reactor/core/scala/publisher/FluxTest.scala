@@ -1759,6 +1759,49 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       counter.await(4, TimeUnit.SECONDS)
     }
 
+    ".sampleFirst should emit the first value during the timespan" in {
+      StepVerifier.withVirtualTime(() => Flux.just(1, 2, 3, 4, 5).delayElements(1 second).sampleFirst(1500 milliseconds))
+      .thenAwait(6 seconds)
+      .expectNext(1, 3, 5)
+      .verifyComplete()
+    }
+
+    ".sampleFirstMillis should emit the first value during the timespan" in {
+      StepVerifier.withVirtualTime(() => Flux.just(1, 2, 3, 4, 5).delayElements(1 second).sampleFirstMillis(1500))
+        .thenAwait(6 seconds)
+        .expectNext(1, 3, 5)
+        .verifyComplete()
+    }
+
+    ".sampleMillis should emit the last value during that timespan" in {
+      StepVerifier.withVirtualTime(() => Flux.just(1, 2, 3, 4, 5).delayElements(1 second).sampleMillis(1500))
+        .thenAwait(6 seconds)
+        .expectNext(1, 2, 5)
+        .verifyComplete()
+    }
+
+    ".scan" - {
+      "should scan the values of this flux" in {
+        val flux = Flux.just(1, 2, 3, 4).scan { (a, b) => a * b }
+        StepVerifier.create(flux)
+          .expectNext(1, 2, 6, 24)
+          .verifyComplete()
+      }
+      "with initial value should scan with provided initial value" in {
+        val flux = Flux.just(1, 2, 3, 4).scan[Int](2, { (a, b) => a * b })
+        StepVerifier.create(flux)
+          .expectNext(2, 2, 4, 12, 48)
+          .verifyComplete()
+      }
+    }
+
+    ".scanWith should scan with initial value" in {
+      val flux = Flux.just(1, 2, 3, 4).scanWith[Int](() => 2, { (a, b) => a * b })
+      StepVerifier.create(flux)
+        .expectNext(2, 2, 4, 12, 48)
+        .verifyComplete()
+    }
+
     ".take should emit only n values" in {
       val flux = Flux.just(1, 2, 3, 4, 5, 6, 7, 8, 9, 10).take(3)
       StepVerifier.create(flux)
