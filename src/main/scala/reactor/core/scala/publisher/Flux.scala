@@ -157,7 +157,7 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/buffer.png"
     * alt="">
     *
-    * @return a buffered { @link Flux} of at most one [[Seq]]
+    * @return a buffered [[Flux]] of at most one [[Seq]]
     * @see #collectList() for an alternative collecting algorithm returning [[Mono]]
     */
   final def buffer(): Flux[Seq[T]] = {
@@ -335,7 +335,7 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * alt="">
     *
     * @param bucketOpening  a [[Publisher]] to subscribe to for creating new receiving bucket signals.
-    * @param closeSelector  a [[Publisher]] factory provided the opening signal and returning a { @link Publisher} to
+    * @param closeSelector  a [[Publisher]] factory provided the opening signal and returning a [[Publisher]] to
     *                       subscribe to for emitting relative bucket.
     * @param bufferSupplier the collection to use for each data segment
     * @tparam U the element type of the bucket-opening sequence
@@ -1010,7 +1010,7 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/concat.png"
     * alt="">
     *
-    * @param other the { @link Publisher} sequence to concat after this { @link Flux}
+    * @param other the { @link Publisher} sequence to concat after this [[Flux]]
     * @return a concatenated [[Flux]]
     */
   final def concatWith(other: Publisher[_ <: T]) = Flux(jFlux.concatWith(other))
@@ -1448,7 +1448,7 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/flatmapc.png" alt="">
     *
     * @param mapper      the [[Function1]] to transform input sequence into N sequences [[Publisher]]
-    * @param concurrency the maximum in-flight elements from this { @link Flux} sequence
+    * @param concurrency the maximum in-flight elements from this [[Flux]] sequence
     * @param prefetch    the maximum in-flight elements from each inner [[Publisher]] sequence
     * @tparam V the merged output sequence type
     * @return a merged [[Flux]]
@@ -1519,7 +1519,7 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * <p>
     * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/flatmapsequential.png" alt="">
     *
-    * @param mapper   the { @link Function} to transform input sequence into N sequences [[Iterable]]
+    * @param mapper   the [[Function1]] to transform input sequence into N sequences [[Iterable]]
     * @param prefetch the maximum in-flight elements from each inner [[Iterable]] sequence
     * @tparam R the merged output sequence type
     * @return a merged [[Flux]]
@@ -1554,7 +1554,7 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * <p>
     * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/flatmapsequential.png" alt="">
     *
-    * @param mapper         the [[Function1]] to transform input sequence into N sequences { @link Publisher}
+    * @param mapper         the [[Function1]] to transform input sequence into N sequences [[Publisher]]
     * @param maxConcurrency the maximum in-flight elements from this [[Flux]] sequence
     * @tparam R the merged output sequence type
     * @return a merged [[Flux]]
@@ -1595,7 +1595,7 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     *
     * @param mapper         the [[Function1]] to transform input sequence into N sequences [[Publisher]]
     * @param delayError     should any error be delayed after current merge backlog
-    * @param maxConcurrency the maximum in-flight elements from this { @link Flux} sequence
+    * @param maxConcurrency the maximum in-flight elements from this [[Flux]] sequence
     * @param prefetch       the maximum in-flight elements from each inner [[Publisher]] sequence
     * @tparam R the merged output sequence type
     * @return a merged [[Flux]]
@@ -2875,6 +2875,20 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     *
     */
   final def scanWith[A](initial: () => A, accumulator: (A, T) => A) = Flux(jFlux.scanWith(initial, accumulator))
+
+  /**
+    * Returns a new [[Flux]] that multicasts (shares) the original [[Flux]].
+    * As long as
+    * there is at least one [[Subscriber]] this [[Flux]] will be subscribed and
+    * emitting data.
+    * When all subscribers have cancelled it will cancel the source
+    * [[Flux]].
+    * <p>This is an alias for [[Flux.publish]].[[ConnectableFlux.refCount]].
+    *
+    * @return a [[Flux]] that upon first subcribe causes the source [[Flux]]
+    *         to subscribe once only, late subscribers might therefore miss items.
+    */
+  final def share() = Flux(jFlux.share())
 
   /**
     * Start the chain and request unbounded demand.
