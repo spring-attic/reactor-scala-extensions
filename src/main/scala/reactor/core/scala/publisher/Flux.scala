@@ -2891,6 +2891,42 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
   final def share() = Flux(jFlux.share())
 
   /**
+    * Expect and emit a single item from this [[Flux]] source or signal
+    * [[NoSuchElementException]] (or a default generated value) for empty source,
+    * [[IndexOutOfBoundsException]] for a multi-item source.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/single.png" alt="">
+    *
+    * @return a [[Mono]] with the eventual single item or an error signal
+    */
+  final def single() = Mono(jFlux.single())
+
+  /**
+    *
+    * Expect and emit a single item from this [[Flux]] source or signal
+    * [[NoSuchElementException]] (or a default value) for empty source,
+    * [[IndexOutOfBoundsException]] for a multi-item source.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/singleordefault.png" alt="">
+    *
+    * @param defaultValue a single fallback item if this { @link Flux} is empty
+    * @return a [[Mono]] with the eventual single item or a supplied default value
+    */
+  final def single(defaultValue: T) = Mono(jFlux.single(defaultValue))
+
+  /**
+    * Expect and emit a zero or single item from this [[Flux]] source or
+    * [[NoSuchElementException]] for a multi-item source.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/singleorempty.png" alt="">
+    *
+    * @return a [[Mono]] with the eventual single item or no item
+    */
+  final def singleOrEmpty() = Mono(jFlux.singleOrEmpty())
+
+  /**
     * Start the chain and request unbounded demand.
     *
     * <p>
@@ -3633,18 +3669,6 @@ object Flux {
   def just[T](firstData: T, data: T*): Flux[T] = {
     Flux(JFlux.just(Seq(firstData) ++ data: _*))
   }
-
-  /**
-    * Create a new [[Flux]] that will only emit the passed data then onComplete.
-    * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/just.png" alt="">
-    * <p>
-    *
-    * @param data the unique data to emit
-    * @tparam T the emitted data type
-    * @return a new [[Flux]]
-    */
-  def just[T](data: T): Flux[T] = Flux(JFlux.just[T](data))
 
   /**
     * Merge emitted [[Publisher]] sequences by the passed [[Publisher]] into an interleaved merged sequence.

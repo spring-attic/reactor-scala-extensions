@@ -1710,7 +1710,7 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       "with predicate will retry until the predicate returns false" in {
         val counter = new AtomicInteger(0)
         val flux = Flux.just(1, 2, 3).concatWith(Mono.error(new RuntimeException("ex"))).retry { _ =>
-          if(counter.getAndIncrement() > 0) false
+          if (counter.getAndIncrement() > 0) false
           else true
         }
         StepVerifier.create(flux)
@@ -1721,8 +1721,8 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       }
       "with numRetries and predicate should retry as many as provided numRetries and predicate returns true" in {
         val counter = new AtomicInteger(0)
-        val flux = Flux.just(1, 2, 3).concatWith(Mono.error(new RuntimeException("ex"))).retry (3,  {_ =>
-          if(counter.getAndIncrement() > 0) false
+        val flux = Flux.just(1, 2, 3).concatWith(Mono.error(new RuntimeException("ex"))).retry(3, { _ =>
+          if (counter.getAndIncrement() > 0) false
           else true
         })
         StepVerifier.create(flux)
@@ -1761,9 +1761,9 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
 
     ".sampleFirst should emit the first value during the timespan" in {
       StepVerifier.withVirtualTime(() => Flux.just(1, 2, 3, 4, 5).delayElements(1 second).sampleFirst(1500 milliseconds))
-      .thenAwait(6 seconds)
-      .expectNext(1, 3, 5)
-      .verifyComplete()
+        .thenAwait(6 seconds)
+        .expectNext(1, 3, 5)
+        .verifyComplete()
     }
 
     ".sampleFirstMillis should emit the first value during the timespan" in {
@@ -1799,6 +1799,28 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       val flux = Flux.just(1, 2, 3, 4).scanWith[Int](() => 2, { (a, b) => a * b })
       StepVerifier.create(flux)
         .expectNext(2, 2, 4, 12, 48)
+        .verifyComplete()
+    }
+
+    ".single" - {
+      "should return a mono" in {
+        val mono = Flux.just(1).single()
+        StepVerifier.create(mono)
+          .expectNext(1)
+          .verifyComplete()
+      }
+      "with default value should return the default value if the flux is empty" in {
+        val mono = Flux.empty().single(2)
+        StepVerifier.create(mono)
+          .expectNext(2)
+          .verifyComplete()
+      }
+    }
+
+    ".singleOrEmpty should return mono with single value or empty" in {
+      val mono = Flux.just(3).singleOrEmpty()
+      StepVerifier.create(mono)
+        .expectNext(3)
         .verifyComplete()
     }
 
