@@ -2927,6 +2927,17 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
   final def singleOrEmpty() = Mono(jFlux.singleOrEmpty())
 
   /**
+    * Skip next the specified number of elements from this [[Flux]].
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/skip.png" alt="">
+    *
+    * @param skipped the number of times to drop
+    * @return a dropping [[Flux]] until the specified skipped number of elements
+    */
+  final def skip(skipped: Long) = Flux(jFlux.skip(skipped))
+
+  /**
     * Start the chain and request unbounded demand.
     *
     * <p>

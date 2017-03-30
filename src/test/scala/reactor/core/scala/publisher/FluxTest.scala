@@ -1824,6 +1824,13 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         .verifyComplete()
     }
 
+    ".skip should skip some elements" in {
+      val flux = Flux.just(1, 2, 3, 4, 5).skip(2)
+      StepVerifier.create(flux)
+      .expectNext(3, 4, 5)
+      .verifyComplete()
+    }
+
     ".take should emit only n values" in {
       val flux = Flux.just(1, 2, 3, 4, 5, 6, 7, 8, 9, 10).take(3)
       StepVerifier.create(flux)
