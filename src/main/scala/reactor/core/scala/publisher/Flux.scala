@@ -2938,6 +2938,17 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
   final def skip(skipped: Long) = Flux(jFlux.skip(skipped))
 
   /**
+    * Skip elements from this [[Flux]] for the given time period.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/skiptime.png" alt="">
+    *
+    * @param timespan the time window to exclude next signals
+    * @return a dropping [[Flux]] until the end of the given timespan
+    */
+  final def skip(timespan: Duration) = Flux(jFlux.skip(timespan))
+
+  /**
     * Start the chain and request unbounded demand.
     *
     * <p>
