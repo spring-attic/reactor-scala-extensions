@@ -2972,6 +2972,54 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
   final def skipMillis(timespan: Long) = Flux(jFlux.skipMillis(timespan))
 
   /**
+    * Skip elements from this [[Flux]] for the given time period.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/skiptime.png" alt="">
+    *
+    * @param timespan the time window to exclude next signals
+    * @param timer    the [[TimedScheduler]] to run on
+    * @return a dropping [[Flux]] until the end of the given timespan
+    */
+  final def skipMillis(timespan: Long, timer: TimedScheduler) = Flux(jFlux.skipMillis(timespan, timer))
+
+  /**
+    * Skips values from this [[Flux]] until a `Predicate` returns true for the
+    * value. Will include the matched value.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/skipuntil.png" alt="">
+    *
+    * @param untilPredicate the `Predicate` evaluating to true to stop skipping.
+    * @return a dropping [[Flux]] until the `Predicate` matches
+    */
+  final def skipUntil(untilPredicate: T => Boolean) = Flux(jFlux.skipUntil(untilPredicate))
+
+  /**
+    * Skip values from this [[Flux]] until a specified [[Publisher]] signals
+    * an onNext or onComplete.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/skipuntil.png" alt="">
+    *
+    * @param other the [[Publisher]] companion to coordinate with to stop skipping
+    * @return a dropping [[Flux]] until the other [[Publisher]] emits
+    *
+    */
+  final def skipUntilOther(other: Publisher[_]) = Flux(jFlux.skipUntilOther(other))
+
+  /**
+    * Skips values from this [[Flux]] while a `Predicate` returns true for the value.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/skipwhile.png" alt="">
+    *
+    * @param skipPredicate the `Predicate` evaluating to true to keep skipping.
+    * @return a dropping [[Flux]] while the `Predicate` matches
+    */
+  final def skipWhile(skipPredicate: T => Boolean) = Flux(jFlux.skipWhile(skipPredicate))
+
+  /**
     * Start the chain and request unbounded demand.
     *
     * <p>
