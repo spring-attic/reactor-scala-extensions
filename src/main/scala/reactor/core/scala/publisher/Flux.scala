@@ -3020,6 +3020,24 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
   final def skipWhile(skipPredicate: T => Boolean) = Flux(jFlux.skipWhile(skipPredicate))
 
   /**
+    * Returns a [[Flux]] that sorts the events emitted by source [[Flux]].
+    * Each item emitted by the [[Flux]] must implement [[Comparable]] with
+    * respect to all
+    * other items in the sequence.
+    *
+    * <p>Note that calling `sort` with long, non-terminating or infinite sources
+    * might cause [[OutOfMemoryError]]. Use sequence splitting like
+    * [[Flux.window]] to sort batches in that case.
+    *
+    * @throws ClassCastException
+    * if any item emitted by the [[Flux]] does not implement
+    *                                    [[Comparable]] with respect to
+    *                                    all other items emitted by the [[Flux]]
+    * @return a sorting [[Flux]]
+    */
+  final def sort() = Flux(jFlux.sort())
+
+  /**
     * Start the chain and request unbounded demand.
     *
     * <p>

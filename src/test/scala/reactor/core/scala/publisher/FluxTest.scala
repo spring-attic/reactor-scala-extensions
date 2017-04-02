@@ -1833,17 +1833,17 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       }
       "with duration should skip all elements within that duration" in {
         StepVerifier.withVirtualTime(() => Flux.just(1, 2, 3, 4, 5).delayElements(1 second).skip(2 seconds))
-        .thenAwait(6 seconds)
-        .expectNext(2, 3, 4, 5)
-        .verifyComplete()
+          .thenAwait(6 seconds)
+          .expectNext(2, 3, 4, 5)
+          .verifyComplete()
       }
     }
 
     ".skipLast should skip the last n elements" in {
       val flux = Flux.just(1, 2, 3, 4, 5).skipLast(2)
       StepVerifier.create(flux)
-      .expectNext(1, 2, 3)
-      .verifyComplete()
+        .expectNext(1, 2, 3)
+        .verifyComplete()
     }
 
     ".skipMillis" - {
@@ -1864,8 +1864,8 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
     ".skipUntil should skip until predicate matches" in {
       val flux = Flux.just(1, 2, 3, 4, 5).skipUntil(t => t == 3)
       StepVerifier.create(flux)
-      .expectNext(3, 4, 5)
-      .verifyComplete()
+        .expectNext(3, 4, 5)
+        .verifyComplete()
     }
 
     ".skipWhile should skip while the predicate returns true" in {
@@ -1873,6 +1873,13 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       StepVerifier.create(flux)
         .expectNext(4, 5)
         .verifyComplete()
+    }
+
+    ".sort should sort the elements" in {
+      val flux = Flux.just(3, 4, 2, 5, 1, 6).sort()
+      StepVerifier.create(flux)
+      .expectNext(1, 2, 3, 4, 5, 6)
+      .verifyComplete()
     }
 
     ".take should emit only n values" in {
