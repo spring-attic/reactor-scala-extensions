@@ -3038,6 +3038,53 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
   final def sort() = Flux(jFlux.sort())
 
   /**
+    * Returns a [[Flux]] that sorts the events emitted by source [[Flux]]
+    * given the [[Ordering]] function.
+    *
+    * <p>Note that calling `sorted` with long, non-terminating or infinite sources
+    * might cause [[OutOfMemoryError]]
+    *
+    * @param sortFunction
+    * a function that compares two items emitted by this [[Flux]]
+    *                                                            that indicates their sort order
+    * @return a sorting [[Flux]]
+    */
+  final def sort(sortFunction: Ordering[T]) = Flux(jFlux.sort(sortFunction))
+
+  /**
+    * Prepend the given [[Iterable]] before this [[Flux]] sequence.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/startwithi.png" alt="">
+    *
+    * @param iterable the sequence of values to start the sequence with
+    * @return a prefixed [[Flux]] with given [[Iterable]]
+    */
+  final def startWith(iterable: Iterable[_ <: T]) = Flux(jFlux.startWith(iterable))
+
+  /**
+    * Prepend the given values before this [[Flux]] sequence.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/startwithv.png" alt="">
+    *
+    * @param values the array of values to start with
+    * @return a prefixed [[Flux]] with given values
+    */
+  final def startWith(values: T*) = Flux(jFlux.startWith(values:_*))
+
+  /**
+    * Prepend the given [[Publisher]] sequence before this [[Flux]] sequence.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/startwith.png" alt="">
+    *
+    * @param publisher the Publisher whose values to prepend
+    * @return a prefixed [[Flux]] with given [[Publisher]] sequence
+    */
+  final def startWith(publisher: Publisher[_ <: T]) = Flux(jFlux.startWith(publisher))
+
+  /**
     * Start the chain and request unbounded demand.
     *
     * <p>
@@ -3063,6 +3110,85 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * @return a new [[Disposable]] to dispose the [[Subscription]]
     */
   final def subscribe(consumer: T => Unit): Disposable = jFlux.subscribe(consumer)
+
+  /**
+    * Subscribe a `consumer` to this [[Flux]] that will consume all the
+    * sequence.
+    * <p>If prefetch is `!= Long.MAX_VALUE`, the [[Subscriber]] will use it as
+    * a prefetch strategy: first request N, then when 25% of N is left to be received on
+    * onNext, request N x 0.75.
+    * <p>For a passive version that observe and forward incoming data see [[Flux.doOnNext]].
+    * <p>For a version that gives you more control over backpressure and the request, see
+    * [[Flux.subscribe]] with a [[reactor.core.publisher.BaseSubscriber]].
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/subscribe.png"
+    * alt="">
+    *
+    * @param consumer the consumer to invoke on each value
+    * @param prefetch the the prefetch amount, positive
+    * @return a new [[Disposable]] to dispose the [[Subscription]]
+    */
+  final def subscribe(consumer: T => Unit, prefetch: Int) = jFlux.subscribe(consumer, prefetch)
+
+  /**
+    * Subscribe `consumer` to this [[Flux]] that will consume all the
+    * sequence.  It will request unbounded demand `Long.MAX_VALUE`.
+    * For a passive version that observe and forward incoming data see
+    * [[Flux.doOnNext]] and [[Flux.doOnError]].
+    * <p>For a version that gives you more control over backpressure and the request, see
+    * [[Flux.subscribe]] with a [[reactor.core.publisher.BaseSubscriber]].
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/subscribeerror.png" alt="">
+    *
+    * @param consumer      the consumer to invoke on each next signal
+    * @param errorConsumer the consumer to invoke on error signal
+    * @return a new [[Disposable]] to dispose the [[Subscription]]
+    */
+  final def subscribe(consumer: T => Unit, errorConsumer: Throwable => Unit): Disposable = jFlux.subscribe(consumer, errorConsumer)
+
+  /**
+    * Subscribe `consumer` to this [[Flux]] that will consume all the
+    * sequence.  It will request unbounded demand `Long.MAX_VALUE`.
+    * For a passive version that observe and forward incoming data see [[Flux.doOnNext]],
+    * [[Flux.doOnError]] and [[Flux.doOnComplete]].
+    * <p>For a version that gives you more control over backpressure and the request, see
+    * [[Flux.subscribe]] with a [[reactor.core.publisher.BaseSubscriber]].
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/subscribecomplete.png" alt="">
+    *
+    * @param consumer         the consumer to invoke on each value
+    * @param errorConsumer    the consumer to invoke on error signal
+    * @param completeConsumer the consumer to invoke on complete signal
+    * @return a new [[Disposable]] to dispose the [[Subscription]]
+    */
+  final def subscribe(consumer: T => Unit, errorConsumer: Throwable => Unit, completeConsumer: () => Unit): Disposable = jFlux.subscribe(consumer, errorConsumer, completeConsumer)
+
+  /**
+    * Subscribe `consumer` to this [[Flux]] that will consume all the
+    * sequence.  It will let the provided [[Subscription subscriptionConsumer]]
+    * request the adequate amount of data, or request unbounded demand
+    * `Long.MAX_VALUE` if no such consumer is provided.
+    * <p>
+    * For a passive version that observe and forward incoming data see [[Flux.doOnNext]],
+    * [[Flux.doOnError]], [[Flux.doOnComplete]]
+    * and [[Flux.doOnSubscribe]].
+    * <p>For a version that gives you more control over backpressure and the request, see
+    * [[Flux.subscribe]] with a [[reactor.core.publisher.BaseSubscriber]].
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/subscribecomplete.png" alt="">
+    *
+    * @param consumer             the consumer to invoke on each value
+    * @param errorConsumer        the consumer to invoke on error signal
+    * @param completeConsumer     the consumer to invoke on complete signal
+    * @param subscriptionConsumer the consumer to invoke on subscribe signal, to be used
+    *                             for the initial [[Subscription.request request]], or null for max request
+    * @return a new [[Disposable]] to dispose the [[Subscription]]
+    */
+  final def subscribe(consumer: T => Unit, errorConsumer: Throwable => Unit, completeConsumer: () => Unit, subscriptionConsumer: Subscription => Unit): Disposable = jFlux.subscribe(consumer, errorConsumer, completeConsumer, subscriptionConsumer)
 
   /**
     * Take only the first N values from this [[Flux]].

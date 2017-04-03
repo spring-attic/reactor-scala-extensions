@@ -1875,11 +1875,42 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         .verifyComplete()
     }
 
-    ".sort should sort the elements" in {
-      val flux = Flux.just(3, 4, 2, 5, 1, 6).sort()
-      StepVerifier.create(flux)
-      .expectNext(1, 2, 3, 4, 5, 6)
-      .verifyComplete()
+    ".sort" - {
+      "should sort the elements" in {
+        val flux = Flux.just(3, 4, 2, 5, 1, 6).sort()
+        StepVerifier.create(flux)
+          .expectNext(1, 2, 3, 4, 5, 6)
+          .verifyComplete()
+      }
+      "with sort function should sort the elements based on the function" in {
+        val flux = Flux.just(3, 4, 2, 5, 1, 6).sort(new IntOrdering(){
+          override def compare(x: Int, y: Int): Int = super.compare(x, y) * -1
+        })
+        StepVerifier.create(flux)
+          .expectNext(6, 5, 4, 3, 2, 1)
+          .verifyComplete()
+      }
+    }
+
+    ".startWith" - {
+      "with iterable should prepend the flux with the provided iterable elements" in {
+        val flux = Flux.just(1, 2, 3).startWith(Iterable(10, 20, 30))
+        StepVerifier.create(flux)
+        .expectNext(10, 20, 30, 1, 2, 3)
+        .verifyComplete()
+      }
+      "with varargs should prepend the flux with the provided values" in {
+        val flux = Flux.just(1, 2, 3).startWith(10, 20, 30)
+        StepVerifier.create(flux)
+          .expectNext(10, 20, 30, 1, 2, 3)
+          .verifyComplete()
+      }
+      "with publisher should prepend the flux with the provided publisher" in {
+        val flux = Flux.just(1, 2, 3).startWith(Flux.just(10, 20, 30))
+        StepVerifier.create(flux)
+          .expectNext(10, 20, 30, 1, 2, 3)
+          .verifyComplete()
+      }
     }
 
     ".take should emit only n values" in {
