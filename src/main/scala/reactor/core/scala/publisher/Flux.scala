@@ -3191,6 +3191,37 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
   final def subscribe(consumer: T => Unit, errorConsumer: Throwable => Unit, completeConsumer: () => Unit, subscriptionConsumer: Subscription => Unit): Disposable = jFlux.subscribe(consumer, errorConsumer, completeConsumer, subscriptionConsumer)
 
   /**
+    * Run subscribe, onSubscribe and request on a supplied
+    * [[Subscriber]]
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/subscribeon.png" alt="">
+    * <p>
+    * Typically used for slow publisher e.g., blocking IO, fast consumer(s) scenarios.
+    *
+    * <p>
+    * `flux.subscribeOn(Schedulers.single()).subscribe()`
+    *
+    * @param scheduler a checked [[reactor.core.scheduler.Scheduler.Worker]] factory
+    * @return a [[Flux]] requesting asynchronously
+    */
+  final def subscribeOn(scheduler: Scheduler) = Flux(jFlux.subscribeOn(scheduler))
+
+  /**
+    *
+    * A chaining [[Publisher.subscribe]] alternative to inline composition type conversion to a hot
+    * emitter (e.g. [[reactor.core.publisher.FluxProcessor]] or [[reactor.core.publisher.MonoProcessor]]).
+    *
+    * `flux.subscribeWith(WorkQueueProcessor.create()).subscribe()`
+    *
+    * <p>If you need more control over backpressure and the request, use a [[reactor.core.publisher.BaseSubscriber]].
+    *
+    * @param subscriber the [[Subscriber]] to subscribe and return
+    * @tparam E the reified type from the input/output subscriber
+    * @return the passed [[Subscriber]]
+    */
+  final def subscribeWith[E <: Subscriber[T]](subscriber: E) = jFlux.subscribeWith[E](subscriber)
+
+  /**
     * Take only the first N values from this [[Flux]].
     * <p>
     * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/take.png" alt="">
