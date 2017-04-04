@@ -3222,6 +3222,44 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
   final def subscribeWith[E <: Subscriber[T]](subscriber: E) = jFlux.subscribeWith[E](subscriber)
 
   /**
+    * Provide an alternative if this sequence is completed without any data
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/switchifempty.png" alt="">
+    * <p>
+    *
+    * @param alternate the alternate publisher if this sequence is empty
+    * @return an alternating [[Flux]] on source onComplete without elements
+    */
+  final def switchIfEmpty(alternate: Publisher[_ <: T]) = Flux(jFlux.switchIfEmpty(alternate))
+
+  /**
+    * Switch to a new [[Publisher]] generated via a `Function` whenever this [[Flux]] produces an item.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/switchmap.png" alt="">
+    *
+    * @param fn the transformation function
+    * @tparam V the type of the return value of the transformation function
+    * @return an alternating [[Flux]] on source onNext
+    *
+    */
+  final def switchMap[V](fn: T => Publisher[_ <: V]) = Flux(jFlux.switchMap[V](fn))
+
+  /**
+    * Switch to a new [[Publisher]] generated via a `Function` whenever this [[Flux]] produces an item.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/switchmap.png" alt="">
+    *
+    * @param fn       the transformation function
+    * @param prefetch the produced demand for inner sources
+    * @tparam V the type of the return value of the transformation function
+    * @return an alternating [[Flux]] on source onNext
+    *
+    */
+  final def switchMap[V](fn: T => Publisher[_ <: V], prefetch: Int) = Flux(jFlux.switchMap[V](fn, prefetch))
+
+  /**
     * Take only the first N values from this [[Flux]].
     * <p>
     * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/take.png" alt="">

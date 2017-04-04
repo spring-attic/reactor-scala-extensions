@@ -1913,6 +1913,28 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       }
     }
 
+    ".switchIfEmpty should switch if the current flux is empty" in {
+      val flux = Flux.empty().switchIfEmpty(Flux.just(10, 20, 30))
+      StepVerifier.create(flux)
+        .expectNext(10, 20, 30)
+        .verifyComplete()
+    }
+
+    ".switchMap" - {
+      "with function should switch to the new publisher" in {
+        val flux = Flux.just(1, 2, 3).switchMap(i => Flux.just(i * 10, i * 20))
+        StepVerifier.create(flux)
+          .expectNext(10, 20, 20, 40, 30, 60)
+          .verifyComplete()
+      }
+      "with function and prefetch should switch to the new publisher" in {
+        val flux = Flux.just(1, 2, 3).switchMap(i => Flux.just(i * 10, i * 20), 2)
+        StepVerifier.create(flux)
+          .expectNext(10, 20, 20, 40, 30, 60)
+          .verifyComplete()
+      }
+    }
+
     ".take should emit only n values" in {
       val flux = Flux.just(1, 2, 3, 4, 5, 6, 7, 8, 9, 10).take(3)
       StepVerifier.create(flux)
