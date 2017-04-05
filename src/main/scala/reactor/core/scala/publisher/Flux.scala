@@ -3260,6 +3260,44 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
   final def switchMap[V](fn: T => Publisher[_ <: V], prefetch: Int) = Flux(jFlux.switchMap[V](fn, prefetch))
 
   /**
+    * Subscribe to the given fallback [[Publisher]] if an error matching the given
+    * type is observed on this [[Flux]]
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/switchonerror.png" alt="">
+    * <p>
+    *
+    * @param type     the error type to match to fallback
+    * @param fallback the alternate [[Publisher]]
+    * @tparam E the error type
+    * @return an alternating [[Flux]] on source onError
+    */
+  final def switchOnError[E <: Throwable](`type`: Class[E], fallback: Publisher[_ <: T]) = Flux(jFlux.switchOnError[E](`type`, fallback))
+
+  /**
+    * Subscribe to the given fallback [[Publisher]] if an error matching the given
+    * predicate is observed on this [[Flux]]
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/switchonerror.png" alt="">
+    * <p>
+    *
+    * @param predicate the predicate to match an error
+    * @param fallback  the alternate [[Publisher]]
+    * @return an alternating [[Flux]] on source onError
+    */
+  final def switchOnError(predicate: Throwable => Boolean, fallback: Publisher[_ <: T]) = Flux(jFlux.switchOnError(predicate, fallback))
+
+  /**
+    * Subscribe to the given fallback [[Publisher]] if an error is observed on this [[Flux]]
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/switchonerror.png" alt="">
+    * <p>
+    *
+    * @param fallback the alternate [[Publisher]]
+    * @return an alternating [[Flux]] on source onError
+    */
+  final def switchOnError(fallback: Publisher[_ <: T]) = Flux(jFlux.switchOnError(fallback))
+
+  /**
     * Take only the first N values from this [[Flux]].
     * <p>
     * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/take.png" alt="">
