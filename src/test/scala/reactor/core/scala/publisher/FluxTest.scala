@@ -822,13 +822,8 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       }
       "with ttl should retain the cache as long as the provided duration" in {
         try {
-
-          val vts = VirtualTimeScheduler.getOrSet(true)
-
-          val flux = Flux.just(1, 2, 3).delayElements(1 second) cache (2 seconds)
-
-          StepVerifier.create(flux)
-            .`then`(() => vts.advanceTimeBy(3 seconds))
+          StepVerifier.withVirtualTime(() => Flux.just(1, 2, 3).delayElements(1 second).cache(2 seconds))
+            .thenAwait(3 seconds)
             .expectNext(1, 2, 3)
             .verifyComplete()
 
@@ -991,11 +986,9 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
     }
 
     ".delayElement should delay every elements by provided delay in Duration" in {
-      val vts = VirtualTimeScheduler.getOrSet(true)
       try {
-        val flux = Flux.just(1, 2, 3).delayElements(1 second).elapsed()
-        StepVerifier.create(flux)
-          .`then`(() => vts.advanceTimeBy(3 seconds))
+        StepVerifier.withVirtualTime(() => Flux.just(1, 2, 3).delayElements(1 second).elapsed())
+          .thenAwait(3 seconds)
           .expectNext((1000, 1), (1000, 2), (1000, 3))
           .verifyComplete()
       } finally {
@@ -1013,11 +1006,9 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
 
     ".delayElementMillis" - {
       "should delay every elements by provided delay in millis" in {
-        val vts = VirtualTimeScheduler.getOrSet(true)
         try {
-          val flux = Flux.just(1, 2, 3).delayElementsMillis(1000).elapsed()
-          StepVerifier.create(flux)
-            .`then`(() => vts.advanceTimeBy(3 seconds))
+          StepVerifier.withVirtualTime(() => Flux.just(1, 2, 3).delayElementsMillis(1000).elapsed())
+            .thenAwait(3 seconds)
             .expectNext((1000, 1), (1000, 2), (1000, 3))
             .verifyComplete()
         } finally {
@@ -1025,16 +1016,16 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         }
       }
       "with timer should use the provided timer" in {
-        val vts = VirtualTimeScheduler.getOrSet(true)
-        try {
-          val flux = Flux.just(1, 2, 3).delayElementsMillis(1000, Schedulers.timer()).elapsed()
-          StepVerifier.create(flux)
+        //provided the VTS is explicitly given to the operators and is directly manipulated,
+        //method of creation doesn't really matter...
+        val vts = VirtualTimeScheduler.create();
+        //...but we need to explicitly use it, rather than the factories...
+        val flux = Flux.just(1, 2, 3).delayElementsMillis(1000, vts).elapsed(vts)
+        StepVerifier.create(flux)
+            //...and directly manipulate it
             .`then`(() => vts.advanceTimeBy(3 seconds))
             .expectNext((1000, 1), (1000, 2), (1000, 3))
             .verifyComplete()
-        } finally {
-          VirtualTimeScheduler.reset()
-        }
       }
     }
 
@@ -1244,8 +1235,7 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
 
     ".elapsed" - {
       "should provide the time elapse when this mono emit value" in {
-        StepVerifier.withVirtualTime(() => Flux.just(1, 2, 3).delaySubscription(1 second).delayElements(1 second).elapsed(),
-          () => VirtualTimeScheduler.getOrSet(true), 3)
+        StepVerifier.withVirtualTime(() => Flux.just(1, 2, 3).delaySubscription(1 second).delayElements(1 second).elapsed(), 3)
           .thenAwait(4 seconds)
           .expectNextMatches(new Predicate[(Long, Int)] {
             override def test(t: (Long, Int)): Boolean = t match {
@@ -1266,12 +1256,11 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       }
       "with TimedScheduler should provide the time elapsed using the provided scheduler when this mono emit value" in {
         val virtualTimeScheduler = VirtualTimeScheduler.create()
-        StepVerifier.withVirtualTime(() => Flux.just(1, 2, 3)
-          .delaySubscriptionMillis(1000)
-          .delayElements(1 second)
-          .elapsed(virtualTimeScheduler),
-          () => virtualTimeScheduler, 3)
-          .thenAwait(4 seconds)
+        StepVerifier.create(Flux.just(1, 2, 3)
+                    .delaySubscriptionMillis(1000, virtualTimeScheduler)
+                    .delayElements(1 second, virtualTimeScheduler)
+                    .elapsed(virtualTimeScheduler), 3)
+          .`then`(() => virtualTimeScheduler.advanceTimeBy(4 seconds))
           .expectNextMatches(new Predicate[(Long, Int)] {
             override def test(t: (Long, Int)): Boolean = t match {
               case (time, data) => time >= 1000 && data == 1
@@ -1987,8 +1976,10 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       }
       "with timespan and timed scheduler should only emit values during the provided timespan with the provided TimedScheduler" in {
         val vts = VirtualTimeScheduler.create()
-        StepVerifier.withVirtualTime(() => Flux.just(1, 2, 3, 4, 5).delayElements(1 seconds).takeMillis(3500, vts), () => vts, 256)
-          .thenAwait(5 seconds)
+        StepVerifier.create(Flux.just(1, 2, 3, 4, 5)
+                                .delayElements(1 second, vts)
+                                .takeMillis(3500, vts), 256)
+          .`then`(() => vts.advanceTimeBy(5 seconds))
           .expectNext(1, 2, 3)
           .verifyComplete()
       }

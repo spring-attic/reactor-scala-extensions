@@ -1054,6 +1054,20 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
 
   /**
     * Delay each of this [[Flux]] elements ([[Subscriber.onNext]] signals)
+    * by a given duration, on a given [[Scheduler]].
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/delayonnext.png" alt="">
+    *
+    * @param delay duration to delay each [[Subscriber.onNext]] signal
+    * @param timer the [[Scheduler]] to use for delaying each signal
+    * @return a delayed [[Flux]]
+    * @see #delaySubscription(Duration) delaySubscription to introduce a delay at the beginning of the sequence only
+    */
+  final def delayElements(delay: Duration, timer: Scheduler) = Flux(jFlux.delayElements(delay, timer))
+
+  /**
+    * Delay each of this [[Flux]] elements ([[Subscriber.onNext]] signals)
     * by a given duration in milliseconds.
     *
     * <p>
