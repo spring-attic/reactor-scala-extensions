@@ -3311,7 +3311,22 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * @param n the number of items to emit from this [[Flux]]
     * @return a size limited [[Flux]]
     */
-  def take(n: Long) = new Flux[T](jFlux.take(n))
+  final def take(n: Long) = Flux[T](jFlux.take(n))
+
+  /**
+    * Relay values from this [[Flux]] until the given time period elapses.
+    * <p>
+    * If the time period is zero, the [[Subscriber]] gets completed if this [[Flux]] completes, signals an
+    * error or
+    * signals its first value (which is not not relayed though).
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/taketime.png" alt="">
+    *
+    * @param timespan the time window of items to emit from this [[Flux]]
+    * @return a time limited [[Flux]]
+    */
+  final def take(timespan: Duration) = Flux(jFlux.take(timespan))
 
   /**
     * Emit the last N values this [[Flux]] emitted before its completion.
@@ -3323,15 +3338,60 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * @return a terminating [[Flux]] sub-sequence
     *
     */
-  def takeLast(n: Int) = Flux(jFlux.takeLast(n))
+  final def takeLast(n: Int) = Flux(jFlux.takeLast(n))
+
+  /**
+    * Relay values from this [[Flux]] until the given time period elapses.
+    * <p>
+    * If the time period is zero, the [[Subscriber]] gets completed if this [[Flux]] completes, signals an
+    * error or
+    * signals its first value (which is not not relayed though).
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/taketime.png" alt="">
+    *
+    * @param timespan the time window of items to emit from this { @link Flux}
+    * @return a time limited [[Flux]]
+    */
+  final def takeMillis(timespan: Long) = Flux(jFlux.takeMillis(timespan))
+
+  /**
+    * Relay values from this [[Flux]] until the given time period elapses.
+    * <p>
+    * If the time period is zero, the [[Subscriber]] gets completed if this [[Flux]] completes, signals an
+    * error or
+    * signals its first value (which is not not relayed though).
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/taketime.png" alt="">
+    *
+    * @param timespan the time window of items to emit from this [[Flux]]
+    * @param timer the [[TimedScheduler]] to run on
+    * @return a time limited [[Flux]]
+    */
+  final def takeMillis(timespan: Long, timer: TimedScheduler) = Flux(jFlux.takeMillis(timespan, timer))
+
+  /**
+    * Relay values from this [[Flux]] until the given `Predicate` matches.
+    * Unlike [[Flux.takeWhile]], this will include the matched data.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/takeuntilp.png" alt="">
+    *
+    * @param predicate the `Predicate` to signal when to stop replaying signal
+    *                              from this [[Flux]]
+    * @return an eventually limited [[Flux]]
+    *
+    */
+  final def takeUntil(predicate: T => Boolean) = Flux(jFlux.takeUntil(predicate))
 
   /**
     * Transform this [[Flux]] in order to generate a target [[Flux]]. Unlike [[Flux.compose]], the
     * provided function is executed as part of assembly.
     *
     * @example {{{
-    *                                                                                                                                                                                                                                                                                                                       val applySchedulers = flux => flux.subscribeOn(Schedulers.elastic()).publishOn(Schedulers.parallel());
-    *                                                                                                                                                                                                                                                                                                                       flux.transform(applySchedulers).map(v => v * v).subscribe()
+    *   val applySchedulers = flux => flux.subscribeOn(Schedulers.elastic()).publishOn(Schedulers.parallel());
+    *   flux.transform(applySchedulers).map(v => v * v).subscribe()
     *          }}}
     * @param transformer the [[Function1]] to immediately map this [[Flux]] into a target [[Flux]]
     *                    instance.

@@ -1956,11 +1956,19 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       }
     }
 
-    ".take should emit only n values" in {
-      val flux = Flux.just(1, 2, 3, 4, 5, 6, 7, 8, 9, 10).take(3)
-      StepVerifier.create(flux)
+    ".take" - {
+      "should emit only n values" in {
+        val flux = Flux.just(1, 2, 3, 4, 5, 6, 7, 8, 9, 10).take(3)
+        StepVerifier.create(flux)
+          .expectNext(1, 2, 3)
+          .verifyComplete()
+      }
+      "with duration should only emit values during the provided duration" in {
+        StepVerifier.withVirtualTime(() => Flux.just(1, 2, 3, 4, 5).delayElements(1 seconds).take(3500 milliseconds))
+        .thenAwait(5 seconds)
         .expectNext(1, 2, 3)
         .verifyComplete()
+      }
     }
 
     ".takeLast should take the last n values" in {
@@ -1968,6 +1976,29 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       StepVerifier.create(flux)
         .expectNext(3, 4, 5)
         .verifyComplete()
+    }
+
+    ".takeMillis" - {
+      "should only emit values during the provided timespan in millis" in {
+        StepVerifier.withVirtualTime(() => Flux.just(1, 2, 3, 4, 5).delayElements(1 seconds).takeMillis(3500))
+          .thenAwait(5 seconds)
+          .expectNext(1, 2, 3)
+          .verifyComplete()
+      }
+      "with timespan and timed scheduler should only emit values during the provided timespan with the provided TimedScheduler" in {
+        val vts = VirtualTimeScheduler.create()
+        StepVerifier.withVirtualTime(() => Flux.just(1, 2, 3, 4, 5).delayElements(1 seconds).takeMillis(3500, vts), () => vts, 256)
+          .thenAwait(5 seconds)
+          .expectNext(1, 2, 3)
+          .verifyComplete()
+      }
+    }
+
+    ".takeUntil should emit the values until the predicate returns true" in {
+      val flux = Flux.just(1, 2, 3, 4, 5).takeUntil(t => t >= 4)
+      StepVerifier.create(flux)
+      .expectNext(1, 2, 3, 4)
+      .verifyComplete()
     }
 
     ".transform should defer transformation of this flux to another publisher" in {
