@@ -2027,6 +2027,21 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         .verifyComplete()
     }
 
+    ".thenMany" - {
+      "should emit the sequence of the supplied publisher" in {
+        val flux = Flux.just(1, 2, 3).thenMany(Flux.just("1", "2", "3"))
+        StepVerifier.create(flux)
+          .expectNext("1", "2", "3")
+          .verifyComplete()
+      }
+      "with supplier should emit the sequence of publisher produced by the supplier" in {
+        val flux = Flux.just(1, 2, 3).thenMany(() => Flux.just("1", "2", "3"))
+        StepVerifier.create(flux)
+          .expectNext("1", "2", "3")
+          .verifyComplete()
+      }
+    }
+
     ".transform should defer transformation of this flux to another publisher" in {
       val flux = Flux.just(1, 2, 3).transform(Mono.from)
       StepVerifier.create(flux)

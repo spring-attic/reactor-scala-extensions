@@ -3451,16 +3451,42 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * <p>
     * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/ignorethen.png" alt="">
     *
-    * @param afterSupplier a [[Supplier]] of [[Publisher]] to wait for after
+    * @param afterSupplier a `Supplier` of [[Publisher]] to wait for after
     *                                this Flux termination
     * @return a new [[Flux]] emitting eventually from the supplied [[Publisher]]
     */
   final def `then`(afterSupplier: () => Publisher[Unit]): Mono[Unit] = {
-    val mono = jFlux.`then`(new Supplier[Publisher[Void]] {
+    Mono(jFlux.`then`(new Supplier[Publisher[Void]] {
       override def get(): Publisher[Void] = publisherUnit2PublisherVoid(afterSupplier())
-    })
-    Mono(mono).map(_ => ())
+    })).map(_ => ())
   }
+
+  /**
+    * Return a [[Flux]] that emits the sequence of the supplied [[Publisher]]
+    * after this [[Flux]] completes, ignoring this flux elements. If an error
+    * occurs it immediately terminates the resulting flux.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/ignorethens.png" alt="">
+    *
+    * @param other a [[Publisher]] to emit from after termination
+    * @tparam V the supplied produced type
+    * @return a new [[Flux]] emitting eventually from the supplied [[Publisher]]
+    */
+  final def thenMany[V](other: Publisher[V]) = Flux(jFlux.thenMany[V](other))
+
+  /**
+    * Return a [[Flux]] that emits the sequence of the supplied [[Publisher]]
+    * after this [[Flux]] completes, ignoring this flux elements. If an error occurs
+    * it immediately terminates the resulting flux.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/ignorethens.png" alt="">
+    *
+    * @param afterSupplier a `supplier` of [[Publisher]] to emit from after termination
+    * @tparam V the supplied produced type
+    * @return a new [[Flux]] emitting eventually from the supplied [[Publisher]]
+    */
+  final def thenMany[V](afterSupplier: () => Publisher[V]) = Flux(jFlux.thenMany(afterSupplier))
+
   /**
     * Transform this [[Flux]] in order to generate a target [[Flux]]. Unlike [[Flux.compose]], the
     * provided function is executed as part of assembly.
