@@ -17,6 +17,7 @@ import reactor.test.scheduler.VirtualTimeScheduler
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
+import scala.concurrent.TimeoutException
 import scala.concurrent.duration.{Duration, DurationInt}
 import scala.io.Source
 import scala.language.postfixOps
@@ -1883,7 +1884,7 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
           .verifyComplete()
       }
       "with sort function should sort the elements based on the function" in {
-        val flux = Flux.just(3, 4, 2, 5, 1, 6).sort(new IntOrdering(){
+        val flux = Flux.just(3, 4, 2, 5, 1, 6).sort(new IntOrdering() {
           override def compare(x: Int, y: Int): Int = super.compare(x, y) * -1
         })
         StepVerifier.create(flux)
@@ -1896,8 +1897,8 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       "with iterable should prepend the flux with the provided iterable elements" in {
         val flux = Flux.just(1, 2, 3).startWith(Iterable(10, 20, 30))
         StepVerifier.create(flux)
-        .expectNext(10, 20, 30, 1, 2, 3)
-        .verifyComplete()
+          .expectNext(10, 20, 30, 1, 2, 3)
+          .verifyComplete()
       }
       "with varargs should prepend the flux with the provided values" in {
         val flux = Flux.just(1, 2, 3).startWith(10, 20, 30)
@@ -1965,9 +1966,9 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       }
       "with duration should only emit values during the provided duration" in {
         StepVerifier.withVirtualTime(() => Flux.just(1, 2, 3, 4, 5).delayElements(1 seconds).take(3500 milliseconds))
-        .thenAwait(5 seconds)
-        .expectNext(1, 2, 3)
-        .verifyComplete()
+          .thenAwait(5 seconds)
+          .expectNext(1, 2, 3)
+          .verifyComplete()
       }
     }
 
@@ -1997,15 +1998,15 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
     ".takeUntil should emit the values until the predicate returns true" in {
       val flux = Flux.just(1, 2, 3, 4, 5).takeUntil(t => t >= 4)
       StepVerifier.create(flux)
-      .expectNext(1, 2, 3, 4)
-      .verifyComplete()
+        .expectNext(1, 2, 3, 4)
+        .verifyComplete()
     }
 
     ".takeWhile should emit values until the predicate returns false" in {
       val flux = Flux.just(1, 2, 3, 4, 5).takeWhile(t => t < 4)
       StepVerifier.create(flux)
-      .expectNext(1, 2, 3)
-      .verifyComplete()
+        .expectNext(1, 2, 3)
+        .verifyComplete()
     }
 
     ".then" - {
@@ -2015,14 +2016,14 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
           .verifyComplete()
       }
       "with supplier should ignore the values" in {
-        val mono = Flux.just(1, 2, 3).`then`(() => Mono.just(1))
+        val mono = Flux.just(1, 2, 3).`then`(() => Mono.empty)
         StepVerifier.create(mono)
           .verifyComplete()
       }
     }
 
     ".thenEmpty should wait for this to complete and then for the supplied publisher to complete" in {
-      val mono = Flux.just(1, 2, 3).thenEmpty(Mono.just(1))
+      val mono = Flux.just(1, 2, 3).thenEmpty(Mono.empty)
       StepVerifier.create(mono)
         .verifyComplete()
     }
@@ -2038,6 +2039,40 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         val flux = Flux.just(1, 2, 3).thenMany(() => Flux.just("1", "2", "3"))
         StepVerifier.create(flux)
           .expectNext("1", "2", "3")
+          .verifyComplete()
+      }
+    }
+
+    ".timeout" - {
+      "with timeout duration should throw exception if the item is not emitted within the provided duration after previous emited item" in {
+        StepVerifier.withVirtualTime(() => Flux.just(1, 2, 3).delayElements(2 seconds).timeout(1 second))
+          .thenAwait(2 seconds)
+          .expectError(classOf[TimeoutException])
+          .verify()
+      }
+      "with timeout and optional fallback should fallback if the item is not emitted within the provided duration" in {
+        StepVerifier.withVirtualTime(() => Flux.just(1, 2, 3).delayElements(2 seconds).timeout(1 second, Option(Flux.just(10, 20, 30))))
+          .thenAwait(2 seconds)
+          .expectNext(10, 20, 30)
+          .verifyComplete()
+      }
+      "with firstTimeout should throw exception if the first item is not emitted before the given publisher emits" in {
+        StepVerifier.withVirtualTime(() => Flux.just(1, 2, 3).delayElements(2 seconds).timeout(Mono.just(1)))
+          .thenAwait(2 seconds)
+          .expectError(classOf[TimeoutException])
+          .verify()
+      }
+      "with firstTimeout and next timeout factory should throw exception if any of the item from this flux does not emit before the timeout provided" in {
+        StepVerifier.withVirtualTime(() => Flux.just(1, 2, 3).delayElements(2 seconds).timeout(Mono.just(1).delaySubscription(3 seconds), t => Mono.just(1).delaySubscription(t seconds)))
+          .thenAwait(5 seconds)
+          .expectNext(1)
+          .expectError(classOf[TimeoutException])
+          .verify()
+      }
+      "with firstTimeout, nextTimeoutFactory and fallback should fallback if any of the item is not emitted within the timeout period" in {
+        StepVerifier.withVirtualTime(() => Flux.just(1, 2, 3).delayElements(2 seconds).timeout(Mono.just(1).delaySubscription(3 seconds), t => Mono.just(1).delaySubscription(t seconds), Flux.just(10, 20, 30)))
+          .thenAwait(5 seconds)
+          .expectNext(1, 10, 20, 30)
           .verifyComplete()
       }
     }

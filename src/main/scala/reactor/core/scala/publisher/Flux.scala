@@ -2743,7 +2743,7 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/samplefirst.png" alt="">
     *
     * @param samplerFactory select a [[Publisher]] companion to signal onNext or onComplete to stop excluding
-    *                                        others values from this sequence
+    *                       others values from this sequence
     * @tparam U the companion reified type
     * @return a sampled [[Flux]] by last item observed when the sampler signals
     */
@@ -2779,7 +2779,7 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/sampletimeout.png" alt="">
     *
     * @param throttlerFactory select a [[Publisher]] companion to signal onNext or onComplete to stop checking
-    *                                          others values from this sequence and emit the selecting item
+    *                         others values from this sequence and emit the selecting item
     * @tparam U the companion reified type
     * @return a sampled [[Flux]] by last single item observed before a companion [[Publisher]] emits
     */
@@ -2795,8 +2795,8 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/sampletimeoutm.png" alt="">
     *
     * @param throttlerFactory select a [[Publisher]] companion to signal onNext or onComplete to stop checking
-    *                                          others values from this sequence and emit the selecting item
-    * @param maxConcurrency the maximum number of concurrent timeouts
+    *                         others values from this sequence and emit the selecting item
+    * @param maxConcurrency   the maximum number of concurrent timeouts
     * @tparam U the throttling type
     * @return a sampled [[Flux]] by last single item observed before a companion [[Publisher]] emits
     */
@@ -3031,8 +3031,8 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     *
     * @throws ClassCastException
     * if any item emitted by the [[Flux]] does not implement
-    *                                    [[Comparable]] with respect to
-    *                                    all other items emitted by the [[Flux]]
+    * [[Comparable]] with respect to
+    * all other items emitted by the [[Flux]]
     * @return a sorting [[Flux]]
     */
   final def sort() = Flux(jFlux.sort())
@@ -3046,7 +3046,7 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     *
     * @param sortFunction
     * a function that compares two items emitted by this [[Flux]]
-    *                                                            that indicates their sort order
+    * that indicates their sort order
     * @return a sorting [[Flux]]
     */
   final def sort(sortFunction: Ordering[T]) = Flux(jFlux.sort(sortFunction))
@@ -3071,7 +3071,7 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * @param values the array of values to start with
     * @return a prefixed [[Flux]] with given values
     */
-  final def startWith(values: T*) = Flux(jFlux.startWith(values:_*))
+  final def startWith(values: T*) = Flux(jFlux.startWith(values: _*))
 
   /**
     * Prepend the given [[Publisher]] sequence before this [[Flux]] sequence.
@@ -3366,7 +3366,7 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/taketime.png" alt="">
     *
     * @param timespan the time window of items to emit from this [[Flux]]
-    * @param timer the [[TimedScheduler]] to run on
+    * @param timer    the [[TimedScheduler]] to run on
     * @return a time limited [[Flux]]
     */
   final def takeMillis(timespan: Long, timer: TimedScheduler) = Flux(jFlux.takeMillis(timespan, timer))
@@ -3379,7 +3379,7 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/takeuntilp.png" alt="">
     *
     * @param predicate the `Predicate` to signal when to stop replaying signal
-    *                              from this [[Flux]]
+    *                  from this [[Flux]]
     * @return an eventually limited [[Flux]]
     *
     */
@@ -3438,7 +3438,7 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     *
     * @param other a [[Publisher]] to wait for after this Flux's termination
     * @return a new [[Mono]] completing when both publishers have completed in
-    *                       sequence
+    *         sequence
     */
   final def thenEmpty(other: Publisher[Unit]): Mono[Unit] = {
     Mono(jFlux.thenEmpty(publisherUnit2PublisherVoid(other))).map(_ => ())
@@ -3452,7 +3452,7 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/ignorethen.png" alt="">
     *
     * @param afterSupplier a `Supplier` of [[Publisher]] to wait for after
-    *                                this Flux termination
+    *                      this Flux termination
     * @return a new [[Flux]] emitting eventually from the supplied [[Publisher]]
     */
   final def `then`(afterSupplier: () => Publisher[Unit]): Mono[Unit] = {
@@ -3488,12 +3488,89 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
   final def thenMany[V](afterSupplier: () => Publisher[V]) = Flux(jFlux.thenMany(afterSupplier))
 
   /**
+    * Signal a [[java.util.concurrent.TimeoutException]] in case a per-item period fires before the
+    * next item arrives from this [[Flux]].
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/timeouttime.png" alt="">
+    *
+    * @param timeout the timeout between two signals from this [[Flux]]
+    * @return a per-item expirable [[Flux]]
+    */
+  final def timeout(timeout: Duration) = Flux(jFlux.timeout(timeout))
+
+  /**
+    * Switch to a fallback [[Publisher]] in case a per-item period
+    * fires before the next item arrives from this [[Flux]].
+    *
+    * <p> If the given [[Publisher]] is None, signal a [[java.util.concurrent.TimeoutException]].
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/timeouttimefallback.png" alt="">
+    *
+    * @param timeout  the timeout between two signals from this { @link Flux}
+    * @param fallback the optional fallback [[Publisher]] to subscribe when a timeout occurs
+    * @return a per-item expirable [[Flux]] with a fallback [[Publisher]]
+    */
+  final def timeout(timeout: Duration, fallback: Option[Publisher[_ <: T]]) = Flux(jFlux.timeout(timeout, fallback.orNull))
+
+  /**
+    * Signal a [[java.util.concurrent.TimeoutException]] in case a first item from this [[Flux]] has
+    * not been emitted before the given [[Publisher]] emits.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/timeoutfirst.png" alt="">
+    *
+    * @param firstTimeout the timeout [[Publisher]] that must not emit before the first signal from this [[Flux]]
+    * @tparam U the type of the timeout Publisher
+    * @return an expirable [[Flux]] if the first item does not come before a [[Publisher]] signal
+    *
+    */
+  final def timeout[U](firstTimeout: Publisher[U]) = Flux(jFlux.timeout[U](firstTimeout))
+
+  /**
+    * Signal a [[java.util.concurrent.TimeoutException]] in case a first item from this [[Flux]] has
+    * not been emitted before the given [[Publisher]] emits. The following items will be individually timed via
+    * the factory provided [[Publisher]].
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/timeoutall.png" alt="">
+    *
+    * @param firstTimeout       the timeout [[Publisher]] that must not emit before the first signal from this [[Flux]]
+    * @param nextTimeoutFactory the timeout [[Publisher]] factory for each next item
+    * @tparam U the type of the elements of the first timeout Publisher
+    * @tparam V the type of the elements of the subsequent timeout Publishers
+    * @return a first then per-item expirable [[Flux]]
+    *
+    */
+  final def timeout[U, V](firstTimeout: Publisher[U], nextTimeoutFactory: T => Publisher[V]) = Flux(jFlux.timeout(firstTimeout, nextTimeoutFactory))
+
+  /**
+    * Switch to a fallback [[Publisher]] in case a first item from this [[Flux]] has
+    * not been emitted before the given [[Publisher]] emits. The following items will be individually timed via
+    * the factory provided [[Publisher]].
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/timeoutallfallback.png" alt="">
+    *
+    * @param firstTimeout       the timeout [[Publisher]] that must not emit before the first signal from this { @link Flux}
+    * @param nextTimeoutFactory the timeout [[Publisher]] factory for each next item
+    * @param fallback           the fallback [[Publisher]] to subscribe when a timeout occurs
+    * @tparam U the type of the elements of the first timeout Publisher
+    * @tparam V the type of the elements of the subsequent timeout Publishers
+    * @return a first then per-item expirable [[Flux]] with a fallback [[Publisher]]
+    *
+    */
+  final def timeout[U, V](firstTimeout: Publisher[U], nextTimeoutFactory: T => Publisher[V], fallback: Publisher[_ <: T]) =
+    Flux(jFlux.timeout(firstTimeout, nextTimeoutFactory, fallback))
+
+  /**
     * Transform this [[Flux]] in order to generate a target [[Flux]]. Unlike [[Flux.compose]], the
     * provided function is executed as part of assembly.
     *
     * @example {{{
-    *   val applySchedulers = flux => flux.subscribeOn(Schedulers.elastic()).publishOn(Schedulers.parallel());
-    *   flux.transform(applySchedulers).map(v => v * v).subscribe()
+    *             val applySchedulers = flux => flux.subscribeOn(Schedulers.elastic()).publishOn(Schedulers.parallel());
+    *             flux.transform(applySchedulers).map(v => v * v).subscribe()
     *          }}}
     * @param transformer the [[Function1]] to immediately map this [[Flux]] into a target [[Flux]]
     *                    instance.
