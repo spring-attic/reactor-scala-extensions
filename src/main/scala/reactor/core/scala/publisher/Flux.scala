@@ -3435,8 +3435,8 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     */
   final def thenEmpty(other: Publisher[Unit]): Mono[Unit] = {
     val pubVoid = other match {
-      case m: Mono[Unit] => m.map(_ => None.orNull: Void)
-      case f: Flux[Unit] => f.map(_ => None.orNull: Void)
+      case _: Mono[Unit] => Mono.empty[Void]
+      case _ => Flux.empty[Void]
     }
     Mono(jFlux.thenEmpty(pubVoid)).map(_ => ())
   }
@@ -3875,7 +3875,7 @@ object Flux {
     * @tparam T the reified type of the target [[Subscriber]]
     * @return an empty [[Flux]]
     */
-  def empty[T](): Flux[T] = Flux(JFlux.empty[T]())
+  def empty[T]: Flux[T] = Flux(JFlux.empty[T]())
 
   /**
     * Create a [[Flux]] that completes with the specified error.

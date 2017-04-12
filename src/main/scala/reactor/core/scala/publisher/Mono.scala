@@ -1140,11 +1140,17 @@ object Mono {
     )
   }
 
-  def empty[T]: Mono[T] = {
-    new Mono[T](
-      JMono.empty()
-    )
-  }
+  /**
+    * Create a [[Mono]] that completes without emitting any item.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/empty.png" alt="">
+    * <p>
+    *
+    * @tparam T the reified [[Subscriber]] type
+    * @return a completed [[Mono]]
+    */
+  def empty[T] = Mono[T](JMono.empty())
 
   def empty[T](source: Publisher[T]): Mono[Unit] = {
     new Mono[Unit](
