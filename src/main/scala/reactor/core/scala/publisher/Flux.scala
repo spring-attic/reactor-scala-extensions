@@ -3565,6 +3565,33 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     Flux(jFlux.timeout(firstTimeout, nextTimeoutFactory, fallback))
 
   /**
+    * Emit a [[Tuple2]] pair of T1 [[Long]] current system time in
+    * millis and T2 `T` associated data for each item from this [[Flux]]
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/timestamp.png" alt="">
+    *
+    * @return a timestamped [[Flux]]
+    */
+  final def timestamp(): Flux[(Long, T)] = Flux(jFlux.timestamp()).map(tupleTwo2ScalaTuple2).map {
+    case (timestamp, t) => (Long2long(timestamp), t)
+  }
+
+  /**
+    * Emit a [[Tuple2]] pair of T1 [[Long]] current system time in
+    * millis and T2 `T` associated data for each item from this [[Flux]]
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/timestamp.png" alt="">
+    *
+    * @param scheduler the [[TimedScheduler]] to read time from
+    * @return a timestamped [[Flux]]
+    */
+  final def timestamp(scheduler: TimedScheduler): Flux[(Long, T)] = Flux(jFlux.timestamp(scheduler)).map(tupleTwo2ScalaTuple2).map {
+    case (timestamp, t) => (Long2long(timestamp), t)
+  }
+
+  /**
     * Transform this [[Flux]] in order to generate a target [[Flux]]. Unlike [[Flux.compose]], the
     * provided function is executed as part of assembly.
     *
