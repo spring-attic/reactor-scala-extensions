@@ -3653,6 +3653,46 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     */
   final def transform[V](transformer: Flux[T] => Publisher[V]) = Flux(jFlux.transform[V](transformer))
 
+  /**
+    * Split this [[Flux]] sequence into multiple [[Flux]] delimited by the given `maxSize`
+    * count and starting from
+    * the first item.
+    * Each [[Flux]] bucket will onComplete after `maxSize` items have been routed.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/windowsize.png" alt="">
+    *
+    * @param maxSize the maximum routed items before emitting onComplete per [[Flux]] bucket
+    * @return a windowing [[Flux]] of sized [[Flux]] buckets
+    */
+  final def window(maxSize: Int): Flux[Flux[T]] = Flux(jFlux.window(maxSize)).map(Flux(_))
+
+  /**
+    * Split this [[Flux]] sequence into multiple [[Flux]] delimited by the given `skip`
+    * count,
+    * starting from
+    * the first item.
+    * Each [[Flux]] bucket will onComplete after `maxSize` items have been routed.
+    *
+    * <p>
+    * When skip > maxSize : dropping windows
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/windowsizeskip.png" alt="">
+    * <p>
+    * When maxSize < skip : overlapping windows
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/windowsizeskipover.png" alt="">
+    * <p>
+    * When skip == maxSize : exact windows
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/windowsize.png" alt="">
+    *
+    * @param maxSize the maximum routed items per [[Flux]]
+    * @param skip the number of items to count before emitting a new bucket [[Flux]]
+    * @return a windowing [[Flux]] of sized [[Flux]] buckets every skip count
+    */
+  final def window(maxSize: Int, skip: Int) = Flux(jFlux.window(maxSize, skip)).map(Flux(_))
+
   final def asJava(): JFlux[T] = jFlux
 }
 
