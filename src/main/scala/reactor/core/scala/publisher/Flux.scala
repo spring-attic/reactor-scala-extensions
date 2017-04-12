@@ -3386,6 +3386,62 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
   final def takeUntil(predicate: T => Boolean) = Flux(jFlux.takeUntil(predicate))
 
   /**
+    * Relay values from this [[Flux]] until the given [[Publisher]] emits.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/takeuntil.png" alt="">
+    *
+    * @param other the [[Publisher]] to signal when to stop replaying signal from this [[Flux]]
+    * @return an eventually limited [[Flux]]
+    *
+    */
+  final def takeUntilOther(other: Publisher[_]) = Flux(jFlux.takeUntilOther(other))
+
+  /**
+    * Relay values while a predicate returns `True` for the values
+    * (checked before each value is delivered).
+    * Unlike [[Flux.takeUntil]], this will exclude the matched data.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/takewhile.png" alt="">
+    *
+    * @param continuePredicate the `Predicate` invoked each onNext returning `False` to terminate
+    * @return an eventually limited [[Flux]]
+    */
+  final def takeWhile(continuePredicate: T => Boolean) = Flux(jFlux.takeWhile(continuePredicate))
+
+  /**
+    * Return a `Mono[Unit]` that completes when this [[Flux]] completes.
+    * This will actively ignore the sequence and only replay completion or error signals.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/ignorethen.png" alt="">
+    * <p>
+    *
+    * @return a new [[Mono]]
+    */
+  final def `then`(): Mono[Unit] = Mono(jFlux.`then`()).map(_ => ())
+
+  /**
+    * Return a `Mono[Unit]` that waits for this [[Flux]] to complete then
+    * for a supplied [[Publisher Publisher&#91;Unit&#93;]] to also complete. The
+    * second completion signal is replayed, or any error signal that occurs instead.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/ignorethen.png"
+    * alt="">
+    *
+    * @param other a [[Publisher]] to wait for after this Flux's termination
+    * @return a new [[Mono]] completing when both publishers have completed in
+    *                       sequence
+    */
+  final def thenEmpty(other: Publisher[Unit]): Mono[Unit] = {
+    val pubVoid = other match {
+      case m: Mono[Unit] => m.map(_ => None.orNull: Void)
+      case f: Flux[Unit] => f.map(_ => None.orNull: Void)
+    }
+    Mono(jFlux.thenEmpty(pubVoid)).map(_ => ())
+  }
+
+  /**
     * Transform this [[Flux]] in order to generate a target [[Flux]]. Unlike [[Flux.compose]], the
     * provided function is executed as part of assembly.
     *

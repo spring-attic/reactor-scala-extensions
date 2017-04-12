@@ -2001,6 +2001,25 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       .verifyComplete()
     }
 
+    ".takeWhile should emit values until the predicate returns false" in {
+      val flux = Flux.just(1, 2, 3, 4, 5).takeWhile(t => t < 4)
+      StepVerifier.create(flux)
+      .expectNext(1, 2, 3)
+      .verifyComplete()
+    }
+
+    ".then should actively ignore the values" in {
+      val mono = Flux.just(1, 2, 3, 4, 5).`then`()
+      StepVerifier.create(mono)
+      .verifyComplete()
+    }
+
+    ".thenEmpty should wait for this to complete and then for the supplied publisher to complete" in {
+      val mono = Flux.just(1, 2, 3).thenEmpty(Mono.just(1))
+      StepVerifier.create(mono)
+        .verifyComplete()
+    }
+
     ".transform should defer transformation of this flux to another publisher" in {
       val flux = Flux.just(1, 2, 3).transform(Mono.from)
       StepVerifier.create(flux)
