@@ -2077,6 +2077,15 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       }
     }
 
+    ".toIterable" - {
+      "should transform this flux into iterable" in {
+        Flux.just(1, 2, 3).toIterable().toStream shouldBe Stream(1, 2, 3)
+      }
+      "with batchSize should transform this flux into iterable" in {
+        Flux.just(1, 2, 3).toIterable(1).toStream shouldBe Stream(1, 2, 3)
+      }
+    }
+
     ".transform should defer transformation of this flux to another publisher" in {
       val flux = Flux.just(1, 2, 3).transform(Mono.from)
       StepVerifier.create(flux)

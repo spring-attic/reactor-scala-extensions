@@ -3,6 +3,7 @@ package reactor.core.scala.publisher
 import java.lang.{Iterable => JIterable, Long => JLong}
 import java.util
 import java.util.concurrent.Callable
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.function.{BiFunction, Consumer, Function, Supplier}
 import java.util.logging.Level
 import java.util.{Comparator, List => JList}
@@ -19,6 +20,7 @@ import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.duration.Duration
+import scala.util.{Failure, Success, Try}
 
 
 /**
@@ -3590,6 +3592,29 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
   final def timestamp(scheduler: TimedScheduler): Flux[(Long, T)] = Flux(jFlux.timestamp(scheduler)).map(tupleTwo2ScalaTuple2).map {
     case (timestamp, t) => (Long2long(timestamp), t)
   }
+
+  /**
+    * Transform this [[Flux]] into a lazy [[Iterable]] blocking on next calls.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/toiterable.png" alt="">
+    * <p>
+    *
+    * @return a blocking [[Iterable]]
+    */
+  final def toIterable(): Iterable[T] = jFlux.toIterable.asScala
+
+  /**
+    * Transform this [[Flux]] into a lazy [[Iterable]] blocking on next calls.
+    *
+    * @param batchSize the bounded capacity to produce to this [[Flux]] or `Int.MaxValue` for unbounded
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/toiterablen.png" alt="">
+    * <p>
+    * @return a blocking [[Iterable]]
+    */
+  final def toIterable(batchSize: Long): Iterable[T] = jFlux.toIterable(batchSize).asScala
 
   /**
     * Transform this [[Flux]] in order to generate a target [[Flux]]. Unlike [[Flux.compose]], the
