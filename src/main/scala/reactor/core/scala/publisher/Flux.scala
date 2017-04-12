@@ -3421,6 +3421,13 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     */
   final def `then`(): Mono[Unit] = Mono(jFlux.`then`()).map(_ => ())
 
+  private def publisherUnit2PublisherVoid(p: Publisher[Unit]): Publisher[Void] = {
+    p match {
+      case _: Mono[Unit] => Mono.empty[Void]
+      case _ => Flux.empty[Void]
+    }
+  }
+
   /**
     * Return a `Mono[Unit]` that waits for this [[Flux]] to complete then
     * for a supplied [[Publisher Publisher&#91;Unit&#93;]] to also complete. The
@@ -3434,13 +3441,26 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     *                       sequence
     */
   final def thenEmpty(other: Publisher[Unit]): Mono[Unit] = {
-    val pubVoid = other match {
-      case _: Mono[Unit] => Mono.empty[Void]
-      case _ => Flux.empty[Void]
-    }
-    Mono(jFlux.thenEmpty(pubVoid)).map(_ => ())
+    Mono(jFlux.thenEmpty(publisherUnit2PublisherVoid(other))).map(_ => ())
   }
 
+  /**
+    * Return a [[Flux]] that emits the completion signal of the supplied
+    * [[Publisher]] when this [[Flux]] onComplete or onError. If an error occur,
+    * the error signal is replayed after the supplied [[Publisher]] is terminated.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/ignorethen.png" alt="">
+    *
+    * @param afterSupplier a [[Supplier]] of [[Publisher]] to wait for after
+    *                                this Flux termination
+    * @return a new [[Flux]] emitting eventually from the supplied [[Publisher]]
+    */
+  final def `then`(afterSupplier: () => Publisher[Unit]): Mono[Unit] = {
+    val mono = jFlux.`then`(new Supplier[Publisher[Void]] {
+      override def get(): Publisher[Void] = publisherUnit2PublisherVoid(afterSupplier())
+    })
+    Mono(mono).map(_ => ())
+  }
   /**
     * Transform this [[Flux]] in order to generate a target [[Flux]]. Unlike [[Flux.compose]], the
     * provided function is executed as part of assembly.

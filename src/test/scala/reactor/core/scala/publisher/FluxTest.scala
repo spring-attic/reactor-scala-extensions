@@ -166,7 +166,7 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
     }
 
     ".empty should create an empty flux" in {
-      val flux = Flux.empty()
+      val flux = Flux.empty
       StepVerifier.create(flux)
         .verifyComplete()
     }
@@ -1521,7 +1521,7 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
           .verifyComplete()
       }
       "with defaultValue should give the last element or defaultValue if the flux is empty" in {
-        val mono = Flux.empty().last(5)
+        val mono = Flux.empty.last(5)
         StepVerifier.create(mono)
           .expectNext(5)
           .verifyComplete()
@@ -1810,7 +1810,7 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
           .verifyComplete()
       }
       "with default value should return the default value if the flux is empty" in {
-        val mono = Flux.empty().single(2)
+        val mono = Flux.empty.single(2)
         StepVerifier.create(mono)
           .expectNext(2)
           .verifyComplete()
@@ -1914,7 +1914,7 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
     }
 
     ".switchIfEmpty should switch if the current flux is empty" in {
-      val flux = Flux.empty().switchIfEmpty(Flux.just(10, 20, 30))
+      val flux = Flux.empty.switchIfEmpty(Flux.just(10, 20, 30))
       StepVerifier.create(flux)
         .expectNext(10, 20, 30)
         .verifyComplete()
@@ -2008,10 +2008,17 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       .verifyComplete()
     }
 
-    ".then should actively ignore the values" in {
-      val mono = Flux.just(1, 2, 3, 4, 5).`then`()
-      StepVerifier.create(mono)
-      .verifyComplete()
+    ".then" - {
+      "without parameter should actively ignore the values" in {
+        val mono = Flux.just(1, 2, 3, 4, 5).`then`()
+        StepVerifier.create(mono)
+          .verifyComplete()
+      }
+      "with supplier should ignore the values" in {
+        val mono = Flux.just(1, 2, 3).`then`(() => Mono.just(1))
+        StepVerifier.create(mono)
+          .verifyComplete()
+      }
     }
 
     ".thenEmpty should wait for this to complete and then for the supplied publisher to complete" in {

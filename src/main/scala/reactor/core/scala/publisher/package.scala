@@ -129,6 +129,7 @@ Uncomment this when used. It is not used for now and reduce the code coverage
   implicit def publisherUnit2PublisherVoid(publisher: Publisher[Unit]): Publisher[Void] = {
     publisher match {
       case m: Mono[Unit] => m.map[Void](_ => null: Void)
+      case f: Flux[Unit] => f.map[Void](_ => null: Void)
     }
   }
 
