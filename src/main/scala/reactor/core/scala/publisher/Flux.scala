@@ -3617,6 +3617,26 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
   final def toIterable(batchSize: Long): Iterable[T] = jFlux.toIterable(batchSize).asScala
 
   /**
+    * Transform this [[Flux]] into a lazy [[Stream]] blocking on next calls.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/tostream.png" alt="">
+    *
+    * @return a [[Stream] of unknown size with onClose attached to [[Subscription.cancel]]
+    */
+  final def toStream(): Stream[T] = jFlux.toStream.iterator().asScala.toStream
+
+  /**
+    * Transform this [[Flux]] into a lazy [[Stream]] blocking on next calls.
+    *
+    * @param batchSize the bounded capacity to produce to this [[Flux]] or `Int.MaxValue` for unbounded
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/tostream.png" alt="">
+    * @return a [[Stream]] of unknown size with onClose attached to [[Subscription.cancel]]
+    */
+  final def toStream(batchSize: Int): Stream[T] = jFlux.toStream(batchSize).iterator().asScala.toStream
+
+  /**
     * Transform this [[Flux]] in order to generate a target [[Flux]]. Unlike [[Flux.compose]], the
     * provided function is executed as part of assembly.
     *
