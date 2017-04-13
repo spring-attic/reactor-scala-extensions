@@ -14,6 +14,7 @@ import reactor.core.publisher.{GroupedFlux => JGroupedFlux, _}
 import reactor.core.scheduler.Schedulers
 import reactor.test.StepVerifier
 import reactor.test.scheduler.VirtualTimeScheduler
+import reactor.util.concurrent.QueueSupplier
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
@@ -2083,6 +2084,9 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       }
       "with batchSize should transform this flux into iterable" in {
         Flux.just(1, 2, 3).toIterable(1).toStream shouldBe Stream(1, 2, 3)
+      }
+      "with batchSize and queue supplier should transform this flux into interable" in {
+        Flux.just(1, 2, 3).toIterable(1, Option(QueueSupplier.get[Int](1))).toStream shouldBe Stream(1, 2, 3)
       }
     }
 

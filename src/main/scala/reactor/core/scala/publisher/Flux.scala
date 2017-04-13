@@ -3,7 +3,6 @@ package reactor.core.scala.publisher
 import java.lang.{Iterable => JIterable, Long => JLong}
 import java.util
 import java.util.concurrent.Callable
-import java.util.concurrent.atomic.AtomicBoolean
 import java.util.function.{BiFunction, Consumer, Function, Supplier}
 import java.util.logging.Level
 import java.util.{Comparator, List => JList}
@@ -20,7 +19,6 @@ import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.duration.Duration
-import scala.util.{Failure, Success, Try}
 
 
 /**
@@ -3617,6 +3615,19 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
   final def toIterable(batchSize: Long): Iterable[T] = jFlux.toIterable(batchSize).asScala
 
   /**
+    * Transform this [[Flux]] into a lazy [[Iterable]] blocking on next calls.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/toiterablen.png" alt="">
+    *
+    * @param batchSize     the bounded capacity to produce to this [[Flux]] or `Int.MaxValue` for unbounded
+    * @param queueProvider the optional supplier of the queue implementation to be used for transferring elements
+    *                      across threads. The supplier of queue can easily be obtained using [[reactor.util.concurrent.QueueSupplier.get]]
+    * @return a blocking [[Iterable]]
+    */
+  final def toIterable(batchSize: Long, queueProvider: Option[Supplier[util.Queue[T]]]): Iterable[T] = jFlux.toIterable(batchSize, queueProvider.orNull).asScala
+
+  /**
     * Transform this [[Flux]] into a lazy [[Stream]] blocking on next calls.
     *
     * <p>
@@ -3641,8 +3652,8 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * provided function is executed as part of assembly.
     *
     * @example {{{
-    *             val applySchedulers = flux => flux.subscribeOn(Schedulers.elastic()).publishOn(Schedulers.parallel());
-    *             flux.transform(applySchedulers).map(v => v * v).subscribe()
+    *                       val applySchedulers = flux => flux.subscribeOn(Schedulers.elastic()).publishOn(Schedulers.parallel());
+    *                       flux.transform(applySchedulers).map(v => v * v).subscribe()
     *          }}}
     * @param transformer the [[Function1]] to immediately map this [[Flux]] into a target [[Flux]]
     *                    instance.
@@ -3688,10 +3699,86 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/windowsize.png" alt="">
     *
     * @param maxSize the maximum routed items per [[Flux]]
-    * @param skip the number of items to count before emitting a new bucket [[Flux]]
+    * @param skip    the number of items to count before emitting a new bucket [[Flux]]
     * @return a windowing [[Flux]] of sized [[Flux]] buckets every skip count
     */
   final def window(maxSize: Int, skip: Int) = Flux(jFlux.window(maxSize, skip)).map(Flux(_))
+
+  /**
+    * Split this [[Flux]] sequence into continuous, non-overlapping windows
+    * where the window boundary is signalled by another [[Publisher]]
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/windowboundary.png" alt="">
+    *
+    * @param boundary a [[Publisher]] to emit any item for a split signal and complete to terminate
+    * @return a windowing [[Flux]] delimiting its sub-sequences by a given [[Publisher]]
+    */
+  final def window(boundary: Publisher[_]) = Flux(jFlux.window(boundary)).map(Flux(_))
+
+  /**
+    * Split this [[Flux]] sequence into potentially overlapping windows controlled by items of a
+    * start [[Publisher]] and end [[Publisher]] derived from the start values.
+    *
+    * <p>
+    * When Open signal is strictly not overlapping Close signal : dropping windows
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/windowopenclose.png" alt="">
+    * <p>
+    * When Open signal is strictly more frequent than Close signal : overlapping windows
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/windowopencloseover.png" alt="">
+    * <p>
+    * When Open signal is exactly coordinated with Close signal : exact windows
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/windowboundary.png" alt="">
+    *
+    * @param bucketOpening a [[Publisher]] to emit any item for a split signal and complete to terminate
+    * @param closeSelector a `Function` given an opening signal and returning a [[Publisher]] that
+    *                                emits to complete the window
+    * @tparam U the type of the sequence opening windows
+    * @tparam V the type of the sequence closing windows opened by the bucketOpening Publisher's elements
+    * @return a windowing [[Flux]] delimiting its sub-sequences by a given [[Publisher]] and lasting until
+    *                             a selected [[Publisher]] emits
+    */
+  final def window[U, V](bucketOpening: Publisher[U], closeSelector: U => Publisher[V]): Flux[Flux[T]] = Flux(jFlux.window[U, V](bucketOpening, closeSelector)).map(Flux(_))
+
+  /**
+    * Split this [[Flux]] sequence into continuous, non-overlapping windows delimited by a given period.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/windowtimespan.png" alt="">
+    *
+    * @param timespan the duration to delimit [[Flux]] windows
+    * @return a windowing [[Flux]] of timed [[Flux]] buckets
+    */
+  final def window(timespan: Duration): Flux[Flux[T]] = Flux(jFlux.window(timespan)).map(Flux(_))
+
+  /**
+    * Split this [[Flux]] sequence into multiple [[Flux]] delimited by the given `timeshift`
+    * period, starting from the first item.
+    * Each [[Flux]] bucket will onComplete after `timespan` period has elpased.
+    *
+    * <p>
+    * When timeshift > timespan : dropping windows
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/windowsizeskip.png" alt="">
+    * <p>
+    * When timeshift < timespan : overlapping windows
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/windowsizeskipover.png" alt="">
+    * <p>
+    * When timeshift == timespan : exact windows
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/windowsize.png" alt="">
+    *
+    * @param timespan the maximum [[Flux]] window duration
+    * @param timeshift the period of time to create new [[Flux]] windows
+    * @return a windowing
+    *         [[Flux]] of [[Flux]] buckets delimited by an opening [[Publisher]] and a selected closing [[Publisher]]
+    *
+    */
+  final def window(timespan: Duration, timeshift: Duration): Flux[Flux[T]] = Flux(jFlux.window(timespan, timeshift)).map(Flux(_))
 
   final def asJava(): JFlux[T] = jFlux
 }
