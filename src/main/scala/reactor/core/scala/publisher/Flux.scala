@@ -3607,9 +3607,9 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     *
     * @param batchSize the bounded capacity to produce to this [[Flux]] or `Int.MaxValue` for unbounded
     *
-    * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/toiterablen.png" alt="">
-    * <p>
+    *                  <p>
+    *                  <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/toiterablen.png" alt="">
+    *                  <p>
     * @return a blocking [[Iterable]]
     */
   final def toIterable(batchSize: Long): Iterable[T] = jFlux.toIterable(batchSize).asScala
@@ -3641,8 +3641,8 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * Transform this [[Flux]] into a lazy [[Stream]] blocking on next calls.
     *
     * @param batchSize the bounded capacity to produce to this [[Flux]] or `Int.MaxValue` for unbounded
-    * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/tostream.png" alt="">
+    *                  <p>
+    *                  <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/tostream.png" alt="">
     * @return a [[Stream]] of unknown size with onClose attached to [[Subscription.cancel]]
     */
   final def toStream(batchSize: Int): Stream[T] = jFlux.toStream(batchSize).iterator().asScala.toStream
@@ -3652,8 +3652,8 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * provided function is executed as part of assembly.
     *
     * @example {{{
-    *                       val applySchedulers = flux => flux.subscribeOn(Schedulers.elastic()).publishOn(Schedulers.parallel());
-    *                       flux.transform(applySchedulers).map(v => v * v).subscribe()
+    *                                 val applySchedulers = flux => flux.subscribeOn(Schedulers.elastic()).publishOn(Schedulers.parallel());
+    *                                 flux.transform(applySchedulers).map(v => v * v).subscribe()
     *          }}}
     * @param transformer the [[Function1]] to immediately map this [[Flux]] into a target [[Flux]]
     *                    instance.
@@ -3735,11 +3735,11 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     *
     * @param bucketOpening a [[Publisher]] to emit any item for a split signal and complete to terminate
     * @param closeSelector a `Function` given an opening signal and returning a [[Publisher]] that
-    *                                emits to complete the window
+    *                      emits to complete the window
     * @tparam U the type of the sequence opening windows
     * @tparam V the type of the sequence closing windows opened by the bucketOpening Publisher's elements
     * @return a windowing [[Flux]] delimiting its sub-sequences by a given [[Publisher]] and lasting until
-    *                             a selected [[Publisher]] emits
+    *         a selected [[Publisher]] emits
     */
   final def window[U, V](bucketOpening: Publisher[U], closeSelector: U => Publisher[V]): Flux[Flux[T]] = Flux(jFlux.window[U, V](bucketOpening, closeSelector)).map(Flux(_))
 
@@ -3772,7 +3772,7 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * <p>
     * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/windowsize.png" alt="">
     *
-    * @param timespan the maximum [[Flux]] window duration
+    * @param timespan  the maximum [[Flux]] window duration
     * @param timeshift the period of time to create new [[Flux]] windows
     * @return a windowing
     *         [[Flux]] of [[Flux]] buckets delimited by an opening [[Publisher]] and a selected closing [[Publisher]]
@@ -3788,7 +3788,7 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * <p>
     * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/windowsizetimeout.png" alt="">
     *
-    * @param maxSize the maximum [[Flux]] window items to count before onComplete
+    * @param maxSize  the maximum [[Flux]] window items to count before onComplete
     * @param timespan the timeout to use to onComplete a given window if size is not counted yet
     * @return a windowing [[Flux]] of sized or timed [[Flux]] buckets
     */
@@ -3812,7 +3812,7 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/windowtimespan.png" alt="">
     *
     * @param timespan the duration in milliseconds to delimit [[Flux]] windows
-    * @param timer the [[TimedScheduler]] to run on
+    * @param timer    the [[TimedScheduler]] to run on
     * @return a windowing [[Flux]] of timed [[Flux]] buckets
     */
   final def windowMillis(timespan: Long, timer: TimedScheduler): Flux[Flux[T]] = Flux(jFlux.windowMillis(timespan, timer)).map(Flux(_))
@@ -3835,9 +3835,9 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * <p>
     * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/windowsize.png" alt="">
     *
-    * @param timespan the maximum [[Flux]] window duration in milliseconds
+    * @param timespan  the maximum [[Flux]] window duration in milliseconds
     * @param timeshift the period of time in milliseconds to create new [[Flux]] windows
-    * @param timer the [[TimedScheduler]] to run on
+    * @param timer     the [[TimedScheduler]] to run on
     * @return a windowing
     *         [[Flux]] of [[Flux]] buckets delimited by an opening [[Publisher]] and a selected closing [[Publisher]]
     *
@@ -3852,7 +3852,7 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * <p>
     * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/windowsizetimeout.png" alt="">
     *
-    * @param maxSize the maximum [[Flux]] window items to count before onComplete
+    * @param maxSize  the maximum [[Flux]] window items to count before onComplete
     * @param timespan the timeout to use to onComplete a given window if size is not counted yet
     * @return a windowing [[Flux]] of sized or timed [[Flux]] buckets
     */
@@ -3866,7 +3866,7 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * <p>
     * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/windowsizetimeout.png" alt="">
     *
-    * @param maxSize the maximum [[Flux]] window items to count before onComplete
+    * @param maxSize  the maximum [[Flux]] window items to count before onComplete
     * @param timespan the timeout to use to onComplete a given window if size is not counted yet
     * @param timer    the [[TimedScheduler]] to run on
     * @return a windowing [[Flux]] of sized or timed [[Flux]] buckets
@@ -3883,7 +3883,7 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     *
     * @param boundaryTrigger a predicate that triggers the next window when it becomes true.
     * @return a windowing [[Flux]] of [[GroupedFlux]] windows, bounded depending
-    *                             on the predicate and keyed with the value that triggered the new window.
+    *         on the predicate and keyed with the value that triggered the new window.
     */
   final def windowUntil(boundaryTrigger: T => Boolean): Flux[GroupedFlux[T, T]] = Flux(jFlux.windowUntil(boundaryTrigger)).map(GroupedFlux(_))
 
@@ -3905,7 +3905,7 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * @param boundaryTrigger a predicate that triggers the next window when it becomes true.
     * @param cutBefore       set to true to include the triggering element in the new window rather than the old.
     * @return a windowing [[Flux]] of [[GroupedFlux]] windows, bounded depending
-    *                             on the predicate and keyed with the value that triggered the new window.
+    *         on the predicate and keyed with the value that triggered the new window.
     */
   final def windowUntil(boundaryTrigger: T => Boolean, cutBefore: Boolean): Flux[GroupedFlux[T, T]] = Flux(jFlux.windowUntil(boundaryTrigger, cutBefore)).map(GroupedFlux(_))
 
@@ -3929,7 +3929,7 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * @param cutBefore       set to true to include the triggering element in the new window rather than the old.
     * @param prefetch        the request size to use for this { @link Flux}.
     * @return a windowing [[Flux]] of [[GroupedFlux]] windows, bounded depending
-    *                             on the predicate and keyed with the value that triggered the new window.
+    *         on the predicate and keyed with the value that triggered the new window.
     */
   final def windowUntil(boundaryTrigger: T => Boolean, cutBefore: Boolean, prefetch: Int): Flux[GroupedFlux[T, T]] =
     Flux(jFlux.windowUntil(boundaryTrigger, cutBefore, prefetch)).map(GroupedFlux(_))
@@ -3947,7 +3947,7 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     *
     * @param inclusionPredicate a predicate that triggers the next window when it becomes false.
     * @return a windowing [[Flux]] of [[GroupedFlux]] windows, each containing
-    *                             subsequent elements that all passed a predicate, and keyed with a separator element.
+    *         subsequent elements that all passed a predicate, and keyed with a separator element.
     */
   final def windowWhile(inclusionPredicate: T => Boolean): Flux[GroupedFlux[T, T]] = Flux(jFlux.windowWhile(inclusionPredicate)).map(GroupedFlux(_))
 
@@ -3965,7 +3965,7 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * @param inclusionPredicate a predicate that triggers the next window when it becomes false.
     * @param prefetch           the request size to use for this [[Flux]].
     * @return a windowing [[Flux]] of [[GroupedFlux]] windows, each containing
-    *                             subsequent elements that all passed a predicate, and keyed with a separator element.
+    *         subsequent elements that all passed a predicate, and keyed with a separator element.
     */
   final def windowWhile(inclusionPredicate: T => Boolean, prefetch: Int): Flux[GroupedFlux[T, T]] = Flux(jFlux.windowWhile(inclusionPredicate, prefetch)).map(GroupedFlux(_))
 
@@ -3981,13 +3981,106 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * <p>
     * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/withlatestfrom.png" alt="">
     *
-    * @param other the [[Publisher]] to combine with
+    * @param other          the [[Publisher]] to combine with
     * @param resultSelector the bi-function called with each pair of source and other elements that should return a single value to be emitted
     * @tparam U the other [[Publisher]] sequence type
     * @tparam R the result type
     * @return a combined [[Flux]] gated by another [[Publisher]]
     */
   final def withLatestFrom[U, R](other: Publisher[_ <: U], resultSelector: (T, U) => _ <: R) = Flux(jFlux.withLatestFrom[U, R](other, resultSelector))
+
+  /**
+    * "Step-Merge" especially useful in Scatter-Gather scenarios. The operator will forward all combinations of the
+    * most recent items emitted by each source until any of them completes. Errors will immediately be forwarded.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/zipt.png" alt="">
+    * <p>
+    *
+    * @param source2 The second upstream [[Publisher]] to subscribe to.
+    * @tparam T2 type of the value from source2
+    * @return a zipped [[Flux]]
+    *
+    */
+  final def zipWith[T2](source2: Publisher[_ <: T2]): Flux[(T, T2)] = Flux(jFlux.zipWith(source2)).map(tupleTwo2ScalaTuple2)
+
+  /**
+    * "Step-Merge" especially useful in Scatter-Gather scenarios. The operator will forward all combinations
+    * produced by the passed combinator from the most recent items emitted by each source until any of them
+    * completes. Errors will immediately be forwarded.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/zip.png" alt="">
+    * <p>
+    *
+    * @param source2    The second upstream [[Publisher]] to subscribe to.
+    * @param combinator The aggregate function that will receive a unique value from each upstream and return the value
+    *                   to signal downstream
+    * @tparam T2 type of the value from source2
+    * @tparam V  The produced output after transformation by the combinator
+    * @return a zipped [[Flux]]
+    */
+  final def zipWith[T2, V](source2: Publisher[_ <: T2], combinator: (T, T2) => V) = Flux(jFlux.zipWith[T2, V](source2, combinator))
+
+  /**
+    * "Step-Merge" especially useful in Scatter-Gather scenarios. The operator will forward all combinations
+    * produced by the passed combinator from the most recent items emitted by each source until any of them
+    * completes. Errors will immediately be forwarded.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/zipp.png" alt="">
+    * <p>
+    *
+    * @param source2    The second upstream [[Publisher]] to subscribe to.
+    * @param prefetch   the request size to use for this [[Flux]] and the other [[Publisher]]
+    * @param combinator The aggregate function that will receive a unique value from each upstream and return the value
+    *                   to signal downstream
+    * @tparam T2 type of the value from source2
+    * @tparam V  The produced output after transformation by the combinator
+    * @return a zipped [[Flux]]
+    */
+  final def zipWith[T2, V](source2: Publisher[_ <: T2], prefetch: Int, combinator: (T, T2) => V) = Flux(jFlux.zipWith[T2, V](source2, prefetch, combinator))
+
+  /**
+    * "Step-Merge" especially useful in Scatter-Gather scenarios. The operator will forward all combinations of the
+    * most recent items emitted by each source until any of them completes. Errors will immediately be forwarded.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/zipp.png" alt="">
+    * <p>
+    *
+    * @param source2  The second upstream [[Publisher]] to subscribe to.
+    * @param prefetch the request size to use for this [[Flux]] and the other [[Publisher]]
+    * @tparam T2 type of the value from source2
+    * @return a zipped [[Flux]]
+    *
+    */
+  final def zipWith[T2](source2: Publisher[_ <: T2], prefetch: Int) = Flux(jFlux.zipWith[T2](source2, prefetch)).map(tupleTwo2ScalaTuple2)
+
+  /**
+    * Pairwise combines as `Tuple2` elements of this [[Flux]] and an [[Iterable]] sequence.
+    *
+    * @param iterable the [[Iterable]] to pair with
+    *
+    *                 <p>
+    *                 <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/zipwithiterable.png" alt="">
+    * @tparam T2 the value type of the other iterable sequence
+    * @return a zipped [[Flux]]
+    *
+    */
+  final def zipWithIterable[T2](iterable: Iterable[_ <: T2]): Flux[(T, T2)] = Flux(jFlux.zipWithIterable[T2](iterable)).map(tupleTwo2ScalaTuple2)
+
+  /**
+    * Pairwise combines elements of this
+    * [[Flux]] and an [[Iterable]] sequence using the given zipper `BiFunction`.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/zipwithiterable.png" alt="">
+    *
+    * @param iterable the [[Iterable]] to pair with
+    * @param zipper   the `BiFunction` combinator
+    * @tparam T2 the value type of the other iterable sequence
+    * @tparam V  the result type
+    * @return a zipped [[Flux]]
+    *
+    */
+  final def zipWithIterable[T2, V](iterable: Iterable[_ <: T2], zipper: (T, T2) => _ <: V) = Flux(jFlux.zipWithIterable[T2, V](iterable, zipper))
 
   final def asJava(): JFlux[T] = jFlux
 }

@@ -2108,9 +2108,51 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
 
     ".withLatestFrom should combine with the latest of the other publisher" in {
       StepVerifier.withVirtualTime(() => Flux.just(1, 2, 3, 4).delayElements(1 second).withLatestFrom(Flux.just("one", "two", "three").delayElements(1500 milliseconds), (i: Int, s: String) => (i, s)))
-      .thenAwait(5 seconds)
-      .expectNext((2, "one"), (3, "two"), (4, "two"))
-      .verifyComplete()
+        .thenAwait(5 seconds)
+        .expectNext((2, "one"), (3, "two"), (4, "two"))
+        .verifyComplete()
+    }
+
+    ".zipWith" - {
+      "should zip both publishers" in {
+        val flux = Flux.just(1, 2, 3).zipWith(Flux.just(10, 20, 30))
+        StepVerifier.create(flux)
+          .expectNext((1, 10), (2, 20), (3, 30))
+          .verifyComplete()
+      }
+      "with combinator should zip and apply the combinator" in {
+        val flux = Flux.just(1, 2, 3).zipWith[Int, Int](Flux.just(10, 20, 30), (i1: Int, i2: Int) => i1 + i2)
+        StepVerifier.create(flux)
+          .expectNext(11, 22, 33)
+          .verifyComplete()
+      }
+      "with combinator and prefetch should zip and apply the combinator" in {
+        val flux = Flux.just(1, 2, 3).zipWith[Int, Int](Flux.just(10, 20, 30), 1, (i1: Int, i2: Int) => i1 + i2)
+        StepVerifier.create(flux)
+          .expectNext(11, 22, 33)
+          .verifyComplete()
+      }
+      "with prefetch should zip both publishers" in {
+        val flux = Flux.just(1, 2, 3).zipWith(Flux.just(10, 20, 30), 1)
+        StepVerifier.create(flux)
+          .expectNext((1, 10), (2, 20), (3, 30))
+          .verifyComplete()
+      }
+    }
+
+    ".zipWithIterable" - {
+      "should zip with the provided iterable" in {
+        val flux = Flux.just(1, 2, 3).zipWithIterable(Iterable(10, 20, 30))
+        StepVerifier.create(flux)
+          .expectNext((1, 10), (2, 20), (3, 30))
+          .verifyComplete()
+      }
+      "with zipper should zip and apply the zipper" in {
+        val flux = Flux.just(1, 2, 3).zipWithIterable[Int, Int](Iterable(10, 20, 30), (i1: Int, i2: Int) => i1 + i2)
+        StepVerifier.create(flux)
+          .expectNext(11, 22, 33)
+          .verifyComplete()
+      }
     }
   }
 }
