@@ -3844,6 +3844,35 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     */
   final def windowMillis(timespan: Long, timeshift: Long, timer: TimedScheduler): Flux[Flux[T]] = Flux(jFlux.windowMillis(timespan, timeshift, timer)).map(Flux(_))
 
+  /**
+    * Split this [[Flux]] sequence into multiple [[Flux]] delimited by the given `maxSize` number
+    * of items, starting from the first item. [[Flux]] windows will onComplete after a given
+    * timespan occurs and the number of items has not be counted.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/windowsizetimeout.png" alt="">
+    *
+    * @param maxSize the maximum [[Flux]] window items to count before onComplete
+    * @param timespan the timeout to use to onComplete a given window if size is not counted yet
+    * @return a windowing [[Flux]] of sized or timed [[Flux]] buckets
+    */
+  final def windowTimeoutMillis(maxSize: Int, timespan: Long): Flux[Flux[T]] = Flux(jFlux.windowTimeoutMillis(maxSize, timespan)).map(Flux(_))
+
+  /**
+    * Split this [[Flux]] sequence into multiple [[Flux]] delimited by the given `maxSize` number
+    * of items, starting from the first item. [[Flux]] windows will onComplete after a given
+    * timespan occurs and the number of items has not be counted.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/windowsizetimeout.png" alt="">
+    *
+    * @param maxSize the maximum [[Flux]] window items to count before onComplete
+    * @param timespan the timeout to use to onComplete a given window if size is not counted yet
+    * @param timer    the [[TimedScheduler]] to run on
+    * @return a windowing [[Flux]] of sized or timed [[Flux]] buckets
+    */
+  final def windowTimeoutMillis(maxSize: Int, timespan: Long, timer: TimedScheduler): Flux[Flux[T]] = Flux(jFlux.windowTimeoutMillis(maxSize, timespan, timer)).map(Flux(_))
+
   final def asJava(): JFlux[T] = jFlux
 }
 
