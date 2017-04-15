@@ -34,8 +34,8 @@ With Gradle:
     }
     
     dependencies {
-        //compile "com.github.sinwe:reactor-core-scala:0.2.0-SNAPSHOT
-        compile "com.github.sinwe:reactor-core-scala:0.1.9
+        //compile "com.github.sinwe:reactor-core-scala:0.2.3-SNAPSHOT
+        compile "com.github.sinwe:reactor-core-scala:0.2.2
     }
 
 With Maven:
@@ -56,13 +56,13 @@ With Maven:
     <dependency>
         <groupId>com.github.sinwe</groupId>
         <artifactId>reactor-core-scala</artifactId>
-        <version>0.2.0-SNAPSHOT</version>
+        <version>0.2.3-SNAPSHOT</version>
     </dependency>
     -->
     <dependency>
         <groupId>com.github.sinwe</groupId>
         <artifactId>reactor-core-scala</artifactId>
-        <version>0.1.9</version>
+        <version>0.2.2</version>
     </dependency>
 
 ## Contributing
