@@ -3780,6 +3780,70 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     */
   final def window(timespan: Duration, timeshift: Duration): Flux[Flux[T]] = Flux(jFlux.window(timespan, timeshift)).map(Flux(_))
 
+  /**
+    * Split this [[Flux]] sequence into multiple [[Flux]] delimited by the given `maxSize` number
+    * of items, starting from the first item. [[Flux]] windows will onComplete after a given
+    * timespan occurs and the number of items has not be counted.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/windowsizetimeout.png" alt="">
+    *
+    * @param maxSize the maximum [[Flux]] window items to count before onComplete
+    * @param timespan the timeout to use to onComplete a given window if size is not counted yet
+    * @return a windowing [[Flux]] of sized or timed [[Flux]] buckets
+    */
+  final def windowTimeout(maxSize: Int, timespan: Duration): Flux[Flux[T]] = Flux(jFlux.windowTimeout(maxSize, timespan)).map(Flux(_))
+
+  /**
+    * Split this [[Flux]] sequence into continuous, non-overlapping windows delimited by a given period.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/windowtimespan.png" alt="">
+    *
+    * @param timespan the duration in milliseconds to delimit [[Flux]] windows
+    * @return a windowing [[Flux]] of timed [[Flux]] buckets
+    */
+  final def windowMillis(timespan: Long): Flux[Flux[T]] = Flux(jFlux.windowMillis(timespan)).map(Flux(_))
+
+  /**
+    * Split this [[Flux]] sequence into continuous, non-overlapping windows delimited by a given period.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/windowtimespan.png" alt="">
+    *
+    * @param timespan the duration in milliseconds to delimit [[Flux]] windows
+    * @param timer the [[TimedScheduler]] to run on
+    * @return a windowing [[Flux]] of timed [[Flux]] buckets
+    */
+  final def windowMillis(timespan: Long, timer: TimedScheduler): Flux[Flux[T]] = Flux(jFlux.windowMillis(timespan, timer)).map(Flux(_))
+
+  /**
+    * Split this [[Flux]] sequence into multiple [[Flux]] delimited by the given `timeshift`
+    * period, starting from the first item.
+    * Each [[Flux]] bucket will onComplete after `timespan` period has elpased.
+    *
+    * <p>
+    * When timeshift > timespan : dropping windows
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/windowsizeskip.png" alt="">
+    * <p>
+    * When timeshift < timespan : overlapping windows
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/windowsizeskipover.png" alt="">
+    * <p>
+    * When timeshift == timespan : exact windows
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/windowsize.png" alt="">
+    *
+    * @param timespan the maximum [[Flux]] window duration in milliseconds
+    * @param timeshift the period of time in milliseconds to create new [[Flux]] windows
+    * @param timer the [[TimedScheduler]] to run on
+    * @return a windowing
+    *         [[Flux]] of [[Flux]] buckets delimited by an opening [[Publisher]] and a selected closing [[Publisher]]
+    *
+    */
+  final def windowMillis(timespan: Long, timeshift: Long, timer: TimedScheduler): Flux[Flux[T]] = Flux(jFlux.windowMillis(timespan, timeshift, timer)).map(Flux(_))
+
   final def asJava(): JFlux[T] = jFlux
 }
 
