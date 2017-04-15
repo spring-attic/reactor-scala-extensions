@@ -3873,6 +3873,67 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     */
   final def windowTimeoutMillis(maxSize: Int, timespan: Long, timer: TimedScheduler): Flux[Flux[T]] = Flux(jFlux.windowTimeoutMillis(maxSize, timespan, timer)).map(Flux(_))
 
+  /**
+    * Split this [[Flux]] sequence into multiple [[Flux]] delimited by the given
+    * predicate. A new window is opened each time the predicate returns true, at which
+    * point the previous window will receive the triggering element then onComplete.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/windowsize.png" alt="">
+    *
+    * @param boundaryTrigger a predicate that triggers the next window when it becomes true.
+    * @return a windowing [[Flux]] of [[GroupedFlux]] windows, bounded depending
+    *                             on the predicate and keyed with the value that triggered the new window.
+    */
+  final def windowUntil(boundaryTrigger: T => Boolean): Flux[GroupedFlux[T, T]] = Flux(jFlux.windowUntil(boundaryTrigger)).map(GroupedFlux(_))
+
+  /**
+    * Split this [[Flux]] sequence into multiple [[Flux]] delimited by the given
+    * predicate. A new window is opened each time the predicate returns true.
+    * <p>
+    * If `cutBefore` is true, the old window will onComplete and the triggering
+    * element will be emitted in the new window. Note it can mean that an empty window is
+    * sometimes emitted, eg. if the first element in the sequence immediately matches the
+    * predicate.
+    * <p>
+    * Otherwise, the triggering element will be emitted in the old window before it does
+    * onComplete, similar to [[Flux.windowUntil]].
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/windowsize.png" alt="">
+    *
+    * @param boundaryTrigger a predicate that triggers the next window when it becomes true.
+    * @param cutBefore       set to true to include the triggering element in the new window rather than the old.
+    * @return a windowing [[Flux]] of [[GroupedFlux]] windows, bounded depending
+    *                             on the predicate and keyed with the value that triggered the new window.
+    */
+  final def windowUntil(boundaryTrigger: T => Boolean, cutBefore: Boolean): Flux[GroupedFlux[T, T]] = Flux(jFlux.windowUntil(boundaryTrigger, cutBefore)).map(GroupedFlux(_))
+
+  /**
+    * Split this [[Flux]] sequence into multiple [[Flux]] delimited by the given
+    * predicate and using a prefetch. A new window is opened each time the predicate
+    * returns true.
+    * <p>
+    * If `cutBefore` is true, the old window will onComplete and the triggering
+    * element will be emitted in the new window. Note it can mean that an empty window is
+    * sometimes emitted, eg. if the first element in the sequence immediately matches the
+    * predicate.
+    * <p>
+    * Otherwise, the triggering element will be emitted in the old window before it does
+    * onComplete, similar to [[Flux.windowUntil]].
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/windowsize.png" alt="">
+    *
+    * @param boundaryTrigger a predicate that triggers the next window when it becomes true.
+    * @param cutBefore       set to true to include the triggering element in the new window rather than the old.
+    * @param prefetch        the request size to use for this { @link Flux}.
+    * @return a windowing [[Flux]] of [[GroupedFlux]] windows, bounded depending
+    *                             on the predicate and keyed with the value that triggered the new window.
+    */
+  final def windowUntil(boundaryTrigger: T => Boolean, cutBefore: Boolean, prefetch: Int): Flux[GroupedFlux[T, T]] =
+    Flux(jFlux.windowUntil(boundaryTrigger, cutBefore, prefetch)).map(GroupedFlux(_))
+
   final def asJava(): JFlux[T] = jFlux
 }
 
