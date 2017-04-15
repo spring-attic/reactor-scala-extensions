@@ -3934,6 +3934,61 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
   final def windowUntil(boundaryTrigger: T => Boolean, cutBefore: Boolean, prefetch: Int): Flux[GroupedFlux[T, T]] =
     Flux(jFlux.windowUntil(boundaryTrigger, cutBefore, prefetch)).map(GroupedFlux(_))
 
+  /**
+    * Split this [[Flux]] sequence into multiple [[Flux]] windows that stay open
+    * while a given predicate matches the source elements. Once the predicate returns
+    * false, the window closes with an onComplete and the triggering element is discarded.
+    * <p>
+    * Note that for a sequence starting with a separator, or having several subsequent
+    * separators anywhere in the sequence, each occurrence will lead to an empty window.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/windowsize.png" alt="">
+    *
+    * @param inclusionPredicate a predicate that triggers the next window when it becomes false.
+    * @return a windowing [[Flux]] of [[GroupedFlux]] windows, each containing
+    *                             subsequent elements that all passed a predicate, and keyed with a separator element.
+    */
+  final def windowWhile(inclusionPredicate: T => Boolean): Flux[GroupedFlux[T, T]] = Flux(jFlux.windowWhile(inclusionPredicate)).map(GroupedFlux(_))
+
+  /**
+    * Split this [[Flux]] sequence into multiple [[Flux]] windows that stay open
+    * while a given predicate matches the source elements. Once the predicate returns
+    * false, the window closes with an onComplete and the triggering element is discarded.
+    * <p>
+    * Note that for a sequence starting with a separator, or having several subsequent
+    * separators anywhere in the sequence, each occurrence will lead to an empty window.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/windowsize.png" alt="">
+    *
+    * @param inclusionPredicate a predicate that triggers the next window when it becomes false.
+    * @param prefetch           the request size to use for this [[Flux]].
+    * @return a windowing [[Flux]] of [[GroupedFlux]] windows, each containing
+    *                             subsequent elements that all passed a predicate, and keyed with a separator element.
+    */
+  final def windowWhile(inclusionPredicate: T => Boolean, prefetch: Int): Flux[GroupedFlux[T, T]] = Flux(jFlux.windowWhile(inclusionPredicate, prefetch)).map(GroupedFlux(_))
+
+  /**
+    * Combine values from this [[Flux]] with values from another
+    * [[Publisher]] through a `BiFunction` and emits the result.
+    * <p>
+    * The operator will drop values from this [[Flux]] until the other
+    * [[Publisher]] produces any value.
+    * <p>
+    * If the other [[Publisher]] completes without any value, the sequence is completed.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/withlatestfrom.png" alt="">
+    *
+    * @param other the [[Publisher]] to combine with
+    * @param resultSelector the bi-function called with each pair of source and other elements that should return a single value to be emitted
+    * @tparam U the other [[Publisher]] sequence type
+    * @tparam R the result type
+    * @return a combined [[Flux]] gated by another [[Publisher]]
+    */
+  final def withLatestFrom[U, R](other: Publisher[_ <: U], resultSelector: (T, U) => _ <: R) = Flux(jFlux.withLatestFrom[U, R](other, resultSelector))
+
   final def asJava(): JFlux[T] = jFlux
 }
 

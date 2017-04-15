@@ -2105,5 +2105,12 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         .expectNext(1)
         .verifyComplete()
     }
+
+    ".withLatestFrom should combine with the latest of the other publisher" in {
+      StepVerifier.withVirtualTime(() => Flux.just(1, 2, 3, 4).delayElements(1 second).withLatestFrom(Flux.just("one", "two", "three").delayElements(1500 milliseconds), (i: Int, s: String) => (i, s)))
+      .thenAwait(5 seconds)
+      .expectNext((2, "one"), (3, "two"), (4, "two"))
+      .verifyComplete()
+    }
   }
 }
