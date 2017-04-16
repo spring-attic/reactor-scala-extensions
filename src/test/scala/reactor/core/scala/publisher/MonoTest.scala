@@ -68,10 +68,9 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       }
 
       "duration in millis with given TimeScheduler" in {
-        StepVerifier.withVirtualTime(new Supplier[Mono[Long]] {
-          override def get(): Mono[Long] = Mono.delayMillis(50000, VirtualTimeScheduler.getOrSet(false))
-        })
-          .thenAwait(JDuration.ofSeconds(50))
+        val vts = VirtualTimeScheduler.create();
+        StepVerifier.create(Mono.delayMillis(50000, vts))
+          .`then`(() => vts.advanceTimeBy(50 seconds))
           .expectNextCount(1)
           .expectComplete()
           .verify()
@@ -786,8 +785,6 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
           override def get(): Mono[(Long, Long)] = Mono.just(randomValue)
             .delaySubscriptionMillis(1000)
             .elapsed()
-        }, new Supplier[VirtualTimeScheduler] {
-          override def get(): VirtualTimeScheduler = VirtualTimeScheduler.getOrSet(true)
         }, 1)
           .thenAwait(1 second)
           .expectNextMatches(new Predicate[(Long, Long)] {
@@ -799,16 +796,10 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       }
       "with TimedScheduler should provide the time elapsed using the provided scheduler when this mono emit value" in {
         val virtualTimeScheduler = VirtualTimeScheduler.create()
-        StepVerifier.withVirtualTime(new Supplier[Mono[(Long, Long)]] {
-          override def get(): Mono[(Long, Long)] = Mono.just(randomValue)
-            .delaySubscriptionMillis(1000)
-            .elapsed(virtualTimeScheduler)
-        }, new Supplier[VirtualTimeScheduler] {
-          override def get(): VirtualTimeScheduler = {
-            virtualTimeScheduler
-          }
-        }, 1)
-          .thenAwait(1 second)
+        StepVerifier.create(Mono.just(randomValue)
+            .delaySubscriptionMillis(1000, virtualTimeScheduler)
+            .elapsed(virtualTimeScheduler), 1)
+          .`then`(() => virtualTimeScheduler.advanceTimeBy(1 second))
           .expectNextMatches(new Predicate[(Long, Long)] {
             override def test(t: (Long, Long)): Boolean = t match {
               case (time, data) => time >= 1000 && data == randomValue
@@ -1285,8 +1276,9 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       }
       "with timeout, fallback and timer should fallback to the given mono if the item does not arrive before a given period" in {
         val timer = VirtualTimeScheduler.create()
-        StepVerifier.withVirtualTime(() => Mono.delayMillis(10000).timeoutMillis(5000, Mono.just(-1), timer), () => timer, 1)
-          .thenAwait(5 seconds)
+        StepVerifier.create(Mono.delayMillis(10000, timer)
+                                .timeoutMillis(5000, Mono.just(-1), timer), 1)
+          .`then`(() => timer.advanceTimeBy(5 seconds))
           .expectNext(-1)
           .verifyComplete()
       }
