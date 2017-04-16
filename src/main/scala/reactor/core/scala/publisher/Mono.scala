@@ -217,23 +217,6 @@ class Mono[T] private(private val jMono: JMono[T]) extends Publisher[T] with Map
   final def block(timeout: Duration): T = jMono.block(timeout)
 
   /**
-    * Block until a next signal is received, will return null if onComplete, T if onNext, throw a
-    * `Exceptions.DownstreamException` if checked error or origin RuntimeException if unchecked.
-    * If the default timeout `30 seconds` has elapsed, a [[RuntimeException]]  will be thrown.
-    *
-    * Note that each block() will subscribe a new single (MonoSink) subscriber, in other words, the result might
-    * miss signal from hot publishers.
-    *
-    * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/block.png" alt="">
-    * <p>
-    *
-    * @param timeout maximum time period to wait for in milliseconds before raising a [[RuntimeException]]
-    * @return T the result
-    */
-  final def blockMillis(timeout: Long): T = jMono.blockMillis(timeout)
-
-  /**
     * Cast the current [[Mono]] produced type into a target produced type.
     *
     * <p>
@@ -325,15 +308,27 @@ class Mono[T] private(private val jMono: JMono[T]) extends Publisher[T] with Map
     * period elapses.
     *
     * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/delaysubscription1.png" alt="">
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/delaysubscription1.png" alt="">
     *
     * @param delay duration before subscribing this [[Mono]]
     * @return a delayed [[Mono]]
     *
     */
-  final def delaySubscription(delay: Duration): Mono[T] = new Mono[T](
-    jMono.delaySubscription(delay)
-  )
+  final def delaySubscription(delay: Duration): Mono[T] = Mono(jMono.delaySubscription(delay))
+
+  /**
+    * Delay the [[Mono.subscribe subscription]] to this [[Mono]] source until the given
+    * [[Duration]] elapses.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/delaysubscription1.png" alt="">
+    *
+    * @param delay [[Duration]] before subscribing this [[Mono]]
+    * @param timer a time-capable [[Scheduler]] instance to run on
+    * @return a delayed [[Mono]]
+    *
+    */
+  final def delaySubscription(delay: Duration, timer: Scheduler) = Mono(jMono.delaySubscription(delay, timer))
 
   /**
     * Delay the subscription to this [[Mono]] until another [[Publisher]]
@@ -350,37 +345,6 @@ class Mono[T] private(private val jMono: JMono[T]) extends Publisher[T] with Map
     */
   final def delaySubscription[U](subscriptionDelay: Publisher[U]): Mono[T] = new Mono[T](
     jMono.delaySubscription(subscriptionDelay)
-  )
-
-  /**
-    * Delay the [[Mono.subscribe subscription]] to this [[Mono]] source until the given
-    * period elapses.
-    *
-    * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/delaysubscription1.png" alt="">
-    *
-    * @param delay period in milliseconds before subscribing this [[Mono]]
-    * @return a delayed [[Mono]]
-    *
-    */
-  final def delaySubscriptionMillis(delay: Long): Mono[T] = new Mono[T](
-    jMono.delaySubscriptionMillis(delay)
-  )
-
-  /**
-    * Delay the [[Mono.subscribe subscription]] to this [[Mono]] source until the given
-    * period elapses.
-    *
-    * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/delaysubscription1.png" alt="">
-    *
-    * @param delay period in milliseconds before subscribing this [[Mono]]
-    * @param timer the [[reactor.core.scheduler.TimedScheduler]] to run on
-    * @return a delayed [[Mono]]
-    *
-    */
-  final def delaySubscriptionMillis(delay: Long, timer: TimedScheduler): Mono[T] = new Mono[T](
-    jMono.delaySubscriptionMillis(delay, timer)
   )
 
   /**
@@ -588,13 +552,11 @@ class Mono[T] private(private val jMono: JMono[T]) extends Publisher[T] with Map
     * next signal.
     *
     * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/elapsed1.png" alt="">
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/elapsed1.png" alt="">
     *
     * @return a transforming [[Mono]]that emits a tuple of time elapsed in milliseconds and matching data
     */
-  final def elapsed() = new Mono[(Long, T)](
-    jMono.elapsed().map(javaTupleLongAndT2ScalaTupleLongAndT)
-  )
+  final def elapsed() = Mono[(Long, T)](jMono.elapsed().map(javaTupleLongAndT2ScalaTupleLongAndT))
 
   /**
     * Map this [[Mono]] sequence into [[scala.Tuple2]] of T1 [[Long]] timemillis and T2
@@ -602,14 +564,12 @@ class Mono[T] private(private val jMono: JMono[T]) extends Publisher[T] with Map
     * next signal.
     *
     * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/elapsed1.png" alt="">
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/elapsed1.png" alt="">
     *
-    * @param scheduler the [[TimedScheduler]] to read time from
+    * @param scheduler the [[Scheduler]] to read time from
     * @return a transforming [[Mono]] that emits a tuple of time elapsed in milliseconds and matching data
     */
-  final def elapsed(scheduler: TimedScheduler) = new Mono[(Long, T)](
-    jMono.elapsed(scheduler).map(javaTupleLongAndT2ScalaTupleLongAndT)
-  )
+  final def elapsed(scheduler: Scheduler): Mono[(Long, T)] = Mono(jMono.elapsed(scheduler).map(javaTupleLongAndT2ScalaTupleLongAndT))
 
   /**
     * Test the result if any of this [[Mono]] and replay it if predicate returns true.
@@ -1019,46 +979,113 @@ class Mono[T] private(private val jMono: JMono[T]) extends Publisher[T] with Map
     */
   final def thenMany[V](afterSupplier: () => Publisher[V]) = Flux(jMono.thenMany(afterSupplier))
 
-  final def timeout(duration: Duration): Mono[T] = {
-    Mono(jMono.timeout(duration))
-  }
+  /**
+    * Signal a [[java.util.concurrent.TimeoutException]] in case an item doesn't arrive before the given period.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/timeouttime1.png" alt="">
+    *
+    * @param timeout the timeout before the onNext signal from this [[Mono]]
+    * @return an expirable [[Mono]]}
+    */
+  final def timeout(timeout: Duration) = Mono(jMono.timeout(timeout))
 
-  final def timeout(duration: Duration, fallback: Mono[_ <: T]): Mono[T] = {
-    new Mono[T](jMono.timeout(duration, fallback))
-  }
+  /**
+    * Switch to a fallback [[Mono]] in case an item doesn't arrive before the given period.
+    *
+    * <p> If the given [[Publisher]] is null, signal a [[java.util.concurrent.TimeoutException]].
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/timeouttimefallback1.png" alt="">
+    *
+    * @param timeout the timeout before the onNext signal from this [[Mono]]
+    * @param fallback the fallback [[Mono]] to subscribe when a timeout occurs
+    * @return an expirable [[Mono]] with a fallback [[Mono]]
+    */
+  final def timeout(timeout: Duration, fallback: Option[Mono[_ <: T]]) = Mono[T](jMono.timeout(timeout, fallback.orNull))
 
-  final def timeout[U](firstTimeout: Publisher[U]): Mono[T] = {
-    new Mono[T](jMono.timeout(firstTimeout))
-  }
+  /**
+    * Signal a [[java.util.concurrent.TimeoutException]] error in case an item doesn't arrive before the given period.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/timeouttime1.png" alt="">
+    *
+    * @param timeout the timeout before the onNext signal from this [[Mono]]
+    * @param timer a time-capable [[Scheduler]] instance to run on
+    * @return an expirable [[Mono]]
+    */
+  final def timeout(timeout: Duration, timer: Scheduler): Mono[T] = Mono[T](jMono.timeout(timeout, timer))
 
-  final def timeout[U](firstTimeout: Publisher[U], fallback: Mono[_ <: T]): Mono[T] = {
-    new Mono[T](jMono.timeout(firstTimeout, fallback))
-  }
+  /**
+    * Switch to a fallback [[Mono]] in case an item doesn't arrive before the given period.
+    *
+    * <p> If the given `Publisher` is [[None]], signal a [[java.util.concurrent.TimeoutException]].
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/timeouttimefallback1.png" alt="">
+    *
+    * @param timeout the timeout before the onNext signal from this [[Mono]]
+    * @param fallback the fallback [[Mono]] to subscribe when a timeout occurs
+    * @param timer a time-capable [[Scheduler]] instance to run on
+    * @return an expirable [[Mono]] with a fallback [[Mono]]
+    */
+  final def timeout(timeout: Duration, fallback: Option[Mono[_ <: T]], timer: Scheduler): Mono[T] = Mono[T](jMono.timeout(timeout, fallback.orNull[Mono[_ <: T]], timer))
 
-  final def timeoutMillis(timeout: Long): Mono[T] = {
-    new Mono[T](jMono.timeoutMillis(timeout))
-  }
 
-  final def timeoutMillis(timeout: Long, timer: TimedScheduler): Mono[T] = {
-    new Mono[T](jMono.timeoutMillis(timeout, timer))
-  }
+  /**
+    * Signal a [[java.util.concurrent.TimeoutException]] in case the item from this [[Mono]] has
+    * not been emitted before the given [[Publisher]] emits.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/timeoutp1.png" alt="">
+    *
+    * @param firstTimeout the timeout [[Publisher]] that must not emit before the first signal from this [[Mono]]
+    * @tparam U the element type of the timeout Publisher
+    * @return an expirable [[Mono]] if the first item does not come before a [[Publisher]] signal
+    *
+    */
+  final def timeout[U](firstTimeout: Publisher[U]) = Mono[T](jMono.timeout(firstTimeout))
 
-  final def timeoutMillis(timeout: Long, fallback: Mono[T]): Mono[T] = {
-    new Mono[T](jMono.timeoutMillis(timeout, fallback))
-  }
+  /**
+    * Switch to a fallback [[Publisher]] in case the  item from this [[Mono]] has
+    * not been emitted before the given [[Publisher]] emits. The following items will be individually timed via
+    * the factory provided [[Publisher]].
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/timeoutfallbackp1.png" alt="">
+    *
+    * @param firstTimeout the timeout
+    *                     [[Publisher]] that must not emit before the first signal from this [[Mono]]
+    * @param fallback the fallback [[Publisher]] to subscribe when a timeout occurs
+    * @tparam U the element type of the timeout Publisher
+    * @return a first then per-item expirable [[Mono]] with a fallback [[Publisher]]
+    *
+    */
+  final def timeout[U](firstTimeout: Publisher[U], fallback: Mono[_ <: T]) = Mono[T](jMono.timeout(firstTimeout, fallback))
 
-  final def timeoutMillis(timeout: Long, fallback: Mono[T], timer: TimedScheduler): Mono[T] = {
-    new Mono[T](jMono.timeoutMillis(timeout, fallback, timer))
-  }
-
+  /**
+    * Emit a [[Tuple2]] pair of T1 [[Long]] current system time in
+    * millis and T2 `T` associated data for the eventual item from this [[Mono]]
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/timestamp1.png" alt="">
+    *
+    * @return a timestamped [[Mono]]
+    */
   //  TODO: How to test timestamp(...) with the actual timestamp?
-  final def timestamp(): Mono[(Long, T)] = {
-    new Mono[(Long, T)](jMono.timestamp().map((t2: Tuple2[JLong, T]) => (Long2long(t2.getT1), t2.getT2)))
-  }
+  final def timestamp() = new Mono[(Long, T)](jMono.timestamp().map((t2: Tuple2[JLong, T]) => (Long2long(t2.getT1), t2.getT2)))
 
-  final def timestamp(scheduler: TimedScheduler): Mono[(Long, T)] = {
-    new Mono[(Long, T)](jMono.timestamp(scheduler).map((t2: Tuple2[JLong, T]) => (Long2long(t2.getT1), t2.getT2)))
-  }
+  /**
+    * Emit a [[Tuple2]] pair of T1 [[Long]] current system time in
+    * millis and T2 `T` associated data for the eventual item from this [[Mono]]
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/timestamp1.png" alt="">
+    *
+    * @param scheduler a [[Scheduler]] instance to read time from
+    * @return a timestamped [[Mono]]
+    */
+  final def timestamp(scheduler: Scheduler): Mono[(Long, T)] = Mono[(Long, T)](jMono.timestamp(scheduler).map((t2: Tuple2[JLong, T]) => (Long2long(t2.getT1), t2.getT2)))
 
   final def toFuture: Future[T] = {
     val promise = Promise[T]()
@@ -1104,41 +1131,33 @@ object Mono {
     )
   }
 
-  def delay(duration: Duration): Mono[Long] = {
-    new Mono[Long](
-      JMono.delay(JDuration.ofNanos(duration.toNanos))
-        .map(new Function[JLong, Long] {
-          override def apply(t: JLong): Long = t
-        })
-    )
-  }
+  /**
+    * Create a Mono which delays an onNext signal of `duration` of given unit and complete on the global timer.
+    * If the demand cannot be produced in time, an onError will be signalled instead.
+    * The delay is introduced through the [[reactor.core.scheduler.Schedulers.parallel parallel]] default Scheduler.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/delay.png" alt="">
+    * <p>
+    *
+    * @param duration the duration of the delay
+    * @return a new [[Mono]]
+    */
+  def delay(duration: Duration): Mono[Long] = Mono(JMono.delay(duration)).map(Long2long)
 
   /**
-    * Create a Mono which delays an onNext signal of `duration` milliseconds and complete.
+    * Create a Mono which delays an onNext signal by a given `duration and completes.
     * If the demand cannot be produced in time, an onError will be signalled instead.
     *
     * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/delay.png" alt="">
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/delay.png" alt="">
     * <p>
     *
-    * @param duration the duration in milliseconds of the delay
+    * @param duration the [[Duration]] of the delay
+    * @param timer a time-capable [[Scheduler]] instance to run on
     * @return a new [[Mono]]
     */
-  def delayMillis(duration: Long) = new Mono[Long](
-    JMono.delayMillis(Long2long(duration))
-      .map(new Function[JLong, Long] {
-        override def apply(t: JLong): Long = t
-      })
-  )
-
-  def delayMillis(duration: Long, timedScheduler: TimedScheduler): Mono[Long] = {
-    new Mono[Long](
-      JMono.delayMillis(Long2long(duration), timedScheduler)
-        .map(new Function[JLong, Long] {
-          override def apply(t: JLong): Long = t
-        })
-    )
-  }
+  def delay(duration: Duration, timer: Scheduler): Mono[Long] = Mono(JMono.delay(duration, timer)).map(Long2long)
 
   /**
     * Create a [[Mono]] that completes without emitting any item.

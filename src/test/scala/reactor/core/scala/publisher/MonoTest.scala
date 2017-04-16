@@ -57,19 +57,9 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
           .verify()
       }
 
-      "duration in millis" in {
-        StepVerifier.withVirtualTime(new Supplier[Mono[Long]] {
-          override def get(): Mono[Long] = Mono.delayMillis(50000)
-        })
-          .thenAwait(JDuration.ofSeconds(50))
-          .expectNextCount(1)
-          .expectComplete()
-          .verify()
-      }
-
       "duration in millis with given TimeScheduler" in {
-        val vts = VirtualTimeScheduler.create();
-        StepVerifier.create(Mono.delayMillis(50000, vts))
+        val vts = VirtualTimeScheduler.getOrSet()
+        StepVerifier.create(Mono.delay(50 seconds, vts))
           .`then`(() => vts.advanceTimeBy(50 seconds))
           .expectNextCount(1)
           .expectComplete()
@@ -565,9 +555,6 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       "with duration should block the mono up to the duration" in {
         Mono.just(randomValue).block(10 seconds) shouldBe randomValue
       }
-      "with millis should block up to the duration" in {
-        Mono.just(randomValue).blockMillis(10000) shouldBe randomValue
-      }
     }
 
     ".cast should cast the underlying value" in {
@@ -609,10 +596,14 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
 
     ".delaySubscription" - {
       "with delay duration should delay subscription as long as the provided duration" in {
-        StepVerifier.withVirtualTime(new Supplier[Mono[Int]] {
-          override def get(): Mono[Int] = Mono.just(1).delaySubscription(1 hour)
-        })
-          .thenAwait(JDuration.ofHours(1))
+        StepVerifier.withVirtualTime(() => Mono.just(1).delaySubscription(1 hour))
+          .thenAwait(1 hour)
+          .expectNext(1)
+          .verifyComplete()
+      }
+      "with delay duration and scheduler should delay subscription as long as the provided duration" in {
+        StepVerifier.withVirtualTime(() => Mono.just(1).delaySubscription(1 hour, Schedulers.single()))
+          .thenAwait(1 hour)
           .expectNext(1)
           .verifyComplete()
       }
@@ -624,27 +615,6 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
           .expectNext(1)
           .verifyComplete()
 
-      }
-    }
-
-    ".delaySubscriptionMillis" - {
-      "with delay duration in millis should delay subscription as long as the provided duration" in {
-        StepVerifier.withVirtualTime(new Supplier[Mono[Int]] {
-          override def get(): Mono[Int] = Mono.just(1).delaySubscriptionMillis(60000)
-        })
-          .thenAwait(JDuration.ofMinutes(10))
-          .expectNext(1)
-          .verifyComplete()
-      }
-      "with delay duration in millis and timed scheduler should delay subscription as long as the provided duration using the provided scheduler" in {
-        StepVerifier.withVirtualTime(new Supplier[Mono[Int]] {
-          override def get(): Mono[Int] = {
-            Mono.just(1).delaySubscriptionMillis(60000, Schedulers.timer())
-          }
-        })
-          .thenAwait(JDuration.ofMinutes(10))
-          .expectNext(1)
-          .verifyComplete()
       }
     }
 
@@ -783,7 +753,7 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       "should provide the time elapse when this mono emit value" in {
         StepVerifier.withVirtualTime(new Supplier[Mono[(Long, Long)]] {
           override def get(): Mono[(Long, Long)] = Mono.just(randomValue)
-            .delaySubscriptionMillis(1000)
+            .delaySubscription(1 second)
             .elapsed()
         }, 1)
           .thenAwait(1 second)
@@ -795,9 +765,9 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
           .verifyComplete()
       }
       "with TimedScheduler should provide the time elapsed using the provided scheduler when this mono emit value" in {
-        val virtualTimeScheduler = VirtualTimeScheduler.create()
+        val virtualTimeScheduler = VirtualTimeScheduler.getOrSet()
         StepVerifier.create(Mono.just(randomValue)
-            .delaySubscriptionMillis(1000, virtualTimeScheduler)
+            .delaySubscription(1 second, virtualTimeScheduler)
             .elapsed(virtualTimeScheduler), 1)
           .`then`(() => virtualTimeScheduler.advanceTimeBy(1 second))
           .expectNextMatches(new Predicate[(Long, Long)] {
@@ -1228,56 +1198,41 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
     ".timeout" - {
       "should raise TimeoutException after duration elapse" in {
         StepVerifier.withVirtualTime(new Supplier[Publisher[Long]] {
-          override def get(): Mono[Long] = Mono.delayMillis(10000).timeout(5 seconds)
+          override def get(): Mono[Long] = Mono.delay(10 seconds).timeout(5 seconds)
         })
           .thenAwait(JDuration.ofSeconds(5))
           .expectError(classOf[TimeoutException])
           .verify()
       }
       "should fallback to the provided mono if the value doesn't arrive in given duration" in {
-        StepVerifier.withVirtualTime(() => Mono.delayMillis(10000).timeout(5 seconds, Mono.just(1L)))
+        StepVerifier.withVirtualTime(() => Mono.delay(10 seconds).timeout(5 seconds, Option(Mono.just(1L))))
           .thenAwait(5 seconds)
           .expectNext(1)
           .verifyComplete()
       }
+      "with timeout and timer should signal TimeoutException if the item does not arrive before a given period" in {
+        val timer = VirtualTimeScheduler.getOrSet()
+        StepVerifier.withVirtualTime(() => Mono.delay(10 seconds).timeout(5 seconds, timer), () => timer, 1)
+          .thenAwait(5 seconds)
+          .expectError(classOf[TimeoutException])
+          .verify()
+      }
       "should raise TimeoutException if this mono has not emit value when the provided publisher has emit value" in {
-        val mono = Mono.delayMillis(10000).timeout(Mono.just("whatever"))
+        val mono = Mono.delay(10 seconds).timeout(Mono.just("whatever"))
         StepVerifier.create(mono)
           .expectError(classOf[TimeoutException])
           .verify()
       }
       "should fallback to the provided fallback mono if this mono does not emit value when the provided publisher emits value" in {
-        val mono = Mono.delayMillis(10000).timeout(Mono.just("whatever"), Mono.just(-1L))
+        val mono = Mono.delay(10 seconds).timeout(Mono.just("whatever"), Mono.just(-1L))
         StepVerifier.create(mono)
           .expectNext(-1)
           .verifyComplete()
       }
-    }
-
-    ".timeoutMillis" - {
-      "should raise TimeoutException if the item does not arrive before a given period" in {
-        StepVerifier.withVirtualTime(() => Mono.delayMillis(10000).timeoutMillis(5000))
-          .thenAwait(5 seconds)
-          .expectError(classOf[TimeoutException])
-          .verify()
-      }
-      "with timeout and timer should signal TiemoutException if the item does not arrive before a given period" in {
-        val timer = VirtualTimeScheduler.create()
-        StepVerifier.withVirtualTime(() => Mono.delayMillis(10000).timeoutMillis(5000, timer), () => timer, 1)
-          .thenAwait(5 seconds)
-          .expectError(classOf[TimeoutException])
-          .verify()
-      }
-      "with timeout and fallback should fallback to the given mono if the item does not arrive before a given period" in {
-        StepVerifier.withVirtualTime(() => Mono.delayMillis(10000).timeoutMillis(5000, Mono.just(-1L)))
-          .thenAwait(5 seconds)
-          .expectNext(-1)
-          .verifyComplete()
-      }
       "with timeout, fallback and timer should fallback to the given mono if the item does not arrive before a given period" in {
-        val timer = VirtualTimeScheduler.create()
-        StepVerifier.create(Mono.delayMillis(10000, timer)
-                                .timeoutMillis(5000, Mono.just(-1), timer), 1)
+        val timer = VirtualTimeScheduler.getOrSet()
+        StepVerifier.create(Mono.delay(10 seconds, timer)
+          .timeout(5 seconds, Option(Mono.just(-1)), timer), 1)
           .`then`(() => timer.advanceTimeBy(5 seconds))
           .expectNext(-1)
           .verifyComplete()
