@@ -121,14 +121,6 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
   final def blockFirst(d: Duration): Option[T] = Option(jFlux.blockFirst(d))
 
   /**
-    * Blocks until the upstream signals its first value or completes.
-    *
-    * @param timeout max duration timeout in millis to wait for.
-    * @return the [[Some]] value or [[None]]
-    */
-  final def blockFirstMillis(timeout: Long) = Option(jFlux.blockFirstMillis(timeout))
-
-  /**
     * Blocks until the upstream completes and return the last emitted value.
     *
     * @return the last [[Some value]] or [[None]]
@@ -142,14 +134,6 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * @return the last [[Some value]] or [[None]]
     */
   final def blockLast(d: Duration) = Option(jFlux.blockLast(d))
-
-  /**
-    * Blocks until the upstream completes and return the last emitted value.
-    *
-    * @param timeout max duration timeout in millis to wait for.
-    * @return the last [[Some value]] or [[None]]
-    */
-  final def blockLastMillis(timeout: Long) = Option(jFlux.blockLastMillis(timeout))
 
   /**
     * Collect incoming values into a [[Seq]] that will be pushed into the returned [[Flux]] on complete only.
@@ -416,128 +400,6 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     */
   //TODO: Test this
   final def bufferTimeout[C <: ListBuffer[T]](maxSize: Int, timespan: Duration, bufferSupplier: () => C): Flux[Seq[T]] = Flux(jFlux.bufferTimeout(maxSize, timespan, new Supplier[JList[T]] {
-    override def get(): JList[T] = bufferSupplier().asJava
-  })).map(_.asScala)
-
-  /**
-    * Collect incoming values into multiple [[Seq]] that will be pushed into the returned [[Flux]] every
-    * timespan.
-    * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/buffertimespan.png"
-    * alt="">
-    *
-    * @param timespan the duration to use to release a buffered list in milliseconds
-    * @return a microbatched [[Flux]] of [[Seq]] delimited by the given period
-    */
-  final def bufferMillis(timespan: Long): Flux[Seq[T]] = Flux(jFlux.bufferMillis(timespan)).map(_.asScala)
-
-  /**
-    * Collect incoming values into multiple [[Seq]] that will be pushed into the returned [[Flux]] every
-    * timespan.
-    * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/buffertimespan.png"
-    * alt="">
-    *
-    * @param timespan theduration to use to release a buffered list in milliseconds
-    * @param timer    the [[TimedScheduler]] to run on
-    * @return a microbatched [[Flux]] of [[Seq]] delimited by the given period
-    */
-  final def bufferMillis(timespan: Long, timer: TimedScheduler): Flux[Seq[T]] =
-    Flux(jFlux.bufferMillis(timespan, timer)).map(_.asScala)
-
-  /**
-    * Collect incoming values into multiple [[Seq]] delimited by the given `timeshift` period. Each [[Seq]]
-    * bucket will last until the `timespan` has elapsed, thus releasing the bucket to the returned [[Flux]].
-    * <p>
-    * When timeshift > timespan : dropping buffers
-    * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/buffertimeshift.png"
-    * alt="">
-    * <p>
-    * When timeshift < timespan : overlapping buffers
-    * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/buffertimeshiftover.png"
-    * alt="">
-    * <p>
-    * When timeshift == timespan : exact buffers
-    * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/buffertimespan.png"
-    * alt="">
-    *
-    * @param timespan  the duration to use to release buffered lists
-    * @param timeshift the duration to use to create a new bucket
-    * @return a microbatched [[Flux]] of [[Seq]] delimited by the given period timeshift and sized by timespan
-    */
-  final def bufferMillis(timespan: Long, timeshift: Long): Flux[Seq[T]] = Flux(jFlux.bufferMillis(timespan, timeshift)).map(_.asScala)
-
-  /**
-    * Collect incoming values into multiple [[Seq]] delimited by the given `timeshift` period. Each [[Seq]]
-    * bucket will last until the `timespan` has elapsed, thus releasing the bucket to the returned [[Flux]].
-    * <p>
-    * When timeshift > timespan : dropping buffers
-    * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/buffertimeshift.png"
-    * alt="">
-    * <p>
-    * When timeshift < timespan : overlapping buffers
-    * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/buffertimeshiftover.png"
-    * alt="">
-    * <p>
-    * When timeshift == timespan : exact buffers
-    * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/buffertimespan.png"
-    * alt="">
-    *
-    * @param timespan  the duration to use to release buffered lists
-    * @param timeshift the duration to use to create a new bucket
-    * @param timer     the [[TimedScheduler]] to run on
-    * @return a microbatched [[Flux]] of [[Seq]] delimited by the given period timeshift and sized by timespan
-    */
-  final def bufferMillis(timespan: Long, timeshift: Long, timer: TimedScheduler): Flux[Seq[T]] = Flux(jFlux.bufferMillis(timespan, timeshift, timer)).map(_.asScala)
-
-  /**
-    * Collect incoming values into a [[Seq]] that will be pushed into the returned [[Flux]] every timespan OR
-    * maxSize items.
-    * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/buffertimespansize.png"
-    * alt="">
-    *
-    * @param maxSize  the max collected size
-    * @param timespan the timeout in milliseconds to use to release a buffered list
-    * @return a microbatched [[Flux]] of [[Seq]] delimited by given size or a given period timeout
-    */
-  final def bufferTimeoutMillis(maxSize: Int, timespan: Long): Flux[Seq[T]] = Flux(jFlux.bufferTimeoutMillis(maxSize, timespan)).map(_.asScala)
-
-  /**
-    * Collect incoming values into a [[Seq]] that will be pushed into the returned [[Flux]] every timespan OR
-    * maxSize items
-    * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/buffertimespansize.png"
-    * alt="">
-    *
-    * @param maxSize  the max collected size
-    * @param timespan the timeout to use to release a buffered list
-    * @param timer    the [[TimedScheduler]] to run on
-    * @return a microbatched [[Flux]] of [[Seq]] delimited by given size or a given period timeout
-    */
-  final def bufferTimeoutMillis(maxSize: Int, timespan: Long, timer: TimedScheduler): Flux[Seq[T]] = Flux(jFlux.bufferTimeoutMillis(maxSize, timespan, timer)).map(_.asScala)
-
-  /**
-    * Collect incoming values into a [[Seq]] that will be pushed into the returned [[Flux]] every timespan OR
-    * maxSize items
-    * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/buffertimespansize.png"
-    * alt="">
-    *
-    * @param maxSize        the max collected size
-    * @param timespan       the timeout to use to release a buffered collection
-    * @param timer          the [[TimedScheduler]] to run on
-    * @param bufferSupplier the collection to use for each data segment
-    * @tparam C the supplied [[Seq]] type
-    * @return a microbatched [[Seq]] delimited by given size or a given period timeout
-    */
-  final def bufferTimeoutMillis[C <: ListBuffer[T]](maxSize: Int, timespan: Long, timer: TimedScheduler, bufferSupplier: () => C): Flux[Seq[T]] = Flux(jFlux.bufferTimeoutMillis(maxSize, timespan, timer, new Supplier[JList[T]] {
     override def get(): JList[T] = bufferSupplier().asJava
   })).map(_.asScala)
 
@@ -1067,31 +929,6 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
   final def delayElements(delay: Duration, timer: Scheduler) = Flux(jFlux.delayElements(delay, timer))
 
   /**
-    * Delay each of this [[Flux]] elements ([[Subscriber.onNext]] signals)
-    * by a given duration in milliseconds.
-    *
-    * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/delayonnext.png" alt="">
-    *
-    * @param delay period to delay each [[Subscriber.onNext]] signal, in milliseconds
-    * @return a delayed [[Flux]]
-    */
-  final def delayElementsMillis(delay: Long) = Flux(jFlux.delayElementsMillis(delay))
-
-  /**
-    * Delay each of this [[Flux]] elements ([[Subscriber.onNext]] signals)
-    * by a given duration in milliseconds.
-    *
-    * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/delayonnext.png" alt="">
-    *
-    * @param delay period to delay each [[Subscriber.onNext]] signal, in milliseconds
-    * @param timer the timed scheduler to use for delaying each signal
-    * @return a delayed [[Flux]]
-    */
-  final def delayElementsMillis(delay: Long, timer: TimedScheduler) = Flux(jFlux.delayElementsMillis(delay, timer))
-
-  /**
     * Delay the [[Flux.subscribe subscription]] to this [[Flux]] source until the given
     * period elapses.
     *
@@ -1103,6 +940,19 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     *
     */
   final def delaySubscription(delay: Duration) = Flux(jFlux.delaySubscription(delay))
+
+  /**
+    * Delay the [[Flux.subscribe subscription]] to this [[Flux]] source until the given
+    * period elapses.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/delaysubscription.png" alt="">
+    *
+    * @param delay duration before subscribing this [[Flux]]
+    * @param timer a time-capable [[Scheduler]] instance to run on
+    * @return a delayed [[Flux]]
+    */
+  final def delaySubscription(delay: Duration, timer: Scheduler) = Flux(jFlux.delaySubscription(delay, timer))
 
   /**
     * Delay the subscription to the main source until another Publisher
@@ -1118,33 +968,6 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     *
     */
   final def delaySubscription[U](subscriptionDelay: Publisher[U]) = Flux(jFlux.delaySubscription(subscriptionDelay))
-
-  /**
-    * Delay the [[Flux.subscribe subscription]] to this [[Flux]] source until the given
-    * period elapses.
-    *
-    * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/delaysubscription.png" alt="">
-    *
-    * @param delay period in milliseconds before subscribing this [[Flux]]
-    * @return a delayed [[Flux]]
-    *
-    */
-  final def delaySubscriptionMillis(delay: Long) = Flux(jFlux.delaySubscriptionMillis(delay))
-
-  /**
-    * Delay the [[Flux.subscribe subscription]] to this [[Flux]] source until the given
-    * period elapses.
-    *
-    * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/delaysubscription.png" alt="">
-    *
-    * @param delay period in milliseconds before subscribing this [[Flux]]
-    * @param timer the [[TimedScheduler]] to run on
-    * @return a delayed [[Flux]]
-    *
-    */
-  final def delaySubscriptionMillis(delay: Long, timer: TimedScheduler) = Flux(jFlux.delaySubscriptionMillis(delay, timer))
 
   /**
     * A "phantom-operator" working only if this
@@ -1360,14 +1183,14 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * between two next signals.
     * <p>
     * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/elapsed.png"
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/elapsed.png"
     * alt="">
     *
-    * @param scheduler the [[TimedScheduler]] to read time from
+    * @param scheduler a [[Scheduler]] instance to [[Scheduler.now read time from]]
     * @return a transforming [[Flux]] that emits tuples of time elapsed in
-    *         milliseconds and matching data
+    *                                milliseconds and matching data
     */
-  final def elapsed(scheduler: TimedScheduler): Flux[(Long, T)] = Flux(jFlux.elapsed(scheduler)).map(tupleTwo2ScalaTuple2[JLong, T]).map {
+  final def elapsed(scheduler: Scheduler): Flux[(Long, T)] = Flux(jFlux.elapsed(scheduler)).map(tupleTwo2ScalaTuple2[JLong, T]).map {
     case (k, v) => (Long2long(k), v)
   }
 
@@ -1475,21 +1298,20 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * Transform the items emitted by this [[Flux]] into Publishers, then flatten the emissions from those by
     * merging them into a single [[Flux]], so that they may interleave. The concurrency argument allows to
     * control how many merged [[Publisher]] can happen in parallel. The prefetch argument allows to give an
-    * arbitrary prefetch size to the merged [[Publisher]].
+    * arbitrary prefetch size to the merged [[Publisher]]. This variant will delay any error until after the
+    * rest of the flatMap backlog has been processed.
     *
     * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/flatmapc.png" alt="">
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/flatmapc.png" alt="">
     *
-    * @param mapper      the [[Function1]] to transform input sequence into N sequences [[Publisher]]
-    * @param delayError  should any error be delayed after current merge backlog
+    * @param mapper the [[Function1]] to transform input sequence into N sequences [[Publisher]]
     * @param concurrency the maximum in-flight elements from this [[Flux]] sequence
-    * @param prefetch    the maximum in-flight elements from each inner [[Publisher]] sequence
+    * @param prefetch the maximum in-flight elements from each inner [[Publisher]] sequence
     * @tparam V the merged output sequence type
     * @return a merged [[Flux]]
-    *
     */
   //  TODO: How to test if the result may not be sequence
-  final def flatMap[V](mapper: T => Publisher[_ <: V], delayError: Boolean, concurrency: Int, prefetch: Int) = Flux(jFlux.flatMap[V](mapper, delayError, concurrency, prefetch))
+  final def flatMapDelayError[V](mapper: T => Publisher[_ <: V], concurrency: Int, prefetch: Int) = Flux(jFlux.flatMapDelayError[V](mapper, concurrency, prefetch))
 
   /**
     * Transform the signals emitted by this [[Flux]] into Publishers, then flatten the emissions from those by
@@ -1602,19 +1424,19 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * flatMap, their emitted elements are merged respecting the order of the original
     * sequence. The concurrency argument allows to control how many merged [[Publisher]]
     * can happen in parallel. The prefetch argument allows to give an arbitrary prefetch
-    * size to the merged [[Publisher]].
+    * size to the merged [[Publisher]]. This variant will delay any error until after the
+    * rest of the flatMap backlog has been processed.
     *
     * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/flatmapsequential.png" alt="">
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/flatmapsequential.png" alt="">
     *
-    * @param mapper         the [[Function1]] to transform input sequence into N sequences [[Publisher]]
-    * @param delayError     should any error be delayed after current merge backlog
+    * @param mapper the [[Function1]] to transform input sequence into N sequences [[Publisher]]
     * @param maxConcurrency the maximum in-flight elements from this [[Flux]] sequence
-    * @param prefetch       the maximum in-flight elements from each inner [[Publisher]] sequence
+    * @param prefetch the maximum in-flight elements from each inner [[Publisher]] sequence
     * @tparam R the merged output sequence type
-    * @return a merged [[Flux]]
+    * @return a merged [[Flux]], subscribing early but keeping the original ordering
     */
-  final def flatMapSequential[R](mapper: T => Publisher[_ <: R], delayError: Boolean, maxConcurrency: Int, prefetch: Int) = Flux(jFlux.flatMapSequential[R](mapper, delayError, maxConcurrency, prefetch))
+  final def flatMapSequentialDelayError[R](mapper: (T) => Publisher[_ <: R], maxConcurrency: Int, prefetch: Int) = Flux(jFlux.flatMapSequentialDelayError[R](mapper, maxConcurrency, prefetch))
 
   /**
     * The prefetch configuration of the [[Flux]]
@@ -2606,37 +2428,6 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
   final def replay(history: Int, ttl: Duration) = ConnectableFlux(jFlux.replay(history, ttl))
 
   /**
-    * Turn this [[Flux]] into a connectable hot source and cache last emitted signals
-    * for further [[Subscriber]]. Will retain up to the given history size onNext
-    * signals. Completion and Error will also be replayed.
-    * <p>
-    * <p>
-    * <img width="500" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/replay.png"
-    * alt="">
-    *
-    * @param ttl   Per-item timeout duration in milliseconds
-    * @param timer [[TimedScheduler]] to read current time from
-    * @return a replaying [[ConnectableFlux]]
-    */
-  final def replayMillis(ttl: Long, timer: TimedScheduler) = ConnectableFlux(jFlux.replayMillis(ttl, timer))
-
-  /**
-    * Turn this [[Flux]] into a connectable hot source and cache last emitted signals
-    * for further [[Subscriber]]. Will retain up to the given history size onNext
-    * signals. Completion and Error will also be replayed.
-    * <p>
-    * <p>
-    * <img width="500" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/replay.png"
-    * alt="">
-    *
-    * @param history number of events retained in history excluding complete and error
-    * @param ttl     Per-item timeout duration in milliseconds
-    * @param timer   [[TimedScheduler]] to read current time from
-    * @return a replaying [[ConnectableFlux]]
-    */
-  final def replayMillis(history: Int, ttl: Long, timer: TimedScheduler) = ConnectableFlux(jFlux.replayMillis(history, ttl, timer))
-
-  /**
     * Re-subscribes to this [[Flux]] sequence if it signals any error
     * either indefinitely.
     * <p>
@@ -2762,28 +2553,6 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * @return a sampled [[Flux]] by last item observed when the sampler signals
     */
   final def sampleFirst[U](samplerFactory: T => Publisher[U]) = Flux(jFlux.sampleFirst[U](samplerFactory))
-
-  /**
-    * Take a value from this [[Flux]] then use the duration provided to skip other values.
-    *
-    * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/samplefirsttimespan.png" alt="">
-    *
-    * @param timespan the period in milliseconds to exclude others values from this sequence
-    * @return a sampled [[Flux]] by first item over a period of time
-    */
-  final def sampleFirstMillis(timespan: Long) = Flux(jFlux.sampleFirstMillis(timespan))
-
-  /**
-    * Emit latest value for every given period of ti,e.
-    *
-    * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/sampletimespan.png" alt="">
-    *
-    * @param timespan the period in second to emit the latest observed item
-    * @return a sampled [[Flux]] by last item over a period of time
-    */
-  final def sampleMillis(timespan: Long) = Flux(jFlux.sampleMillis(timespan))
 
   /**
     * Emit the last value from this [[Flux]] only if there were no new values emitted
@@ -2963,6 +2732,18 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
   final def skip(timespan: Duration) = Flux(jFlux.skip(timespan))
 
   /**
+    * Skip elements from this [[Flux]] for the given time period.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/skiptime.png" alt="">
+    *
+    * @param timespan the time window to exclude next signals
+    * @param timer    a time-capable [[Scheduler]] instance to run on
+    * @return a dropping [[Flux]] until the end of the given timespan
+    */
+  final def skip(timespan: Duration, timer: Scheduler) = Flux(jFlux.skip(timespan, timer))
+
+  /**
     * Skip the last specified number of elements from this [[Flux]].
     *
     * <p>
@@ -2973,29 +2754,6 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     *
     */
   final def skipLast(n: Int) = Flux(jFlux.skipLast(n))
-
-  /**
-    * Skip elements from this [[Flux]] for the given time period.
-    *
-    * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/skiptime.png" alt="">
-    *
-    * @param timespan the time window to exclude next signals
-    * @return a dropping [[Flux]] until the end of the given timespan
-    */
-  final def skipMillis(timespan: Long) = Flux(jFlux.skipMillis(timespan))
-
-  /**
-    * Skip elements from this [[Flux]] for the given time period.
-    *
-    * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/skiptime.png" alt="">
-    *
-    * @param timespan the time window to exclude next signals
-    * @param timer    the [[TimedScheduler]] to run on
-    * @return a dropping [[Flux]] until the end of the given timespan
-    */
-  final def skipMillis(timespan: Long, timer: TimedScheduler) = Flux(jFlux.skipMillis(timespan, timer))
 
   /**
     * Skips values from this [[Flux]] until a `Predicate` returns true for the
@@ -3343,6 +3101,21 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
   final def take(timespan: Duration) = Flux(jFlux.take(timespan))
 
   /**
+    * Relay values from this [[Flux]] until the given time period elapses.
+    * <p>
+    * If the time period is zero, the [[Subscriber]] gets completed if this [[Flux]] completes, signals an
+    * error or signals its first value (which is not not relayed though).
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/taketime.png" alt="">
+    *
+    * @param timespan the time window of items to emit from this [[Flux]]
+    * @param timer a time-capable [[Scheduler]] instance to run on
+    * @return a time limited [[Flux]]
+    */
+  final def take(timespan: Duration, timer: Scheduler) = Flux(jFlux.take(timespan, timer))
+
+  /**
     * Emit the last N values this [[Flux]] emitted before its completion.
     *
     * <p>
@@ -3353,37 +3126,6 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     *
     */
   final def takeLast(n: Int) = Flux(jFlux.takeLast(n))
-
-  /**
-    * Relay values from this [[Flux]] until the given time period elapses.
-    * <p>
-    * If the time period is zero, the [[Subscriber]] gets completed if this [[Flux]] completes, signals an
-    * error or
-    * signals its first value (which is not not relayed though).
-    *
-    * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/taketime.png" alt="">
-    *
-    * @param timespan the time window of items to emit from this { @link Flux}
-    * @return a time limited [[Flux]]
-    */
-  final def takeMillis(timespan: Long) = Flux(jFlux.takeMillis(timespan))
-
-  /**
-    * Relay values from this [[Flux]] until the given time period elapses.
-    * <p>
-    * If the time period is zero, the [[Subscriber]] gets completed if this [[Flux]] completes, signals an
-    * error or
-    * signals its first value (which is not not relayed though).
-    *
-    * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/taketime.png" alt="">
-    *
-    * @param timespan the time window of items to emit from this [[Flux]]
-    * @param timer    the [[TimedScheduler]] to run on
-    * @return a time limited [[Flux]]
-    */
-  final def takeMillis(timespan: Long, timer: TimedScheduler) = Flux(jFlux.takeMillis(timespan, timer))
 
   /**
     * Relay values from this [[Flux]] until the given `Predicate` matches.
@@ -3598,10 +3340,10 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * <p>
     * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/timestamp.png" alt="">
     *
-    * @param scheduler the [[TimedScheduler]] to read time from
+    * @param scheduler the [[Scheduler]] to read time from
     * @return a timestamped [[Flux]]
     */
-  final def timestamp(scheduler: TimedScheduler): Flux[(Long, T)] = Flux(jFlux.timestamp(scheduler)).map(tupleTwo2ScalaTuple2).map {
+  final def timestamp(scheduler: Scheduler): Flux[(Long, T)] = Flux(jFlux.timestamp(scheduler)).map(tupleTwo2ScalaTuple2).map {
     case (timestamp, t) => (Long2long(timestamp), t)
   }
 
@@ -3795,6 +3537,45 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
   final def window(timespan: Duration, timeshift: Duration): Flux[Flux[T]] = Flux(jFlux.window(timespan, timeshift)).map(Flux(_))
 
   /**
+    * Split this [[Flux]] sequence into continuous, non-overlapping windows delimited by a given period.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/windowtimespan.png" alt="">
+    *
+    * @param timespan the [[Duration]] to delimit [[Flux]] windows
+    * @param timer a time-capable [[Scheduler]] instance to run on
+    * @return a windowing [[Flux]] of timed [[Flux]] buckets
+    */
+  final def window(timespan: Duration, timer: Scheduler): Flux[Flux[T]] = Flux(jFlux.window(timespan, timer)).map(Flux(_))
+
+  /**
+    * Split this [[Flux]] sequence into multiple [[Flux]] delimited by the given `timeshift`
+    * period, starting from the first item.
+    * Each [[Flux]] bucket will onComplete after `timespan` period has elpased.
+    *
+    * <p>
+    * When timeshift > timespan : dropping windows
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/windowsizeskip.png" alt="">
+    * <p>
+    * When timeshift < timespan : overlapping windows
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/windowsizeskipover.png" alt="">
+    * <p>
+    * When timeshift == timespan : exact windows
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/windowsize.png" alt="">
+    *
+    * @param timespan  the maximum [[Flux]] window duration in milliseconds
+    * @param timeshift the period of time in milliseconds to create new [[Flux]] windows
+    * @param timer     the [[Scheduler]] to run on
+    * @return a windowing
+    *         [[Flux]] of [[Flux]] buckets delimited by an opening [[Publisher]] and a selected closing [[Publisher]]
+    *
+    */
+  final def window(timespan: Duration, timeshift: Duration, timer: Scheduler): Flux[Flux[T]] = Flux(jFlux.window(timespan, timeshift, timer)).map(Flux(_))
+
+  /**
     * Split this [[Flux]] sequence into multiple [[Flux]] delimited by the given `maxSize` number
     * of items, starting from the first item. [[Flux]] windows will onComplete after a given
     * timespan occurs and the number of items has not be counted.
@@ -3809,83 +3590,19 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
   final def windowTimeout(maxSize: Int, timespan: Duration): Flux[Flux[T]] = Flux(jFlux.windowTimeout(maxSize, timespan)).map(Flux(_))
 
   /**
-    * Split this [[Flux]] sequence into continuous, non-overlapping windows delimited by a given period.
-    *
-    * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/windowtimespan.png" alt="">
-    *
-    * @param timespan the duration in milliseconds to delimit [[Flux]] windows
-    * @return a windowing [[Flux]] of timed [[Flux]] buckets
-    */
-  final def windowMillis(timespan: Long): Flux[Flux[T]] = Flux(jFlux.windowMillis(timespan)).map(Flux(_))
-
-  /**
-    * Split this [[Flux]] sequence into continuous, non-overlapping windows delimited by a given period.
-    *
-    * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/windowtimespan.png" alt="">
-    *
-    * @param timespan the duration in milliseconds to delimit [[Flux]] windows
-    * @param timer    the [[TimedScheduler]] to run on
-    * @return a windowing [[Flux]] of timed [[Flux]] buckets
-    */
-  final def windowMillis(timespan: Long, timer: TimedScheduler): Flux[Flux[T]] = Flux(jFlux.windowMillis(timespan, timer)).map(Flux(_))
-
-  /**
-    * Split this [[Flux]] sequence into multiple [[Flux]] delimited by the given `timeshift`
-    * period, starting from the first item.
-    * Each [[Flux]] bucket will onComplete after `timespan` period has elpased.
-    *
-    * <p>
-    * When timeshift > timespan : dropping windows
-    * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/windowsizeskip.png" alt="">
-    * <p>
-    * When timeshift < timespan : overlapping windows
-    * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/windowsizeskipover.png" alt="">
-    * <p>
-    * When timeshift == timespan : exact windows
-    * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/windowsize.png" alt="">
-    *
-    * @param timespan  the maximum [[Flux]] window duration in milliseconds
-    * @param timeshift the period of time in milliseconds to create new [[Flux]] windows
-    * @param timer     the [[TimedScheduler]] to run on
-    * @return a windowing
-    *         [[Flux]] of [[Flux]] buckets delimited by an opening [[Publisher]] and a selected closing [[Publisher]]
-    *
-    */
-  final def windowMillis(timespan: Long, timeshift: Long, timer: TimedScheduler): Flux[Flux[T]] = Flux(jFlux.windowMillis(timespan, timeshift, timer)).map(Flux(_))
-
-  /**
     * Split this [[Flux]] sequence into multiple [[Flux]] delimited by the given `maxSize` number
     * of items, starting from the first item. [[Flux]] windows will onComplete after a given
     * timespan occurs and the number of items has not be counted.
     *
     * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/windowsizetimeout.png" alt="">
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/windowsizetimeout.png" alt="">
     *
     * @param maxSize  the maximum [[Flux]] window items to count before onComplete
     * @param timespan the timeout to use to onComplete a given window if size is not counted yet
+    * @param timer    the [[Scheduler]] to run on
     * @return a windowing [[Flux]] of sized or timed [[Flux]] buckets
     */
-  final def windowTimeoutMillis(maxSize: Int, timespan: Long): Flux[Flux[T]] = Flux(jFlux.windowTimeoutMillis(maxSize, timespan)).map(Flux(_))
-
-  /**
-    * Split this [[Flux]] sequence into multiple [[Flux]] delimited by the given `maxSize` number
-    * of items, starting from the first item. [[Flux]] windows will onComplete after a given
-    * timespan occurs and the number of items has not be counted.
-    *
-    * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/windowsizetimeout.png" alt="">
-    *
-    * @param maxSize  the maximum [[Flux]] window items to count before onComplete
-    * @param timespan the timeout to use to onComplete a given window if size is not counted yet
-    * @param timer    the [[TimedScheduler]] to run on
-    * @return a windowing [[Flux]] of sized or timed [[Flux]] buckets
-    */
-  final def windowTimeoutMillis(maxSize: Int, timespan: Long, timer: TimedScheduler): Flux[Flux[T]] = Flux(jFlux.windowTimeoutMillis(maxSize, timespan, timer)).map(Flux(_))
+  final def windowTimeout(maxSize: Int, timespan: Duration, timer: Scheduler): Flux[Flux[T]] = Flux(jFlux.windowTimeout(maxSize, timespan, timer)).map(Flux(_))
 
   /**
     * Split this [[Flux]] sequence into multiple [[Flux]] delimited by the given
@@ -4702,41 +4419,14 @@ object Flux {
     * the given timer. If demand is not produced in time, an onError will be signalled. The [[Flux]] will never
     * complete.
     * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/interval.png" alt="">
-    * <p>
-    *
-    * @param period The number of milliseconds to wait before the next increment
-    * @return a new timed [[Flux]]
-    */
-  def intervalMillis(period: Long): Flux[Long] = Flux(JFlux.intervalMillis(period)).map(Long2long)
-
-  /**
-    * Create a new [[Flux]] that emits an ever incrementing long starting with 0 every N milliseconds on
-    * the given timer. If demand is not produced in time, an onError will be signalled. The [[Flux]] will never
-    * complete.
-    * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/interval.png" alt="">
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/interval.png" alt="">
     * <p>
     *
     * @param period The duration in milliseconds to wait before the next increment
-    * @param timer  a [[TimedScheduler]] instance
+    * @param timer  a [[Scheduler]] instance
     * @return a new timed [[Flux]]
     */
-  def intervalMillis(period: Long, timer: TimedScheduler): Flux[Long] = Flux(JFlux.intervalMillis(period, timer)).map(Long2long)
-
-  /**
-    * Create a new [[Flux]] that emits an ever incrementing long starting with 0 every N period of time unit on
-    * a global timer. If demand is not produced in time, an onError will be signalled. The [[Flux]] will never
-    * complete.
-    *
-    * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/intervald.png" alt="">
-    *
-    * @param delay  the delay in milliseconds to wait before emitting 0l
-    * @param period the period in milliseconds before each following increment
-    * @return a new timed [[Flux]]
-    */
-  def intervalMillis(delay: Long, period: Long): Flux[Long] = Flux(JFlux.intervalMillis(delay, period)).map(Long2long)
+  def interval(period: Duration, timer: Scheduler): Flux[Long] = Flux(JFlux.interval(period, timer)).map(Long2long)
 
   /**
     * Create a new [[Flux]] that emits an ever incrementing long starting with 0 every N period of time unit on
@@ -4744,14 +4434,14 @@ object Flux {
     * complete.
     *
     * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/intervald.png" alt="">
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/intervald.png" alt="">
     *
     * @param delay  the timespan in milliseconds to wait before emitting 0l
     * @param period the period in milliseconds before each following increment
-    * @param timer  the [[TimedScheduler]] to schedule on
+    * @param timer  the [[Scheduler]] to schedule on
     * @return a new timed [[Flux]]
     */
-  def intervalMillis(delay: Long, period: Long, timer: TimedScheduler): Flux[Long] = Flux(JFlux.intervalMillis(delay, period, timer)).map(Long2long)
+  def interval(delay: Duration, period: Duration, timer: Scheduler): Flux[Long] = Flux(JFlux.interval(delay, period, timer)).map(Long2long)
 
   /**
     * Create a new [[Flux]] that emits the specified items and then complete.
@@ -4852,16 +4542,15 @@ object Flux {
     * Merge emitted [[Publisher]] sequences from the passed [[Publisher]] array into an interleaved merged
     * sequence.
     * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/merge.png" alt="">
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/merge.png" alt="">
     * <p>
     *
     * @param sources    the [[Publisher]] array to iterate on [[Publisher.subscribe]]
     * @param prefetch   the inner source request size
-    * @param delayError should any error be delayed after current merge backlog
     * @tparam I The source type of the data sequence
     * @return a fresh Reactive [[Flux]] publisher ready to be subscribed
     */
-  def merge[I](prefetch: Int, delayError: Boolean, sources: Publisher[_ <: I]*): Flux[I] = Flux(JFlux.merge[I](prefetch, delayError, sources: _*))
+  def mergeDelayError[I](prefetch: Int, sources: Publisher[_ <: I]*): Flux[I] = Flux(JFlux.mergeDelayError[I](prefetch, sources: _*))
 
   /**
     * Merge emitted [[Publisher]] sequences by the passed [[Publisher]] into
@@ -4884,19 +4573,34 @@ object Flux {
     * eagerly. Unlike merge, their emitted values are merged into the final sequence in
     * subscription order.
     * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/mergesequential.png" alt="">
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/mergesequential.png" alt="">
     * <p>
     *
     * @param sources        a [[Publisher]] of [[Publisher]] sequence to merge
-    * @param delayError     should any error be delayed after current merge backlog
     * @param prefetch       the inner source request size
     * @param maxConcurrency the request produced to the main source thus limiting concurrent merge backlog
     * @tparam T the merged type
     * @return a merged [[Flux]]
     */
-  def mergeSequential[T](sources: Publisher[Publisher[T]], delayError: Boolean, maxConcurrency: Int, prefetch: Int): Flux[T] = {
-    Flux(JFlux.mergeSequential[T](sources, delayError, maxConcurrency, prefetch))
-  }
+  def mergeSequential[T](sources: Publisher[_ <: Publisher[_ <: T]], maxConcurrency: Int, prefetch: Int): Flux[T] = Flux(JFlux.mergeSequential[T](sources, maxConcurrency, prefetch))
+
+  /**
+    * Merge emitted [[Publisher]] sequences by the passed [[Publisher]] into
+    * an ordered merged sequence. Unlike concat, the inner publishers are subscribed to
+    * eagerly. Unlike merge, their emitted values are merged into the final sequence in
+    * subscription order. This variant will delay any error until after the rest of the
+    * mergeSequential backlog has been processed.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/mergesequential.png" alt="">
+    * <p>
+    *
+    * @param sources a [[Publisher]] of [[Publisher]] sequence to merge
+    * @param prefetch       the inner source request size
+    * @param maxConcurrency the request produced to the main source thus limiting concurrent merge backlog
+    * @tparam T the merged type
+    * @return a merged [[Flux]], subscribing early but keeping the original ordering
+    */
+  def mergeSequentialDelayError[T](sources: Publisher[_ <: Publisher[_ <: T]], maxConcurrency: Int, prefetch: Int) = Flux(JFlux.mergeSequentialDelayError[T](sources, maxConcurrency, prefetch))
 
   /**
     * Merge a number of [[Publisher]] sequences into an ordered merged sequence.
@@ -4917,17 +4621,30 @@ object Flux {
     * Unlike concat, the inner publishers are subscribed to eagerly. Unlike merge, their
     * emitted values are merged into the final sequence in subscription order.
     * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/mergesequential.png" alt="">
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/mergesequential.png" alt="">
     * <p>
     *
-    * @param delayError should any error be delayed after current merge backlog
+    * @param prefetch the inner source request size
+    * @param sources  a number of [[Publisher]] sequences to merge
+    * @tparam I the merged type
+    * @return a merged [[Flux]], subscribing early but keeping the original ordering
+    */
+  def mergeSequential[I](prefetch: Int, sources: Publisher[_ <: I]*) = Flux(JFlux.mergeSequential[I](prefetch, sources: _*))
+
+  /**
+    * Merge a number of [[Publisher]] sequences into an ordered merged sequence.
+    * Unlike concat, the inner publishers are subscribed to eagerly. Unlike merge, their
+    * emitted values are merged into the final sequence in subscription order.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/mergesequential.png" alt="">
+    * <p>
+    *
     * @param prefetch   the inner source request size
     * @param sources    a number of [[Publisher]] sequences to merge
     * @tparam I the merged type
     * @return a merged [[Flux]]
     */
-  def mergeSequential[I](prefetch: Int, delayError: Boolean, sources: Publisher[_ <: I]*): Flux[I] =
-    Flux(JFlux.mergeSequential(prefetch, delayError, sources: _*))
+  def mergeSequentialDelayError[I](prefetch: Int, sources: Publisher[_ <: I]*): Flux[I] = Flux(JFlux.mergeSequentialDelayError(prefetch, sources: _*))
 
   /**
     * Merge [[Publisher]] sequences from an [[Iterable]] into an ordered merged
@@ -4939,7 +4656,7 @@ object Flux {
     *
     * @param sources an [[Iterable]] of [[Publisher]] sequences to merge
     * @tparam I the merged type
-    * @return a merged [[Flux]]
+    * @return a merged [[Flux]], subscribing early but keeping the original ordering
     */
   def mergeSequential[I](sources: Iterable[Publisher[_ <: I]]): Flux[I] = Flux(JFlux.mergeSequential[I](sources))
 
@@ -4948,18 +4665,32 @@ object Flux {
     * sequence. Unlike concat, the inner publishers are subscribed to eagerly. Unlike
     * merge, their emitted values are merged into the final sequence in subscription order.
     * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/mergesequential.png" alt="">
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/mergesequential.png" alt="">
+    * <p>
+    *
+    * @param sources an [[Iterable]] of [[Publisher]] sequences to merge
+    * @param maxConcurrency the request produced to the main source thus limiting concurrent merge backlog
+    * @param prefetch       the inner source request size
+    * @tparam I the merged type
+    * @return a merged [[Flux]], subscribing early but keeping the original ordering
+    */
+  def mergeSequential[I](sources: Iterable[Publisher[_ <: I]], maxConcurrency: Int, prefetch: Int) = Flux(JFlux.mergeSequential[I](sources, maxConcurrency, prefetch))
+
+  /**
+    * Merge [[Publisher]] sequences from an [[Iterable]] into an ordered merged
+    * sequence. Unlike concat, the inner publishers are subscribed to eagerly. Unlike
+    * merge, their emitted values are merged into the final sequence in subscription order.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/mergesequential.png" alt="">
     * <p>
     *
     * @param sources        an [[Iterable]] of [[Publisher]] sequences to merge
-    * @param delayError     should any error be delayed after current merge backlog
     * @param maxConcurrency the request produced to the main source thus limiting concurrent merge backlog
     * @param prefetch       the inner source request size
     * @tparam I the merged type
     * @return a merged [[Flux]]
     */
-  def mergeSequential[I](sources: Iterable[Publisher[_ <: I]], delayError: Boolean, maxConcurrency: Int, prefetch: Int): Flux[I] =
-    Flux(JFlux.mergeSequential[I](sources, delayError, maxConcurrency, prefetch))
+  def mergeSequentialDelayError[I](sources: Iterable[Publisher[_ <: I]], maxConcurrency: Int, prefetch: Int): Flux[I] = Flux(JFlux.mergeSequentialDelayError[I](sources, maxConcurrency, prefetch))
 
   /**
     * Create a [[Flux]] that will never signal any data, error or completion signal.
