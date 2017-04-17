@@ -1087,6 +1087,16 @@ class Mono[T] private(private val jMono: JMono[T]) extends Publisher[T] with Map
     */
   final def timestamp(scheduler: Scheduler): Mono[(Long, T)] = Mono[(Long, T)](jMono.timestamp(scheduler).map((t2: Tuple2[JLong, T]) => (Long2long(t2.getT1), t2.getT2)))
 
+  /**
+    * Transform this [[Mono]] into a [[Future]] completing on onNext or onComplete and failing on
+    * onError.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/tofuture.png" alt="">
+    * <p>
+    *
+    * @return a [[Future]]
+    */
   final def toFuture: Future[T] = {
     val promise = Promise[T]()
     jMono.toFuture.handle[Unit]((value: T, throwable: Throwable) => {
@@ -1097,9 +1107,22 @@ class Mono[T] private(private val jMono: JMono[T]) extends Publisher[T] with Map
     promise.future
   }
 
-  final def transform[V](transformer: Mono[T] => Publisher[V]): Mono[V] = {
-    new Mono[V](jMono.transform[V]((_: JMono[T]) => transformer(Mono.this)))
-  }
+  /**
+    * Transform this [[Mono]] in order to generate a target [[Mono]]. Unlike [[Mono.compose]], the
+    * provided function is executed as part of assembly.
+    *
+    * @example {{{
+    *    val applySchedulers = mono => mono.subscribeOn(Schedulers.elastic()).publishOn(Schedulers.parallel());
+    *    mono.transform(applySchedulers).map(v => v * v).subscribe()
+    *          }}}
+    * @param transformer the [[Function1]] to immediately map this [[Mono]] into a target [[Mono]]
+    *                                instance.
+    * @tparam V the item type in the returned [[Mono]]
+    * @return a new [[Mono]]
+    * @see [[Mono.compose]] for deferred composition of [[Mono]] for each [[Subscriber]]
+    * @see [[Mono.as]] for a loose conversion to an arbitrary type
+    */
+  final def transform[V](transformer: Mono[T] => Publisher[V]): Mono[V] = Mono[V](jMono.transform[V]((_: JMono[T]) => transformer(Mono.this)))
 
   final def asJava(): JMono[T] = jMono
 }
@@ -1171,20 +1194,31 @@ object Mono {
     */
   def empty[T] = Mono[T](JMono.empty())
 
-  def empty[T](source: Publisher[T]): Mono[Unit] = {
-    new Mono[Unit](
-      JMono.empty(source)
-        .map(new Function[Void, Unit] {
-          override def apply(t: Void): Unit = ()
-        })
-    )
-  }
+  /**
+    * Create a new [[Mono]] that ignores onNext (dropping them) and only react on Completion signal.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/thens.png" alt="">
+    * <p>
+    *
+    * @param source the [[Publisher to ignore]]
+    * @tparam T the reified [[Publisher]] type
+    * @return a new completable [[Mono]].
+    */
+  def empty[T](source: Publisher[T]) = Mono[Unit](JMono.empty(source).map(new Function[Void, Unit] {override def apply(t: Void): Unit = ()}))
 
-  def error[T](throwable: Throwable): Mono[T] = {
-    new Mono[T](
-      JMono.error(throwable)
-    )
-  }
+  /**
+    * Create a [[Mono]] that completes with the specified error immediately after onSubscribe.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/error.png" alt="">
+    * <p>
+    *
+    * @param error the onError signal
+    * @tparam T the reified [[Subscriber]] type
+    * @return a failed [[Mono]]
+    */
+  def error[T](error: Throwable) = Mono[T](JMono.error(error))
 
   def from[T](publisher: Publisher[_ <: T]): Mono[T] = {
     new Mono[T](
@@ -1204,9 +1238,7 @@ object Mono {
       case Success(t) => completableFuture.complete(t)
       case Failure(error) => completableFuture.completeExceptionally(error)
     }
-    new Mono[T](
-      JMono.fromFuture(completableFuture)
-    )
+    Mono[T](JMono.fromFuture(completableFuture))
   }
 
   def fromRunnable(runnable: Runnable): Mono[Unit] = {
