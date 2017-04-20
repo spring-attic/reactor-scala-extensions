@@ -1116,9 +1116,9 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       "with Scheduler should provide the time elapsed using the provided scheduler when this mono emit value" in {
         val virtualTimeScheduler = VirtualTimeScheduler.getOrSet()
         StepVerifier.create(Flux.just(1, 2, 3)
-                    .delaySubscription(1 second, virtualTimeScheduler)
-                    .delayElements(1 second, virtualTimeScheduler)
-                    .elapsed(virtualTimeScheduler), 3)
+          .delaySubscription(1 second, virtualTimeScheduler)
+          .delayElements(1 second, virtualTimeScheduler)
+          .elapsed(virtualTimeScheduler), 3)
           .`then`(() => virtualTimeScheduler.advanceTimeBy(4 seconds))
           .expectNextMatches(new Predicate[(Long, Int)] {
             override def test(t: (Long, Int)): Boolean = t match {
@@ -1211,9 +1211,9 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       }
       "with delayError should respect whether error be delayed after current merge backlog" in {
         val flux = Flux.just(1, 2, 3).flatMapSequentialDelayError(i => {
-                  if (i == 2) Flux.error[Int](new RuntimeException("just an error"))
-                  else Flux.just(i * 2, i * 3)
-                }, 2, 2)
+          if (i == 2) Flux.error[Int](new RuntimeException("just an error"))
+          else Flux.just(i * 2, i * 3)
+        }, 2, 2)
         StepVerifier.create(flux)
           .expectNext(2, 3, 6, 9)
           .verifyError(classOf[RuntimeException])
