@@ -1,0 +1,148 @@
+group 'com.github.sinwe'
+description = 'Scala wrapper for reactor-core'
+
+apply plugin: 'scala'
+apply plugin: "com.github.maiflai.scalatest"
+apply plugin: 'signing'
+apply plugin: 'maven'
+apply plugin: 'org.scoverage'
+apply plugin: 'net.researchgate.release'
+apply plugin: 'io.codearte.nexus-staging'
+apply plugin: 'org.owasp.dependencycheck'
+
+repositories {
+    mavenCentral()
+}
+
+ext {
+    reactorVersion = "3.0.6.RELEASE"
+    baseScalaVersion = "2.11"
+}
+
+dependencies {
+// scala dependencies
+    compile "org.scala-lang:scala-library:$baseScalaVersion.8"
+// reactor dependencies
+    compile group: 'io.projectreactor', name: 'reactor-core', version: "$reactorVersion"
+// jsr305
+    compile group: 'com.google.code.findbugs', name: 'jsr305', version: '3.0.1'
+
+//    test dependencies
+    testCompile "org.scalatest:scalatest_$baseScalaVersion:3.0.1"
+    testRuntime "org.pegdown:pegdown:1.6.0"
+    testCompile group: 'io.projectreactor.addons', name: 'reactor-test', version: "$reactorVersion"
+
+    scoverage "org.scoverage:scalac-scoverage-plugin_$baseScalaVersion:1.1.0", "org.scoverage:scalac-scoverage-runtime_$baseScalaVersion:1.1.0"
+}
+
+buildscript {
+    repositories {
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
+    }
+
+    dependencies {
+        classpath "gradle.plugin.com.github.maiflai:gradle-scalatest:0.14"
+        classpath "gradle.plugin.org.scoverage:gradle-scoverage:2.1.0"
+        classpath 'net.researchgate:gradle-release:2.5.0'
+        classpath 'io.codearte.gradle.nexus:gradle-nexus-staging-plugin:0.5.3'
+        classpath 'org.owasp:dependency-check-gradle:1.4.5'
+    }
+}
+
+dependencyCheck {
+    skipConfigurations=["apiElements", "implementation", "runtimeElements", "runtimeOnly", "testImplementation", "testRuntimeOnly", "scoverageImplementation", "scoverageRuntimeOnly"]
+}
+
+ext.isReleaseVersion = !version.endsWith("SNAPSHOT")
+signing {
+    required { isReleaseVersion }
+    sign configurations.archives
+}
+
+task sourcesJar(type: Jar, dependsOn: classes) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+}
+
+task scaladocJar(type: Jar, dependsOn: scaladoc) {
+    classifier = 'javadoc'
+    from scaladoc.destinationDir
+}
+
+artifacts {
+    archives jar
+    archives sourcesJar
+    archives scaladocJar
+}
+
+ext.sonatypeUsername = hasProperty("ossrhUsername") ? ossrhUsername : System.getenv("ossrhUsername")
+
+ext.sonatypePassword = hasProperty("ossrhPassword") ? ossrhPassword : System.getenv("ossrhPassword")
+
+uploadArchives {
+    repositories {
+        mavenDeployer {
+            beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
+            repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2") {
+                authentication(userName: sonatypeUsername, password: sonatypePassword)
+            }
+            snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots") {
+                authentication(userName: sonatypeUsername, password: sonatypePassword)
+            }
+
+            pom.project {
+                name 'Scala wrapper for reactor-core'
+                packaging 'jar'
+                // optionally artifactId can be defined here
+                description 'A Scala wrapper for reactor-core so that the code can be fluently used in Scala'
+                url 'https://sinwe.github.io/reactor-core-scala/'
+
+                scm {
+                    connection 'scm:git:git@github.com:sinwe/reactor-core-scala.git'
+                    developerConnection 'scm:git:git@github.com:sinwe/reactor-core-scala.git'
+                    url 'https://github.com/sinwe/reactor-core-scala'
+                }
+
+                licenses {
+                    license {
+                        name 'GNU LESSER GENERAL PUBLIC LICENSE'
+                        url 'https://www.gnu.org/licenses/lgpl-3.0.en.html'
+                    }
+                }
+
+                developers {
+                    developer {
+                        id 'sinwe'
+                        name 'Winarto'
+                        email 'winarto@gmail.com'
+                    }
+                }
+            }
+        }
+    }
+}
+
+afterReleaseBuild.dependsOn uploadArchives
+
+ScalaCompileOptions.metaClass.daemonServer = true
+ScalaCompileOptions.metaClass.fork = true
+ScalaCompileOptions.metaClass.useAnt = false
+ScalaCompileOptions.metaClass.useCompileDaemon = false
+
+project.tasks.scaladoc.scalaDocOptions.additionalParameters=["-no-link-warnings"]
+
+release {
+    git {
+        requireBranch = ''
+    }
+}
+
+test {
+    maxParallelForks = 1
+}
+
+testScoverage {
+    maxParallelForks = 1
+}
