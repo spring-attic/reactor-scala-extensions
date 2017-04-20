@@ -1,7 +1,7 @@
 # Reactor Core Scala
 [![Join the chat at https://gitter.im/reactor/reactor](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/reactor/reactor?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Reactor Core Scala](https://maven-badges.herokuapp.com/maven-central/com.github.sinwe/reactor-core-scala/badge.svg?style=plastic)](http://mvnrepository.com/artifact/com.github.sinwe/reactor-core-scala) 
-[![Travis CI](https://travis-ci.org/sinwe/reactor-core-scala.svg?branch=master)](https://travis-ci.org/sinwe/reactor-core-scala)
+[![Build Status](https://travis-ci.org/reactor/reactor-scala-extensions.svg?branch=master)](https://travis-ci.org/reactor/reactor-scala-extensions)
 [![codecov](https://codecov.io/gh/sinwe/reactor-core-scala/branch/master/graph/badge.svg)](https://codecov.io/gh/sinwe/reactor-core-scala)
 [![Dependencies](https://app.updateimpact.com/badge/816040452200468480/reactor-core-scala.svg?config=compile)](https://app.updateimpact.com/latest/816040452200468480/reactor-core-scala)
                             
