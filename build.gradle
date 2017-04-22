@@ -100,9 +100,9 @@ uploadArchives {
                 url 'https://github.com/reactor/reactor-scala-extensions'
 
                 scm {
-                    connection 'scm:git:git@github.com:sinwe/reactor-core-scala.git'
-                    developerConnection 'scm:git:git@github.com:sinwe/reactor-core-scala.git'
-                    url 'https://github.com/sinwe/reactor-core-scala'
+                    connection 'scm:git:git@github.com:reactor/reactor-scala-extensions.git'
+                    developerConnection 'scm:git:git@github.com:reactor/reactor-scala-extensions.git'
+                    url 'https://github.com/reactor/reactor-scala-extensions'
                 }
 
                 licenses {
