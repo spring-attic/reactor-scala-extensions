@@ -4269,7 +4269,7 @@ object Flux {
     * @param emitter the consumer that will receive a FluxSink for each individual Subscriber.
     * @return a [[Flux]]
     */
-  def push[T](emitter: FluxSink[T] => Unit, backpressure: OverflowStrategy) = Flux(JFlux.push(emitter, backpressure))
+  def push[T](emitter: FluxSink[T] => Unit, backpressure: OverflowStrategy) = Flux(JFlux.push[T](emitter, backpressure))
 
   /**
     * Supply a [[Publisher]] everytime subscribe is called on the returned flux. The passed [[scala.Function1[Unit,Publisher[T]]]]

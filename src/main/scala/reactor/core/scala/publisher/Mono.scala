@@ -1696,7 +1696,7 @@ object Mono {
     * @param sources The sources to use.
     * @return a [[Mono]].
     */
-  def whenDelayError(sources: (Publisher[Unit] with MapablePublisher[Unit])*) = new Mono[Unit](
+  def whenDelayError(sources: (Publisher[Unit] with MapablePublisher[Unit])*) = Mono[Unit](
     JMono.whenDelayError(sources.map(s => s.map((t: Unit) => None.orNull: Void)).toArray: _*)
       .map((t: Void) => ())
   )
@@ -1726,9 +1726,7 @@ object Mono {
       override def apply(t: Any): Object = t.asInstanceOf[Object]
     }))
 
-    new Mono[R](
-      JMono.whenDelayError(combinatorFunction, jMonos.toArray: _*)
-    )
+    Mono[R](JMono.whenDelayError(combinatorFunction, jMonos.toArray: _*))
   }
 
   /**
