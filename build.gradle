@@ -1,5 +1,5 @@
-group 'com.github.sinwe'
-description = 'Scala wrapper for reactor-core'
+group 'io.projectreactor'
+description = 'A scala adapter for Reactor Flux and Mono'
 
 apply plugin: 'scala'
 apply plugin: "com.github.maiflai.scalatest"
@@ -96,8 +96,8 @@ uploadArchives {
                 name 'Scala wrapper for reactor-core'
                 packaging 'jar'
                 // optionally artifactId can be defined here
-                description 'A Scala wrapper for reactor-core so that the code can be fluently used in Scala'
-                url 'https://sinwe.github.io/reactor-core-scala/'
+                description 'A scala adapter for Reactor Flux and Mono so that the code can be fluently used in Scala'
+                url 'https://github.com/reactor/reactor-scala-extensions'
 
                 scm {
                     connection 'scm:git:git@github.com:sinwe/reactor-core-scala.git'
@@ -107,8 +107,8 @@ uploadArchives {
 
                 licenses {
                     license {
-                        name 'GNU LESSER GENERAL PUBLIC LICENSE'
-                        url 'https://www.gnu.org/licenses/lgpl-3.0.en.html'
+                        name 'Apache License, Version 2.0, January 2004'
+                        url 'https://www.apache.org/licenses/LICENSE-2.0.html'
                     }
                 }
 
