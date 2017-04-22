@@ -160,6 +160,17 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         .verifyComplete()
     }
 
+    ".push should create a flux" in {
+      val flux = Flux.push[Int]((emitter: FluxSink[Int]) => {
+        emitter.next(1)
+        emitter.next(2)
+        emitter.complete()
+      })
+      StepVerifier.create(flux)
+        .expectNext(1, 2)
+        .verifyComplete()
+    }
+
     ".defer should create a flux" in {
       val flux = Flux.defer(() => Flux.just(1, 2, 3))
       StepVerifier.create(flux)

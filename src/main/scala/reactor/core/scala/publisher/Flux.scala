@@ -4178,21 +4178,21 @@ object Flux {
     * and not worry about cancellation and backpressure. For example:
     *
     * <pre><code>
-    * Flux.&lt;String&gt;create(emitter -&gt; {
+    * Flux.create[String](emitter =&gt; {
     *
-    * ActionListener al = e -&gt; {
-    *         emitter.next(textField.getText());
-    * };
+    * ActionListener al = e =&gt; {
+    *         emitter.next(textField.getText())
+    * }
     * // without cancellation support:
     *
-    *     button.addActionListener(al);
+    *     button.addActionListener(al)
     *
     * // with cancellation support:
     *
-    *     button.addActionListener(al);
-    *     emitter.setCancellation(() -> {
-    *         button.removeListener(al);
-    * });
+    *     button.addActionListener(al)
+    *     emitter.setCancellation(() => {
+    *         button.removeListener(al)
+    * })
     * }, FluxSink.OverflowStrategy.LATEST);
     * <code></pre>
     *
@@ -4204,6 +4204,72 @@ object Flux {
     */
   //  TODO: How to test backpressure?
   def create[T](emitter: FluxSink[T] => Unit, backpressure: OverflowStrategy) = Flux(JFlux.create[T](emitter, backpressure))
+
+  /**
+    * Creates a Flux with multi-emission capabilities from a single threaded producer
+    * through the FluxSink API.
+    * <p>
+    * This Flux factory is useful if one wants to adapt some other single=threaded
+    * multi-valued async API and not worry about cancellation and backpressure. For example:
+    *
+    * <pre><code>
+    * Flux.push&#91;String&#93;(emitter =&gt; {
+    *
+    * val al: ActionListener = e =&gt; {
+    *		 emitter.next(textField.getText())
+    * }
+    * // without cleanup support:
+    *
+    *	 button.addActionListener(al)
+    *
+    * // with cleanup support:
+    *
+    *	 button.addActionListener(al)
+    *	 emitter.onDispose(() => {
+    *		 button.removeListener(al)
+    * })
+    * }, FluxSink.OverflowStrategy.LATEST);
+    * <code></pre>
+    *
+    * @tparam T the value type
+    * @param emitter the consumer that will receive a FluxSink for each individual Subscriber.
+    * @return a [[Flux]]
+    */
+  def push[T](emitter: FluxSink[T] => Unit) = Flux(JFlux.push[T](emitter))
+
+  /**
+    * Creates a Flux with multi-emission capabilities from a single threaded producer
+    * through the FluxSink API.
+    * <p>
+    * This Flux factory is useful if one wants to adapt some other single-threaded
+    * multi-valued async API and not worry about cancellation and backpressure. For example:
+    *
+    * <pre><code>
+    * Flux.push&#91;String&#93;(emitter =&gt; {
+    *
+    * val al: ActionListener = e =&gt; {
+    *		 emitter.next(textField.getText())
+    * };
+    * // without cleanup support:
+    *
+    *	 button.addActionListener(al)
+    *
+    * // with cleanup support:
+    *
+    *	 button.addActionListener(al)
+    *	 emitter.onDispose(() => {
+    *		 button.removeListener(al)
+    * });
+    * }, FluxSink.OverflowStrategy.LATEST)
+    * <code></pre>
+    *
+    * @tparam T the value type
+    * @param backpressure the backpressure mode, see [[OverflowStrategy]] for the
+    *                                                        available backpressure modes
+    * @param emitter the consumer that will receive a FluxSink for each individual Subscriber.
+    * @return a [[Flux]]
+    */
+  def push[T](emitter: FluxSink[T] => Unit, backpressure: OverflowStrategy) = Flux(JFlux.push(emitter, backpressure))
 
   /**
     * Supply a [[Publisher]] everytime subscribe is called on the returned flux. The passed [[scala.Function1[Unit,Publisher[T]]]]
