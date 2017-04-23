@@ -1685,6 +1685,24 @@ object Mono {
   )
 
   /**
+    * Aggregate given void publishers into a new a `Mono` that will be
+    * fulfilled when all of the given `sources` have been fulfilled. If any Publisher
+    * terminates without value, the returned sequence will be terminated immediately and
+    * pending results cancelled. If several Publishers error, the exceptions are combined
+    * (suppressed into a combining exception).
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/whent.png" alt="">
+    * <p>
+    *
+    * @param sources The sources to use.
+    * @return a [[Mono]].
+    */
+  def whenDelayError(sources: Iterable[_ <: Publisher[Unit] with MapablePublisher[Unit]]) = Mono[Unit](
+    JMono.whenDelayError(sources.map(s => s.map((t: Unit) => None.orNull: Void)).asJava).map((t: Void) => ())
+  )
+
+  /**
     * Aggregate given monos into a new a `Mono` that will be fulfilled when all of the given `Monos`
     * have been fulfilled. If any Mono terminates without value, the returned sequence will be terminated
     * immediately and pending results cancelled. If several Monos error, the exceptions are combined (suppressed
