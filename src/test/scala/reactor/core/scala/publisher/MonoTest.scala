@@ -117,6 +117,13 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
           .verify()
       }
 
+      "source direct should return mono of the source" in {
+        val mono = Mono.fromDirect(Flux.just(1, 2, 3))
+        StepVerifier.create(mono)
+          .expectNext(1, 2, 3)
+          .verifyComplete()
+      }
+
       "a future should result Mono that will return the value from the future object" in {
         import scala.concurrent.ExecutionContext.Implicits.global
         val future = Future[Long] {
@@ -791,8 +798,8 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       "with TimedScheduler should provide the time elapsed using the provided scheduler when this mono emit value" in {
         val virtualTimeScheduler = VirtualTimeScheduler.getOrSet()
         StepVerifier.create(Mono.just(randomValue)
-            .delaySubscription(1 second, virtualTimeScheduler)
-            .elapsed(virtualTimeScheduler), 1)
+          .delaySubscription(1 second, virtualTimeScheduler)
+          .elapsed(virtualTimeScheduler), 1)
           .`then`(() => virtualTimeScheduler.advanceTimeBy(1 second))
           .expectNextMatches(new Predicate[(Long, Long)] {
             override def test(t: (Long, Long)): Boolean = t match {

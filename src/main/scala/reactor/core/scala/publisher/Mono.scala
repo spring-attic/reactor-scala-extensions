@@ -1220,18 +1220,55 @@ object Mono {
     */
   def error[T](error: Throwable) = Mono[T](JMono.error(error))
 
-  def from[T](publisher: Publisher[_ <: T]): Mono[T] = {
-    new Mono[T](
-      JMono.from(publisher)
-    )
-  }
+  /**
+    * Expose the specified [[Publisher]] with the [[Mono]] API, and ensure it will emit 0 or 1 item.
+    * The source emitter will be cancelled on the first `onNext`.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/from1.png" alt="">
+    * <p>
+    *
+    * @param source the { @link Publisher} source
+    * @tparam T the source type
+    * @return the next item emitted as a { @link Mono}
+    */
+  def from[T](source: Publisher[_ <: T]) = Mono[T](JMono.from(source))
 
-  def fromCallable[T](callable: Callable[T]): Mono[T] = {
-    new Mono[T](
-      JMono.fromCallable(callable)
-    )
-  }
+  /**
+    * Create a [[Mono]] producing the value for the [[Mono]] using the given supplier.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/fromcallable.png" alt="">
+    * <p>
+    *
+    * @param supplier { @link Callable} that will produce the value
+    * @tparam T type of the expected value
+    * @return A [[Mono]].
+    */
+  def fromCallable[T](supplier: Callable[T]) = Mono[T](JMono.fromCallable(supplier))
 
+  /**
+    * Unchecked cardinality conversion of [[Publisher]] as [[Mono]], supporting
+    * [[reactor.core.Fuseable]] sources.
+    *
+    * @param source the [[Publisher]] to wrap
+    * @tparam I input upstream type
+    * @return a wrapped [[Mono]]
+    */
+  def fromDirect[I](source: Publisher[_ <: I]) = Mono(JMono.fromDirect[I](source))
+
+  /**
+    * Create a [[Mono]] producing the value for the [[Mono]] using the given [[Future]].
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/fromfuture.png" alt="">
+    * <p>
+    *
+    * @param future [[Future]] that will produce the value or null to
+    *                       complete immediately
+    * @param executionContext an implicit [[ExecutionContext]] to use
+    * @tparam T type of the expected value
+    * @return A [[Mono]].
+    */
   def fromFuture[T](future: Future[T])(implicit executionContext: ExecutionContext): Mono[T] = {
     val completableFuture = new CompletableFuture[T]()
     future onComplete {
@@ -1241,57 +1278,130 @@ object Mono {
     Mono[T](JMono.fromFuture(completableFuture))
   }
 
-  def fromRunnable(runnable: Runnable): Mono[Unit] = {
-    new Mono[Unit](
-      JMono.fromRunnable(runnable).map(new Function[Void, Unit] {
-        override def apply(t: Void): Unit = ()
-      })
-    )
-  }
+  /**
+    * Create a [[Mono]] only producing a completion signal after using the given
+    * runnable.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/fromrunnable.png" alt="">
+    * <p>
+    *
+    * @param runnable [[Runnable]] that will callback the completion signal
+    * @return A [[Mono]].
+    */
+  def fromRunnable(runnable: Runnable) = new Mono[Unit](
+    JMono.fromRunnable(runnable).map(new Function[Void, Unit] {
+      override def apply(t: Void): Unit = ()
+    })
+  )
 
-  def fromSupplier[T](supplier: () => T): Mono[T] = {
-    new Mono[T](
-      JMono.fromSupplier(new Supplier[T] {
-        override def get(): T = supplier()
-      })
-    )
-  }
+  /**
+    * Create a [[Mono]] producing the value for the [[Mono]] using the given supplier.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/fromsupplier.png" alt="">
+    * <p>
+    *
+    * @param supplier  that will produce the value
+    * @tparam T type of the expected value
+    * @return A [[Mono]].
+    */
+  def fromSupplier[T](supplier: () => T) = new Mono[T](
+    JMono.fromSupplier(new Supplier[T] {
+      override def get(): T = supplier()
+    })
+  )
 
-  def ignoreElements[T](publisher: Publisher[T]): Mono[T] = {
-    new Mono[T](
-      JMono.ignoreElements(publisher)
-    )
-  }
+  /**
+    * Create a new [[Mono]] that ignores onNext (dropping them) and only react on Completion signal.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/ignoreelements.png" alt="">
+    * <p>
+    *
+    * @param source the [[Publisher to ignore]]
+    * @tparam T the source type of the ignored data
+    * @return a new completable [[Mono]].
+    */
+  def ignoreElements[T](source: Publisher[T]) = Mono[T](
+    JMono.ignoreElements(source)
+  )
 
-  def just[T](data: T): Mono[T] = {
-    new Mono[T](JMono.just(data))
-  }
+  /**
+    * Create a new [[Mono]] that emits the specified item.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/just.png" alt="">
+    * <p>
+    *
+    * @param data the only item to onNext
+    * @tparam T the type of the produced item
+    * @return a [[Mono]].
+    */
+  def just[T](data: T) = Mono[T](JMono.just(data))
 
-  def justOrEmpty[T](data: Option[_ <: T]): Mono[T] = {
-    new Mono[T](
-      JMono.justOrEmpty[T](data)
-    )
-  }
+  /**
+    * Create a new [[Mono]] that emits the specified item if [[Option.isDefined]] otherwise only emits
+    * onComplete.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/justorempty.png" alt="">
+    * <p>
+    *
+    * @param data the [[Option]] item to onNext or onComplete if not present
+    * @tparam T the type of the produced item
+    * @return a [[Mono]].
+    */
+  def justOrEmpty[T](data: Option[_ <: T]) = Mono[T](
+    JMono.justOrEmpty[T](data)
+  )
 
-  def justOrEmpty[T](data: T): Mono[T] = {
-    new Mono[T](
-      JMono.justOrEmpty(data)
-    )
-  }
+  /**
+    * Create a new [[Mono]] that emits the specified item if non null otherwise only emits
+    * onComplete.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/justorempty.png" alt="">
+    * <p>
+    *
+    * @param data the item to onNext or onComplete if null
+    * @tparam T the type of the produced item
+    * @return a [[Mono]].
+    */
+  def justOrEmpty[T](data: T) = Mono[T](
+    JMono.justOrEmpty(data)
+  )
 
-  def never[T]: Mono[T] = {
-    new Mono[T](
-      JMono.never[T]()
-    )
-  }
+  /**
+    * Return a [[Mono]] that will never signal any data, error or completion signal.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/never.png" alt="">
+    * <p>
+    *
+    * @tparam T the [[Subscriber]] type target
+    * @return a never completing [[Mono]]
+    */
+  def never[T] = new Mono[T](
+    JMono.never[T]()
+  )
 
-  def sequenceEqual[T](source1: Publisher[_ <: T], source2: Publisher[_ <: T]): Mono[Boolean] = {
-    new Mono[Boolean](
-      JMono.sequenceEqual[T](source1, source2).map(new Function[JBoolean, Boolean] {
-        override def apply(t: JBoolean): Boolean = Boolean2boolean(t)
-      })
-    )
-  }
+  /**
+    * Returns a Mono that emits a Boolean value that indicates whether two Publisher sequences are the
+    * same by comparing the items emitted by each Publisher pairwise.
+    *
+    * @param source1
+    *          the first Publisher to compare
+    * @param source2
+    *          the second Publisher to compare
+    * @tparam T
+    *          the type of items emitted by each Publisher
+    * @return a Mono that emits a Boolean value that indicates whether the two sequences are the same
+    */
+  def sequenceEqual[T](source1: Publisher[_ <: T], source2: Publisher[_ <: T]) = Mono[Boolean](
+    JMono.sequenceEqual[T](source1, source2).map(new Function[JBoolean, Boolean] {
+      override def apply(t: JBoolean) = Boolean2boolean(t)
+    })
+  )
 
   /**
     * Merge given monos into a new a `Mono` that will be fulfilled when all of the given `Monos`
