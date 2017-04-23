@@ -2,7 +2,7 @@
 [![Join the chat at https://gitter.im/reactor/reactor](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/reactor/reactor?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Reactor Core Scala](https://maven-badges.herokuapp.com/maven-central/com.github.sinwe/reactor-core-scala/badge.svg?style=plastic)](http://mvnrepository.com/artifact/com.github.sinwe/reactor-core-scala) 
 [![Build Status](https://travis-ci.org/reactor/reactor-scala-extensions.svg?branch=master)](https://travis-ci.org/reactor/reactor-scala-extensions)
-[![codecov](https://codecov.io/gh/sinwe/reactor-core-scala/branch/master/graph/badge.svg)](https://codecov.io/gh/sinwe/reactor-core-scala)
+[![codecov](https://codecov.io/gh/reactor/reactor-scala-extensions/branch/master/graph/badge.svg)](https://codecov.io/gh/reactor/reactor-scala-extensions)
 [![Dependencies](https://app.updateimpact.com/badge/816040452200468480/reactor-core-scala.svg?config=compile)](https://app.updateimpact.com/latest/816040452200468480/reactor-core-scala)
                             
 This project is a Scala wrapper for reactor-core.
@@ -35,8 +35,8 @@ With Gradle:
     }
     
     dependencies {
-        //compile "io.projectreactor:reactor-scala-extensions:0.2.3-SNAPSHOT
-        compile "com.github.sinwe:reactor-core-scala:0.2.2
+        //compile "io.projectreactor:reactor-scala-extensions:0.2.4-SNAPSHOT
+        compile "io.projectreactor:reactor-scala-extensions:0.2.3
     }
 
 With Maven:
@@ -57,13 +57,13 @@ With Maven:
     <dependency>
         <groupId>io.projectreactor</groupId>
         <artifactId>reactor-scala-extensions</artifactId>
-        <version>0.2.3-SNAPSHOT</version>
+        <version>0.2.4-SNAPSHOT</version>
     </dependency>
     -->
     <dependency>
-        <groupId>com.github.sinwe</groupId>
-        <artifactId>reactor-core-scala</artifactId>
-        <version>0.2.2</version>
+        <groupId>io.projectreactor</groupId>
+        <artifactId>reactor-scala-extensions</artifactId>
+        <version>0.2.3</version>
     </dependency>
 
 ## Contributing
