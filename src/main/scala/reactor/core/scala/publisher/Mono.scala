@@ -1678,11 +1678,38 @@ object Mono {
     * @tparam T6 type of the value from source6
     * @return a [[Mono]].
     */
-  def whenDelayError[T1, T2, T3, T4, T5, T6](p1: Mono[_ <: T1], p2: Mono[_ <: T2], p3: Mono[_ <: T3], p4: Mono[_ <: T4], p5: Mono[_ <: T5], p6: Mono[_ <: T6]) = new Mono[(T1, T2, T3, T4, T5, T6)](
+  def whenDelayError[T1, T2, T3, T4, T5, T6](p1: Mono[_ <: T1], p2: Mono[_ <: T2], p3: Mono[_ <: T3], p4: Mono[_ <: T4], p5: Mono[_ <: T5], p6: Mono[_ <: T6]) = Mono[(T1, T2, T3, T4, T5, T6)](
     JMono.whenDelayError[T1, T2, T3, T4, T5, T6](p1.jMono, p2.jMono, p3.jMono, p4.jMono, p5.jMono, p6.jMono).map(new Function[Tuple6[T1, T2, T3, T4, T5, T6], (T1, T2, T3, T4, T5, T6)] {
       override def apply(t: Tuple6[T1, T2, T3, T4, T5, T6]): (T1, T2, T3, T4, T5, T6) = tupleSix2ScalaTuple6(t)
     })
   )
+
+  /**
+    * Aggregate given monos into a new a `Mono` that will be fulfilled when all of the given `Monos`
+    * have been fulfilled. If any Mono terminates without value, the returned sequence will be terminated
+    * immediately and pending results cancelled. If several Monos error, the exceptions are combined (suppressed
+    * into a combining exception).
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/whent.png" alt="">
+    * <p>
+    *
+    * @param monos      The monos to use.
+    * @param combinator the function to transform the combined array into an arbitrary
+    *                   object.
+    * @tparam R the combined result
+    * @return a [[Mono]].
+    */
+  def whenDelayError[R](monos: Iterable[_ <: Mono[_]], combinator: (Array[Any] => _ <: R)) ={
+    val combinatorFunction = new Function[Array[Object], R] {
+      override def apply(t: Array[Object]): R = {
+        val v = t.map { v => v: Any }
+        combinator(v)
+      }
+    }
+    val jMonos: JIterable[JMono[_]] = monos.map(_.asJava()).asJava
+    Mono(JMono.whenDelayError[R](jMonos, combinatorFunction))
+  }
 
   /**
     * Merge given void publishers into a new a `Mono` that will be fulfilled
@@ -1696,7 +1723,7 @@ object Mono {
     * @param sources The sources to use.
     * @return a [[Mono]].
     */
-  def whenDelayError(sources: (Publisher[Unit] with MapablePublisher[Unit])*) = Mono[Unit](
+  def whenDelayError(sources: (Publisher[Unit] with MapablePublisher[Unit])*): Mono[Unit] = Mono[Unit](
     JMono.whenDelayError(sources.map(s => s.map((t: Unit) => None.orNull: Void)).toArray: _*)
       .map((t: Void) => ())
   )

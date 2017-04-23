@@ -460,6 +460,12 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
           .verifyComplete()
       }
 
+      "with iterable should merge when all monos are fulfilled" in {
+        StepVerifier.create(Mono.whenDelayError(Iterable(Mono.just(1), Mono.just("one")), (values: Array[Any]) => s"${values(0).toString}-${values(1).toString}"))
+          .expectNext("1-one")
+          .verifyComplete()
+      }
+
       "with varargs of Publisher[Unit] should be fulfilled when all the underlying sources are fulfilled" in {
         val completed = new ConcurrentHashMap[String, Boolean]()
         val mono = Mono.whenDelayError(
