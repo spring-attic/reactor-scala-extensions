@@ -1124,6 +1124,30 @@ class Mono[T] private(private val jMono: JMono[T]) extends Publisher[T] with Map
     */
   final def transform[V](transformer: Mono[T] => Publisher[V]): Mono[V] = Mono[V](jMono.transform[V]((_: JMono[T]) => transformer(Mono.this)))
 
+  /**
+    * Subscribe to this Mono and another Publisher, which will be used as a trigger for
+    * the emission of this Mono's element. That is to say, this Mono's element is delayed
+    * until the trigger Publisher emits for the first time (or terminates empty).
+    *
+    * @param anyPublisher the publisher which first emission or termination will trigger
+    *                     the emission of this Mono's value.
+    * @return this Mono, but delayed until the given publisher emits first or terminates.
+    */
+  def untilOther(anyPublisher: Publisher[_]) = Mono(jMono.untilOther(anyPublisher))
+
+  /**
+    * Subscribe to this Mono and another Publisher, which will be used as a trigger for
+    * the emission of this Mono's element, mapped through a provided function.
+    * That is to say, this Mono's element is delayed until the trigger Publisher emits
+    * for the first time (or terminates empty). Any error is delayed until all publishers
+    * have triggered, and multiple errors are combined into one.
+    *
+    * @param anyPublisher the publisher which first emission or termination will trigger
+    *                     the emission of this Mono's value.
+    * @return this Mono, but delayed until the given publisher emits first or terminates.
+    */
+  def untilOtherDelayError(anyPublisher: Publisher[_]) = Mono(jMono.untilOtherDelayError(anyPublisher))
+
   final def asJava(): JMono[T] = jMono
 }
 

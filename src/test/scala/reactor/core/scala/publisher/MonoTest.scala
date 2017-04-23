@@ -1289,6 +1289,28 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         .expectNext(randomValue.toString)
         .verifyComplete()
     }
+
+    ".untilOther should emit the value in this mono after the other publisher emits the first tiem or terminates empty" in {
+      val flag = new AtomicBoolean(false)
+      val mono = Mono.just(randomValue).untilOther(Flux.just(1).doOnNext(_ => flag.compareAndSet(false, true))).doOnNext(_ => {
+        flag shouldBe 'get
+        flag.compareAndSet(true, false)
+      })
+      StepVerifier.create(mono)
+        .expectNext(randomValue)
+        .verifyComplete()
+    }
+
+    ".untilOtherDelayError should emit the value in this mono after the other publisher emits the first tiem or terminates empty" in {
+      val flag = new AtomicBoolean(false)
+      val mono = Mono.just(randomValue).untilOtherDelayError(Flux.just(1).doOnNext(_ => flag.compareAndSet(false, true))).doOnNext(_ => {
+        flag shouldBe 'get
+        flag.compareAndSet(true, false)
+      })
+      StepVerifier.create(mono)
+        .expectNext(randomValue)
+        .verifyComplete()
+    }
   }
 
 
