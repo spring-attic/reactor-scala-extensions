@@ -221,6 +221,19 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         isSubscribed shouldBe 'get
         emittedValue shouldBe 'get
       }
+      "emit true when both publisher emit the same value according to the isEqual function" in {
+        val mono = Mono.sequenceEqual[Int](just(10), just(100), (t1: Int, t2: Int) => t1 % 10 == t2 % 10)
+        StepVerifier.create(mono)
+          .expectNext(true)
+          .verifyComplete()
+      }
+      "emit true when both publisher emit the same value according to the isEqual function with bufferSize" in {
+        val mono = Mono.sequenceEqual[Int](just(10), just(100), (t1: Int, t2: Int) => t1 % 10 == t2 % 10, 2)
+        StepVerifier.create(mono)
+          .expectNext(true)
+          .verifyComplete()
+
+      }
     }
 
     ".when" - {

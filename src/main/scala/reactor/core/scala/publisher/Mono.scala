@@ -21,7 +21,7 @@ package reactor.core.scala.publisher
 import java.lang.{Boolean => JBoolean, Iterable => JIterable, Long => JLong}
 import java.time.{Duration => JDuration}
 import java.util.concurrent.{Callable, CompletableFuture}
-import java.util.function.{BiConsumer, BiFunction, Consumer, Function, Predicate, Supplier}
+import java.util.function.{BiConsumer, BiFunction, BiPredicate, Consumer, Function, Predicate, Supplier}
 import java.util.logging.Level
 
 import org.reactivestreams.{Publisher, Subscriber, Subscription}
@@ -1397,11 +1397,54 @@ object Mono {
     *          the type of items emitted by each Publisher
     * @return a Mono that emits a Boolean value that indicates whether the two sequences are the same
     */
-  def sequenceEqual[T](source1: Publisher[_ <: T], source2: Publisher[_ <: T]) = Mono[Boolean](
+  def sequenceEqual[T](source1: Publisher[_ <: T], source2: Publisher[_ <: T]): Mono[Boolean] = Mono[Boolean](
     JMono.sequenceEqual[T](source1, source2).map(new Function[JBoolean, Boolean] {
       override def apply(t: JBoolean) = Boolean2boolean(t)
     })
   )
+
+  /**
+    * Returns a Mono that emits a Boolean value that indicates whether two Publisher sequences are the
+    * same by comparing the items emitted by each Publisher pairwise based on the results of a specified
+    * equality function.
+    *
+    * @param source1
+    *          the first Publisher to compare
+    * @param source2
+    *          the second Publisher to compare
+    * @param isEqual
+    *            a function used to compare items emitted by each Publisher
+    * @tparam T
+    *          the type of items emitted by each Publisher
+    * @return a Mono that emits a Boolean value that indicates whether the two sequences are the same
+    */
+  def sequenceEqual[T](source1: Publisher[_ <: T], source2: Publisher[_ <: T], isEqual: (T, T) => Boolean): Mono[Boolean] = {
+    Mono(JMono.sequenceEqual[T](source1, source2, new BiPredicate[T, T] {
+      override def test(t: T, u: T): Boolean = isEqual(t, u)
+    })).map(Boolean2boolean)
+  }
+
+  /**
+    * Returns a Mono that emits a Boolean value that indicates whether two Publisher sequences are the
+    * same by comparing the items emitted by each Publisher pairwise based on the results of a specified
+    * equality function.
+    *
+    * @param source1
+    *          the first Publisher to compare
+    * @param source2
+    *          the second Publisher to compare
+    * @param isEqual
+    *          a function used to compare items emitted by each Publisher
+    * @param bufferSize
+    *          the number of items to prefetch from the first and second source Publisher
+    * @tparam T
+    *          the type of items emitted by each Publisher
+    * @return a Mono that emits a Boolean value that indicates whether the two Publisher two sequences
+    *         are the same according to the specified function
+    */
+  def sequenceEqual[T](source1: Publisher[_ <: T], source2: Publisher[_ <: T], isEqual: (T, T) => Boolean, bufferSize: Int): Mono[Boolean] = Mono(JMono.sequenceEqual[T](source1, source2, new BiPredicate[T, T] {
+    override def test(t: T, u: T): Boolean = isEqual(t, u)
+  }, bufferSize)).map(Boolean2boolean)
 
   /**
     * Merge given monos into a new a `Mono` that will be fulfilled when all of the given `Monos`
