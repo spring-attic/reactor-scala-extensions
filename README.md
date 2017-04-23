@@ -55,8 +55,8 @@ With Maven:
      </repositories>
 
     <dependency>
-        <groupId>com.github.sinwe</groupId>
-        <artifactId>reactor-core-scala</artifactId>
+        <groupId>io.projectreactor</groupId>
+        <artifactId>reactor-scala-extensions</artifactId>
         <version>0.2.3-SNAPSHOT</version>
     </dependency>
     -->
