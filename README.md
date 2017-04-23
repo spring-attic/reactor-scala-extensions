@@ -35,7 +35,7 @@ With Gradle:
     }
     
     dependencies {
-        //compile "com.github.sinwe:reactor-core-scala:0.2.3-SNAPSHOT
+        //compile "io.projectreactor:reactor-scala-extensions:0.2.3-SNAPSHOT
         compile "com.github.sinwe:reactor-core-scala:0.2.2
     }
 
