@@ -830,6 +830,13 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         .verifyComplete()
     }
 
+    ".filterWhen should replay the value of mono if the first item emitted by the test is true" in {
+      val mono = Mono.just(10).filterWhen((i: Int) => Mono.just(i % 2 == 0))
+      StepVerifier.create(mono)
+      .expectNext(10)
+      .verifyComplete()
+    }
+
     ".flatMap" - {
       "with a single mapper should flatmap the value mapped by the provided mapper" in {
         val flux = Mono.just(1).flatMap(i => Flux.just(i, i * 2))

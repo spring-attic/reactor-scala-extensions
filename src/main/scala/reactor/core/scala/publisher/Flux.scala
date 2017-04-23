@@ -1,6 +1,6 @@
 package reactor.core.scala.publisher
 
-import java.lang.{Iterable => JIterable, Long => JLong}
+import java.lang.{Iterable => JIterable, Long => JLong, Boolean => JBoolean}
 import java.util
 import java.util.concurrent.Callable
 import java.util.function.{BiFunction, Consumer, Function, Supplier}
@@ -1231,6 +1231,52 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     */
   final def filter(p: T => Boolean) = Flux(jFlux.filter(p))
 
+  /**
+    * Test each value emitted by this [[Flux]] asynchronously using a generated
+    * [[Publisher[Boolean]]] test. A value is replayed if the first item emitted
+    * by its corresponding test is `true`. It is dropped if its test is either
+    * empty or its first emitted value is `false`.
+    * <p>
+    * Note that only the first value of the test publisher is considered, and unless it
+    * is a [[Mono]], test will be cancelled after receiving that first value. Test
+    * publishers are generated and subscribed to in sequence.
+    *
+    * @param asyncPredicate the function generating a [[Publisher]] of [[Boolean]]
+    *                                                         for each value, to filter the Flux with
+    * @return a filtered [[Flux]]
+    */
+  final def filterWhen(asyncPredicate: T => _ <: Publisher[Boolean] with MapablePublisher[Boolean]): Flux[T] = {
+    val asyncPredicateFunction = new Function[T, Publisher[JBoolean]] {
+      override def apply(t: T): Publisher[JBoolean] = asyncPredicate(t).map(Boolean2boolean(_))
+    }
+    Flux(jFlux.filterWhen(asyncPredicateFunction))
+  }
+
+  /**
+    * Test each value emitted by this [[Flux]] asynchronously using a generated
+    * [[Publisher[Boolean]]] test. A value is replayed if the first item emitted
+    * by its corresponding test is `true`. It is dropped if its test is either
+    * empty or its first emitted value is `false`.
+    * <p>
+    * Note that only the first value of the test publisher is considered, and unless it
+    * is a [[Mono]], test will be cancelled after receiving that first value. Test
+    * publishers are generated and subscribed to in sequence.
+    *
+    * @param asyncPredicate the function generating a [[Publisher]] of [[Boolean]]
+    *                                                         for each value, to filter the Flux with
+    * @param bufferSize the maximum expected number of values to hold pending a result of
+    *                   their respective asynchronous predicates, rounded to the next power of two. This is
+    *                   capped depending on the size of the heap and the JVM limits, so be careful with
+    *                   large values (although eg. { @literal 65536} should still be fine). Also serves as
+    *                                                         the initial request size for the source.
+    * @return a filtered [[Flux]]
+    */
+  final def filterWhen(asyncPredicate: T => _ <: Publisher[Boolean] with MapablePublisher[Boolean], bufferSize: Int): Flux[T] = {
+    val asyncPredicateFunction = new Function[T, Publisher[JBoolean]] {
+      override def apply(t: T): Publisher[JBoolean] = asyncPredicate(t).map(Boolean2boolean(_))
+    }
+    Flux(jFlux.filterWhen(asyncPredicateFunction, bufferSize))
+  }
   /**
     * Emit from the fastest first sequence between this publisher and the given publisher
     *

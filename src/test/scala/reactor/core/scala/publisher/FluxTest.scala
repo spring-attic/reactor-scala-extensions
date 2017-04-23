@@ -1172,6 +1172,21 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         .verifyComplete()
     }
 
+    ".filterWhen" - {
+      "should replay the value of mono if the first item emitted by the test is true" in {
+        val flux = Flux.just(10, 20, 30).filterWhen((i: Int) => Mono.just(i % 2 == 0))
+        StepVerifier.create(flux)
+          .expectNext(10, 20, 30)
+          .verifyComplete()
+      }
+      "with bufferSize should replay the value of mono if the first item emitted by the test is true" in {
+        val flux = Flux.just(10, 20, 30).filterWhen((i: Int) => Mono.just(i % 2 == 0), 1)
+        StepVerifier.create(flux)
+          .expectNext(10, 20, 30)
+          .verifyComplete()
+      }
+    }
+
     ".firstEmittingWith should emit from the fastest first sequence" in {
       val flux = Flux.just(10, 20, 30).firstEmittingWith(Flux.just(1, 2, 3).delayElements(1 second))
       StepVerifier.create(flux)
