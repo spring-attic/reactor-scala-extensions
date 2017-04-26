@@ -28,7 +28,7 @@ import org.reactivestreams.{Publisher, Subscriber, Subscription}
 import reactor.core.Disposable
 import reactor.core.publisher.{MonoProcessor, MonoSink, Signal, SignalType, SynchronousSink, Flux => JFlux, Mono => JMono}
 import reactor.core.scala.publisher.PimpMyPublisher._
-import reactor.core.scheduler.{Scheduler, TimedScheduler}
+import reactor.core.scheduler.Scheduler
 import reactor.util.function._
 
 import scala.collection.JavaConverters._
@@ -617,7 +617,7 @@ class Mono[T] private(private val jMono: JMono[T]) extends Publisher[T] with Map
     * @tparam R the merged sequence type
     * @return a new [[Flux]] as the sequence is not guaranteed to be single at most
     */
-  final def flatMap[R](mapper: T => Publisher[R]): Flux[R] = Flux(jMono.flatMap(mapper))
+  final def flatMapMany[R](mapper: T => Publisher[R]): Flux[R] = Flux(jMono.flatMapMany(mapper))
 
   /**
     * Transform the signals emitted by this [[Mono]] into a Publisher, then forward
@@ -634,10 +634,10 @@ class Mono[T] private(private val jMono: JMono[T]) extends Publisher[T] with Map
     * @return a new [[Flux]] as the sequence is not guaranteed to be single at most
     * @see [[Flux.flatMap]]
     */
-  final def flatMap[R](mapperOnNext: T => Publisher[R],
-                       mapperOnError: Throwable => Publisher[R],
-                       mapperOnComplete: () => Publisher[R]) =
-    Flux(jMono.flatMap(mapperOnNext, mapperOnError, mapperOnComplete))
+  final def flatMapMany[R](mapperOnNext: T => Publisher[R],
+                           mapperOnError: Throwable => Publisher[R],
+                           mapperOnComplete: () => Publisher[R]) =
+    Flux(jMono.flatMapMany(mapperOnNext, mapperOnError, mapperOnComplete))
 
   /**
     * Transform the item emitted by this [[Mono]] into [[Iterable]], , then forward
@@ -710,21 +710,56 @@ class Mono[T] private(private val jMono: JMono[T]) extends Publisher[T] with Map
     Mono(jMono.map(mapper))
   }
 
-  final def mapError(mapper: Throwable => Throwable): Mono[T] = {
-    new Mono[T](jMono.mapError(mapper))
-  }
+  /**
+    * Transform the error emitted by this [[Mono]] by applying a function.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/maperror.png" alt="">
+    * <p>
+    *
+    * @param mapper the error transforming [[Function1]]
+    * @return a transformed [[Mono]]
+    */
+  final def onErrorMap(mapper: Throwable => Throwable): Mono[T] = Mono[T](jMono.onErrorMap(mapper))
 
-  final def mapError[E <: Throwable](`type`: Class[E], mapper: E => Throwable): Mono[T] = {
-    new Mono[T](jMono.mapError(`type`, mapper))
-  }
+  /**
+    * Transform the error emitted by this [[Mono]] by applying a function if the
+    * error matches the given type, otherwise let the error flow.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/maperror.png" alt="">
+    * <p>
+    *
+    * @param type   the type to match
+    * @param mapper the error transforming [[Function1]]
+    * @tparam E the error type
+    * @return a transformed [[Mono]]
+    */
+  final def onErrorMap[E <: Throwable](`type`: Class[E], mapper: E => Throwable): Mono[T] = Mono[T](jMono.onErrorMap(`type`, mapper))
 
-  final def mapError(predicate: Throwable => Boolean, mapper: Throwable => Throwable): Mono[T] = {
-    new Mono[T](jMono.mapError(predicate, mapper))
-  }
+  /**
+    * Transform the error emitted by this [[Mono]] by applying a function if the
+    * error matches the given predicate, otherwise let the error flow.
+    * <p>
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/maperror.png"
+    * alt="">
+    *
+    * @param predicate the error predicate
+    * @param mapper    the error transforming [[Function1]]
+    * @return a transformed [[Mono]]
+    */
+  final def onErrorMap(predicate: Throwable => Boolean, mapper: Throwable => Throwable): Mono[T] = Mono[T](jMono.onErrorMap(predicate, mapper))
 
-  final def materialize(): Mono[Signal[T]] = {
-    new Mono[Signal[T]](jMono.materialize())
-  }
+  /**
+    * Transform the incoming onNext, onError and onComplete signals into [[Signal]].
+    * Since the error is materialized as a `Signal`, the propagation will be stopped and onComplete will be
+    * emitted. Complete signal will first emit a `Signal.complete()` and then effectively complete the flux.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/materialize1.png" alt="">
+    *
+    * @return a [[Mono]] of materialized [[Signal]]
+    */
+  final def materialize() = new Mono[Signal[T]](jMono.materialize())
 
   /**
     * Merge emissions of this [[Mono]] with the provided [[Publisher]].
@@ -746,42 +781,114 @@ class Mono[T] private(private val jMono: JMono[T]) extends Publisher[T] with Map
     new Mono[U](jMono.ofType(clazz))
   }
 
-  final def otherwise(fallback: Throwable => Mono[_ <: T]): Mono[T] = {
-    val fallbackFunction: Function[Throwable, JMono[_ <: T]] = new Function[Throwable, JMono[_ <: T]] {
+  /**
+    * Subscribe to a returned fallback publisher when any error occurs.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/otherwise.png" alt="">
+    * <p>
+    *
+    * @param fallback the function to map an alternative { @link Mono}
+    * @return an alternating [[Mono]] on source onError
+    * @see [[Flux.onErrorResume]]
+    */
+  final def onErrorResume(fallback: Throwable => Mono[_ <: T]): Mono[T] = {
+    val fallbackFunction = new Function[Throwable, JMono[_ <: T]] {
       override def apply(t: Throwable): JMono[_ <: T] = fallback(t).jMono
     }
-    new Mono[T](jMono.otherwise(fallbackFunction))
+    Mono[T](jMono.onErrorResume(fallbackFunction))
   }
 
-  final def otherwise[E <: Throwable](`type`: Class[E], fallback: E => Mono[_ <: T]): Mono[T] = {
-    val fallbackFunction: Function[E, JMono[_ <: T]] = new Function[E, JMono[_ <: T]] {
+  /**
+    * Subscribe to a returned fallback publisher when an error matching the given type
+    * occurs.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/otherwise.png"
+    * alt="">
+    *
+    * @param type     the error type to match
+    * @param fallback the [[Function1]] mapping the error to a new [[Mono]]
+    *                             sequence
+    * @tparam E the error type
+    * @return a new [[Mono]]
+    * @see [[Flux.onErrorResume]]
+    */
+  final def onErrorResume[E <: Throwable](`type`: Class[E], fallback: E => Mono[_ <: T]): Mono[T] = {
+    val fallbackFunction = new Function[E, JMono[_ <: T]] {
       override def apply(t: E): JMono[_ <: T] = fallback(t).jMono
     }
-    new Mono[T](jMono.otherwise(`type`, fallbackFunction))
+    Mono[T](jMono.onErrorResume(`type`, fallbackFunction))
   }
 
-  final def otherwise(predicate: Throwable => Boolean, fallback: Throwable => Mono[_ <: T]): Mono[T] = {
-    val fallbackFunction: Function[Throwable, JMono[_ <: T]] = new Function[Throwable, JMono[_ <: T]] {
+  /**
+    * Subscribe to a returned fallback publisher when an error matching the given predicate
+    * occurs.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/otherwise.png"
+    * alt="">
+    *
+    * @param predicate the error predicate to match
+    * @param fallback  the [[Function1]] mapping the error to a new [[Mono]]
+    *                              sequence
+    * @return a new [[Mono]]
+    * @see Flux#onErrorResume
+    */
+  final def onErrorResume(predicate: Throwable => Boolean, fallback: Throwable => Mono[_ <: T]): Mono[T] = {
+    val fallbackFunction = new Function[Throwable, JMono[_ <: T]] {
       override def apply(t: Throwable): JMono[_ <: T] = fallback(t).jMono
     }
-    new Mono[T](jMono.otherwise(predicate, fallbackFunction))
+    Mono[T](jMono.onErrorResume(predicate, fallbackFunction))
   }
 
-  final def otherwiseIfEmpty(alternate: Mono[_ <: T]): Mono[T] = {
-    new Mono[T](jMono.otherwiseIfEmpty(alternate.jMono))
-  }
+  /**
+    * Provide an alternative [[Mono]] if this mono is completed without data
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/otherwiseempty.png" alt="">
+    * <p>
+    *
+    * @param alternate the alternate mono if this mono is empty
+    * @return an alternating [[Mono]] on source onComplete without elements
+    * @see [[Flux.switchIfEmpty]]
+    */
+  final def switchIfEmpty(alternate: Mono[_ <: T]): Mono[T] = Mono[T](jMono.switchIfEmpty(alternate.jMono))
 
-  final def otherwiseReturn(fallback: T): Mono[T] = {
-    new Mono[T](jMono.otherwiseReturn(fallback))
-  }
+  /**
+    * Simply emit a captured fallback value when any error is observed on this [[Mono]].
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/otherwisereturn.png" alt="">
+    * <p>
+    *
+    * @param fallback the value to emit if an error occurs
+    * @return a new falling back [[Mono]]
+    */
+  final def onErrorReturn(fallback: T): Mono[T] = Mono[T](jMono.onErrorReturn(fallback))
 
-  final def otherwiseReturn[E <: Throwable](`type`: Class[E], fallback: T): Mono[T] = {
-    new Mono[T](jMono.otherwiseReturn(`type`, fallback))
-  }
+  /**
+    * Simply emit a captured fallback value when an error of the specified type is
+    * observed on this [[Mono]].
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/otherwisereturn.png" alt="">
+    *
+    * @param type          the error type to match
+    * @param fallbackValue the value to emit if a matching error occurs
+    * @tparam E the error type
+    * @return a new falling back [[Mono]]
+    */
+  final def onErrorReturn[E <: Throwable](`type`: Class[E], fallbackValue: T) = Mono[T](jMono.onErrorReturn(`type`, fallbackValue))
 
-  final def otherwiseReturn(predicate: Throwable => Boolean, fallback: T): Mono[T] = {
-    new Mono[T](jMono.otherwiseReturn(predicate, fallback))
-  }
+  /**
+    * Simply emit a captured fallback value when an error matching the given predicate is
+    * observed on this [[Mono]].
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/otherwisereturn.png" alt="">
+    *
+    * @param predicate     the error predicate to match
+    * @param fallbackValue the value to emit if a matching error occurs
+    * @return a new [[Mono]]
+    */
+  final def onErrorReturn(predicate: Throwable => Boolean, fallbackValue: T) = Mono[T](jMono.onErrorReturn(predicate, fallbackValue))
 
   //  TODO: How to test this?
   final def onTerminateDetach(): Mono[T] = {
@@ -927,47 +1034,124 @@ class Mono[T] private(private val jMono: JMono[T]) extends Publisher[T] with Map
     */
   final def subscribe(consumer: T => Unit, errorConsumer: Throwable => Unit): Disposable = jMono.subscribe(consumer, errorConsumer)
 
-  final def subscribe(consumer: T => Unit, errorConsumer: Throwable => Unit, completeConsumer: => Unit): Disposable = {
-    jMono.subscribe(consumer, errorConsumer, completeConsumer)
-  }
+  /**
+    * Subscribe `consumer` to this [[Mono]] that will consume all the
+    * sequence.
+    * <p>
+    * For a passive version that observe and forward incoming data see [[Mono.doOnSuccess]] and
+    * [[Mono.doOnError]].
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/subscribecomplete1.png" alt="">
+    *
+    * @param consumer         the consumer to invoke on each value
+    * @param errorConsumer    the consumer to invoke on error signal
+    * @param completeConsumer the consumer to invoke on complete signal
+    * @return a new [[Disposable]] to dispose the [[Subscription]]
+    */
+  final def subscribe(consumer: T => Unit, errorConsumer: Throwable => Unit, completeConsumer: => Unit): Disposable = jMono.subscribe(consumer, errorConsumer, completeConsumer)
 
-  final def subscribe(consumer: T => Unit, errorConsumer: Throwable => Unit, completeConsumer: => Unit, subscriptionConsumer: Subscription => Unit): Disposable = {
-    jMono.subscribe(consumer, errorConsumer, completeConsumer, subscriptionConsumer)
-  }
+  /**
+    * Subscribe [[Consumer]] to this [[Mono]] that will consume all the
+    * sequence.
+    * <p>
+    * For a passive version that observe and forward incoming data see [[Mono.doOnSuccess]] and
+    * [[Mono.doOnError]].
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/subscribecomplete1.png" alt="">
+    *
+    * @param consumer             the consumer to invoke on each value
+    * @param errorConsumer        the consumer to invoke on error signal
+    * @param completeConsumer     the consumer to invoke on complete signal
+    * @param subscriptionConsumer the consumer to invoke on subscribe signal, to be used
+    *                             for the initial [[Subscription.request request]], or null for max request
+    * @return a new [[Disposable]] to dispose the [[Subscription]]
+    */
+  final def subscribe(consumer: T => Unit, errorConsumer: Throwable => Unit, completeConsumer: => Unit, subscriptionConsumer: Subscription => Unit): Disposable = jMono.subscribe(consumer, errorConsumer, completeConsumer, subscriptionConsumer)
 
+  /**
+    * Run the requests to this Publisher [[Mono]] on a given worker assigned by the supplied [[Scheduler]].
+    * <p>
+    * `mono.subscribeOn(Schedulers.parallel()).subscribe())`
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/subscribeon1.png" alt="">
+    * <p>
+    *
+    * @param scheduler a checked [[reactor.core.scheduler.Scheduler.Worker]] factory
+    * @return an asynchronously requesting [[Mono]]
+    */
   //  TODO: How to test this?
-  final def subscribeOn(scheduler: Scheduler): Mono[T] = {
-    new Mono[T](jMono.subscribeOn(scheduler))
-  }
+  final def subscribeOn(scheduler: Scheduler): Mono[T] = Mono[T](jMono.subscribeOn(scheduler))
 
+  /**
+    * Subscribe the [[Mono]] with the givne [[Subscriber]] and return it.
+    *
+    * @param subscriber the [[Subscriber]] to subscribe
+    * @param < E> the reified type of the { @link Subscriber} for chaining
+    * @return the passed { @link Subscriber} after subscribing it to this { @link Mono}
+    */
   //  TODO: How to test this?
-  final def subscribeWith[E <: Subscriber[_ >: T]](subscriber: E): E = {
-    jMono.subscribeWith(subscriber)
-  }
+  final def subscribeWith[E <: Subscriber[_ >: T]](subscriber: E): E = jMono.subscribeWith(subscriber)
 
-  implicit def jMonoVoid2jMonoUnit(jMonoVoid: JMono[Void]): JMono[Unit] = {
-    jMonoVoid.map((_: Void) => ())
-  }
+  implicit def jMonoVoid2jMonoUnit(jMonoVoid: JMono[Void]): JMono[Unit] = jMonoVoid.map((_: Void) => ())
 
-  final def `then`(): Mono[Unit] = {
-    new Mono[Unit](jMono.`then`())
-  }
+  /**
+    * Return a `Mono[Unit]` which only replays complete and error signals
+    * from this [[Mono]].
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/ignorethen.png" alt="">
+    * <p>
+    *
+    * @return a [[Mono]] igoring its payload (actively dropping)
+    */
+  final def `then`(): Mono[Unit] = Mono[Unit](jMono.`then`())
 
-  final def `then`[R](transformer: T => Mono[R]): Mono[R] = {
-    new Mono[R](jMono.`then`[R](transformer: Function[T, JMono[_ <: R]]))
-  }
+  /**
+    * Convert the value of [[Mono]] to another [[Mono]] possibly with another value type.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/then.png" alt="">
+    * <p>
+    *
+    * @param transformer the function to dynamically bind a new [[Mono]]
+    * @tparam R the result type bound
+    * @return a new [[Mono]] containing the merged values
+    * @apiNote in 3.1.0.M1 this method will be renamed `flatMap`. However, until
+    *          then the behavior of [[Mono.flatMap]] remains the current one, so it is
+    *                                       not yet possible to anticipate this migration.
+    */
+  final def `then`[R](transformer: T => Mono[R]): Mono[R] = Mono[R](jMono.`then`[R](transformer: Function[T, JMono[_ <: R]]))
 
-  final def `then`[R](other: Mono[R]): Mono[R] = {
-    new Mono[R](jMono.`then`(other))
-  }
+  /**
+    * Ignore element from this [[Mono]] and transform its completion signal into the
+    * emission and completion signal of a provided `Mono[V]`. Error signal is
+    * replayed in the resulting `Mono[V]`.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/ignorethen1.png" alt="">
+    *
+    * @param other a [[Mono]] to emit from after termination
+    * @tparam V the element type of the supplied Mono
+    * @return a new [[Mono]] that emits from the supplied [[Mono]]
+    */
+  final def `then`[V](other: Mono[V]): Mono[V] = Mono[V](jMono.`then`(other))
 
-  final def `then`[R](sourceSupplier: () => _ <: Mono[R]): Mono[R] = {
-    new Mono[R](jMono.`then`[R](sourceSupplier))
-  }
-
-  final def thenEmpty(other: Publisher[Unit]): Mono[Unit] = {
-    new Mono[Unit]((jMono: JMono[T]).thenEmpty(other))
-  }
+  /**
+    * Return a `Mono[Unit]` that waits for this [[Mono]] to complete then
+    * for a supplied [[Publisher Publisher[Unit]]] to also complete. The
+    * second completion signal is replayed, or any error signal that occurs instead.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/ignorethen.png"
+    * alt="">
+    *
+    * @param other a [[Publisher]] to wait for after this Mono's termination
+    * @return a new [[Mono]] completing when both publishers have completed in
+    *                       sequence
+    */
+  final def thenEmpty(other: Publisher[Unit]) = Mono[Unit]((jMono: JMono[T]).thenEmpty(other))
 
   /**
     * Ignore element from this mono and transform the completion signal into a
@@ -982,20 +1166,6 @@ class Mono[T] private(private val jMono: JMono[T]) extends Publisher[T] with Map
     *                       this Mono completes.
     */
   final def thenMany[V](other: Publisher[V]): Flux[V] = Flux(jMono.thenMany(other))
-
-  /**
-    * Ignore element from this mono and transform the completion signal into a
-    * `Flux[V]` that will emit elements from the supplier-provided [[Publisher]].
-    *
-    * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/ignorethens.png" alt="">
-    *
-    * @param afterSupplier a supplier of [[Publisher]] to emit from after
-    *                                completion
-    * @tparam V the element type of the supplied Publisher
-    * @return a new [[Flux]] that emits from the supplied [[Publisher]]
-    */
-  final def thenMany[V](afterSupplier: () => Publisher[V]) = Flux(jMono.thenMany(afterSupplier))
 
   /**
     * Signal a [[java.util.concurrent.TimeoutException]] in case an item doesn't arrive before the given period.

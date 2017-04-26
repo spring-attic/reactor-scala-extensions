@@ -839,14 +839,14 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
 
     ".flatMap" - {
       "with a single mapper should flatmap the value mapped by the provided mapper" in {
-        val flux = Mono.just(1).flatMap(i => Flux.just(i, i * 2))
+        val flux = Mono.just(1).flatMapMany(i => Flux.just(i, i * 2))
         StepVerifier.create(flux)
           .expectNext(1, 2)
           .verifyComplete()
       }
       "with mapperOnNext, mapperOnError and mapperOnComplete should mapped each individual event into values emitted by flux" in {
         val flux = Mono.just(1)
-          .flatMap(
+          .flatMapMany(
             i => Mono.just("one"),
             t => Mono.just("error"),
             () => Mono.just("complete")
@@ -924,7 +924,7 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       import reactor.core.scala.publisher._
       "with mapper should map the error to another error" in {
         val mono: Mono[Int] = Mono.error[Int](new RuntimeException("runtimeException"))
-          .mapError(t => new MyCustomException(t.getMessage))
+          .onErrorMap(t => new MyCustomException(t.getMessage))
         StepVerifier.create(mono)
           .expectErrorMatches((t: Throwable) => {
             t.getMessage shouldBe "runtimeException"
@@ -937,7 +937,7 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       "with an error type and mapper should" - {
         "map the error to another type if the exception is according to the provided type" in {
           val mono: Mono[Int] = Mono.error[Int](new RuntimeException("runtimeException"))
-            .mapError(classOf[RuntimeException], (t: RuntimeException) => new MyCustomException(t.getMessage))
+            .onErrorMap(classOf[RuntimeException], (t: RuntimeException) => new MyCustomException(t.getMessage))
           StepVerifier.create(mono)
             .expectErrorMatches((t: Throwable) => {
               t.getMessage shouldBe "runtimeException"
@@ -949,7 +949,7 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         }
         "not map the error if the exception is not the type of provided exception class" in {
           val mono: Mono[Int] = Mono.error[Int](new Exception("runtimeException"))
-            .mapError(classOf[RuntimeException], (t: RuntimeException) => new MyCustomException(t.getMessage))
+            .onErrorMap(classOf[RuntimeException], (t: RuntimeException) => new MyCustomException(t.getMessage))
           StepVerifier.create(mono)
             .expectErrorMatches((t: Throwable) => {
               t.getMessage shouldBe "runtimeException"
@@ -963,14 +963,14 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       "with a predicate and mapper should" - {
         "map the error to another type if the predicate returns true" in {
           val mono: Mono[Int] = Mono.error[Int](new RuntimeException("should map"))
-            .mapError(t => t.getMessage == "should map", t => new MyCustomException(t.getMessage))
+            .onErrorMap(t => t.getMessage == "should map", t => new MyCustomException(t.getMessage))
           StepVerifier.create(mono)
             .expectError(classOf[MyCustomException])
             .verify()
         }
         "not map the error to another type if the predicate returns false" in {
           val mono: Mono[Int] = Mono.error[Int](new RuntimeException("should not map"))
-            .mapError(t => t.getMessage == "should map", t => new MyCustomException(t.getMessage))
+            .onErrorMap(t => t.getMessage == "should map", t => new MyCustomException(t.getMessage))
           StepVerifier.create(mono)
             .expectError(classOf[RuntimeException])
             .verify()
@@ -1014,50 +1014,50 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       }
     }
 
-    ".otherwise" - {
+    ".onErrorResume" - {
       "will fallback to the provided value when error happens" in {
-        val mono = Mono.error(new RuntimeException()).otherwise(_ => Mono.just(-1))
+        val mono = Mono.error(new RuntimeException()).onErrorResume(_ => Mono.just(-1))
         StepVerifier.create(mono)
           .expectNext(-1)
           .verifyComplete()
       }
       "with class type and fallback function will fallback to the provided value when the exception is of provided type" in {
-        val mono = Mono.error(new RuntimeException()).otherwise(classOf[RuntimeException], (t: Exception) => Mono.just(-1))
+        val mono = Mono.error(new RuntimeException()).onErrorResume(classOf[RuntimeException], (t: Exception) => Mono.just(-1))
         StepVerifier.create(mono)
           .expectNext(-1)
           .verifyComplete()
       }
       "with predicate and fallback function will fallback to the provided value when the predicate returns true" in {
-        val mono = Mono.error(new RuntimeException("fallback")).otherwise(t => t.getMessage == "fallback", (t: Throwable) => Mono.just(-1))
+        val mono = Mono.error(new RuntimeException("fallback")).onErrorResume(t => t.getMessage == "fallback", (t: Throwable) => Mono.just(-1))
         StepVerifier.create(mono)
           .expectNext(-1)
           .verifyComplete()
       }
     }
 
-    ".otherwiseIfEmpty with alternative will emit the value from alternative Mono when this mono is empty" in {
-      val mono = Mono.empty.otherwiseIfEmpty(Mono.just(-1))
+    ".switchIfEmpty with alternative will emit the value from alternative Mono when this mono is empty" in {
+      val mono = Mono.empty.switchIfEmpty(Mono.just(-1))
       StepVerifier.create(mono)
         .expectNext(-1)
         .verifyComplete()
     }
 
-    ".otherwiseReturn" - {
+    ".onErrorReturn" - {
       "with fallback will emit to the fallback value when error occurs" in {
-        val mono = Mono.error(new RuntimeException).otherwiseReturn(-1)
+        val mono = Mono.error(new RuntimeException).onErrorReturn(-1)
         StepVerifier.create(mono)
           .expectNext(-1)
           .verifyComplete()
       }
       class MyCustomException(message: String) extends Exception(message)
       "with exception type and fallback value will emit the fallback value when exception of provided type occurs" in {
-        val mono = Mono.error(new MyCustomException("whatever")).otherwiseReturn(classOf[MyCustomException], -1)
+        val mono = Mono.error(new MyCustomException("whatever")).onErrorReturn(classOf[MyCustomException], -1)
         StepVerifier.create(mono)
           .expectNext(-1)
           .verifyComplete()
       }
       "with predicate of exception and fallback value will emit the fallback value when predicate exception return true" in {
-        val mono = Mono.error(new MyCustomException("should fallback")).otherwiseReturn(t => t.getMessage == "should fallback", -1)
+        val mono = Mono.error(new MyCustomException("should fallback")).onErrorReturn(t => t.getMessage == "should fallback", -1)
         StepVerifier.create(mono)
           .expectNext(-1)
           .verifyComplete()
@@ -1211,13 +1211,6 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
           .expectNext("1")
           .verifyComplete()
       }
-      "with supplier function should ignore element from this mono and transform its completion signal into emission " +
-        "and completion signal of the mono supplied by the supplier" in {
-        val mono = Mono.just(randomValue).`then`(() => Mono.just("1"))
-        StepVerifier.create(mono)
-          .expectNext("1")
-          .verifyComplete()
-      }
     }
 
     ".thenEmpty should complete this mono then for a supplied publisher to also complete" in {
@@ -1234,12 +1227,6 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       "from the provided publisher when the publisher is provided " - {
       "directly" in {
         val flux = Mono.just(randomValue).thenMany(Flux.just(1, 2, 3))
-        StepVerifier.create(flux)
-          .expectNext(1, 2, 3)
-          .verifyComplete()
-      }
-      "by supplier" in {
-        val flux = Mono.just(randomValue).thenMany(() => Flux.just(1, 2, 3))
         StepVerifier.create(flux)
           .expectNext(1, 2, 3)
           .verifyComplete()

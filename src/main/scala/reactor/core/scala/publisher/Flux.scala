@@ -274,17 +274,17 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * <p>
     * When Open signal is strictly not overlapping Close signal : dropping buffers
     * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/bufferopenclose.png"
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/bufferopenclose.png"
     * alt="">
     * <p>
     * When Open signal is strictly more frequent than Close signal : overlapping buffers
     * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/bufferopencloseover.png"
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/bufferopencloseover.png"
     * alt="">
     * <p>
     * When Open signal is exactly coordinated with Close signal : exact buffers
     * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/bufferboundary.png"
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/bufferboundary.png"
     * alt="">
     *
     * @param bucketOpening a [[Publisher]] to subscribe to for creating new receiving bucket signals.
@@ -296,7 +296,7 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     *         closing [[Publisher]]
     */
   //TODO: How to test?
-  final def buffer[U, V](bucketOpening: Publisher[U], closeSelector: U => Publisher[V]): Flux[Seq[T]] = Flux(jFlux.buffer[U, V](bucketOpening, closeSelector)).map(_.asScala)
+  final def bufferWhen[U, V](bucketOpening: Publisher[U], closeSelector: U => Publisher[V]): Flux[Seq[T]] = Flux(jFlux.bufferWhen[U, V](bucketOpening, closeSelector)).map(_.asScala)
 
   /**
     * Collect incoming values into multiple [[Seq]] delimited by the given [[Publisher]] signals. Each [[Seq]]
@@ -305,17 +305,17 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * <p>
     * When Open signal is strictly not overlapping Close signal : dropping buffers
     * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/bufferopenclose.png"
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/bufferopenclose.png"
     * alt="">
     * <p>
     * When Open signal is strictly more frequent than Close signal : overlapping buffers
     * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/bufferopencloseover.png"
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/bufferopencloseover.png"
     * alt="">
     * <p>
     * When Open signal is exactly coordinated with Close signal : exact buffers
     * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/bufferboundary.png"
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/bufferboundary.png"
     * alt="">
     *
     * @param bucketOpening  a [[Publisher]] to subscribe to for creating new receiving bucket signals.
@@ -329,9 +329,9 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     *         closing [[Publisher]]
     */
   //TODO: How to test?
-  final def buffer[U, V, C <: ListBuffer[T]](bucketOpening: Publisher[U],
-                                             closeSelector: U => Publisher[V],
-                                             bufferSupplier: () => C): Flux[Seq[T]] = Flux(jFlux.buffer(bucketOpening, closeSelector, new Supplier[JList[T]] {
+  final def bufferWhen[U, V, C <: ListBuffer[T]](bucketOpening: Publisher[U],
+                                                 closeSelector: U => Publisher[V],
+                                                 bufferSupplier: () => C): Flux[Seq[T]] = Flux(jFlux.bufferWhen(bucketOpening, closeSelector, new Supplier[JList[T]] {
     override def get(): JList[T] = bufferSupplier().asJava
   })).map(_.asScala)
 
@@ -1831,20 +1831,20 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
   /**
     * Transform the error emitted by this [[Flux]] by applying a function.
     * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/maperror.png"
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/maperror.png"
     * alt="">
     * <p>
     *
     * @param mapper the error transforming [[Function1]]
     * @return a transformed [[Flux]]
     */
-  final def mapError(mapper: Throwable => _ <: Throwable) = Flux(jFlux.mapError(mapper))
+  final def onErrorMap(mapper: Throwable => _ <: Throwable) = Flux(jFlux.onErrorMap(mapper))
 
   /**
     * Transform the error emitted by this [[Flux]] by applying a function if the
     * error matches the given type, otherwise let the error flow.
     * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/maperror.png" alt="">
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/maperror.png" alt="">
     * <p>
     *
     * @param type   the class of the exception type to react to
@@ -1852,21 +1852,21 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * @tparam E the error type
     * @return a transformed [[Flux]]
     */
-  final def mapError[E <: Throwable](`type`: Class[E], mapper: E => _ <: Throwable): Flux[T] = Flux(jFlux.mapError(`type`, mapper))
+  final def onErrorMap[E <: Throwable](`type`: Class[E], mapper: E => _ <: Throwable) = Flux(jFlux.onErrorMap(`type`, mapper))
 
   /**
     * Transform the error emitted by this [[Flux]] by applying a function if the
     * error matches the given predicate, otherwise let the error flow.
     * <p>
     * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/maperror.png"
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/maperror.png"
     * alt="">
     *
     * @param predicate the error predicate
     * @param mapper    the error transforming [[Function1]]
     * @return a transformed [[Flux]]
     */
-  final def mapError(predicate: Throwable => Boolean, mapper: Throwable => _ <: Throwable) = Flux(jFlux.mapError(predicate, mapper))
+  final def onErrorMap(predicate: Throwable => Boolean, mapper: Throwable => _ <: Throwable) = Flux(jFlux.onErrorMap(predicate, mapper))
 
   /**
     * Transform the incoming onNext, onError and onComplete signals into [[Signal]].
@@ -2060,19 +2060,19 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
   /**
     * Subscribe to a returned fallback publisher when any error occurs.
     * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/onerrorresumewith.png" alt="">
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/onerrorresumewith.png" alt="">
     * <p>
     *
     * @param fallback the [[Function1]] mapping the error to a new [[Publisher]] sequence
     * @return a new [[Flux]]
     */
-  final def onErrorResumeWith(fallback: Throwable => _ <: Publisher[_ <: T]) = Flux(jFlux.onErrorResumeWith(fallback))
+  final def onErrorResume(fallback: Throwable => _ <: Publisher[_ <: T]) = Flux(jFlux.onErrorResume(fallback))
 
   /**
     * Subscribe to a returned fallback publisher when an error matching the given type
     * occurs.
     * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/onerrorresumewith.png"
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/onerrorresumewith.png"
     * alt="">
     *
     * @param type     the error type to match
@@ -2081,13 +2081,13 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * @tparam E the error type
     * @return a new [[Flux]]
     */
-  final def onErrorResumeWith[E <: Throwable](`type`: Class[E], fallback: E => _ <: Publisher[_ <: T]) = Flux(jFlux.onErrorResumeWith[E](`type`, fallback))
+  final def onErrorResume[E <: Throwable](`type`: Class[E], fallback: E => _ <: Publisher[_ <: T]) = Flux(jFlux.onErrorResume[E](`type`, fallback))
 
   /**
     * Subscribe to a returned fallback publisher when an error matching the given type
     * occurs.
     * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/onerrorresumewith.png"
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/onerrorresumewith.png"
     * alt="">
     *
     * @param predicate the error predicate to match
@@ -2095,7 +2095,7 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     *                  sequence
     * @return a new [[Flux]]
     */
-  final def onErrorResumeWith(predicate: Throwable => Boolean, fallback: Throwable => _ <: Publisher[_ <: T]) = Flux(jFlux.onErrorResumeWith(predicate, fallback))
+  final def onErrorResume(predicate: Throwable => Boolean, fallback: Throwable => _ <: Publisher[_ <: T]) = Flux(jFlux.onErrorResume(predicate, fallback))
 
   /**
     * Fallback to the given value if an error is observed on this [[Flux]]
@@ -2845,7 +2845,7 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     *
     * <p>Note that calling `sort` with long, non-terminating or infinite sources
     * might cause [[OutOfMemoryError]]. Use sequence splitting like
-    * [[Flux.window]] to sort batches in that case.
+    * [[Flux.windowWhen]] to sort batches in that case.
     *
     * @throws ClassCastException
     * if any item emitted by the [[Flux]] does not implement
@@ -2928,26 +2928,6 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * @return a new [[Disposable]] to dispose the [[Subscription]]
     */
   final def subscribe(consumer: T => Unit): Disposable = jFlux.subscribe(consumer)
-
-  /**
-    * Subscribe a `consumer` to this [[Flux]] that will consume all the
-    * sequence.
-    * <p>If prefetch is `!= Long.MAX_VALUE`, the [[Subscriber]] will use it as
-    * a prefetch strategy: first request N, then when 25% of N is left to be received on
-    * onNext, request N x 0.75.
-    * <p>For a passive version that observe and forward incoming data see [[Flux.doOnNext]].
-    * <p>For a version that gives you more control over backpressure and the request, see
-    * [[Flux.subscribe]] with a [[reactor.core.publisher.BaseSubscriber]].
-    *
-    * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/subscribe.png"
-    * alt="">
-    *
-    * @param consumer the consumer to invoke on each value
-    * @param prefetch the the prefetch amount, positive
-    * @return a new [[Disposable]] to dispose the [[Subscription]]
-    */
-  final def subscribe(consumer: T => Unit, prefetch: Int) = jFlux.subscribe(consumer, prefetch)
 
   /**
     * Subscribe `consumer` to this [[Flux]] that will consume all the
@@ -3076,44 +3056,6 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     *
     */
   final def switchMap[V](fn: T => Publisher[_ <: V], prefetch: Int) = Flux(jFlux.switchMap[V](fn, prefetch))
-
-  /**
-    * Subscribe to the given fallback [[Publisher]] if an error matching the given
-    * type is observed on this [[Flux]]
-    * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/switchonerror.png" alt="">
-    * <p>
-    *
-    * @param type     the error type to match to fallback
-    * @param fallback the alternate [[Publisher]]
-    * @tparam E the error type
-    * @return an alternating [[Flux]] on source onError
-    */
-  final def switchOnError[E <: Throwable](`type`: Class[E], fallback: Publisher[_ <: T]) = Flux(jFlux.switchOnError[E](`type`, fallback))
-
-  /**
-    * Subscribe to the given fallback [[Publisher]] if an error matching the given
-    * predicate is observed on this [[Flux]]
-    * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/switchonerror.png" alt="">
-    * <p>
-    *
-    * @param predicate the predicate to match an error
-    * @param fallback  the alternate [[Publisher]]
-    * @return an alternating [[Flux]] on source onError
-    */
-  final def switchOnError(predicate: Throwable => Boolean, fallback: Publisher[_ <: T]) = Flux(jFlux.switchOnError(predicate, fallback))
-
-  /**
-    * Subscribe to the given fallback [[Publisher]] if an error is observed on this [[Flux]]
-    * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/switchonerror.png" alt="">
-    * <p>
-    *
-    * @param fallback the alternate [[Publisher]]
-    * @return an alternating [[Flux]] on source onError
-    */
-  final def switchOnError(fallback: Publisher[_ <: T]) = Flux(jFlux.switchOnError(fallback))
 
   /**
     * Take only the first N values from this [[Flux]].
@@ -3247,23 +3189,6 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
   }
 
   /**
-    * Return a [[Flux]] that emits the completion signal of the supplied
-    * [[Publisher]] when this [[Flux]] onComplete or onError. If an error occur,
-    * the error signal is replayed after the supplied [[Publisher]] is terminated.
-    * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/ignorethen.png" alt="">
-    *
-    * @param afterSupplier a `Supplier` of [[Publisher]] to wait for after
-    *                      this Flux termination
-    * @return a new [[Flux]] emitting eventually from the supplied [[Publisher]]
-    */
-  final def `then`(afterSupplier: () => Publisher[Unit]): Mono[Unit] = {
-    Mono(jFlux.`then`(new Supplier[Publisher[Void]] {
-      override def get(): Publisher[Void] = publisherUnit2PublisherVoid(afterSupplier())
-    })).map(_ => ())
-  }
-
-  /**
     * Return a [[Flux]] that emits the sequence of the supplied [[Publisher]]
     * after this [[Flux]] completes, ignoring this flux elements. If an error
     * occurs it immediately terminates the resulting flux.
@@ -3275,19 +3200,6 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * @return a new [[Flux]] emitting eventually from the supplied [[Publisher]]
     */
   final def thenMany[V](other: Publisher[V]) = Flux(jFlux.thenMany[V](other))
-
-  /**
-    * Return a [[Flux]] that emits the sequence of the supplied [[Publisher]]
-    * after this [[Flux]] completes, ignoring this flux elements. If an error occurs
-    * it immediately terminates the resulting flux.
-    * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/ignorethens.png" alt="">
-    *
-    * @param afterSupplier a `supplier` of [[Publisher]] to emit from after termination
-    * @tparam V the supplied produced type
-    * @return a new [[Flux]] emitting eventually from the supplied [[Publisher]]
-    */
-  final def thenMany[V](afterSupplier: () => Publisher[V]) = Flux(jFlux.thenMany(afterSupplier))
 
   /**
     * Signal a [[java.util.concurrent.TimeoutException]] in case a per-item period fires before the
@@ -3525,15 +3437,15 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * <p>
     * When Open signal is strictly not overlapping Close signal : dropping windows
     * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/windowopenclose.png" alt="">
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/windowopenclose.png" alt="">
     * <p>
     * When Open signal is strictly more frequent than Close signal : overlapping windows
     * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/windowopencloseover.png" alt="">
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/windowopencloseover.png" alt="">
     * <p>
     * When Open signal is exactly coordinated with Close signal : exact windows
     * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/windowboundary.png" alt="">
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/windowboundary.png" alt="">
     *
     * @param bucketOpening a [[Publisher]] to emit any item for a split signal and complete to terminate
     * @param closeSelector a `Function` given an opening signal and returning a [[Publisher]] that
@@ -3543,7 +3455,7 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * @return a windowing [[Flux]] delimiting its sub-sequences by a given [[Publisher]] and lasting until
     *         a selected [[Publisher]] emits
     */
-  final def window[U, V](bucketOpening: Publisher[U], closeSelector: U => Publisher[V]): Flux[Flux[T]] = Flux(jFlux.window[U, V](bucketOpening, closeSelector)).map(Flux(_))
+  final def windowWhen[U, V](bucketOpening: Publisher[U], closeSelector: U => Publisher[V]): Flux[Flux[T]] = Flux(jFlux.windowWhen[U, V](bucketOpening, closeSelector)).map(Flux(_))
 
   /**
     * Split this [[Flux]] sequence into continuous, non-overlapping windows delimited by a given period.

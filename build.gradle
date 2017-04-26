@@ -15,7 +15,8 @@ repositories {
 }
 
 ext {
-    reactorVersion = "3.0.6.RELEASE"
+    reactorVersion = "3.0.7.RELEASE"
+    reactorAddOnsVersion = "3.0.6.RELEASE"
     baseScalaVersion = "2.11"
 }
 
@@ -30,7 +31,7 @@ dependencies {
 //    test dependencies
     testCompile "org.scalatest:scalatest_$baseScalaVersion:3.0.1"
     testRuntime "org.pegdown:pegdown:1.6.0"
-    testCompile group: 'io.projectreactor.addons', name: 'reactor-test', version: "$reactorVersion"
+    testCompile group: 'io.projectreactor.addons', name: 'reactor-test', version: "$reactorAddOnsVersion"
 
     scoverage "org.scoverage:scalac-scoverage-plugin_$baseScalaVersion:1.1.0", "org.scoverage:scalac-scoverage-runtime_$baseScalaVersion:1.1.0"
 }
