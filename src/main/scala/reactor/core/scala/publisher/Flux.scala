@@ -248,7 +248,6 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * @return a microbatched [[Flux]] of [[Seq]] delimited by a
     *         [[Publisher]]
     */
-  //TODO: How to test this?
   final def buffer(other: Publisher[_]): Flux[Seq[T]] = Flux(jFlux.buffer(other)).map(_.asScala)
 
   /**
@@ -262,7 +261,6 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * @tparam C the supplied [[Seq]] type
     * @return a microbatched [[Flux]] of [[Seq]] delimited by a [[Publisher]]
     */
-  //TODO: How to test?
   final def buffer[C <: ListBuffer[T]](other: Publisher[_], bufferSupplier: () => C): Flux[Seq[T]] = Flux(jFlux.buffer(other, new Supplier[JList[T]] {
     override def get(): JList[T] = bufferSupplier().asJava
   })).map(_.asScala)

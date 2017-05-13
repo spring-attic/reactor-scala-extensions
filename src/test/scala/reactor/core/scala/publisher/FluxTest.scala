@@ -678,6 +678,24 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         }
         }
       }
+      "with other publisher should split the incoming value" in {
+        StepVerifier.withVirtualTime(() => Flux.just(1, 2, 3, 4, 5, 6, 7, 8).delayElements(1 second).buffer(Flux.interval(3 seconds)))
+          .thenAwait(9 seconds)
+          .expectNext(Seq(1, 2), Seq(3, 4, 5), Seq(6, 7, 8))
+          .verifyComplete()
+      }
+      "with other publisher and buffer supplier" in {
+        val buffer = ListBuffer.empty[ListBuffer[Int]]
+        StepVerifier.withVirtualTime(() => Flux.just(1, 2, 3, 4, 5, 6, 7, 8).delayElements(1 second).buffer(Flux.interval(3 seconds), () => {
+          val buff = ListBuffer.empty[Int]
+          buffer += buff
+          buff
+        }))
+          .thenAwait(9 seconds)
+          .expectNext(Seq(1, 2), Seq(3, 4, 5), Seq(6, 7, 8))
+          .verifyComplete()
+        buffer shouldBe Seq(Seq(1, 2), Seq(3, 4, 5), Seq(6, 7, 8))
+      }
     }
 
     ".bufferTimeout" - {
