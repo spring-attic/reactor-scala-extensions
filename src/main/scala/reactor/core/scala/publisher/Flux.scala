@@ -293,7 +293,6 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * @return a microbatched [[Flux]] of [[Seq]] delimited by an opening [[Publisher]] and a relative
     *         closing [[Publisher]]
     */
-  //TODO: How to test?
   final def bufferWhen[U, V](bucketOpening: Publisher[U], closeSelector: U => Publisher[V]): Flux[Seq[T]] = Flux(jFlux.bufferWhen[U, V](bucketOpening, closeSelector)).map(_.asScala)
 
   /**
@@ -326,7 +325,6 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * @return a microbatched [[Flux]] of [[Seq]] delimited by an opening [[Publisher]] and a relative
     *         closing [[Publisher]]
     */
-  //TODO: How to test?
   final def bufferWhen[U, V, C <: ListBuffer[T]](bucketOpening: Publisher[U],
                                                  closeSelector: U => Publisher[V],
                                                  bufferSupplier: () => C): Flux[Seq[T]] = Flux(jFlux.bufferWhen(bucketOpening, closeSelector, new Supplier[JList[T]] {

@@ -722,6 +722,30 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       }
     }
 
+    ".bufferWhen" - {
+      "should buffer with opening and closing publisher" in {
+        StepVerifier.withVirtualTime(() => Flux.just(1, 2, 3, 4, 5, 6, 7, 8, 9).delayElements(1 second)
+          .bufferWhen(Flux.interval(3 seconds), (_: Long) => Flux.interval(3 seconds)))
+          .thenAwait(9 seconds)
+          .expectNext(Seq(3, 4, 5), Seq(6, 7, 8), Seq(9))
+          .verifyComplete()
+      }
+      "with buffer supplier should buffer with opening and closing publisher and use the provided supplier" in {
+        val buffer = ListBuffer.empty[ListBuffer[Int]]
+        StepVerifier.withVirtualTime(() => Flux.just(1, 2, 3, 4, 5, 6, 7, 8, 9).delayElements(1 second)
+          .bufferWhen(Flux.interval(3 seconds), (_: Long) => Flux.interval(3 seconds), () => {
+            val buff = ListBuffer.empty[Int]
+            buffer += buff
+            buff
+          }))
+          .thenAwait(9 seconds)
+          .expectNext(Seq(3, 4, 5), Seq(6, 7, 8), Seq(9))
+          .verifyComplete()
+
+        buffer shouldBe Seq(Seq(3, 4, 5), Seq(6, 7, 8), Seq(9))
+      }
+    }
+
     ".bufferWhile should buffer while the predicate is true" in {
       StepVerifier.withVirtualTime(() => Flux.interval(1 second).take(10).bufferWhile(l => l % 2 == 0 || l % 3 == 0))
         .thenAwait(10 seconds)
