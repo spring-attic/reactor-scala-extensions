@@ -664,30 +664,54 @@ class Mono[T] private(private val jMono: JMono[T]) extends Publisher[T] with Map
     */
   final def flux(): Flux[T] = Flux(jMono.flux())
 
-  final def hasElement: Mono[Boolean] = {
-    new Mono[Boolean](
-      jMono.hasElement.map[Boolean](scalaFunction2JavaFunction((jb: JBoolean) => boolean2Boolean(jb.booleanValue())))
-    )
-  }
+  /**
+    * Emit a single boolean true if this [[Mono]] has an element.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/haselement.png" alt="">
+    *
+    * @return a new [[Mono]] with <code>true</code> if a value is emitted and <code>false</code>
+    *                       otherwise
+    */
+  final def hasElement = Mono[Boolean](
+    jMono.hasElement.map[Boolean](scalaFunction2JavaFunction((jb: JBoolean) => boolean2Boolean(jb.booleanValue())))
+  )
 
-  final def handle[R](handler: (T, SynchronousSink[R]) => Unit): Mono[R] = {
-    new Mono[R](
-      jMono.handle(handler)
-    )
-  }
+  /**
+    * Handle the items emitted by this [[Mono]] by calling a biconsumer with the
+    * output sink for each onNext. At most one [[SynchronousSink.next]]
+    * call must be performed and/or 0 or 1 [[SynchronousSink.error]] or
+    * [[SynchronousSink.complete]].
+    *
+    * @param handler the handling `BiConsumer`
+    * @tparam R the transformed type
+    * @return a transformed [[Mono]]
+    */
+  final def handle[R](handler: (T, SynchronousSink[R]) => Unit) = Mono[R](
+    jMono.handle(handler)
+  )
 
+  /**
+    * Hides the identity of this [[Mono]] instance.
+    *
+    * <p>The main purpose of this operator is to prevent certain identity-based
+    * optimizations from happening, mostly for diagnostic purposes.
+    *
+    * @return a new [[Mono]] instance
+    */
   //TODO: How to test this?
-  final def hide: Mono[T] = {
-    new Mono[T](
-      jMono.hide()
-    )
-  }
+  final def hide = Mono[T](jMono.hide())
 
-  final def ignoreElement: Mono[T] = {
-    new Mono[T](
-      jMono.ignoreElement()
-    )
-  }
+  /**
+    * Ignores onNext signal (dropping it) and only reacts on termination.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/ignoreelement.png" alt="">
+    * <p>
+    *
+    * @return a new completable [[Mono]].
+    */
+  final def ignoreElement = Mono[T](jMono.ignoreElement())
 
   //  TODO: How to test all these .log(...) variants?
   final def log: Mono[T] = {
