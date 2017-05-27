@@ -797,13 +797,32 @@ class Mono[T] private(private val jMono: JMono[T]) extends Publisher[T] with Map
     */
   final def mergeWith(other: Publisher[_ <: T]) = Flux(jMono.mergeWith(other))
 
-  final def or(other: Mono[_ <: T]): Mono[T] = {
-    new Mono[T](jMono.or(other.jMono))
-  }
+  /**
+    * Emit the any of the result from this mono or from the given mono
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/or.png" alt="">
+    * <p>
+    *
+    * @param other the racing other { @link Mono} to compete with for the result
+    * @return a new [[Mono]]
+    * @see [[Mono.first]]
+    */
+  final def or(other: Mono[_ <: T]) = Mono[T](jMono.or(other.jMono))
 
-  final def ofType[U](clazz: Class[U]): Mono[U] = {
-    new Mono[U](jMono.ofType(clazz))
-  }
+  /**
+    * Evaluate the accepted value against the given [[Class]] type. If the
+    * predicate test succeeds, the value is
+    * passed into the new [[Mono]]. If the predicate test fails, the value is
+    * ignored.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/filter.png" alt="">
+    *
+    * @param clazz the [[Class]] type to test values against
+    * @return a new [[Mono]] reduced to items converted to the matched type
+    */
+  final def ofType[U](clazz: Class[U]) = Mono[U](jMono.ofType(clazz))
 
   /**
     * Subscribe to a returned fallback publisher when any error occurs.
@@ -914,22 +933,47 @@ class Mono[T] private(private val jMono: JMono[T]) extends Publisher[T] with Map
     */
   final def onErrorReturn(predicate: Throwable => Boolean, fallbackValue: T) = Mono[T](jMono.onErrorReturn(predicate, fallbackValue))
 
+  /**
+    * Detaches the both the child [[Subscriber]] and the [[Subscription]] on
+    * termination or cancellation.
+    * <p>This should help with odd retention scenarios when running
+    * with non-reactor [[Subscriber]].
+    *
+    * @return a detachable [[Mono]]
+    */
   //  TODO: How to test this?
-  final def onTerminateDetach(): Mono[T] = {
-    new Mono[T](jMono.onTerminateDetach())
-  }
+  final def onTerminateDetach() = Mono[T](jMono.onTerminateDetach())
 
+  /**
+    * Shares a [[Mono]] for the duration of a function that may transform it and
+    * consume it as many times as necessary without causing multiple subscriptions
+    * to the upstream.
+    *
+    * @param transform the tranformation function
+    * @tparam R the output value type
+    * @return a new [[Mono]]
+    */
   final def publish[R](transform: Mono[T] => Mono[R]): Mono[R] = {
-    val transformFunction: Function[JMono[T], JMono[R]] = new Function[JMono[T], JMono[R]] {
+    val transformFunction = new Function[JMono[T], JMono[R]] {
       override def apply(t: JMono[T]): JMono[R] = transform(Mono.this).jMono
     }
-    new Mono[R](jMono.publish(transformFunction))
+    Mono[R](jMono.publish(transformFunction))
   }
 
+  /**
+    * Run onNext, onComplete and onError on a supplied [[Scheduler]]
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/publishon1.png" alt="">
+    * <p> <p>
+    * Typically used for fast publisher, slow consumer(s) scenarios.
+    *
+    * `mono.publishOn(Schedulers.single()).subscribe()`
+    *
+    * @param scheduler a checked { @link reactor.core.scheduler.Scheduler.Worker} factory
+    * @return an asynchronously producing [[Mono]]
+    */
   //TODO: How to test this?
-  final def publishOn(scheduler: Scheduler): Mono[T] = {
-    new Mono[T](jMono.publishOn(scheduler))
-  }
+  final def publishOn(scheduler: Scheduler) = new Mono[T](jMono.publishOn(scheduler))
 
   /**
     * Repeatedly subscribe to the source completion of the previous subscription.
@@ -1005,42 +1049,141 @@ class Mono[T] private(private val jMono: JMono[T]) extends Publisher[T] with Map
   //  TODO: How to test this?
   final def repeatWhen(whenFactory: Flux[Long] => _ <: Publisher[_]) = Flux(jMono.repeatWhen(whenFactory))
 
+  /**
+    * Repeatedly subscribe to this [[Mono]] until there is an onNext signal when a companion sequence signals a
+    * number of emitted elements.
+    * <p>If the companion sequence signals when this [[Mono]] is active, the repeat
+    * attempt is suppressed and any terminal signal will terminate this [[Mono]] with the same signal immediately.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/repeatwhenempty.png" alt="">
+    *
+    * @param repeatFactory the
+    *                      [[Function1]] providing a [[Flux]] signalling the current number of repeat on onComplete and returning a [[Publisher]] companion.
+    * @return an eventually repeated [[Mono]] on onComplete when the companion [[Publisher]] produces an
+    *                                        onNext signal
+    *
+    */
   //  TODO: How to test this?
-  final def repeatWhenEmpty(repeatFactory: Flux[Long] => Publisher[_]): Mono[T] = {
-    new Mono[T](jMono.repeatWhenEmpty(repeatFactory))
-  }
+  final def repeatWhenEmpty(repeatFactory: Flux[Long] => Publisher[_]): Mono[T] = Mono[T](jMono.repeatWhenEmpty(repeatFactory))
 
+  /**
+    * Repeatedly subscribe to this [[Mono]] until there is an onNext signal when a companion sequence signals a
+    * number of emitted elements.
+    * <p>If the companion sequence signals when this [[Mono]] is active, the repeat
+    * attempt is suppressed and any terminal signal will terminate this [[Mono]] with the same signal immediately.
+    * <p>Emits an [[IllegalStateException]] if the max repeat is exceeded and different from [[Int.MaxValue]].
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/repeatwhen1.png" alt="">
+    *
+    * @param maxRepeat the maximum repeat number of time (infinite if [[Int.MaxValue]])
+    * @param repeatFactory the
+    *                      [[Function1]] providing a [[Flux]] signalling the current repeat index from 0 on onComplete and returning a { @link Publisher} companion.
+    * @return an eventually repeated [[Mono]] on onComplete when the companion [[Publisher]] produces an
+    *                                        onNext signal
+    *
+    */
   //  TODO: How to test this?
-  final def repeatWhenEmpty(maxRepeat: Int, repeatFactory: Flux[Long] => Publisher[_]): Mono[T] = {
-    new Mono[T](jMono.repeatWhenEmpty(maxRepeat, repeatFactory))
-  }
+  final def repeatWhenEmpty(maxRepeat: Int, repeatFactory: Flux[Long] => Publisher[_]): Mono[T] = Mono[T](jMono.repeatWhenEmpty(maxRepeat, repeatFactory))
 
+  /**
+    * Re-subscribes to this [[Mono]] sequence if it signals any error
+    * either indefinitely.
+    * <p>
+    * The times == Long.MAX_VALUE is treated as infinite retry.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/retry1.png" alt="">
+    *
+    * @return a re-subscribing [[Mono]] on onError
+    */
   //  TODO: How to test these retry(...)
-  final def retry(): Mono[T] = {
-    new Mono[T](jMono.retry())
-  }
+  final def retry(): Mono[T] = Mono[T](jMono.retry())
 
-  final def retry(numRetries: Long): Mono[T] = {
-    new Mono[T](jMono.retry(numRetries))
-  }
+  /**
+    * Re-subscribes to this [[Mono]] sequence if it signals any error
+    * either indefinitely or a fixed number of times.
+    * <p>
+    * The times == Long.MAX_VALUE is treated as infinite retry.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/retryn1.png" alt="">
+    *
+    * @param numRetries the number of times to tolerate an error
+    * @return a re-subscribing [[Mono]] on onError up to the specified number of retries.
+    *
+    */
+  final def retry(numRetries: Long): Mono[T] = Mono[T](jMono.retry(numRetries))
 
-  final def retry(retryMatcher: Throwable => Boolean): Mono[T] = {
-    new Mono[T](jMono.retry(retryMatcher))
-  }
+  /**
+    * Re-subscribes to this [[Mono]] sequence if it signals any error
+    * and the given `Predicate` matches otherwise push the error downstream.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/retryb1.png" alt="">
+    *
+    * @param retryMatcher the predicate to evaluate if retry should occur based on a given error signal
+    * @return a re-subscribing [[Mono]] on onError if the predicates matches.
+    */
+  final def retry(retryMatcher: Throwable => Boolean): Mono[T] = Mono[T](jMono.retry(retryMatcher))
 
-  final def retry(numRetries: Long, retryMatcher: Throwable => Boolean): Mono[T] = {
-    new Mono[T](jMono.retry(numRetries, retryMatcher))
-  }
+  /**
+    * Re-subscribes to this [[Mono]] sequence up to the specified number of retries if it signals any
+    * error and the given `Predicate` matches otherwise push the error downstream.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/retrynb1.png" alt="">
+    *
+    * @param numRetries   the number of times to tolerate an error
+    * @param retryMatcher the predicate to evaluate if retry should occur based on a given error signal
+    * @return a re-subscribing [[Mono]] on onError up to the specified number of retries and if the predicate
+    *                                  matches.
+    *
+    */
+  final def retry(numRetries: Long, retryMatcher: Throwable => Boolean): Mono[T] = Mono[T](jMono.retry(numRetries, retryMatcher))
 
-  final def retryWhen(whenFactory: Flux[Throwable] => Publisher[_]): Mono[T] = {
-    new Mono[T](jMono.retryWhen(whenFactory))
-  }
+  /**
+    * Retries this [[Mono]] when a companion sequence signals
+    * an item in response to this [[Mono]] error signal
+    * <p>If the companion sequence signals when the [[Mono]] is active, the retry
+    * attempt is suppressed and any terminal signal will terminate the [[Mono]] source with the same signal
+    * immediately.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/retrywhen1.png" alt="">
+    *
+    * @param whenFactory the [[Function1]] providing a [[Flux]] signalling any error from the source sequence and returning a [[Publisher]] companion.
+    * @return a re-subscribing [[Mono]] on onError when the companion [[Publisher]] produces an
+    *                                  onNext signal
+    */
+  final def retryWhen(whenFactory: Flux[Throwable] => Publisher[_]): Mono[T] = Mono[T](jMono.retryWhen(whenFactory))
 
+  /**
+    * Start the chain and request unbounded demand.
+    *
+    * <p>
+    * <img width="500" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/unbounded1.png" alt="">
+    * <p>
+    *
+    * @return a [[Runnable]] task to execute to dispose and cancel the underlying [[Subscription]]
+    */
   final def subscribe(): MonoProcessor[T] = jMono.subscribe()
 
-  final def subscribe(consumer: T => Unit): Disposable = {
-    jMono.subscribe(consumer)
-  }
+  /**
+    * Subscribe a [[Consumer]] to this [[Mono]] that will consume all the
+    * sequence.
+    * <p>
+    * For a passive version that observe and forward incoming data see [[Mono.doOnSuccess]] and
+    * [[Mono.doOnError]].
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/subscribe1.png" alt="">
+    *
+    * @param consumer the consumer to invoke on each value
+    * @return a new [[Runnable]] to dispose the [[Subscription]]
+    */
+  final def subscribe(consumer: T => Unit): Disposable = jMono.subscribe(consumer)
 
   /**
     * Subscribe [[scala.Function1[T,Unit] Consumer]] to this [[Mono]] that will consume all the
@@ -1455,6 +1598,32 @@ object Mono {
     * @return a failed [[Mono]]
     */
   def error[T](error: Throwable) = Mono[T](JMono.error(error))
+
+  /**
+    * Pick the first result coming from any of the given monos and populate a new `Mono`.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/first.png" alt="">
+    * <p>
+    *
+    * @param monos The deferred monos to use.
+    * @tparam T The type of the function result.
+    * @return a [[Mono]].
+    */
+  def first[T](monos: Mono[_ <: T]*) = Mono[T](JMono.first[T](monos.map(_.jMono): _*))
+
+  /**
+    * Pick the first result coming from any of the given monos and populate a new `Mono`.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/first.png" alt="">
+    * <p>
+    *
+    * @param monos The monos to use.
+    * @tparam T The type of the function result.
+    * @return a [[Mono]].
+    */
+  def first[T](monos: Iterable[_ <: Mono[_ <: T]]) = Mono[T](JMono.first[T](monos.map(_.asJava()).asJava))
 
   /**
     * Expose the specified [[Publisher]] with the [[Mono]] API, and ensure it will emit 0 or 1 item.

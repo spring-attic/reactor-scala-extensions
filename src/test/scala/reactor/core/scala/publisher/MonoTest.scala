@@ -94,6 +94,21 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         .verify()
     }
 
+    ".first" - {
+      "with varargs should create mono that emit the first item" in {
+        StepVerifier.withVirtualTime(() => Mono.first(Mono.just(1).delaySubscription(3 seconds), Mono.just(2).delaySubscription(2 seconds)))
+          .thenAwait(3 seconds)
+          .expectNext(2)
+          .verifyComplete()
+      }
+      "with iterable should create mono that emit the first item" in {
+        StepVerifier.withVirtualTime(() => Mono.first(Iterable(Mono.just(1).delaySubscription(3 seconds), Mono.just(2).delaySubscription(2 seconds))))
+          .thenAwait(3 seconds)
+          .expectNext(2)
+          .verifyComplete()
+      }
+    }
+
     ".from" - {
       "a publisher should ensure that the publisher will emit 0 or 1 item." in {
         val publisher: JFlux[Int] = JFlux.just(1, 2, 3, 4, 5)
