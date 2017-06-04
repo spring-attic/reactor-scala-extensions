@@ -32,6 +32,7 @@ dependencies {
     testCompile "org.scalatest:scalatest_$baseScalaVersion:3.0.1"
     testRuntime "org.pegdown:pegdown:1.6.0"
     testCompile group: 'io.projectreactor.addons', name: 'reactor-test', version: "$reactorAddOnsVersion"
+    testCompile 'org.mockito:mockito-core:2.8.9'
 
     scoverage "org.scoverage:scalac-scoverage-plugin_$baseScalaVersion:1.1.0", "org.scoverage:scalac-scoverage-runtime_$baseScalaVersion:1.1.0"
 }

@@ -5,13 +5,16 @@ import java.util.concurrent._
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicLong, AtomicReference}
 import java.util.function.{Predicate, Supplier}
 
+import org.mockito.{ArgumentMatchers, Mockito}
+import org.mockito.Mockito.spy
 import org.reactivestreams.{Publisher, Subscription}
+import org.scalatest.mockito.MockitoSugar
 import org.scalatest.prop.TableDrivenPropertyChecks
 import org.scalatest.{AsyncFreeSpec, FreeSpec, Matchers}
 import reactor.core.Disposable
-import reactor.core.publisher.{BaseSubscriber, MonoProcessor, Signal, SynchronousSink, Flux => JFlux}
+import reactor.core.publisher.{BaseSubscriber, MonoProcessor, Signal, SynchronousSink, Flux => JFlux, Mono => JMono}
 import reactor.core.scala.publisher.Mono.just
-import reactor.core.scheduler.Schedulers
+import reactor.core.scheduler.{Scheduler, Schedulers}
 import reactor.test.StepVerifier
 import reactor.test.scheduler.VirtualTimeScheduler
 
@@ -24,7 +27,7 @@ import scala.util.Random
 /**
   * Created by winarto on 12/26/16.
   */
-class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
+class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks with MockitoSugar {
 
   private val randomValue = Random.nextLong()
   "Mono" - {
@@ -621,12 +624,16 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       number shouldBe a[ScalaNumber]
     }
 
-    ".cache should make this Mono a hot source by caching the value" ignore {
-      //      TODO: How to test this?
+    ".cache should call the underlying cache method" in {
+      val jMono = spy(JMono.just(1))
+      val mono = Mono(jMono).cache()
+      Mockito.verify(jMono).cache()
     }
 
-    ".cancelOn should cancel the subscriber on a particular scheduler" ignore {
-      //      TODO: How to test this?
+    ".cancelOn should cancel the subscriber on a particular scheduler" in {
+      val jMono = spy(JMono.just(1))
+      val mono = Mono(jMono).cancelOn(Schedulers.immediate())
+      Mockito.verify(jMono).cancelOn(ArgumentMatchers.any[Scheduler]())
     }
 
     ".compose should defer creating the target mono type" in {
@@ -848,8 +855,8 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
     ".filterWhen should replay the value of mono if the first item emitted by the test is true" in {
       val mono = Mono.just(10).filterWhen((i: Int) => Mono.just(i % 2 == 0))
       StepVerifier.create(mono)
-      .expectNext(10)
-      .verifyComplete()
+        .expectNext(10)
+        .verifyComplete()
     }
 
     ".flatMap" - {
