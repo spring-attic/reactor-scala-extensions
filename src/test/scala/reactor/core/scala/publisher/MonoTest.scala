@@ -606,8 +606,10 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
       }
     }
 
-    ".awaitOnSubscribe should await onSubscribe" ignore {
-      //      TODO: How to test this?
+    ".awaitOnSubscribe should await onSubscribe" in {
+      val jMono = spy(JMono.just(1))
+      val mono = Mono(jMono).awaitOnSubscribe()
+      Mockito.verify(jMono).awaitOnSubscribe()
     }
 
     ".block" - {
@@ -1163,9 +1165,8 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
       }
     }
 
-    ".repeatWhen should emit the value of this mono accompanied by the publisher" ignore {
-      val counter = new AtomicLong()
-      val flux = Mono.just(randomValue).repeatWhen((fl: Flux[Long]) => Flux.just[Long](counter.incrementAndGet())).take(3)
+    ".repeatWhen should emit the value of this mono accompanied by the publisher" in {
+      val flux = Mono.just(randomValue).repeatWhen((_: Flux[Long]) => Flux.just[Long](10, 20))
       StepVerifier.create(flux)
         .expectNext(randomValue, randomValue, randomValue)
         .verifyComplete()
