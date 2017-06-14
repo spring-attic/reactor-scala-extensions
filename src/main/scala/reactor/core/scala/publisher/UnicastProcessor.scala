@@ -1,6 +1,7 @@
 package reactor.core.scala.publisher
 
 import org.reactivestreams.Subscription
+import reactor.core.publisher
 import reactor.core.publisher.{UnicastProcessor => JUnicastProcessor}
 
 /**
@@ -12,7 +13,7 @@ import reactor.core.publisher.{UnicastProcessor => JUnicastProcessor}
   *
   * @tparam T the input and output type
   */
-class UnicastProcessor[T](jUnicastProcessor: JUnicastProcessor[T]) extends FluxProcessor[T, T](jUnicastProcessor) {
+class UnicastProcessor[T](val jUnicastProcessor: JUnicastProcessor[T]) extends Flux[T](jUnicastProcessor) with FluxProcessor[T, T] {
 
   override def onComplete(): Unit = jUnicastProcessor.onComplete()
 
@@ -21,11 +22,13 @@ class UnicastProcessor[T](jUnicastProcessor: JUnicastProcessor[T]) extends FluxP
   override def onNext(t: T): Unit = jUnicastProcessor.onNext(t)
 
   override def onSubscribe(s: Subscription): Unit = jUnicastProcessor.onSubscribe(s)
+
+  override protected def jFluxProcessor: publisher.FluxProcessor[T, T] = jUnicastProcessor
 }
 
 object UnicastProcessor {
 
-  private[publisher] def apply[T](jUnicastProcessor: JUnicastProcessor[T]) = new UnicastProcessor[T](jUnicastProcessor)
+  private[publisher] def apply[T](jUnicastProcessor: JUnicastProcessor[T]): UnicastProcessor[T] = new UnicastProcessor[T](jUnicastProcessor)
 
   /**
     * Create a unicast [[FluxProcessor]] that will buffer on a given queue in an
