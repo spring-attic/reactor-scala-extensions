@@ -1,7 +1,7 @@
 package reactor.core.scala.publisher
 
 import org.reactivestreams.Subscription
-import reactor.core.publisher
+import reactor.core.{Scannable, publisher}
 import reactor.core.publisher.{UnicastProcessor => JUnicastProcessor}
 
 /**
@@ -24,6 +24,8 @@ class UnicastProcessor[T](val jUnicastProcessor: JUnicastProcessor[T]) extends F
   override def onSubscribe(s: Subscription): Unit = jUnicastProcessor.onSubscribe(s)
 
   override protected def jFluxProcessor: publisher.FluxProcessor[T, T] = jUnicastProcessor
+
+  override def jScannable: Scannable = jFluxProcessor
 }
 
 object UnicastProcessor {

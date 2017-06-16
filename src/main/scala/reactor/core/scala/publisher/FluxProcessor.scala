@@ -46,7 +46,7 @@ trait FluxProcessor[IN, OUT] extends Flux[OUT] with Processor[IN, OUT] with Disp
 
   override def scan(key: Attr): AnyRef = jFluxProcessor.scan(key)
 
-  final def serialize(): FluxProcessor[IN, OUT] = new FluxProcessor[IN, OUT] {
+  final def serialize(): FluxProcessor[IN, OUT] = new Flux[OUT](jFluxProcessor) with FluxProcessor[IN, OUT] {
     override protected def jFluxProcessor: JFluxProcessor[IN, OUT] = jFluxProcessor.serialize()
 
     override def jScannable: core.Scannable = jFluxProcessor
@@ -87,6 +87,8 @@ object FluxProcessor {
 
     new Flux[OUT](jFluxProcessorWrapper) with FluxProcessor[IN, OUT] {
       override protected def jFluxProcessor: JFluxProcessor[IN, OUT] = jFluxProcessorWrapper
+
+      override def jScannable: core.Scannable = jFluxProcessor
     }
   }
 }
