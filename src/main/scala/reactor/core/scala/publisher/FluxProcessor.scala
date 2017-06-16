@@ -1,7 +1,14 @@
 package reactor.core.scala.publisher
 
+import java.util
+import java.util.stream
+
 import org.reactivestreams.{Processor, Publisher, Subscriber, Subscription}
+import reactor.core
+import reactor.core.Scannable.Attr
+import reactor.core.{Disposable, MultiProducer, Trackable}
 import reactor.core.publisher.{FluxProcessor => JFluxProcessor, UnicastProcessor => JUnicastProcessor}
+import reactor.core.scala.Scannable
 
 /**
   * A base processor that exposes [[Flux]] API for [[org.reactivestreams.Processor]].
@@ -12,7 +19,7 @@ import reactor.core.publisher.{FluxProcessor => JFluxProcessor, UnicastProcessor
   * @tparam IN  the input value type
   * @tparam OUT the output value type
   */
-trait FluxProcessor[IN, OUT] extends Flux[OUT] with Processor[IN, OUT] {
+trait FluxProcessor[IN, OUT] extends Flux[OUT] with Processor[IN, OUT] with Disposable with Scannable {
 
   protected def jFluxProcessor: JFluxProcessor[IN, OUT]
 
@@ -23,6 +30,27 @@ trait FluxProcessor[IN, OUT] extends Flux[OUT] with Processor[IN, OUT] {
   override def onNext(t: IN): Unit = jFluxProcessor.onNext(t)
 
   override def onSubscribe(s: Subscription): Unit = jFluxProcessor.onSubscribe(s)
+
+  override def dispose(): Unit = jFluxProcessor.dispose()
+
+  /**
+    * Return the processor buffer capacity if any or [[Int.MaxValue]]
+    *
+    * @return processor buffer capacity if any or [[Int.MaxValue]]
+    */
+  def bufferSize(): Int = jFluxProcessor.getBufferSize
+
+  override def inners(): Stream[_ <: Scannable] = super.inners()
+
+  def isSerialized: Boolean = jFluxProcessor.isSerialized
+
+  override def scan(key: Attr): AnyRef = jFluxProcessor.scan(key)
+
+  final def serialize(): FluxProcessor[IN, OUT] = new FluxProcessor[IN, OUT] {
+    override protected def jFluxProcessor: JFluxProcessor[IN, OUT] = jFluxProcessor.serialize()
+
+    override def jScannable: core.Scannable = jFluxProcessor
+  }
 }
 
 object FluxProcessor {
@@ -54,7 +82,7 @@ object FluxProcessor {
     * @param downstream the downstream publisher
     * @return a new blackboxed [[FluxProcessor]]
     */
-  def wrap[IN, OUT](upstream: Subscriber[IN], downstream: Publisher[OUT]) = {
+  def wrap[IN, OUT](upstream: Subscriber[IN], downstream: Publisher[OUT]): FluxProcessor[IN, OUT] = {
     val jFluxProcessorWrapper: JFluxProcessor[IN, OUT] = JFluxProcessor.wrap(upstream, downstream)
 
     new Flux[OUT](jFluxProcessorWrapper) with FluxProcessor[IN, OUT] {
