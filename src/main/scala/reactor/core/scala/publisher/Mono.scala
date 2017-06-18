@@ -48,7 +48,7 @@ import scala.util.{Failure, Success, Try}
   * <p>The rx operators will offer aliases for input [[Mono]] type to preserve the "at most one"
   * property of the resulting [[Mono]]. For instance [[Mono.flatMap flatMap]] returns a [[Flux]] with
   * possibly
-  * more than 1 emission. Its alternative enforcing [[Mono]] input is [[Mono.then then]].
+  * more than 1 emission. Its alternative enforcing [[Mono]] input is [[Mono.`then` then]].
   *
   * <p>`Mono[Unit]` should be used for [[Publisher]] that just completes without any value.
   *
@@ -1318,7 +1318,7 @@ class Mono[T] private(private val jMono: JMono[T]) extends Publisher[T] with Map
     * @return a new [[Mono]] completing when both publishers have completed in
     *                       sequence
     */
-  final def thenEmpty(other: Publisher[Unit]) = Mono[Unit]((jMono: JMono[T]).thenEmpty(other))
+  final def thenEmpty(other: Publisher[Unit]): Mono[Unit] = Mono[Unit]((jMono: JMono[T]).thenEmpty(other))
 
   /**
     * Ignore element from this mono and transform the completion signal into a
@@ -1548,7 +1548,7 @@ object Mono {
   def delay(duration: Duration): Mono[Long] = Mono(JMono.delay(duration)).map(Long2long)
 
   /**
-    * Create a Mono which delays an onNext signal by a given `duration and completes.
+    * Create a Mono which delays an onNext signal by a given `duration` and completes.
     * If the demand cannot be produced in time, an onError will be signalled instead.
     *
     * <p>
@@ -1571,7 +1571,7 @@ object Mono {
     * @tparam T the reified [[Subscriber]] type
     * @return a completed [[Mono]]
     */
-  def empty[T] = Mono[T](JMono.empty())
+  def empty[T]: Mono[T] = Mono[T](JMono.empty())
 
   /**
     * Create a new [[Mono]] that ignores onNext (dropping them) and only react on Completion signal.
@@ -1584,7 +1584,7 @@ object Mono {
     * @tparam T the reified [[Publisher]] type
     * @return a new completable [[Mono]].
     */
-  def empty[T](source: Publisher[T]) = Mono[Unit](JMono.empty(source).map(new Function[Void, Unit] {override def apply(t: Void): Unit = ()}))
+  def empty[T](source: Publisher[T]): Mono[Unit] = Mono[Unit](JMono.empty(source).map(new Function[Void, Unit] {override def apply(t: Void): Unit = ()}))
 
   /**
     * Create a [[Mono]] that completes with the specified error immediately after onSubscribe.
@@ -1597,7 +1597,7 @@ object Mono {
     * @tparam T the reified [[Subscriber]] type
     * @return a failed [[Mono]]
     */
-  def error[T](error: Throwable) = Mono[T](JMono.error(error))
+  def error[T](error: Throwable): Mono[T] = Mono[T](JMono.error(error))
 
   /**
     * Pick the first result coming from any of the given monos and populate a new `Mono`.
@@ -1610,7 +1610,7 @@ object Mono {
     * @tparam T The type of the function result.
     * @return a [[Mono]].
     */
-  def first[T](monos: Mono[_ <: T]*) = Mono[T](JMono.first[T](monos.map(_.jMono): _*))
+  def first[T](monos: Mono[_ <: T]*): Mono[T] = Mono[T](JMono.first[T](monos.map(_.jMono): _*))
 
   /**
     * Pick the first result coming from any of the given monos and populate a new `Mono`.
@@ -1623,7 +1623,7 @@ object Mono {
     * @tparam T The type of the function result.
     * @return a [[Mono]].
     */
-  def first[T](monos: Iterable[_ <: Mono[_ <: T]]) = Mono[T](JMono.first[T](monos.map(_.asJava()).asJava))
+  def first[T](monos: Iterable[_ <: Mono[_ <: T]]): Mono[T] = Mono[T](JMono.first[T](monos.map(_.asJava()).asJava))
 
   /**
     * Expose the specified [[Publisher]] with the [[Mono]] API, and ensure it will emit 0 or 1 item.
@@ -1636,7 +1636,7 @@ object Mono {
     * @tparam T the source type
     * @return the next item emitted as a { @link Mono}
     */
-  def from[T](source: Publisher[_ <: T]) = Mono[T](JMono.from(source))
+  def from[T](source: Publisher[_ <: T]): Mono[T] = Mono[T](JMono.from(source))
 
   /**
     * Create a [[Mono]] producing the value for the [[Mono]] using the given supplier.
@@ -1649,7 +1649,7 @@ object Mono {
     * @tparam T type of the expected value
     * @return A [[Mono]].
     */
-  def fromCallable[T](supplier: Callable[T]) = Mono[T](JMono.fromCallable(supplier))
+  def fromCallable[T](supplier: Callable[T]): Mono[T] = Mono[T](JMono.fromCallable(supplier))
 
   /**
     * Unchecked cardinality conversion of [[Publisher]] as [[Mono]], supporting
@@ -1728,7 +1728,7 @@ object Mono {
     * @tparam T the source type of the ignored data
     * @return a new completable [[Mono]].
     */
-  def ignoreElements[T](source: Publisher[T]) = Mono[T](
+  def ignoreElements[T](source: Publisher[T]): Mono[T] = Mono[T](
     JMono.ignoreElements(source)
   )
 
@@ -1743,7 +1743,7 @@ object Mono {
     * @tparam T the type of the produced item
     * @return a [[Mono]].
     */
-  def just[T](data: T) = Mono[T](JMono.just(data))
+  def just[T](data: T): Mono[T] = Mono[T](JMono.just(data))
 
   /**
     * Create a new [[Mono]] that emits the specified item if [[Option.isDefined]] otherwise only emits
@@ -1757,7 +1757,7 @@ object Mono {
     * @tparam T the type of the produced item
     * @return a [[Mono]].
     */
-  def justOrEmpty[T](data: Option[_ <: T]) = Mono[T](
+  def justOrEmpty[T](data: Option[_ <: T]): Mono[T] = Mono[T](
     JMono.justOrEmpty[T](data)
   )
 
@@ -1773,7 +1773,7 @@ object Mono {
     * @tparam T the type of the produced item
     * @return a [[Mono]].
     */
-  def justOrEmpty[T](data: T) = Mono[T](
+  def justOrEmpty[T](data: T): Mono[T] = Mono[T](
     JMono.justOrEmpty(data)
   )
 
@@ -2080,7 +2080,7 @@ object Mono {
     */
   def when(sources: Iterable[_ <: Publisher[Unit] with MapablePublisher[Unit]]): Mono[Unit] = {
     new Mono[Unit](
-      JMono.when(sources.map(s => s.map((t: Unit) => None.orNull: Void)).asJava).map((t: Void) => ())
+      JMono.when(sources.map(s => s.map((t: Unit) => None.orNull: Void)).asJava).map((_: Void) => ())
     )
   }
 
@@ -2128,7 +2128,7 @@ object Mono {
     */
   def when(sources: (Publisher[Unit] with MapablePublisher[Unit])*): Mono[Unit] = {
     new Mono[Unit](
-      JMono.when(sources.map(s => s.map((T: Unit) => None.orNull: Void)).asJava).map((t: Void) => ())
+      JMono.when(sources.map(s => s.map((T: Unit) => None.orNull: Void)).asJava).map((_: Void) => ())
     )
   }
 
@@ -2285,7 +2285,7 @@ object Mono {
     * @tparam T6 type of the value from source6
     * @return a [[Mono]].
     */
-  def whenDelayError[T1, T2, T3, T4, T5, T6](p1: Mono[_ <: T1], p2: Mono[_ <: T2], p3: Mono[_ <: T3], p4: Mono[_ <: T4], p5: Mono[_ <: T5], p6: Mono[_ <: T6]) = Mono[(T1, T2, T3, T4, T5, T6)](
+  def whenDelayError[T1, T2, T3, T4, T5, T6](p1: Mono[_ <: T1], p2: Mono[_ <: T2], p3: Mono[_ <: T3], p4: Mono[_ <: T4], p5: Mono[_ <: T5], p6: Mono[_ <: T6]): Mono[(T1, T2, T3, T4, T5, T6)] = Mono[(T1, T2, T3, T4, T5, T6)](
     JMono.whenDelayError[T1, T2, T3, T4, T5, T6](p1.jMono, p2.jMono, p3.jMono, p4.jMono, p5.jMono, p6.jMono).map(new Function[Tuple6[T1, T2, T3, T4, T5, T6], (T1, T2, T3, T4, T5, T6)] {
       override def apply(t: Tuple6[T1, T2, T3, T4, T5, T6]): (T1, T2, T3, T4, T5, T6) = tupleSix2ScalaTuple6(t)
     })
@@ -2305,8 +2305,8 @@ object Mono {
     * @param sources The sources to use.
     * @return a [[Mono]].
     */
-  def whenDelayError(sources: Iterable[_ <: Publisher[Unit] with MapablePublisher[Unit]]) = Mono[Unit](
-    JMono.whenDelayError(sources.map(s => s.map((t: Unit) => None.orNull: Void)).asJava).map((t: Void) => ())
+  def whenDelayError(sources: Iterable[_ <: Publisher[Unit] with MapablePublisher[Unit]]): Mono[Unit] = Mono[Unit](
+    JMono.whenDelayError(sources.map(s => s.map((t: Unit) => None.orNull: Void)).asJava).map((_: Void) => ())
   )
 
   /**
@@ -2325,7 +2325,7 @@ object Mono {
     * @tparam R the combined result
     * @return a [[Mono]].
     */
-  def whenDelayError[R](monos: Iterable[_ <: Mono[_]], combinator: (Array[Any] => _ <: R)) ={
+  def whenDelayError[R](monos: Iterable[_ <: Mono[_]], combinator: (Array[Any] => _ <: R)): Mono[R] ={
     val combinatorFunction = new Function[Array[Object], R] {
       override def apply(t: Array[Object]): R = {
         val v = t.map { v => v: Any }
@@ -2350,7 +2350,7 @@ object Mono {
     */
   def whenDelayError(sources: (Publisher[Unit] with MapablePublisher[Unit])*): Mono[Unit] = Mono[Unit](
     JMono.whenDelayError(sources.map(s => s.map((t: Unit) => None.orNull: Void)).toArray: _*)
-      .map((t: Void) => ())
+      .map((_: Void) => ())
   )
 
   /**
