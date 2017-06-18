@@ -1,13 +1,10 @@
 package reactor.core.scala.publisher
 
-import java.util
-import java.util.stream
-
 import org.reactivestreams.{Processor, Publisher, Subscriber, Subscription}
 import reactor.core
+import reactor.core.Disposable
 import reactor.core.Scannable.Attr
-import reactor.core.{Disposable, MultiProducer, Trackable}
-import reactor.core.publisher.{FluxProcessor => JFluxProcessor, UnicastProcessor => JUnicastProcessor}
+import reactor.core.publisher.{FluxSink, FluxProcessor => JFluxProcessor, UnicastProcessor => JUnicastProcessor}
 import reactor.core.scala.Scannable
 
 /**
@@ -42,15 +39,65 @@ trait FluxProcessor[IN, OUT] extends Flux[OUT] with Processor[IN, OUT] with Disp
 
   override def inners(): Stream[_ <: Scannable] = super.inners()
 
+  /**
+    * Return true if this [[FluxProcessor]] supports multithread producing
+    *
+    * @return true if this [[FluxProcessor]] supports multithread producing
+    */
   def isSerialized: Boolean = jFluxProcessor.isSerialized
 
   override def scan(key: Attr): AnyRef = jFluxProcessor.scan(key)
 
-  final def serialize(): FluxProcessor[IN, OUT] = new Flux[OUT](jFluxProcessor) with FluxProcessor[IN, OUT] {
+  /**
+    * Create a [[FluxProcessor]] that safely gates multi-threaded producer
+    *
+    * @return a serializing [[FluxProcessor]]
+    */
+  final def serialize() = new Flux[OUT](jFluxProcessor) with FluxProcessor[IN, OUT] {
     override protected def jFluxProcessor: JFluxProcessor[IN, OUT] = jFluxProcessor.serialize()
 
     override def jScannable: core.Scannable = jFluxProcessor
   }
+
+  /**
+    * Create a [[FluxSink]] that safely gates multi-threaded producer
+    * [[Subscriber.onNext]].
+    *
+    * <p> The returned [[FluxSink]] will not apply any
+    * [[FluxSink.OverflowStrategy]] and overflowing [[FluxSink.next]]
+    * will behave in two possible ways depending on the Processor:
+    * <ul>
+    * <li> an unbounded processor will handle the overflow itself by dropping or
+    * buffering </li>
+    * <li> a bounded processor will block/spin</li>
+    * </ul>
+    *
+    * @return a serializing [[FluxSink]]
+    */
+  final def sink(): FluxSink[IN] = jFluxProcessor.sink()
+
+  /**
+    * Create a [[FluxSink]] that safely gates multi-threaded producer
+    * [[Subscriber.onNext]].
+    *
+    * <p> The returned [[FluxSink]] will not apply any
+    * [[FluxSink.OverflowStrategy]] and overflowing [[FluxSink.next]]
+    * will behave in two possible ways depending on the Processor:
+    * <ul>
+    * <li> an unbounded processor will handle the overflow itself by dropping or
+    * buffering </li>
+    * <li> a bounded processor will block/spin on IGNORE strategy, or apply the
+    * strategy behavior</li>
+    * </ul>
+    *
+    * @param strategy the overflow strategy, see [[FluxSink.OverflowStrategy]]
+    *                                                    for the
+    *                                                    available strategies
+    * @return a serializing [[FluxSink]]
+    */
+  final def sink(strategy: FluxSink.OverflowStrategy): FluxSink[IN] = jFluxProcessor.sink(strategy)
+
+  override def subscribe(s: Subscriber[_ >: OUT]): Unit = jFluxProcessor.subscribe(s)
 }
 
 object FluxProcessor {
