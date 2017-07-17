@@ -1286,7 +1286,7 @@ class Mono[T] private(private val jMono: JMono[T]) extends Publisher[T] with Map
     * @param transformer the function to dynamically bind a new [[Mono]]
     * @tparam R the result type bound
     * @return a new [[Mono]] containing the merged values
-    * @apiNote in 3.1.0.M1 this method will be renamed `flatMap`. However, until
+    * @note in 3.1.0.M1 this method will be renamed `flatMap`. However, until
     *          then the behavior of [[Mono.flatMap]] remains the current one, so it is
     *                                       not yet possible to anticipate this migration.
     */
