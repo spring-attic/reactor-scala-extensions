@@ -18,11 +18,13 @@ ext {
     reactorVersion = "3.0.7.RELEASE"
     reactorAddOnsVersion = "3.0.7.RELEASE"
     baseScalaVersion = "2.11"
+
+    scoverageVersion = "1.3.0"
 }
 
 dependencies {
 // scala dependencies
-    compile "org.scala-lang:scala-library:$baseScalaVersion.8"
+    compile "org.scala-lang:scala-library:$baseScalaVersion.9"
 // reactor dependencies
     compile group: 'io.projectreactor', name: 'reactor-core', version: "$reactorVersion"
 // jsr305
@@ -34,7 +36,7 @@ dependencies {
     testCompile group: 'io.projectreactor.addons', name: 'reactor-test', version: "$reactorAddOnsVersion"
     testCompile 'org.mockito:mockito-core:2.8.47'
 
-    scoverage "org.scoverage:scalac-scoverage-plugin_$baseScalaVersion:1.1.0", "org.scoverage:scalac-scoverage-runtime_$baseScalaVersion:1.1.0"
+    scoverage "org.scoverage:scalac-scoverage-plugin_$baseScalaVersion:$scoverageVersion", "org.scoverage:scalac-scoverage-runtime_$baseScalaVersion:$scoverageVersion"
 }
 
 buildscript {
