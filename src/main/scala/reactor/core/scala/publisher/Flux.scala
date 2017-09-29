@@ -11,7 +11,7 @@ import org.reactivestreams.{Publisher, Subscriber, Subscription}
 import reactor.core.Disposable
 import reactor.core.publisher.FluxSink.OverflowStrategy
 import reactor.core.publisher.{BufferOverflowStrategy, FluxSink, Signal, SignalType, SynchronousSink, Flux => JFlux, GroupedFlux => JGroupedFlux}
-import reactor.core.scheduler.{Scheduler, TimedScheduler}
+import reactor.core.scheduler.Scheduler
 import reactor.util.Logger
 import reactor.util.function.Tuple2
 
@@ -91,19 +91,6 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     */
   final def as[P](transformer: Flux[T] => P): P = jFlux.as(transformer)
 
-  /**
-    * Intercepts the onSubscribe call and makes sure calls to Subscription methods
-    * only happen after the child Subscriber has returned from its onSubscribe method.
-    *
-    * <p>This helps with child Subscribers that don't expect a recursive call from
-    * onSubscribe into their onNext because, for example, they request immediately from
-    * their onSubscribe but don't finish their preparation before that and onNext
-    * runs into a half-prepared state. This can happen with non Reactor mentality based Subscribers.
-    *
-    * @return non reentrant onSubscribe [[Flux]]
-    */
-  //  TODO: How to test?
-  final def awaitOnSubscribe() = Flux(jFlux.awaitOnSubscribe())
 
   /**
     * Blocks until the upstream signals its first value or completes.
@@ -1273,18 +1260,6 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     }
     Flux(jFlux.filterWhen(asyncPredicateFunction, bufferSize))
   }
-  /**
-    * Emit from the fastest first sequence between this publisher and the given publisher
-    *
-    * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/firstemitting.png" alt="">
-    * <p>
-    *
-    * @param other the [[Publisher]] to race with
-    * @return the fastest sequence
-    * @see [[Flux.firstEmitting]]
-    */
-  final def firstEmittingWith(other: Publisher[_ <: T]) = Flux(jFlux.firstEmittingWith(other))
 
   /**
     * Transform the items emitted by this [[Flux]] into Publishers, then flatten the emissions from those by
@@ -1874,7 +1849,7 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     *
     * @return a [[Flux]] of materialized [[Signal]]
     */
-  final def materialize() = Flux(jFlux.materialize())
+  final def materialize(): Flux[Signal[T]] = Flux(jFlux.materialize())
 
   /**
     * Merge emissions of this [[Flux]] with the provided [[Publisher]], so that they may interleave.
@@ -2142,6 +2117,21 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
   final def onTerminateDetach() = Flux(jFlux.onTerminateDetach())
 
   /**
+    * Pick the first [[Publisher]] between this [[Flux]] and another publisher
+    * to emit any signal (onNext/onError/onComplete) and replay all signals from that
+    * [[Publisher]], effectively behaving like the fastest of these competing sources.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/firstemitting.png" alt="">
+    * <p>
+    *
+    * @param other the [[Publisher]] to race with
+    * @return the fastest sequence
+    * @see [[Flux.first]]
+    */
+  final def or(other: Publisher[_ <: T]) = Flux(jFlux.or(other))
+
+  /**
     * Prepare to consume this [[Flux]] on number of 'rails' matching number of CPU
     * in round-robin fashion.
     *
@@ -2180,7 +2170,7 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
 
   /**
     * Prepare a [[ConnectableFlux]] which shares this [[Flux]] sequence and dispatches values to
-    * subscribers in a backpressure-aware manner. Prefetch will default to [[reactor.util.concurrent.QueueSupplier.SMALL_BUFFER_SIZE]].
+    * subscribers in a backpressure-aware manner. Prefetch will default to [[reactor.util.concurrent.Queues.SMALL_BUFFER_SIZE]].
     * This will effectively turn any type of sequence into a hot sequence.
     * <p>
     * Backpressure will be coordinated on [[Subscription.request]] and if any [[Subscriber]] is missing
@@ -3322,7 +3312,7 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     *                  <p>
     * @return a blocking [[Iterable]]
     */
-  final def toIterable(batchSize: Long): Iterable[T] = jFlux.toIterable(batchSize).asScala
+  final def toIterable(batchSize: Int): Iterable[T] = jFlux.toIterable(batchSize).asScala
 
   /**
     * Transform this [[Flux]] into a lazy [[Iterable]] blocking on next calls.
@@ -3335,7 +3325,7 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     *                      across threads. The supplier of queue can easily be obtained using [[reactor.util.concurrent.QueueSupplier.get]]
     * @return a blocking [[Iterable]]
     */
-  final def toIterable(batchSize: Long, queueProvider: Option[Supplier[util.Queue[T]]]): Iterable[T] = jFlux.toIterable(batchSize, queueProvider.orNull).asScala
+  final def toIterable(batchSize: Int, queueProvider: Option[Supplier[util.Queue[T]]]): Iterable[T] = jFlux.toIterable(batchSize, queueProvider.orNull).asScala
 
   /**
     * Transform this [[Flux]] into a lazy [[Stream]] blocking on next calls.
@@ -3559,43 +3549,44 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
   final def windowTimeout(maxSize: Int, timespan: Duration, timer: Scheduler): Flux[Flux[T]] = Flux(jFlux.windowTimeout(maxSize, timespan, timer)).map(Flux(_))
 
   /**
-    * Split this [[Flux]] sequence into multiple [[Flux]] delimited by the given
-    * predicate. A new window is opened each time the predicate returns true, at which
+    * Split this [[Flux]] sequence into multiple [[Flux]] windows delimited by the
+    * given predicate. A new window is opened each time the predicate returns true, at which
     * point the previous window will receive the triggering element then onComplete.
     *
     * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/windowsize.png" alt="">
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/windowuntil.png" alt="">
     *
     * @param boundaryTrigger a predicate that triggers the next window when it becomes true.
-    * @return a windowing [[Flux]] of [[GroupedFlux]] windows, bounded depending
-    *         on the predicate and keyed with the value that triggered the new window.
+    * @return a [[Flux]] of [[Flux]] windows, bounded depending
+    *                   on the predicate.
     */
-  final def windowUntil(boundaryTrigger: T => Boolean): Flux[GroupedFlux[T, T]] = Flux(jFlux.windowUntil(boundaryTrigger)).map(GroupedFlux(_))
+  final def windowUntil(boundaryTrigger: T => Boolean): Flux[Flux[T]] = Flux(jFlux.windowUntil(boundaryTrigger)).map(Flux(_))
 
   /**
-    * Split this [[Flux]] sequence into multiple [[Flux]] delimited by the given
-    * predicate. A new window is opened each time the predicate returns true.
+    * Split this [[Flux]] sequence into multiple [[Flux]] windows delimited by the
+    * given predicate. A new window is opened each time the predicate returns true.
     * <p>
     * If `cutBefore` is true, the old window will onComplete and the triggering
     * element will be emitted in the new window. Note it can mean that an empty window is
     * sometimes emitted, eg. if the first element in the sequence immediately matches the
     * predicate.
     * <p>
-    * Otherwise, the triggering element will be emitted in the old window before it does
-    * onComplete, similar to [[Flux.windowUntil]].
-    *
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/windowuntilcutbefore.png" alt="">
     * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/windowsize.png" alt="">
+    * Otherwise, the triggering element will be emitted in the old window before it does
+    * onComplete, similar to [[Flux.windowUntil(Predicate)]].
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/windowuntilcutafter.png" alt="">
     *
     * @param boundaryTrigger a predicate that triggers the next window when it becomes true.
-    * @param cutBefore       set to true to include the triggering element in the new window rather than the old.
-    * @return a windowing [[Flux]] of [[GroupedFlux]] windows, bounded depending
-    *         on the predicate and keyed with the value that triggered the new window.
+    * @param cutBefore       push to true to include the triggering element in the new window rather than the old.
+    * @return a [[Flux]] of [[Flux]] windows, bounded depending
+    *                   on the predicate.
     */
-  final def windowUntil(boundaryTrigger: T => Boolean, cutBefore: Boolean): Flux[GroupedFlux[T, T]] = Flux(jFlux.windowUntil(boundaryTrigger, cutBefore)).map(GroupedFlux(_))
+  final def windowUntil(boundaryTrigger: T => Boolean, cutBefore: Boolean): Flux[Flux[T]] = Flux(jFlux.windowUntil(boundaryTrigger, cutBefore)).map(Flux(_))
 
   /**
-    * Split this [[Flux]] sequence into multiple [[Flux]] delimited by the given
+    * Split this [[Flux]] sequence into multiple [[Flux]] windows delimited by the given
     * predicate and using a prefetch. A new window is opened each time the predicate
     * returns true.
     * <p>
@@ -3604,20 +3595,21 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * sometimes emitted, eg. if the first element in the sequence immediately matches the
     * predicate.
     * <p>
-    * Otherwise, the triggering element will be emitted in the old window before it does
-    * onComplete, similar to [[Flux.windowUntil]].
-    *
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/windowuntilcutbefore.png" alt="">
     * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/windowsize.png" alt="">
+    * Otherwise, the triggering element will be emitted in the old window before it does
+    * onComplete, similar to [[Flux.windowUntil(Predicate)]].
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/windowuntilcutafter.png" alt="">
     *
     * @param boundaryTrigger a predicate that triggers the next window when it becomes true.
-    * @param cutBefore       set to true to include the triggering element in the new window rather than the old.
-    * @param prefetch        the request size to use for this { @link Flux}.
-    * @return a windowing [[Flux]] of [[GroupedFlux]] windows, bounded depending
-    *         on the predicate and keyed with the value that triggered the new window.
+    * @param cutBefore       push to true to include the triggering element in the new window rather than the old.
+    * @param prefetch        the request size to use for this [[Flux]].
+    * @return a [[Flux]] of [[Flux]] windows, bounded depending
+    *                   on the predicate.
     */
-  final def windowUntil(boundaryTrigger: T => Boolean, cutBefore: Boolean, prefetch: Int): Flux[GroupedFlux[T, T]] =
-    Flux(jFlux.windowUntil(boundaryTrigger, cutBefore, prefetch)).map(GroupedFlux(_))
+  final def windowUntil(boundaryTrigger: T => Boolean, cutBefore: Boolean, prefetch: Int): Flux[Flux[T]] =
+    Flux(jFlux.windowUntil(boundaryTrigger, cutBefore, prefetch)).map(Flux(_))
 
   /**
     * Split this [[Flux]] sequence into multiple [[Flux]] windows that stay open
@@ -3628,13 +3620,13 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * separators anywhere in the sequence, each occurrence will lead to an empty window.
     *
     * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/windowsize.png" alt="">
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/windowwhile.png" alt="">
     *
     * @param inclusionPredicate a predicate that triggers the next window when it becomes false.
-    * @return a windowing [[Flux]] of [[GroupedFlux]] windows, each containing
-    *         subsequent elements that all passed a predicate, and keyed with a separator element.
+    * @return a [[Flux]] of [[Flux]] windows, each containing
+    *                   subsequent elements that all passed a predicate.
     */
-  final def windowWhile(inclusionPredicate: T => Boolean): Flux[GroupedFlux[T, T]] = Flux(jFlux.windowWhile(inclusionPredicate)).map(GroupedFlux(_))
+  final def windowWhile(inclusionPredicate: T => Boolean): Flux[Flux[T]] = Flux(jFlux.windowWhile(inclusionPredicate)).map(Flux(_))
 
   /**
     * Split this [[Flux]] sequence into multiple [[Flux]] windows that stay open
@@ -3645,14 +3637,14 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * separators anywhere in the sequence, each occurrence will lead to an empty window.
     *
     * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/windowsize.png" alt="">
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/windowwhile.png" alt="">
     *
     * @param inclusionPredicate a predicate that triggers the next window when it becomes false.
     * @param prefetch           the request size to use for this [[Flux]].
-    * @return a windowing [[Flux]] of [[GroupedFlux]] windows, each containing
-    *         subsequent elements that all passed a predicate, and keyed with a separator element.
+    * @return a [[Flux]] of [[Flux]] windows, each containing
+    *                   subsequent elements that all passed a predicate.
     */
-  final def windowWhile(inclusionPredicate: T => Boolean, prefetch: Int): Flux[GroupedFlux[T, T]] = Flux(jFlux.windowWhile(inclusionPredicate, prefetch)).map(GroupedFlux(_))
+  final def windowWhile(inclusionPredicate: T => Boolean, prefetch: Int): Flux[Flux[T]] = Flux(jFlux.windowWhile(inclusionPredicate, prefetch)).map(Flux(_))
 
   /**
     * Combine values from this [[Flux]] with values from another
@@ -4278,30 +4270,34 @@ object Flux {
   def error[O](throwable: Throwable, whenRequested: Boolean): Flux[O] = Flux(JFlux.error(throwable, whenRequested))
 
   /**
-    * Select the fastest source who emitted first onNext or onComplete or onError
+    * Pick the first [[Publisher]] to emit any signal (onNext/onError/onComplete) and
+    * replay all signals from that [[Publisher]], effectively behaving like the
+    * fastest of these competing sources.
     *
     * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/firstemitting.png" alt="">
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/firstemitting.png" alt="">
     * <p> <p>
     *
     * @param sources The competing source publishers
-    * @tparam I The source type of the data sequence
-    * @return a new [[Flux}]] eventually subscribed to one of the sources or empty
+    * @tparam I The type of values in both source and output sequences
+    * @return a new [[Flux]] behaving like the fastest of its sources
     */
-  def firstEmitting[I](sources: Publisher[_ <: I]*): Flux[I] = Flux(JFlux.firstEmitting(sources: _*))
+  def first[I](sources: Publisher[_ <: I]*): Flux[I] = Flux[I](JFlux.first[I](sources: _*))
 
   /**
-    * Select the fastest source who won the "ambiguous" race and emitted first onNext or onComplete or onError
+    * Pick the first [[Publisher]] to emit any signal (onNext/onError/onComplete) and
+    * replay all signals from that [[Publisher]], effectively behaving like the
+    * fastest of these competing sources.
     *
     * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/firstemitting.png" alt="">
-    * <p> <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/firstemitting.png" alt="">
+    * <p>
     *
     * @param sources The competing source publishers
-    * @tparam I The source type of the data sequence
-    * @return a new [[Flux}]] eventually subscribed to one of the sources or empty
+    * @tparam I The type of values in both source and output sequences
+    * @return a new [[Flux]] behaving like the fastest of its sources
     */
-  def firstEmitting[I](sources: Iterable[Publisher[_ <: I]]): Flux[I] = Flux(JFlux.firstEmitting[I](sources))
+  def first[I](sources: Iterable[Publisher[_ <: I]]) = Flux(JFlux.first[I](sources))
 
   /**
     * Expose the specified [[Publisher]] with the [[Flux]] API.

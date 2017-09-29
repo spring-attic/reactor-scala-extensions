@@ -6,6 +6,7 @@ import reactor.core.Disposable
 import reactor.core.Scannable.Attr
 import reactor.core.publisher.{FluxSink, FluxProcessor => JFluxProcessor, UnicastProcessor => JUnicastProcessor}
 import reactor.core.scala.Scannable
+import scala.collection.JavaConverters._
 
 /**
   * A base processor that exposes [[Flux]] API for [[org.reactivestreams.Processor]].
@@ -20,15 +21,12 @@ trait FluxProcessor[IN, OUT] extends Flux[OUT] with Processor[IN, OUT] with Disp
 
   protected def jFluxProcessor: JFluxProcessor[IN, OUT]
 
-  override def onComplete(): Unit = jFluxProcessor.onComplete()
-
-  override def onError(t: Throwable): Unit = jFluxProcessor.onError(t)
-
-  override def onNext(t: IN): Unit = jFluxProcessor.onNext(t)
-
-  override def onSubscribe(s: Subscription): Unit = jFluxProcessor.onSubscribe(s)
-
-  override def dispose(): Unit = jFluxProcessor.dispose()
+  /**
+    * Return the number of active [[Subscriber]] or `-1` if untracked.
+    *
+    * @return the number of active [[Subscriber]] or `-1` if untracked
+    */
+  def downstreamCount: Long = jFluxProcessor.downstreamCount()
 
   /**
     * Return the processor buffer capacity if any or [[Int.MaxValue]]
@@ -37,7 +35,42 @@ trait FluxProcessor[IN, OUT] extends Flux[OUT] with Processor[IN, OUT] with Disp
     */
   def bufferSize(): Int = jFluxProcessor.getBufferSize
 
-  override def inners(): Stream[_ <: Scannable] = super.inners()
+  /**
+    * Current error if any, default to [[None]]
+    *
+    * @return Current error if any, default to [[None]]
+    */
+  def error = Option(jFluxProcessor.getError)
+
+  /**
+    * Return true if any [[Subscriber]] is actively subscribed
+    *
+    * @return true if any [[Subscriber]] is actively subscribed
+    */
+  def hasDownstreams: Boolean = jFluxProcessor.hasDownstreams
+
+  /**
+    * Return true if terminated with onComplete
+    *
+    * @return true if terminated with onComplete
+    */
+  def hasCompleted: Boolean = jFluxProcessor.hasCompleted
+
+  /**
+    * Return true if terminated with onError
+    *
+    * @return true if terminated with onError
+    */
+  def hasError: Boolean = jFluxProcessor.hasError
+
+  override def inners(): Stream[_ <: Scannable] = jFluxProcessor.inners().iterator().asScala.map(js=> js: Scannable).toStream
+
+  /**
+    * Has this upstream finished or "completed" / "failed" ?
+    *
+    * @return has this upstream finished or "completed" / "failed" ?
+    */
+  def isTerminated: Boolean = jFluxProcessor.isTerminated
 
   /**
     * Return true if this [[FluxProcessor]] supports multithread producing
@@ -46,14 +79,14 @@ trait FluxProcessor[IN, OUT] extends Flux[OUT] with Processor[IN, OUT] with Disp
     */
   def isSerialized: Boolean = jFluxProcessor.isSerialized
 
-  override def scan(key: Attr): AnyRef = jFluxProcessor.scan(key)
+  override def scanUnsafe(key: Attr[_]): Option[AnyRef] = Option(jFluxProcessor.scanUnsafe(key))
 
   /**
     * Create a [[FluxProcessor]] that safely gates multi-threaded producer
     *
     * @return a serializing [[FluxProcessor]]
     */
-  final def serialize() = new Flux[OUT](jFluxProcessor) with FluxProcessor[IN, OUT] {
+  final def serialize(): FluxProcessor[IN, OUT] = new Flux[OUT](jFluxProcessor) with FluxProcessor[IN, OUT] {
     override protected def jFluxProcessor: JFluxProcessor[IN, OUT] = jFluxProcessor.serialize()
 
     override def jScannable: core.Scannable = jFluxProcessor
@@ -96,6 +129,25 @@ trait FluxProcessor[IN, OUT] extends Flux[OUT] with Processor[IN, OUT] with Disp
     * @return a serializing [[FluxSink]]
     */
   final def sink(strategy: FluxSink.OverflowStrategy): FluxSink[IN] = jFluxProcessor.sink(strategy)
+
+  /**
+    * Returns serialization strategy. If true, [[FluxProcessor.sink()]] will always
+    * be serialized. Otherwise sink is serialized only if [[FluxSink.onRequest(Long => Unit)]]
+    * is invoked.
+    *
+    * @return true to serialize any sink, false to delay serialization till onRequest
+    */
+  protected def serializeAlways = true
+
+  override def dispose(): Unit = jFluxProcessor.dispose()
+
+  override def onComplete(): Unit = jFluxProcessor.onComplete()
+
+  override def onError(t: Throwable): Unit = jFluxProcessor.onError(t)
+
+  override def onNext(t: IN): Unit = jFluxProcessor.onNext(t)
+
+  override def onSubscribe(s: Subscription): Unit = jFluxProcessor.onSubscribe(s)
 
   override def subscribe(s: Subscriber[_ >: OUT]): Unit = jFluxProcessor.subscribe(s)
 }

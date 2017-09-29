@@ -1,9 +1,12 @@
 package reactor.core.scala.publisher
 
 import reactor.core.publisher.{ConnectableFlux => JConnectableFlux}
-import reactor.core.{Disposable, Receiver}
+import reactor.core.Disposable
+import reactor.core.scheduler.Scheduler
 
-class ConnectableFlux[T]private (private val jConnectableFlux: JConnectableFlux[T]) extends Flux[T](jConnectableFlux) with Receiver {
+import scala.concurrent.duration.Duration
+
+class ConnectableFlux[T]private (private val jConnectableFlux: JConnectableFlux[T]) extends Flux[T](jConnectableFlux) {
 
   /**
     * Connects this [[ConnectableFlux]] to the upstream source when the first [[org.reactivestreams.Subscriber]]
@@ -88,7 +91,40 @@ class ConnectableFlux[T]private (private val jConnectableFlux: JConnectableFlux[
     */
   final def refCount(minSubscribers: Int) = Flux(jConnectableFlux.refCount(minSubscribers))
 
-  override def upstream(): AnyRef = jConnectableFlux.upstream()
+  /**
+    * Connects to the upstream source when the given number of [[org.reactivestreams.Subscriber]] subscribes.
+    * Disconnection can happen in two scenarios: when the upstream source completes (or errors) then
+    * there is an immediate disconnection. However, when all subscribers have cancelled,
+    * a <strong>deferred</strong> disconnection is scheduled. If any new subscriber comes
+    * in during the `gracePeriod` that follows, the disconnection is cancelled.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/refCount.png" alt="">
+    *
+    * @param minSubscribers the number of subscribers expected to subscribe before connection
+    * @param gracePeriod    the [[Duration]] for which to wait for new subscribers before actually
+    *                                   disconnecting when all subscribers have cancelled.
+    * @return a reference counting [[Flux]] with a grace period for disconnection
+    */
+  final def refCount(minSubscribers: Int, gracePeriod: Duration) = Flux(jConnectableFlux.refCount(minSubscribers, gracePeriod))
+
+  /**
+    * Connects to the upstream source when the given number of [[org.reactivestreams.Subscriber]] subscribes.
+    * Disconnection can happen in two scenarios: when the upstream source completes (or errors) then
+    * there is an immediate disconnection. However, when all subscribers have cancelled,
+    * a <strong>deferred</strong> disconnection is scheduled. If any new subscriber comes
+    * in during the `gracePeriod` that follows, the disconnection is cancelled.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/refCount.png" alt="">
+    *
+    * @param minSubscribers the number of subscribers expected to subscribe before connection
+    * @param gracePeriod    the [[Duration]] for which to wait for new subscribers before actually
+    *                                   disconnecting when all subscribers have cancelled.
+    * @param scheduler the [[Scheduler]] on which to run timeouts
+    * @return a reference counting [[Flux]] with a grace period for disconnection
+    */
+  final def refCount(minSubscribers: Int, gracePeriod: Duration, scheduler: Scheduler) = Flux(jConnectableFlux.refCount(minSubscribers, gracePeriod, scheduler))
 }
 
 object ConnectableFlux {

@@ -77,12 +77,6 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
         verifyEmptyMono(mono)
       }
 
-
-      "with source should ignore onNext event and receive completion" in {
-        val mono = Mono.empty(createMono)
-        verifyEmptyMono(mono)
-      }
-
       def verifyEmptyMono[T](mono: Mono[T]) = {
         StepVerifier.create(mono)
           .expectComplete()
@@ -255,162 +249,6 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
     }
 
     ".when" - {
-      "with p1 and p2 should" - {
-        "emit tuple2 when both p1 and p2 have emitted the value" in {
-          val mono = Mono.when(just(1), just("one"))
-
-          StepVerifier.create(mono)
-            .expectNext((1, "one"))
-            .verifyComplete()
-        }
-        "emit error when one of the publisher has error" in {
-          val mono = Mono.when(just(1), Mono.error(new RuntimeException()))
-
-          StepVerifier.create(mono)
-            .expectError(classOf[RuntimeException])
-            .verify()
-        }
-      }
-      "with p1 and p2 and a function combinator (T1, T2) => O should" - {
-        "emit O when both p1 and p2 have emitted the value" in {
-          val mono = Mono.when(just(1), just("one"), (t1: Int, t2: String) => s"${t1.toString}-$t2")
-          StepVerifier.create(mono)
-            .expectNext("1-one")
-            .verifyComplete()
-        }
-        "emit error when one of the publisher has error" in {
-          val mono = Mono.when(just(1), Mono.error(new RuntimeException()), (t1: Int, t2: String) => s"${t1.toString}-$t2")
-
-          StepVerifier.create(mono)
-            .expectError(classOf[RuntimeException])
-            .verify()
-        }
-      }
-
-      "with p1, p2 and p3 should" - {
-        "emit tuple3 when all publisher have emitted the value" in {
-          val mono = Mono.when(just(1), just(2), just("one-two"))
-          StepVerifier.create(mono)
-            .expectNext((1, 2, "one-two"))
-            .verifyComplete()
-        }
-        "emit error when one of the publisher encounter error" in {
-          val p1 = just(1)
-          val p2 = just(2)
-          val p3 = just(3)
-          val error = Mono.error(new RuntimeException())
-          val monos = Table(
-            ("p1", "p2", "p3"),
-            (p1, p2, error),
-            (p1, error, p3),
-            (error, p2, p3)
-          )
-          forAll(monos) { (p1, p2, p3) => {
-            val mono = Mono.when(p1, p2, p3)
-            StepVerifier.create(mono)
-              .expectError(classOf[RuntimeException])
-              .verify()
-          }
-          }
-        }
-      }
-
-      "with p1, p2, p3 and p4 should" - {
-        "emit tuple4 when all publisher have emitted the value" in {
-          val mono = Mono.when(just(1), just(2), just("one"), just("two"))
-          StepVerifier.create(mono)
-            .expectNext((1, 2, "one", "two"))
-            .verifyComplete()
-        }
-        "emit error when one of the publisher encounter error" in {
-          val p1 = just(1)
-          val p2 = just(2)
-          val p3 = just(3)
-          val p4 = just(4)
-          val error = Mono.error(new RuntimeException())
-          val monos = Table(
-            ("p1", "p2", "p3", "p4"),
-            (p1, p2, p3, error),
-            (p1, p2, error, p4),
-            (p1, error, p3, p4),
-            (error, p2, p3, p4)
-          )
-          forAll(monos) { (p1, p2, p3, p4) => {
-            val mono = Mono.when(p1, p2, p3, p4)
-            StepVerifier.create(mono)
-              .expectError(classOf[RuntimeException])
-              .verify()
-          }
-          }
-        }
-      }
-
-      "with p1, p2, p3, p4 and p5 should" - {
-        "emit tuple5 when all publisher have emitted the value" in {
-          val mono = Mono.when(just(1), just(2), just("one"), just("two"), just("three"))
-          StepVerifier.create(mono)
-            .expectNext((1, 2, "one", "two", "three"))
-            .verifyComplete()
-        }
-        "emit error when one of the publisher encounter error" in {
-          val p1 = just(1)
-          val p2 = just(2)
-          val p3 = just(3)
-          val p4 = just(4)
-          val p5 = just(5)
-          val error = Mono.error(new RuntimeException())
-          val monos = Table(
-            ("p1", "p2", "p3", "p4", "p5"),
-            (p1, p2, p3, p4, error),
-            (p1, p2, p3, error, p5),
-            (p1, p2, error, p4, p5),
-            (p1, error, p3, p4, p5),
-            (error, p2, p3, p4, p5)
-          )
-          forAll(monos) { (p1, p2, p3, p4, p5) => {
-            val mono = Mono.when(p1, p2, p3, p4, p5)
-            StepVerifier.create(mono)
-              .expectError(classOf[RuntimeException])
-              .verify()
-          }
-          }
-        }
-      }
-
-      "with p1, p2, p3, p4, p5 and p6 should" - {
-        "emit tuple6 when all publisher have emitted the value" in {
-          val mono = Mono.when(just(1), just(2), just(3), just("one"), just("two"), just("three"))
-          StepVerifier.create(mono)
-            .expectNext((1, 2, 3, "one", "two", "three"))
-            .verifyComplete()
-        }
-        "emit error when one of the publisher encounter error" in {
-          val p1 = just(1)
-          val p2 = just(2)
-          val p3 = just(3)
-          val p4 = just(4)
-          val p5 = just(5)
-          val p6 = just(6)
-          val error = Mono.error(new RuntimeException())
-          val monos = Table(
-            ("p1", "p2", "p3", "p4", "p5", "p6"),
-            (p1, p2, p3, p4, p5, error),
-            (p1, p2, p3, p4, error, p6),
-            (p1, p2, p3, error, p5, p6),
-            (p1, p2, error, p4, p5, p6),
-            (p1, error, p3, p4, p5, p6),
-            (error, p2, p3, p4, p5, p6)
-          )
-          forAll(monos) { (p1, p2, p3, p4, p5, p6) => {
-            val mono = Mono.when(p1, p2, p3, p4, p5, p6)
-            StepVerifier.create(mono)
-              .expectError(classOf[RuntimeException])
-              .verify()
-          }
-          }
-        }
-      }
-
       "with iterable" - {
         "of publisher of unit should return when all of the sources has fulfilled" in {
           val completed = new ConcurrentHashMap[String, Boolean]()
@@ -426,15 +264,6 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
             .expectComplete()
           completed should contain key "first"
           completed should contain key "second"
-        }
-
-        "of Mono and combinator function should emit the value after combined by combinator function" in {
-          val combinator: (Array[Any] => String) = values => values.map(_.toString).foldLeft("") { (acc, v) => if (acc.isEmpty) v else s"$acc-$v" }
-          val mono = Mono.when(Iterable(just[Any](1), just[Any](2)), combinator)
-          StepVerifier.create(mono)
-            .expectNext("1-2")
-            .expectComplete()
-            .verify()
         }
       }
 
@@ -453,47 +282,35 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
         completed should contain key "first"
         completed should contain key "second"
       }
-
-      "with function combinator and varargs of mono should return when all of the monos has fulfilled" in {
-
-        val combinator: (Array[Any] => String) = { values =>
-          values.map(_.toString).foldLeft("") { (acc, value) => if (acc.isEmpty) s"$value" else s"$acc-$value" }
-        }
-
-        StepVerifier.create(Mono.when(combinator, just[Any](1), just[Any](2)))
-          .expectNext("1-2")
-          .expectComplete()
-          .verify()
-      }
     }
 
-    ".whenDelayError" - {
+    ".zipDelayError" - {
       "with p1 and p2 should merge when both Monos are fulfilled" in {
-        StepVerifier.create(Mono.whenDelayError(just(1), just("one")))
+        StepVerifier.create(Mono.zipDelayError(just(1), just("one")))
           .expectNext((1, "one"))
           .verifyComplete()
       }
 
       "with p1, p2 and p3 should merge when all Monos are fulfilled" in {
-        StepVerifier.create(Mono.whenDelayError(just(1), just("one"), just(1L)))
+        StepVerifier.create(Mono.zipDelayError(just(1), just("one"), just(1L)))
           .expectNext((1, "one", 1L))
           .verifyComplete()
       }
 
       "with p1, p2, p3 and p4 should merge when all Monos are fulfilled" in {
-        StepVerifier.create(Mono.whenDelayError(just(1), just(2), just(3), just(4)))
+        StepVerifier.create(Mono.zipDelayError(just(1), just(2), just(3), just(4)))
           .expectNext((1, 2, 3, 4))
           .verifyComplete()
       }
 
       "with p1, p2, p3, p4 and p5 should merge when all Monos are fulfilled" in {
-        StepVerifier.create(Mono.whenDelayError(just(1), just(2), just(3), just(4), just(5)))
+        StepVerifier.create(Mono.zipDelayError(just(1), just(2), just(3), just(4), just(5)))
           .expectNext((1, 2, 3, 4, 5))
           .verifyComplete()
       }
 
       "with p1, p2, p3, p4, p5 and p6 should merge when all Monos are fulfilled" in {
-        StepVerifier.create(Mono.whenDelayError(just(1), just(2), just(3), just(4), just(5), just(6)))
+        StepVerifier.create(Mono.zipDelayError(just(1), just(2), just(3), just(4), just(5), just(6)))
           .expectNext((1, 2, 3, 4, 5, 6))
           .verifyComplete()
       }
@@ -516,7 +333,7 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
         }
 
         "of Mono and combinator function should emit the value after combined by combinator function" in {
-          StepVerifier.create(Mono.whenDelayError(Iterable(Mono.just(1), Mono.just("one")), (values: Array[Any]) => s"${values(0).toString}-${values(1).toString}"))
+          StepVerifier.create(Mono.zipDelayError(Iterable(Mono.just(1), Mono.just("one")), (values: Array[AnyRef]) => s"${values(0).toString}-${values(1).toString}"))
             .expectNext("1-one")
             .verifyComplete()
         }
@@ -558,7 +375,7 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
           .verifyComplete()
       }
       "with combinator function and Iterable of mono should fulfill when all Monos are fulfilled" in {
-        val mono = Mono.zip(combinator, Iterable(just(1), just(2)))
+        val mono = Mono.zip(Iterable(just(1), just(2)), combinator)
         StepVerifier.create(mono)
           .expectNext("1-2")
           .verifyComplete()
@@ -576,40 +393,11 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
 
     ".and" - {
       "should combine this mono and the other" in {
-        val mono = just(1) and just(2)
+        val mono: Mono[Unit] = just(1) and just(2)
         StepVerifier.create(mono)
-          .expectNext((1, 2))
+//          .expectNext((1, 2))
           .verifyComplete()
       }
-      "with combinator should combine this mono and the other" in {
-        val combinator: (Int, Int) => String = (a, b) => s"$a-$b"
-        val mono = just(1).and(just(2), combinator)
-        StepVerifier.create(mono)
-          .expectNext("1-2")
-          .verifyComplete()
-      }
-      "with rightGenerator should combine the result of this mono and the result of " +
-        "mono generated by the right generator" in {
-        val mono = Mono.just(1)
-          .and[String]((i: Int) => Mono.just(i.toString))
-        StepVerifier.create(mono)
-          .expectNext((1, "1"))
-          .verifyComplete()
-      }
-      "with rightGenerator and bi-function should combine the result of this mono and the result of monogenerated by the right generator and then combined using " +
-        "the bi-function" in {
-        val mono = Mono.just(1)
-          .and[Int, String]((i: Int) => Mono.just(i * 2), (x: Int, y: Int) => s"${x.toString}-${y.toString}")
-        StepVerifier.create(mono)
-          .expectNext("1-2")
-          .verifyComplete()
-      }
-    }
-
-    ".awaitOnSubscribe should await onSubscribe" in {
-      val jMono = spy(JMono.just(1))
-      val mono = Mono(jMono).awaitOnSubscribe()
-      Mockito.verify(jMono).awaitOnSubscribe()
     }
 
     ".block" - {
@@ -693,10 +481,10 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
         .verifyComplete()
     }
 
-    ".doAfterTerminate should call the callback function after the mono is terminated" in {
+    ".doAfterSuccessOrError should call the callback function after the mono is terminated" in {
       val atomicBoolean = new AtomicBoolean(false)
       val mono = Mono.just(randomValue)
-        .doAfterTerminate { (v: Long, t: Throwable) =>
+        .doAfterSuccessOrError { (_: Long, _: Throwable) =>
           atomicBoolean.compareAndSet(false, true) shouldBe true
           ()
         }
@@ -705,6 +493,15 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
         .verifyComplete()
       atomicBoolean shouldBe 'get
     }
+
+    ".doAfterTerminate should call the callback function after the mono is terminated" in {
+      val atomicBoolean = new AtomicBoolean(false)
+      StepVerifier.create(Mono.just(randomValue).doAfterTerminate(() => atomicBoolean.compareAndSet(false, true)))
+        .expectNext(randomValue)
+        .verifyComplete()
+      atomicBoolean shouldBe 'get
+    }
+
 
     ".doFinally should call the callback" in {
       val atomicBoolean = new AtomicBoolean(false)
@@ -809,7 +606,7 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
 
     ".doOnTerminate should do something on terminate" in {
       val atomicLong = new AtomicLong()
-      val mono: Mono[Long] = createMono.doOnTerminate { (l, t) => atomicLong.set(l) }
+      val mono: Mono[Long] = createMono.doOnTerminate { () => atomicLong.set(randomValue) }
       StepVerifier.create(mono)
         .expectNext(randomValue)
         .expectComplete()
@@ -924,13 +721,6 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
     ".ignoreElement should only emit termination event" in {
       val mono = Mono.just(randomValue).ignoreElement
       StepVerifier.create(mono)
-        .verifyComplete()
-    }
-
-    "++ should combine this mono and the other" in {
-      val mono = just(1) ++ just(2)
-      StepVerifier.create(mono)
-        .expectNext((1, 2))
         .verifyComplete()
     }
 
@@ -1181,10 +971,9 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
     }
 
     ".subscribe" - {
-      "without parameter should return MonoProcessor" in {
-        val x = Mono.just(randomValue).subscribe()
-        x shouldBe a[MonoProcessor[_]]
-        x.block() shouldBe randomValue
+      "without parameter should return Disposable" in {
+        val x= Mono.just(randomValue).subscribe()
+        x shouldBe a[Disposable]
       }
       "with consumer should invoke the consumer" in {
         val counter = new CountDownLatch(1)
@@ -1219,12 +1008,6 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
       "without parameter should only replays complete and error signals from this mono" in {
         val mono = Mono.just(randomValue).`then`()
         StepVerifier.create(mono)
-          .verifyComplete()
-      }
-      "with transformer function should transform the value to another Mono possibly with different type" in {
-        val mono = Mono.just(randomValue).`then`(l => Mono.just(l.toString))
-        StepVerifier.create(mono)
-          .expectNext(randomValue.toString)
           .verifyComplete()
       }
       "with other mono should ignore element from this mono and transform its completion signal into emission and " +
@@ -1304,28 +1087,6 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
       val mono = Mono.just(randomValue).transform(ml => Mono.just(ml.block().toString))
       StepVerifier.create(mono)
         .expectNext(randomValue.toString)
-        .verifyComplete()
-    }
-
-    ".untilOther should emit the value in this mono after the other publisher emits the first tiem or terminates empty" in {
-      val flag = new AtomicBoolean(false)
-      val mono = Mono.just(randomValue).untilOther(Flux.just(1).doOnNext(_ => flag.compareAndSet(false, true))).doOnNext(_ => {
-        flag shouldBe 'get
-        flag.compareAndSet(true, false)
-      })
-      StepVerifier.create(mono)
-        .expectNext(randomValue)
-        .verifyComplete()
-    }
-
-    ".untilOtherDelayError should emit the value in this mono after the other publisher emits the first tiem or terminates empty" in {
-      val flag = new AtomicBoolean(false)
-      val mono = Mono.just(randomValue).untilOtherDelayError(Flux.just(1).doOnNext(_ => flag.compareAndSet(false, true))).doOnNext(_ => {
-        flag shouldBe 'get
-        flag.compareAndSet(true, false)
-      })
-      StepVerifier.create(mono)
-        .expectNext(randomValue)
         .verifyComplete()
     }
   }

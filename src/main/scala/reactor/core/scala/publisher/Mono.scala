@@ -77,98 +77,23 @@ class Mono[T] private(private val jMono: JMono[T]) extends Publisher[T] with Map
   final def as[P](transformer: (Mono[T] => P)): P = transformer(this)
 
   /**
-    * Combine the result from this mono and another into a [[scala.Tuple2]].
+    * Join the termination signals from this mono and another source into the returned
+    * void mono
     *
     * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/and.png" alt="">
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/and.png" alt="">
     * <p>
     *
-    * @param other the [[Mono]] to combine with
-    * @tparam T2 the element type of the other Mono instance
-    * @return a new combined Mono
+    * @param other the [[Publisher]] to wait for
+    *                          complete
+    * @return a new combined [[Mono]]
     * @see [[Mono.when]]
     */
-  final def and[T2](other: Mono[_ <: T2]): Mono[(T, T2)] = {
-    Mono[(T, T2)](
-      jMono.and[T2](other.jMono)
-        .map((t: Tuple2[T, T2]) => tupleTwo2ScalaTuple2(t))
-    )
-  }
-
-  /**
-    * An alias for [[Mono.and]]
-    *
-    * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/and.png" alt="">
-    * <p>
-    *
-    * @param other the [[Mono]] to combine with
-    * @tparam T2 the element type of the other Mono instance
-    * @return a new combined Mono
-    * @see [[Mono.when]]
-    */
-  final def ++[T2](other: Mono[_ <: T2]): Mono[(T, T2)] = {
-    and(other)
-  }
-
-  /**
-    * Combine the result from this mono and another into an arbitrary `O` object,
-    * as defined by the provided `combinator` function.
-    *
-    * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/and.png" alt="">
-    * <p>
-    *
-    * @param other      the [[Mono]] to combine with
-    * @param combinator a [[scala.Function2]] combinator function when both sources
-    *                   complete
-    * @tparam T2 the element type of the other Mono instance
-    * @tparam O  the element type of the combination
-    * @return a new combined Mono
-    * @see [[Mono.when]]
-    */
-  final def and[T2, O](other: Mono[T2], combinator: (T, T2) => O): Mono[O] = {
-    Mono[O](jMono.and(other.jMono, combinator))
-  }
-
-  /**
-    * Wait for the result from this mono, use it to create a second mono via the
-    * provided `rightGenerator` function and combine both results into a [[scala.Tuple2]].
-    *
-    * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/and.png" alt="">
-    * <p>
-    *
-    * @param rightGenerator the [[scala.Function1]] to generate a `Mono` to combine with
-    * @tparam T2 the element type of the other Mono instance
-    * @return a new combined Mono
-    */
-  final def and[T2](rightGenerator: (T => Mono[T2])): Mono[(T, T2)] = {
-    Mono[(T, T2)](
-      jMono.and[T2](rightGenerator).map((t: Tuple2[T, T2]) => tupleTwo2ScalaTuple2(t))
-    )
-  }
-
-  /**
-    * Wait for the result from this mono, use it to create a second mono via the
-    * provided `rightGenerator` function and combine both results into an arbitrary
-    * `O` object, as defined by the provided `combinator` function.
-    *
-    * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/and.png" alt="">
-    * <p>
-    *
-    * @param rightGenerator the [[scala.Function1]] to generate a `Mono` to combine with
-    * @param combinator     a [[scala.Function2]] combinator function when both sources complete
-    * @tparam T2 the element type of the other Mono instance
-    * @tparam O  the element type of the combination
-    * @return a new combined Mono
-    */
-
-  final def and[T2, O](rightGenerator: (T => Mono[T2]), combinator: (T, T2) => O): Mono[O] = {
-    Mono[O](
-      jMono.and[T2, O](rightGenerator, combinator)
-    )
+  final def and(other: Publisher[_]): Mono[Unit] = {
+    Mono[Unit](jMono.and(other match {
+      case f: Flux[_] => f.jFlux
+      case m: Mono[_] => m.jMono
+    }))
   }
 
   /**
@@ -379,14 +304,21 @@ class Mono[T] private(private val jMono: JMono[T]) extends Publisher[T] with Map
     * @param afterTerminate the callback to call after [[org.reactivestreams.Subscriber.onNext]], [[org.reactivestreams.Subscriber.onComplete]] without preceding [[org.reactivestreams.Subscriber.onNext]] or [[org.reactivestreams.Subscriber.onError]]
     * @return a new [[Mono]]
     */
-  final def doAfterTerminate(afterTerminate: (_ >: T, Throwable) => Unit): Mono[T] = {
-    val afterTerminalFunction = new BiConsumer[T, Throwable] {
-      override def accept(t: T, u: Throwable): Unit = afterTerminate(t, u)
-    }
-    new Mono[T](
-      jMono.doAfterTerminate(afterTerminalFunction)
-    )
-  }
+  final def doAfterSuccessOrError(afterTerminate: (_ >: T, Throwable) => Unit): Mono[T] = Mono[T](
+    jMono.doAfterSuccessOrError(afterTerminate)
+  )
+
+  /**
+    * Add behavior (side-effect) triggered after the [[Mono]] terminates, either by
+    * completing downstream successfully or with an error.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/doafterterminate1.png" alt="">
+    * <p>
+    *
+    * @param afterTerminate the callback to call after [[Subscriber.onComplete]] or [[Subscriber.onError]]
+    * @return an observed  [[Flux]]
+    */
+  final def doAfterTerminate(afterTerminate: () => Unit): Mono[T] = Mono(jMono.doAfterTerminate(afterTerminate))
 
   final def doFinally(onFinally: (SignalType => Unit)): Mono[T] = {
     val onFinallyFunction = new Consumer[SignalType] {
@@ -523,26 +455,18 @@ class Mono[T] private(private val jMono: JMono[T]) extends Publisher[T] with Map
   )
 
   /**
-    * Triggered when the [[Mono]] terminates, either by completing successfully or with an error.
-    *
-    * <ul>
-    * <li>null, null : completing without data</li>
-    * <li>T, null : completing with data</li>
-    * <li>null, Throwable : failing with/without data</li>
-    * </ul>
+    * Add behavior triggered when the [[Mono]] terminates, either by completing successfully or with an error.
     *
     * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/doonterminate1.png" alt="">
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/doonterminate1.png" alt="">
     * <p>
     *
     * @param onTerminate the callback to call [[Subscriber.onNext]], [[Subscriber.onComplete]] without preceding [[Subscriber.onNext]] or [[Subscriber.onError]]
     * @return a new [[Mono]]
     */
-  final def doOnTerminate(onTerminate: (T, Throwable) => Unit) = Mono(jMono.doOnTerminate(new BiConsumer[T, Throwable] {
-    override def accept(t: T, u: Throwable): Unit = onTerminate(t, u)
-  }))
+  final def doOnTerminate(onTerminate:() => Unit) = Mono(jMono.doOnTerminate(onTerminate))
 
-  val javaTupleLongAndT2ScalaTupleLongAndT = new Function[Tuple2[JLong, T], (Long, T)] {
+  private val javaTupleLongAndT2ScalaTupleLongAndT = new Function[Tuple2[JLong, T], (Long, T)] {
     override def apply(t: Tuple2[JLong, T]): (Long, T) = (Long2long(t.getT1), t.getT2)
   }
 
@@ -1160,15 +1084,18 @@ class Mono[T] private(private val jMono: JMono[T]) extends Publisher[T] with Map
   final def retryWhen(whenFactory: Flux[Throwable] => Publisher[_]): Mono[T] = Mono[T](jMono.retryWhen(whenFactory))
 
   /**
-    * Start the chain and request unbounded demand.
+    * Subscribe to this [[Mono]] and request unbounded demand.
+    * <p>
+    * This version doesn't specify any consumption behavior for the events from the
+    * chain, especially no error handling, so other variants should usually be preferred.
     *
     * <p>
-    * <img width="500" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/unbounded1.png" alt="">
+    * <img width="500" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/unbounded1.png" alt="">
     * <p>
     *
-    * @return a [[Runnable]] task to execute to dispose and cancel the underlying [[Subscription]]
+    * @return a new [[Disposable]] that can be used to cancel the underlying [[Subscription]]
     */
-  final def subscribe(): MonoProcessor[T] = jMono.subscribe()
+  final def subscribe(): Disposable = jMono.subscribe()
 
   /**
     * Subscribe a [[Consumer]] to this [[Mono]] that will consume all the
@@ -1275,22 +1202,6 @@ class Mono[T] private(private val jMono: JMono[T]) extends Publisher[T] with Map
     * @return a [[Mono]] igoring its payload (actively dropping)
     */
   final def `then`(): Mono[Unit] = Mono[Unit](jMono.`then`())
-
-  /**
-    * Convert the value of [[Mono]] to another [[Mono]] possibly with another value type.
-    *
-    * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/then.png" alt="">
-    * <p>
-    *
-    * @param transformer the function to dynamically bind a new [[Mono]]
-    * @tparam R the result type bound
-    * @return a new [[Mono]] containing the merged values
-    * @note in 3.1.0.M1 this method will be renamed `flatMap`. However, until
-    *          then the behavior of [[Mono.flatMap]] remains the current one, so it is
-    *                                       not yet possible to anticipate this migration.
-    */
-  final def `then`[R](transformer: T => Mono[R]): Mono[R] = Mono[R](jMono.`then`[R](transformer: Function[T, JMono[_ <: R]]))
 
   /**
     * Ignore element from this [[Mono]] and transform its completion signal into the
@@ -1479,30 +1390,6 @@ class Mono[T] private(private val jMono: JMono[T]) extends Publisher[T] with Map
     */
   final def transform[V](transformer: Mono[T] => Publisher[V]): Mono[V] = Mono[V](jMono.transform[V]((_: JMono[T]) => transformer(Mono.this)))
 
-  /**
-    * Subscribe to this Mono and another Publisher, which will be used as a trigger for
-    * the emission of this Mono's element. That is to say, this Mono's element is delayed
-    * until the trigger Publisher emits for the first time (or terminates empty).
-    *
-    * @param anyPublisher the publisher which first emission or termination will trigger
-    *                     the emission of this Mono's value.
-    * @return this Mono, but delayed until the given publisher emits first or terminates.
-    */
-  def untilOther(anyPublisher: Publisher[_]) = Mono(jMono.untilOther(anyPublisher))
-
-  /**
-    * Subscribe to this Mono and another Publisher, which will be used as a trigger for
-    * the emission of this Mono's element, mapped through a provided function.
-    * That is to say, this Mono's element is delayed until the trigger Publisher emits
-    * for the first time (or terminates empty). Any error is delayed until all publishers
-    * have triggered, and multiple errors are combined into one.
-    *
-    * @param anyPublisher the publisher which first emission or termination will trigger
-    *                     the emission of this Mono's value.
-    * @return this Mono, but delayed until the given publisher emits first or terminates.
-    */
-  def untilOtherDelayError(anyPublisher: Publisher[_]) = Mono(jMono.untilOtherDelayError(anyPublisher))
-
   final def asJava(): JMono[T] = jMono
 }
 
@@ -1572,19 +1459,6 @@ object Mono {
     * @return a completed [[Mono]]
     */
   def empty[T]: Mono[T] = Mono[T](JMono.empty())
-
-  /**
-    * Create a new [[Mono]] that ignores onNext (dropping them) and only react on Completion signal.
-    *
-    * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/thens.png" alt="">
-    * <p>
-    *
-    * @param source the [[Publisher to ignore]]
-    * @tparam T the reified [[Publisher]] type
-    * @return a new completable [[Mono]].
-    */
-  def empty[T](source: Publisher[T]): Mono[Unit] = Mono[Unit](JMono.empty(source).map(new Function[Void, Unit] {override def apply(t: Void): Unit = ()}))
 
   /**
     * Create a [[Mono]] that completes with the specified error immediately after onSubscribe.
@@ -1901,172 +1775,6 @@ object Mono {
     }, resourceCleanup))
 
   /**
-    * Merge given monos into a new a `Mono` that will be fulfilled when all of the given `Monos`
-    * have been fulfilled. An error will cause pending results to be cancelled and immediate error emission to the
-    * returned [[Mono]].
-    *
-    * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/whent.png" alt="">
-    * <p>
-    *
-    * @param p1 The first upstream { @link org.reactivestreams.Publisher} to subscribe to.
-    * @param p2 The second upstream { @link org.reactivestreams.Publisher} to subscribe to.
-    * @tparam T1 type of the value from source1
-    * @tparam T2 type of the value from source2
-    * @return a [[Mono]].
-    */
-  def when[T1, T2](p1: Mono[_ <: T1], p2: Mono[_ <: T2]): Mono[(T1, T2)] = {
-    val jMono: JMono[Tuple2[T1, T2]] = JMono.when(p1.jMono, p2.jMono)
-
-    new Mono[(T1, T2)](
-      jMono.map(new Function[Tuple2[T1, T2], (T1, T2)] {
-        override def apply(t: Tuple2[T1, T2]): (T1, T2) = (t.getT1, t.getT2)
-      })
-    )
-  }
-
-  /**
-    * Merge given monos into a new a `Mono` that will be fulfilled when all of the given `Monos`
-    * have been fulfilled. An error will cause pending results to be cancelled and immediate error emission to the
-    * returned [[Mono]].
-    *
-    * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/whent.png" alt="">
-    * <p>
-    *
-    * @param p1         The first upstream { @link org.reactivestreams.Publisher} to subscribe to.
-    * @param p2         The second upstream { @link org.reactivestreams.Publisher} to subscribe to.
-    * @param combinator a [[scala.Function2]] combinator function when both sources
-    *                   complete
-    * @tparam T1 type of the value from source1
-    * @tparam T2 type of the value from source2
-    * @tparam O  output value
-    * @return a [[Mono]].
-    */
-  def when[T1, T2, O](p1: Mono[_ <: T1], p2: Mono[_ <: T2], combinator: (T1, T2) => O): Mono[O] = {
-    val jMono: JMono[O] = JMono.when(p1.jMono, p2.jMono, new BiFunction[T1, T2, O] {
-      override def apply(t: T1, u: T2): O = combinator(t, u)
-    })
-    new Mono[O](jMono)
-  }
-
-  /**
-    * Merge given monos into a new a `Mono` that will be fulfilled when all of the given `Monos`
-    * have been fulfilled. An error will cause pending results to be cancelled and immediate error emission to the
-    * returned [[Mono]].
-    *
-    * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/whent.png" alt="">
-    * <p>
-    *
-    * @param p1 The first upstream { @link org.reactivestreams.Publisher} to subscribe to.
-    * @param p2 The second upstream { @link org.reactivestreams.Publisher} to subscribe to.
-    * @param p3 The third upstream { @link org.reactivestreams.Publisher} to subscribe to.
-    * @tparam T1 type of the value from source1
-    * @tparam T2 type of the value from source2
-    * @tparam T3 type of the value from source3
-    * @return a { @link Mono}.
-    */
-  def when[T1, T2, T3](p1: Mono[_ <: T1], p2: Mono[_ <: T2], p3: Mono[_ <: T3]): Mono[(T1, T2, T3)] = {
-    val jMono: JMono[Tuple3[T1, T2, T3]] = JMono.when(p1.jMono, p2.jMono, p3.jMono)
-    new Mono[(T1, T2, T3)](
-      jMono.map(new Function[Tuple3[T1, T2, T3], (T1, T2, T3)] {
-        override def apply(t: Tuple3[T1, T2, T3]): (T1, T2, T3) = (t.getT1, t.getT2, t.getT3)
-      })
-    )
-  }
-
-  /**
-    * Merge given monos into a new a `Mono` that will be fulfilled when all of the given `Monos`
-    * have been fulfilled. An error will cause pending results to be cancelled and immediate error emission to the
-    * returned [[Mono]].
-    *
-    * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/whent.png" alt="">
-    * <p>
-    *
-    * @param p1 The first upstream { @link org.reactivestreams.Publisher} to subscribe to.
-    * @param p2 The second upstream { @link org.reactivestreams.Publisher} to subscribe to.
-    * @param p3 The third upstream { @link org.reactivestreams.Publisher} to subscribe to.
-    * @param p4 The fourth upstream { @link org.reactivestreams.Publisher} to subscribe to.
-    * @tparam T1 type of the value from source1
-    * @tparam T2 type of the value from source2
-    * @tparam T3 type of the value from source3
-    * @tparam T4 type of the value from source4
-    * @return a { @link Mono}.
-    */
-  def when[T1, T2, T3, T4](p1: Mono[_ <: T1], p2: Mono[_ <: T2], p3: Mono[_ <: T3], p4: Mono[_ <: T4]): Mono[(T1, T2, T3, T4)] = {
-    val jMono: JMono[Tuple4[T1, T2, T3, T4]] = JMono.when(p1.jMono, p2.jMono, p3.jMono, p4.jMono)
-    new Mono[(T1, T2, T3, T4)](
-      jMono.map(new Function[Tuple4[T1, T2, T3, T4], (T1, T2, T3, T4)] {
-        override def apply(t: Tuple4[T1, T2, T3, T4]): (T1, T2, T3, T4) = (t.getT1, t.getT2, t.getT3, t.getT4)
-      })
-    )
-  }
-
-  /**
-    * Merge given monos into a new a `Mono` that will be fulfilled when all of the given `Monos`
-    * have been fulfilled. An error will cause pending results to be cancelled and immediate error emission to the
-    * returned [[Mono]].
-    *
-    * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/whent.png" alt="">
-    * <p>
-    *
-    * @param p1 The first upstream [[org.reactivestreams.Publisher]] to subscribe to.
-    * @param p2 The second upstream [[org.reactivestreams.Publisher]] to subscribe to.
-    * @param p3 The third upstream [[org.reactivestreams.Publisher]] to subscribe to.
-    * @param p4 The fourth upstream [[org.reactivestreams.Publisher]] to subscribe to.
-    * @param p5 The fifth upstream [[org.reactivestreams.Publisher]] to subscribe to.
-    * @tparam T1 type of the value from source1
-    * @tparam T2 type of the value from source2
-    * @tparam T3 type of the value from source3
-    * @tparam T4 type of the value from source4
-    * @tparam T5 type of the value from source5
-    * @return a [[Mono]].
-    */
-  def when[T1, T2, T3, T4, T5](p1: Mono[_ <: T1], p2: Mono[_ <: T2], p3: Mono[_ <: T3], p4: Mono[_ <: T4], p5: Mono[_ <: T5]): Mono[(T1, T2, T3, T4, T5)] = {
-    val jMono: JMono[Tuple5[T1, T2, T3, T4, T5]] = JMono.when(p1.jMono, p2.jMono, p3.jMono, p4.jMono, p5.jMono)
-    new Mono[(T1, T2, T3, T4, T5)](
-      jMono.map(new Function[Tuple5[T1, T2, T3, T4, T5], (T1, T2, T3, T4, T5)] {
-        override def apply(t: Tuple5[T1, T2, T3, T4, T5]): (T1, T2, T3, T4, T5) = (t.getT1, t.getT2, t.getT3, t.getT4, t.getT5)
-      })
-    )
-  }
-
-  /**
-    * Merge given monos into a new a `Mono` that will be fulfilled when all of the given `Monos`
-    * have been fulfilled. An error will cause pending results to be cancelled and immediate error emission to the
-    * returned [[Mono]].
-    *
-    * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/whent.png" alt="">
-    * <p>
-    *
-    * @param p1 The first upstream [[org.reactivestreams.Publisher]] to subscribe to.
-    * @param p2 The second upstream [[org.reactivestreams.Publisher]] to subscribe to.
-    * @param p3 The third upstream [[org.reactivestreams.Publisher]] to subscribe to.
-    * @param p4 The fourth upstream [[org.reactivestreams.Publisher]] to subscribe to.
-    * @param p5 The fifth upstream [[org.reactivestreams.Publisher]] to subscribe to.
-    * @param p6 The sixth upstream [[org.reactivestreams.Publisher]] to subscribe to.
-    * @tparam T1 type of the value from source1
-    * @tparam T2 type of the value from source2
-    * @tparam T3 type of the value from source3
-    * @tparam T4 type of the value from source4
-    * @tparam T5 type of the value from source5
-    * @tparam T6 type of the value from source6
-    * @return a [[Mono]].
-    */
-  def when[T1, T2, T3, T4, T5, T6](p1: Mono[_ <: T1], p2: Mono[_ <: T2], p3: Mono[_ <: T3], p4: Mono[_ <: T4], p5: Mono[_ <: T5], p6: Mono[_ <: T6]): Mono[(T1, T2, T3, T4, T5, T6)] = {
-    val jMono: JMono[Tuple6[T1, T2, T3, T4, T5, T6]] = JMono.when(p1.jMono, p2.jMono, p3.jMono, p4.jMono, p5.jMono, p6.jMono)
-    new Mono[(T1, T2, T3, T4, T5, T6)](
-      jMono.map(new Function[Tuple6[T1, T2, T3, T4, T5, T6], (T1, T2, T3, T4, T5, T6)] {
-        override def apply(t: Tuple6[T1, T2, T3, T4, T5, T6]): (T1, T2, T3, T4, T5, T6) = (t.getT1, t.getT2, t.getT3, t.getT4, t.getT5, t.getT6)
-      })
-    )
-  }
-
-  /**
     * Aggregate given void publishers into a new a `Mono` that will be
     * fulfilled when all of the given `Monos` have been fulfilled. If any Mono terminates without value,
     * the returned sequence will be terminated immediately and pending results cancelled.
@@ -2085,210 +1793,18 @@ object Mono {
   }
 
   /**
-    * Aggregate given monos into a new a `Mono` that will be fulfilled when all of the given `Monos` have been fulfilled.
-    * If any Mono terminates without value, the returned sequence will be terminated immediately and pending results cancelled.
-    *
+    * Aggregate given publishers into a new `Mono` that will be fulfilled
+    * when all of the given `sources` have been fulfilled. An error will cause
+    * pending results to be cancelled and immediate error emission to the returned [[Mono]].
     * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/whent.png" alt="">
-    * <p>
-    *
-    * @param monos      The monos to use.
-    * @param combinator the function to transform the combined array into an arbitrary
-    *                   object.
-    * @tparam           R the combined result
-    * @return a [[Mono]].
-    */
-  def when[R](monos: Iterable[_ <: Mono[Any]], combinator: (Array[Any] => R)): Mono[R] = {
-    val combinatorFunction: Function[_ >: Array[Object], _ <: R] = new Function[Array[Object], R] {
-      override def apply(t: Array[Object]): R = {
-        val v: Array[Any] = t.map { v => v: Any }
-        combinator(v)
-      }
-    }
-    val jMonos = monos.map(_.jMono.map(new Function[Any, Object] {
-      override def apply(t: Any): Object = t.asInstanceOf[Object]
-    })).asJava
-
-    new Mono[R](
-      JMono.when(jMonos, combinatorFunction)
-    )
-  }
-
-  /**
-    * Aggregate given void publishers into a new a `Mono` that will be
-    * fulfilled when all of the given `Monos` have been fulfilled. If any Mono terminates without value,
-    * the returned sequence will be terminated immediately and pending results cancelled.
-    *
-    * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/whent.png" alt="">
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/whent.png" alt="">
     * <p>
     *
     * @param sources The sources to use.
     * @return a [[Mono]].
     */
-  def when(sources: (Publisher[Unit] with MapablePublisher[Unit])*): Mono[Unit] = {
-    new Mono[Unit](
-      JMono.when(sources.map(s => s.map((T: Unit) => None.orNull: Void)).asJava).map((_: Void) => ())
-    )
-  }
-
-  /**
-    * Aggregate given monos into a new a `Mono` that will be fulfilled when all of the given `Monos` have been fulfilled.
-    * An error will cause pending results to be cancelled and immediate error emission to the
-    * returned [[Mono]].
-    * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/whent.png" alt="">
-    * <p>
-    *
-    * @param monos      The monos to use.
-    * @param combinator the function to transform the combined array into an arbitrary
-    *                   object.
-    * @tparam           R the combined result
-    * @return a [[Mono]].
-    */
-  def when[R](combinator: (Array[Any] => R), monos: Mono[Any]*): Mono[R] = {
-    val combinatorFunction: Function[_ >: Array[Object], _ <: R] = new Function[Array[Object], R] {
-      override def apply(t: Array[Object]): R = {
-        val v: Array[Any] = t.map { v => v: Any }
-        combinator(v)
-      }
-    }
-    val jMonos = monos.map(_.jMono.map(new Function[Any, Object] {
-      override def apply(t: Any): Object = t.asInstanceOf[Object]
-    }))
-
-    new Mono[R](
-      JMono.when(combinatorFunction, jMonos.toArray: _*)
-    )
-  }
-
-  /**
-    * Merge given monos into a new a `Mono` that will be fulfilled when all of the given `Monos`
-    * have been fulfilled.
-    *
-    * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/whent.png" alt="">
-    * <p>
-    *
-    * @param p1 The first upstream [[Publisher]] to subscribe to.
-    * @param p2 The second upstream [[Publisher]] to subscribe to.
-    * @tparam T1 type of the value from source1
-    * @tparam T2 type of the value from source2
-    * @return a [[Mono]].
-    */
-  def whenDelayError[T1, T2](p1: Mono[_ <: T1], p2: Mono[_ <: T2]): Mono[(T1, T2)] = {
-    val jMono = JMono.whenDelayError[T1, T2](p1.jMono, p2.jMono)
-    new Mono[(T1, T2)](
-      jMono.map(new Function[Tuple2[T1, T2], (T1, T2)] {
-        override def apply(t: Tuple2[T1, T2]): (T1, T2) = tupleTwo2ScalaTuple2(t)
-      })
-    )
-  }
-
-  /**
-    * Merge given monos into a new a `Mono` that will be fulfilled when all of the given `Monos`
-    * have been fulfilled.
-    *
-    * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/whent.png" alt="">
-    * <p>
-    *
-    * @param p1 The first upstream [[Publisher]] to subscribe to.
-    * @param p2 The second upstream [[Publisher]] to subscribe to.
-    * @param p3 The third upstream [[Publisher]] to subscribe to.
-    * @tparam T1 type of the value from source1
-    * @tparam T2 type of the value from source2
-    * @tparam T3 type of the value from source3
-    * @return a [[Mono]].
-    */
-  def whenDelayError[T1, T2, T3](p1: Mono[_ <: T1], p2: Mono[_ <: T2], p3: Mono[_ <: T3]): Mono[(T1, T2, T3)] = {
-    new Mono[(T1, T2, T3)](
-      JMono.whenDelayError[T1, T2, T3](p1.jMono, p2.jMono, p3.jMono).map(new Function[Tuple3[T1, T2, T3], (T1, T2, T3)] {
-        override def apply(t: Tuple3[T1, T2, T3]): (T1, T2, T3) = tupleThree2ScalaTuple3(t)
-      })
-    )
-  }
-
-  /**
-    * Merge given monos into a new a `Mono` that will be fulfilled when all of the given `Monos`
-    * have been fulfilled.
-    *
-    * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/whent.png" alt="">
-    * <p>
-    *
-    * @param p1 The first upstream [[Publisher]] to subscribe to.
-    * @param p2 The second upstream [[Publisher]] to subscribe to.
-    * @param p3 The third upstream [[Publisher]] to subscribe to.
-    * @param p4 The fourth upstream [[Publisher]] to subscribe to.
-    * @tparam T1 type of the value from source1
-    * @tparam T2 type of the value from source2
-    * @tparam T3 type of the value from source3
-    * @tparam T4 type of the value from source4
-    * @return a [[Mono]].
-    */
-  def whenDelayError[T1, T2, T3, T4](p1: Mono[_ <: T1], p2: Mono[_ <: T2], p3: Mono[_ <: T3], p4: Mono[_ <: T4]): Mono[(T1, T2, T3, T4)] = {
-    new Mono[(T1, T2, T3, T4)](
-      JMono.whenDelayError[T1, T2, T3, T4](p1.jMono, p2.jMono, p3.jMono, p4.jMono).map(new Function[Tuple4[T1, T2, T3, T4], (T1, T2, T3, T4)] {
-        override def apply(t: Tuple4[T1, T2, T3, T4]): (T1, T2, T3, T4) = tupleFour2ScalaTuple4(t)
-      })
-    )
-  }
-
-  /**
-    * Merge given monos into a new a `Mono` that will be fulfilled when all of the given `Monos`
-    * have been fulfilled.
-    *
-    * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/whent.png" alt="">
-    * <p>
-    *
-    * @param p1 The first upstream [[Publisher]] to subscribe to.
-    * @param p2 The second upstream [[Publisher]] to subscribe to.
-    * @param p3 The third upstream [[Publisher]] to subscribe to.
-    * @param p4 The fourth upstream [[Publisher]] to subscribe to.
-    * @param p5 The fifth upstream [[Publisher]] to subscribe to.
-    * @tparam T1 type of the value from source1
-    * @tparam T2 type of the value from source2
-    * @tparam T3 type of the value from source3
-    * @tparam T4 type of the value from source4
-    * @tparam T5 type of the value from source5
-    * @return a [[Mono]].
-    */
-  def whenDelayError[T1, T2, T3, T4, T5](p1: Mono[_ <: T1], p2: Mono[_ <: T2], p3: Mono[_ <: T3], p4: Mono[_ <: T4], p5: Mono[_ <: T5]): Mono[(T1, T2, T3, T4, T5)] = {
-    new Mono[(T1, T2, T3, T4, T5)](
-      JMono.whenDelayError[T1, T2, T3, T4, T5](p1.jMono, p2.jMono, p3.jMono, p4.jMono, p5.jMono).map(new Function[Tuple5[T1, T2, T3, T4, T5], (T1, T2, T3, T4, T5)] {
-        override def apply(t: Tuple5[T1, T2, T3, T4, T5]): (T1, T2, T3, T4, T5) = tupleFive2ScalaTuple5(t)
-      })
-    )
-  }
-
-  /**
-    * Merge given monos into a new a `Mono` that will be fulfilled when all of the given `Monos`
-    * have been fulfilled.
-    *
-    * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/whent.png" alt="">
-    * <p>
-    *
-    * @param p1 The first upstream [[Publisher]] to subscribe to.
-    * @param p2 The second upstream [[Publisher]] to subscribe to.
-    * @param p3 The third upstream [[Publisher]] to subscribe to.
-    * @param p4 The fourth upstream [[Publisher]] to subscribe to.
-    * @param p5 The fifth upstream [[Publisher]] to subscribe to.
-    * @param p6 The sixth upstream [[Publisher]] to subscribe to.
-    * @tparam T1 type of the value from source1
-    * @tparam T2 type of the value from source2
-    * @tparam T3 type of the value from source3
-    * @tparam T4 type of the value from source4
-    * @tparam T5 type of the value from source5
-    * @tparam T6 type of the value from source6
-    * @return a [[Mono]].
-    */
-  def whenDelayError[T1, T2, T3, T4, T5, T6](p1: Mono[_ <: T1], p2: Mono[_ <: T2], p3: Mono[_ <: T3], p4: Mono[_ <: T4], p5: Mono[_ <: T5], p6: Mono[_ <: T6]): Mono[(T1, T2, T3, T4, T5, T6)] = Mono[(T1, T2, T3, T4, T5, T6)](
-    JMono.whenDelayError[T1, T2, T3, T4, T5, T6](p1.jMono, p2.jMono, p3.jMono, p4.jMono, p5.jMono, p6.jMono).map(new Function[Tuple6[T1, T2, T3, T4, T5, T6], (T1, T2, T3, T4, T5, T6)] {
-      override def apply(t: Tuple6[T1, T2, T3, T4, T5, T6]): (T1, T2, T3, T4, T5, T6) = tupleSix2ScalaTuple6(t)
-    })
+  def when(sources: (Publisher[Unit] with MapablePublisher[Unit])*): Mono[Unit] = Mono[Unit](
+    JMono.when(sources.map(s => s.map((_: Unit) => None.orNull: Void)).asJava).map((_: Void) => ())
   )
 
   /**
@@ -2308,33 +1824,6 @@ object Mono {
   def whenDelayError(sources: Iterable[_ <: Publisher[Unit] with MapablePublisher[Unit]]): Mono[Unit] = Mono[Unit](
     JMono.whenDelayError(sources.map(s => s.map((t: Unit) => None.orNull: Void)).asJava).map((_: Void) => ())
   )
-
-  /**
-    * Aggregate given monos into a new a `Mono` that will be fulfilled when all of the given `Monos`
-    * have been fulfilled. If any Mono terminates without value, the returned sequence will be terminated
-    * immediately and pending results cancelled. If several Monos error, the exceptions are combined (suppressed
-    * into a combining exception).
-    *
-    * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/whent.png" alt="">
-    * <p>
-    *
-    * @param monos      The monos to use.
-    * @param combinator the function to transform the combined array into an arbitrary
-    *                   object.
-    * @tparam R the combined result
-    * @return a [[Mono]].
-    */
-  def whenDelayError[R](monos: Iterable[_ <: Mono[_]], combinator: (Array[Any] => _ <: R)): Mono[R] ={
-    val combinatorFunction = new Function[Array[Object], R] {
-      override def apply(t: Array[Object]): R = {
-        val v = t.map { v => v: Any }
-        combinator(v)
-      }
-    }
-    val jMonos: JIterable[JMono[_]] = monos.map(_.asJava()).asJava
-    Mono(JMono.whenDelayError[R](jMonos, combinatorFunction))
-  }
 
   /**
     * Merge given void publishers into a new a `Mono` that will be fulfilled
@@ -2367,7 +1856,7 @@ object Mono {
     * @tparam R the combined result
     * @return a combined [[Mono]].
     */
-  def whenDelayError[R](combinator: (Array[Any] => R), monos: Mono[Any]*): Mono[R] = {
+  def zipDelayError[R](combinator: (Array[Any] => R), monos: Mono[Any]*): Mono[R] = {
     val combinatorFunction = new Function[Array[Object], R] {
       override def apply(t: Array[Object]): R = {
         val v = t.map { v => v: Any }
@@ -2378,55 +1867,212 @@ object Mono {
       override def apply(t: Any): Object = t.asInstanceOf[Object]
     }))
 
-    Mono[R](JMono.whenDelayError(combinatorFunction, jMonos.toArray: _*))
+    Mono[R](JMono.zipDelayError(combinatorFunction, jMonos.toArray: _*))
   }
 
   /**
-    * Aggregate given monos into a new a `Mono` that will be fulfilled when all of the given `Monos` have been fulfilled.
+    * Aggregate given monos into a new `Mono` that will be fulfilled when all of the given `Monos` have been fulfilled,
+    * aggregating their values according to the provided combinator function.
     * If any Mono terminates without value, the returned sequence will be terminated immediately and pending results cancelled.
     *
     * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/zip1.png" alt="">
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/whent.png" alt="">
     * <p>
     *
-    * @param combinator the combinator [[scala.Function]]
     * @param monos      The monos to use.
-    * @tparam T The super incoming type
-    * @tparam V The type of the function result.
+    * @param combinator the function to transform the combined array into an arbitrary
+    *                   object.
+    * @tparam R the combined result
     * @return a [[Mono]].
     */
-  def zip[T, V](combinator: (Array[AnyRef] => V), monos: Mono[_ <: T]*): Mono[V] = {
-    val jMonos = monos.map(_.jMono)
-    new Mono[V](
-      JMono.zip(combinator, jMonos.toArray: _*)
-    )
-  }
-
-  /**
-    * Aggregate given monos into a new a `Mono` that will be fulfilled when all of the given `Monos` have been fulfilled.
-    * If any Mono terminates without value, the returned sequence will be terminated immediately and pending results cancelled.
-    *
-    * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/zip1.png" alt="">
-    * <p>
-    *
-    * @param combinator the combinator [[scala.Function]]
-    * @param monos      The monos to use.
-    * @tparam T The type of the function result.
-    * @tparam V The result type
-    * @return a [[Mono]].
-    */
-  def zip[T, V](combinator: (Array[AnyRef] => V), monos: Iterable[Mono[_ <: T]]): Mono[V] = {
-    val combinatorFunction = new Function[Array[Object], V] {
-      override def apply(t: Array[Object]): V = {
-        //the reason we do the following is because the underlying reactor is by default allocating 8 elements with null, so we need to get rid of null
-        val v = t.map { v => Option(v): Option[AnyRef] }.filterNot(_.isEmpty).map(_.getOrElse(None.orNull))
+  def whenDelayError[R](combinator: (Array[Any] => R), monos: Mono[Any]*): Mono[R] = {
+    val combinatorFunction = new Function[Array[Object], R] {
+      override def apply(t: Array[Object]): R = {
+        val v = t.map { v => v: Any }
         combinator(v)
       }
     }
-    val jMonos = monos.map(_.jMono).asJava.asInstanceOf[JIterable[JMono[T]]]
-    new Mono[V](
-      JMono.zip(combinatorFunction, jMonos)
+    Mono[R](JMono.zip(monos.map(_.jMono.map((t: Any) => t.asInstanceOf[Object])).asJava, combinatorFunction))
+  }
+
+  /**
+    * Aggregate given monos into a new `Mono` that will be fulfilled when all of the given `Monos` have been fulfilled,
+    * aggregating their values according to the provided combinator function.
+    * If any Mono terminates without value, the returned sequence will be terminated immediately and pending results cancelled.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/whent.png" alt="">
+    * <p>
+    *
+    * @param monos      The monos to use.
+    * @param combinator the function to transform the combined array into an arbitrary
+    *                   object.
+    * @tparam R the combined result
+    * @return a [[Mono]].
+    */
+  def zip[R](monos: Iterable[_ <: Mono[_]], combinator: (Array[AnyRef] => R)): Mono[R] =
+    Mono[R](JMono.zip(monos.map(_.jMono).asJava.asInstanceOf[JIterable[JMono[R]]], new Function[Array[Object], R] {
+    override def apply(t: Array[Object]) = combinator(t.map { v => Option(v): Option[AnyRef] }.filterNot(_.isEmpty).map(_.getOrElse(None.orNull)))
+  }))
+
+  /**
+    * Aggregate given monos into a new `Mono` that will be fulfilled when all of the given `Monos` have been fulfilled,
+    * aggregating their values according to the provided combinator function.
+    * An error will cause pending results to be cancelled and immediate error emission to the
+    * returned [[Mono]].
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/whent.png" alt="">
+    * <p>
+    *
+    * @param monos      The monos to use.
+    * @param combinator the function to transform the combined array into an arbitrary
+    *                   object.
+    * @tparam R the combined result
+    * @return a [[Mono]].
+    */
+  def zip[R](combinator: (Array[AnyRef] => R), monos: Mono[_]*): Mono[R] = Mono[R](JMono.zip(combinator, monos.map(_.jMono).toArray: _*))
+
+  /**
+    * Merge given monos into a new `Mono` that will be fulfilled when all of the given `Monos`
+    * have been fulfilled, aggregating their values into a [[Tuple2]] and delaying errors.
+    * If both Monos error, the two exceptions are combined (as suppressed exceptions on a root exception).
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/whent.png" alt="">
+    * <p>
+    *
+    * @param p1 The first upstream { @link Publisher} to subscribe to.
+    * @param p2 The second upstream { @link Publisher} to subscribe to.
+    * @tparam T1 type of the value from source1
+    * @tparam T2 type of the value from source2
+    * @return a [[Mono]].
+    */
+  def zipDelayError[T1, T2](p1: Mono[_ <: T1], p2: Mono[_ <: T2]): Mono[(T1, T2)] = {
+    Mono[(T1, T2)](JMono.zipDelayError[T1, T2](p1.jMono, p2.jMono).map((t: Tuple2[T1, T2]) => tupleTwo2ScalaTuple2(t)))
+  }
+
+  /**
+    * Merge given monos into a new `Mono` that will be fulfilled when all of the given `Monos`
+    * have been fulfilled, aggregating their values into a [[Tuple3]] and delaying errors.
+    * If several Monos error, the two exceptions are combined (as suppressed exceptions on a root exception).
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/whent.png" alt="">
+    * <p>
+    *
+    * @param p1 The first upstream [[Publisher]] to subscribe to.
+    * @param p2 The second upstream [[Publisher]] to subscribe to.
+    * @param p3 The third upstream [[Publisher]] to subscribe to.
+    * @tparam T1 type of the value from source1
+    * @tparam T2 type of the value from source2
+    * @tparam T3 type of the value from source3
+    * @return a [[Mono]].
+    */
+  def zipDelayError[T1, T2, T3](p1: Mono[_ <: T1], p2: Mono[_ <: T2], p3: Mono[_ <: T3]): Mono[(T1, T2, T3)] = {
+    Mono[(T1, T2, T3)](JMono.zipDelayError[T1, T2, T3](p1.jMono, p2.jMono, p3.jMono).map((t: Tuple3[T1, T2, T3]) => tupleThree2ScalaTuple3(t)))
+  }
+
+  /**
+    * Merge given monos into a new `Mono` that will be fulfilled when all of the given `Monos`
+    * have been fulfilled, aggregating their values into a [[Tuple4]] and delaying errors.
+    * If several Monos error, the two exceptions are combined (as suppressed exceptions on a root exception).
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/whent.png" alt="">
+    * <p>
+    *
+    * @param p1 The first upstream [[Publisher]] to subscribe to.
+    * @param p2 The second upstream [[Publisher]] to subscribe to.
+    * @param p3 The third upstream [[Publisher]] to subscribe to.
+    * @param p4 The fourth upstream [[Publisher]] to subscribe to.
+    * @tparam T1 type of the value from source1
+    * @tparam T2 type of the value from source2
+    * @tparam T3 type of the value from source3
+    * @tparam T4 type of the value from source4
+    * @return a [[Mono]].
+    */
+  def zipDelayError[T1, T2, T3, T4](p1: Mono[_ <: T1], p2: Mono[_ <: T2], p3: Mono[_ <: T3], p4: Mono[_ <: T4]): Mono[(T1, T2, T3, T4)] = {
+    Mono[(T1, T2, T3, T4)](
+      JMono.zipDelayError[T1, T2, T3, T4](p1.jMono, p2.jMono, p3.jMono, p4.jMono).map((t: Tuple4[T1, T2, T3, T4]) => tupleFour2ScalaTuple4(t))
     )
+  }
+
+  /**
+    * Merge given monos into a new `Mono` that will be fulfilled when all of the given `Monos`
+    * have been fulfilled, aggregating their values into a [[Tuple5]] and delaying errors.
+    * If several Monos error, the two exceptions are combined (as suppressed exceptions on a root exception).
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/whent.png" alt="">
+    * <p>
+    *
+    * @param p1 The first upstream [[Publisher]] to subscribe to.
+    * @param p2 The second upstream [[Publisher]] to subscribe to.
+    * @param p3 The third upstream [[Publisher]] to subscribe to.
+    * @param p4 The fourth upstream [[Publisher]] to subscribe to.
+    * @param p5 The fifth upstream [[Publisher]] to subscribe to.
+    * @tparam T1 type of the value from source1
+    * @tparam T2 type of the value from source2
+    * @tparam T3 type of the value from source3
+    * @tparam T4 type of the value from source4
+    * @tparam T5 type of the value from source5
+    * @return a [[Mono]].
+    */
+  def zipDelayError[T1, T2, T3, T4, T5](p1: Mono[_ <: T1], p2: Mono[_ <: T2], p3: Mono[_ <: T3], p4: Mono[_ <: T4], p5: Mono[_ <: T5]): Mono[(T1, T2, T3, T4, T5)] = {
+    new Mono[(T1, T2, T3, T4, T5)](
+      JMono.zipDelayError[T1, T2, T3, T4, T5](p1.jMono, p2.jMono, p3.jMono, p4.jMono, p5.jMono).map((t: Tuple5[T1, T2, T3, T4, T5]) => tupleFive2ScalaTuple5(t))
+    )
+  }
+
+  /**
+    * Merge given monos into a new `Mono` that will be fulfilled when all of the given `Monos`
+    * have been fulfilled, aggregating their values into a [[Tuple6]] and delaying errors.
+    * If several Monos error, the two exceptions are combined (as suppressed exceptions on a root exception).
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/whent.png" alt="">
+    * <p>
+    *
+    * @param p1 The first upstream [[Publisher]] to subscribe to.
+    * @param p2 The second upstream [[Publisher]] to subscribe to.
+    * @param p3 The third upstream [[Publisher]] to subscribe to.
+    * @param p4 The fourth upstream [[Publisher]] to subscribe to.
+    * @param p5 The fifth upstream [[Publisher]] to subscribe to.
+    * @param p6 The sixth upstream [[Publisher]] to subscribe to.
+    * @tparam T1 type of the value from source1
+    * @tparam T2 type of the value from source2
+    * @tparam T3 type of the value from source3
+    * @tparam T4 type of the value from source4
+    * @tparam T5 type of the value from source5
+    * @tparam T6 type of the value from source6
+    * @return a [[Mono]].
+    */
+  def zipDelayError[T1, T2, T3, T4, T5, T6](p1: Mono[_ <: T1], p2: Mono[_ <: T2], p3: Mono[_ <: T3], p4: Mono[_ <: T4], p5: Mono[_ <: T5], p6: Mono[_ <: T6]): Mono[(T1, T2, T3, T4, T5, T6)] = Mono[(T1, T2, T3, T4, T5, T6)](
+    JMono.zipDelayError[T1, T2, T3, T4, T5, T6](p1.jMono, p2.jMono, p3.jMono, p4.jMono, p5.jMono, p6.jMono).map((t: Tuple6[T1, T2, T3, T4, T5, T6]) => tupleSix2ScalaTuple6(t))
+  )
+
+  /**
+    * Aggregate given monos into a new a `Mono` that will be fulfilled when all of the given `Monos`
+    * have been fulfilled. If any Mono terminates without value, the returned sequence will be terminated
+    * immediately and pending results cancelled. If several Monos error, the exceptions are combined (suppressed
+    * into a combining exception).
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/whent.png" alt="">
+    * <p>
+    *
+    * @param monos      The monos to use.
+    * @param combinator the function to transform the combined array into an arbitrary
+    *                   object.
+    * @tparam R the combined result
+    * @return a [[Mono]].
+    */
+  def zipDelayError[R](monos: Iterable[_ <: Mono[_]], combinator: (Array[AnyRef] => _ <: R)): Mono[R] ={
+    Mono(JMono.zipDelayError[R](monos.map(_.asJava()).asJava, new Function[Array[Object], R] {
+      override def apply(t: Array[Object]): R = {
+        val v = t.map { v => v: AnyRef }
+        combinator(v)
+      }
+    }))
   }
 }

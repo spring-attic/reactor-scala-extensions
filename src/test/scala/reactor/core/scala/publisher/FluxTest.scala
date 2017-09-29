@@ -14,7 +14,7 @@ import reactor.core.publisher.{GroupedFlux => JGroupedFlux, _}
 import reactor.core.scheduler.Schedulers
 import reactor.test.StepVerifier
 import reactor.test.scheduler.VirtualTimeScheduler
-import reactor.util.concurrent.QueueSupplier
+import reactor.util.concurrent.Queues
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
@@ -222,15 +222,15 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       }
     }
 
-    ".firstEmitting" - {
+    ".first" - {
       "with varargs of publisher should create Flux based on the publisher that emit first onNext or onComplete or onError" in {
-        val flux = Flux.firstEmitting(Mono.delay(10 seconds), Mono.just(1L))
+        val flux: Flux[Long] = Flux.first(Mono.delay(Duration("10 seconds")), Mono.just[Long](1L))
         StepVerifier.create(flux)
           .expectNext(1)
           .verifyComplete()
       }
-      "with iterable of publisher should create Flux based on the publiher that first emit onNext or onComplete or onError" in {
-        val flux = Flux.firstEmitting(Iterable(Mono.delay(Duration("10 seconds")), Mono.just(1L)))
+      "with iterable of publisher should create Flux based on the publisher that first emit onNext or onComplete or onError" in {
+        val flux: Flux[Long] = Flux.first(Iterable(Mono.delay(Duration("10 seconds")), Mono.just(1L)))
         StepVerifier.create(flux)
           .expectNext(1)
           .verifyComplete()
@@ -657,7 +657,7 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       "with timespan should split values every timespan" in {
         StepVerifier.withVirtualTime(() => Flux.interval(1 second).take(5).buffer(1500 milliseconds))
           .thenAwait(5 seconds)
-          .expectNext(Seq(0), Seq(1), Seq(2, 3), Seq(4))
+          .expectNext(Seq(0L), Seq(1L), Seq(2L, 3L), Seq(4L))
           .verifyComplete()
       }
 
@@ -702,7 +702,7 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       "with maxSize and duration should aplit values every duration or after maximum has been reached" in {
         StepVerifier.withVirtualTime(() => Flux.interval(1 second).take(5).bufferTimeout(1, 1500 milliseconds))
           .thenAwait(5 seconds)
-          .expectNext(Seq(0), Seq(1), Seq(2), Seq(3), Seq(4))
+          .expectNext(Seq(0l), Seq(1l), Seq(2l), Seq(3l), Seq(4l))
           .verifyComplete()
       }
     }
@@ -711,13 +711,13 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       "should buffer until predicate expression returns true" in {
         StepVerifier.withVirtualTime(() => Flux.interval(1 second).take(5).bufferUntil(l => l % 3 == 0))
           .thenAwait(5 seconds)
-          .expectNext(Seq(0), Seq(1, 2, 3), Seq(4))
+          .expectNext(Seq(0l), Seq(1l, 2l, 3l), Seq(4l))
           .verifyComplete()
       }
       "with cutBefore should control if the value that trigger the predicate be included in the previous or after sequence" in {
         StepVerifier.withVirtualTime(() => Flux.interval(1 second).take(5).bufferUntil(l => l % 3 == 0, cutBefore = true))
           .thenAwait(5 seconds)
-          .expectNext(Seq(0, 1, 2), Seq(3, 4))
+          .expectNext(Seq(0L, 1L, 2L), Seq(3L, 4L))
           .verifyComplete()
       }
     }
@@ -749,7 +749,7 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
     ".bufferWhile should buffer while the predicate is true" in {
       StepVerifier.withVirtualTime(() => Flux.interval(1 second).take(10).bufferWhile(l => l % 2 == 0 || l % 3 == 0))
         .thenAwait(10 seconds)
-        .expectNext(Seq(0), Seq(2, 3, 4), Seq(6), Seq(8, 9))
+        .expectNext(Seq(0L), Seq(2L, 3L, 4L), Seq(6L), Seq(8L, 9L))
         .verifyComplete()
     }
 
@@ -941,7 +941,7 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       try {
         StepVerifier.withVirtualTime(() => Flux.just(1, 2, 3).delayElements(1 second).elapsed())
           .thenAwait(3 seconds)
-          .expectNext((1000, 1), (1000, 2), (1000, 3))
+          .expectNext((1000L, 1), (1000L, 2), (1000L, 3))
           .verifyComplete()
       } finally {
         VirtualTimeScheduler.reset()
@@ -1230,7 +1230,7 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
     }
 
     ".firstEmittingWith should emit from the fastest first sequence" in {
-      val flux = Flux.just(10, 20, 30).firstEmittingWith(Flux.just(1, 2, 3).delayElements(1 second))
+      val flux = Flux.just(10, 20, 30).or(Flux.just(1, 2, 3).delayElements(1 second))
       StepVerifier.create(flux)
         .expectNext(10, 20, 30)
         .verifyComplete()
@@ -1545,7 +1545,7 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
     ".materialize should convert the flux into a flux that emit its signal" in {
       val flux = Flux.just(1, 2, 3).materialize()
       StepVerifier.create(flux)
-        .expectNext(Signal.next(1), Signal.next(2), Signal.next(3), Signal.complete())
+        .expectNext(Signal.next(1), Signal.next(2), Signal.next(3), Signal.complete[Int]())
         .verifyComplete()
     }
 
@@ -1938,13 +1938,13 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         Flux.just(1, 2, 3).toIterable(1).toStream shouldBe Stream(1, 2, 3)
       }
       "with batchSize and queue supplier should transform this flux into interable" in {
-        Flux.just(1, 2, 3).toIterable(1, Option(QueueSupplier.get[Int](1))).toStream shouldBe Stream(1, 2, 3)
+        Flux.just(1, 2, 3).toIterable(1, Option(Queues.get[Int](1))).toStream shouldBe Stream(1, 2, 3)
       }
     }
 
     ".toStream" - {
       "should transform this flux into stream" in {
-        Flux.just(1, 2, 3).toStream() shouldBe Stream(1, 2, 3)
+        Flux.just(1, 2, 3).toStream shouldBe Stream(1, 2, 3)
       }
       "with batchSize should transform this flux into stream" in {
         Flux.just(1, 2, 3).toStream(2) shouldBe Stream(1, 2, 3)
