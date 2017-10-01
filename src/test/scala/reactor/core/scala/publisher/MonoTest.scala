@@ -5,14 +5,14 @@ import java.util.concurrent._
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicLong, AtomicReference}
 import java.util.function.{Predicate, Supplier}
 
-import org.mockito.{ArgumentMatchers, Mockito}
 import org.mockito.Mockito.spy
-import org.reactivestreams.{Publisher, Subscription}
+import org.mockito.{ArgumentMatchers, Mockito}
+import org.reactivestreams.Subscription
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.prop.TableDrivenPropertyChecks
 import org.scalatest.{AsyncFreeSpec, FreeSpec, Matchers}
 import reactor.core.Disposable
-import reactor.core.publisher.{BaseSubscriber, MonoProcessor, Signal, SynchronousSink, Flux => JFlux, Mono => JMono}
+import reactor.core.publisher.{BaseSubscriber, Signal, SynchronousSink, Flux => JFlux, Mono => JMono}
 import reactor.core.scala.publisher.Mono.just
 import reactor.core.scheduler.{Scheduler, Schedulers}
 import reactor.test.StepVerifier
@@ -51,9 +51,7 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
 
     ".delay should create a Mono with the first element delayed according to the provided" - {
       "duration" in {
-        StepVerifier.withVirtualTime(new Supplier[Mono[Long]] {
-          override def get(): Mono[Long] = Mono.delay(5 days)
-        })
+        StepVerifier.withVirtualTime(() => Mono.delay(5 days))
           .thenAwait(JDuration.ofDays(5))
           .expectNextCount(1)
           .expectComplete()
@@ -416,13 +414,13 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
 
     ".cache should call the underlying cache method" in {
       val jMono = spy(JMono.just(1))
-      val mono = Mono(jMono).cache()
+      Mono(jMono).cache()
       Mockito.verify(jMono).cache()
     }
 
     ".cancelOn should cancel the subscriber on a particular scheduler" in {
       val jMono = spy(JMono.just(1))
-      val mono = Mono(jMono).cancelOn(Schedulers.immediate())
+      Mono(jMono).cancelOn(Schedulers.immediate())
       Mockito.verify(jMono).cancelOn(ArgumentMatchers.any[Scheduler]())
     }
 
@@ -464,9 +462,7 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
           .verifyComplete()
       }
       "with another publisher should delay the current subscription until the other publisher completes" in {
-        StepVerifier.withVirtualTime(new Supplier[Mono[Int]] {
-          override def get(): Mono[Int] = Mono.just(1).delaySubscription(Mono.just("one").delaySubscription(1 hour))
-        })
+        StepVerifier.withVirtualTime(() => Mono.just(1).delaySubscription(Mono.just("one").delaySubscription(1 hour)))
           .thenAwait(JDuration.ofHours(1))
           .expectNext(1)
           .verifyComplete()
@@ -506,7 +502,7 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
     ".doFinally should call the callback" in {
       val atomicBoolean = new AtomicBoolean(false)
       val mono = Mono.just(randomValue)
-        .doFinally(st => atomicBoolean.compareAndSet(false, true) shouldBe true)
+        .doFinally(_ => atomicBoolean.compareAndSet(false, true) shouldBe true)
       StepVerifier.create(mono)
         .expectNext(randomValue)
         .verifyComplete()
@@ -546,7 +542,7 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
     ".doOnSuccess should call the callback function when the mono completes successfully" in {
       val atomicBoolean = new AtomicBoolean(false)
       val mono = Mono.empty[Int]
-        .doOnSuccess(t => atomicBoolean.compareAndSet(false, true) shouldBe true)
+        .doOnSuccess(_ => atomicBoolean.compareAndSet(false, true) shouldBe true)
       StepVerifier.create(mono)
         .verifyComplete()
       atomicBoolean shouldBe 'get
@@ -556,7 +552,7 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
       "with callback function should call the callback function when the mono encounter error" in {
         val atomicBoolean = new AtomicBoolean(false)
         val mono = Mono.error(new RuntimeException())
-          .doOnError(t => atomicBoolean.compareAndSet(false, true) shouldBe true)
+          .doOnError(_ => atomicBoolean.compareAndSet(false, true) shouldBe true)
         StepVerifier.create(mono)
           .expectError(classOf[RuntimeException])
       }
@@ -564,7 +560,7 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
         val atomicBoolean = new AtomicBoolean(false)
         val mono = Mono.error(new RuntimeException())
           .doOnError(classOf[RuntimeException]: Class[RuntimeException],
-            ((t: RuntimeException) => atomicBoolean.compareAndSet(false, true) shouldBe true): SConsumer[RuntimeException])
+            ((_: RuntimeException) => atomicBoolean.compareAndSet(false, true) shouldBe true): SConsumer[RuntimeException])
         StepVerifier.create(mono)
           .expectError(classOf[RuntimeException])
       }
@@ -572,7 +568,7 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
         val atomicBoolean = new AtomicBoolean(false)
         val mono: Mono[Int] = Mono.error[Int](new RuntimeException("Whatever"))
           .doOnError((_: Throwable) => true,
-            ((t: Throwable) => atomicBoolean.compareAndSet(false, true) shouldBe true): SConsumer[Throwable])
+            ((_: Throwable) => atomicBoolean.compareAndSet(false, true) shouldBe true): SConsumer[Throwable])
         StepVerifier.create(mono)
           .expectError(classOf[RuntimeException])
 
@@ -597,7 +593,7 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
     ".doOnSubscribe should call the callback function when the mono is subscribed" in {
       val atomicBoolean = new AtomicBoolean(false)
       val mono = Mono.just(randomValue)
-        .doOnSubscribe(s => atomicBoolean.compareAndSet(false, true))
+        .doOnSubscribe(_ => atomicBoolean.compareAndSet(false, true))
       StepVerifier.create(mono)
         .expectNextCount(1)
         .verifyComplete()
@@ -622,10 +618,8 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
             .elapsed()
         }, 1)
           .thenAwait(1 second)
-          .expectNextMatches(new Predicate[(Long, Long)] {
-            override def test(t: (Long, Long)): Boolean = t match {
-              case (time, data) => time >= 1000 && data == randomValue
-            }
+          .expectNextMatches((t: (Long, Long)) => t match {
+            case (time, data) => time >= 1000 && data == randomValue
           })
           .verifyComplete()
       }
@@ -635,10 +629,8 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
           .delaySubscription(1 second, virtualTimeScheduler)
           .elapsed(virtualTimeScheduler), 1)
           .`then`(() => virtualTimeScheduler.advanceTimeBy(1 second))
-          .expectNextMatches(new Predicate[(Long, Long)] {
-            override def test(t: (Long, Long)): Boolean = t match {
-              case (time, data) => time >= 1000 && data == randomValue
-            }
+          .expectNextMatches((t: (Long, Long)) => t match {
+            case (time, data) => time >= 1000 && data == randomValue
           })
           .verifyComplete()
       }
@@ -668,8 +660,8 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
       "with mapperOnNext, mapperOnError and mapperOnComplete should mapped each individual event into values emitted by flux" in {
         val flux = Mono.just(1)
           .flatMapMany(
-            i => Mono.just("one"),
-            t => Mono.just("error"),
+            _ => Mono.just("one"),
+            _ => Mono.just("error"),
             () => Mono.just("complete")
           )
         StepVerifier.create(flux)
@@ -709,7 +701,7 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
 
     ".handle should handle onNext, onError and onComplete" in {
       val mono = Mono.just(randomValue)
-        .handle((l: Long, s: SynchronousSink[String]) => {
+        .handle((_: Long, s: SynchronousSink[String]) => {
           s.next("One")
           s.complete()
         })
@@ -735,7 +727,6 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
 
     ".mapError" - {
       class MyCustomException(val message: String) extends Exception(message)
-      import reactor.core.scala.publisher._
       "with mapper should map the error to another error" in {
         val mono: Mono[Int] = Mono.error[Int](new RuntimeException("runtimeException"))
           .onErrorMap(t => new MyCustomException(t.getMessage))
@@ -836,13 +827,13 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
           .verifyComplete()
       }
       "with class type and fallback function will fallback to the provided value when the exception is of provided type" in {
-        val mono = Mono.error(new RuntimeException()).onErrorResume(classOf[RuntimeException], (t: Exception) => Mono.just(-1))
+        val mono = Mono.error(new RuntimeException()).onErrorResume(classOf[RuntimeException], (_: Exception) => Mono.just(-1))
         StepVerifier.create(mono)
           .expectNext(-1)
           .verifyComplete()
       }
       "with predicate and fallback function will fallback to the provided value when the predicate returns true" in {
-        val mono = Mono.error(new RuntimeException("fallback")).onErrorResume(t => t.getMessage == "fallback", (t: Throwable) => Mono.just(-1))
+        val mono = Mono.error(new RuntimeException("fallback")).onErrorResume(t => t.getMessage == "fallback", (_: Throwable) => Mono.just(-1))
         StepVerifier.create(mono)
           .expectNext(-1)
           .verifyComplete()
@@ -964,7 +955,7 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
 
     //    Is this the right way to test?
     ".repeatWhenEmpty should emit resubscribe to this mono when the companion is empty" in {
-      val mono = Mono.just(1).repeatWhenEmpty((fluxLong: Flux[Long]) => Flux.just(-1, -2, -3))
+      val mono = Mono.just(1).repeatWhenEmpty((_: Flux[Long]) => Flux.just(-1, -2, -3))
       StepVerifier.create(mono)
         .expectNext(1)
         .verifyComplete()
@@ -977,25 +968,25 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
       }
       "with consumer should invoke the consumer" in {
         val counter = new CountDownLatch(1)
-        val disposable = Mono.just(randomValue).subscribe(t => counter.countDown())
+        val disposable = Mono.just(randomValue).subscribe(_ => counter.countDown())
         disposable shouldBe a[Disposable]
         counter.await(1, TimeUnit.SECONDS) shouldBe true
       }
       "with consumer and error consumer should invoke the error consumer when error happen" in {
         val counter = new CountDownLatch(1)
-        val disposable = Mono.error[Any](new RuntimeException()).subscribe(t => (), t => counter.countDown())
+        val disposable = Mono.error[Any](new RuntimeException()).subscribe(_ => (), _ => counter.countDown())
         disposable shouldBe a[Disposable]
         counter.await(1, TimeUnit.SECONDS) shouldBe true
       }
       "with consumer, error consumer and completeConsumer should invoke the completeConsumer when it's complete" in {
         val counter = new CountDownLatch(2)
-        val disposable = Mono.just(randomValue).subscribe(t => counter.countDown(), t => (), counter.countDown())
+        val disposable = Mono.just(randomValue).subscribe(_ => counter.countDown(), _ => (), counter.countDown())
         disposable shouldBe a[Disposable]
         counter.await(1, TimeUnit.SECONDS) shouldBe true
       }
       "with consumer, error consumer, completeConsumer and subscriptionConsumer should invoke the subscriptionConsumer when there is subscription" in {
         val counter = new CountDownLatch(3)
-        val disposable = Mono.just(randomValue).subscribe(t => counter.countDown(), t => (), counter.countDown(), s => {
+        val disposable = Mono.just(randomValue).subscribe(_ => counter.countDown(), _ => (), counter.countDown(), s => {
           s.request(1)
           counter.countDown()
         })
@@ -1041,9 +1032,7 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
 
     ".timeout" - {
       "should raise TimeoutException after duration elapse" in {
-        StepVerifier.withVirtualTime(new Supplier[Publisher[Long]] {
-          override def get(): Mono[Long] = Mono.delay(10 seconds).timeout(5 seconds)
-        })
+        StepVerifier.withVirtualTime(() => Mono.delay(10 seconds).timeout(5 seconds))
           .thenAwait(JDuration.ofSeconds(5))
           .expectError(classOf[TimeoutException])
           .verify()
