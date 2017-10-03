@@ -1,6 +1,6 @@
 package reactor.core.scala.publisher
 
-import java.lang.{Iterable => JIterable, Long => JLong, Boolean => JBoolean}
+import java.lang.{Boolean => JBoolean, Iterable => JIterable, Long => JLong}
 import java.util
 import java.util.concurrent.Callable
 import java.util.function.{BiFunction, Consumer, Function, Supplier}
@@ -13,6 +13,7 @@ import reactor.core.publisher.FluxSink.OverflowStrategy
 import reactor.core.publisher.{BufferOverflowStrategy, FluxSink, Signal, SignalType, SynchronousSink, Flux => JFlux, GroupedFlux => JGroupedFlux}
 import reactor.core.scheduler.Scheduler
 import reactor.util.Logger
+import reactor.util.context.Context
 import reactor.util.function.Tuple2
 
 import scala.collection.JavaConverters._
@@ -2973,6 +2974,47 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * @return a new [[Disposable]] to dispose the [[Subscription]]
     */
   final def subscribe(consumer: T => Unit, errorConsumer: Throwable => Unit, completeConsumer: () => Unit, subscriptionConsumer: Subscription => Unit): Disposable = jFlux.subscribe(consumer, errorConsumer, completeConsumer, subscriptionConsumer)
+
+  /**
+    * Enrich a potentially empty downstream [[Context]] by adding all values
+    * from the given [[Context]], producing a new [[Context]] that is propagated
+    * upstream.
+    * <p>
+    * The [[Context]] propagation happens once per subscription (not on each onNext):
+    * it is done during the `subscribe(Subscriber)` phase, which runs from
+    * the last operator of a chain towards the first.
+    * <p>
+    * So this operator enriches a [[Context]] coming from under it in the chain
+    * (downstream, by default an empty one) and passes the new enriched [[Context]]
+    * to operators above it in the chain (upstream, by way of them using
+    * `Flux#subscribe(Subscriber,Context)`).
+    *
+    * @param mergeContext the [[Context]] to merge with a previous [[Context]]
+    *                                 state, returning a new one.
+    * @return a contextualized { @link Flux}
+    * @see [[Context]]
+    */
+  final def subscriberContext(mergeContext: Context): Flux[T] = Flux[T](jFlux.subscriberContext(mergeContext))
+
+  /**
+    * Enrich a potentially empty downstream [[Context]] by applying a [[Function1]]
+    * to it, producing a new [[Context]] that is propagated upstream.
+    * <p>
+    * The [[Context]] propagation happens once per subscription (not on each onNext):
+    * it is done during the `subscribe(Subscriber)` phase, which runs from
+    * the last operator of a chain towards the first.
+    * <p>
+    * So this operator enriches a [[Context]] coming from under it in the chain
+    * (downstream, by default an empty one) and passes the new enriched [[Context]]
+    * to operators above it in the chain (upstream, by way of them using
+    * `Flux#subscribe(Subscriber,Context)`).
+    *
+    * @param doOnContext the function taking a previous [[Context]] state
+    *                                                           and returning a new one.
+    * @return a contextualized [[Flux]]
+    * @see [[Context]]
+    */
+  final def subscriberContext(doOnContext: Context => Context): Flux[T] = Flux[T](jFlux.subscriberContext(doOnContext))
 
   /**
     * Run subscribe, onSubscribe and request on a supplied
