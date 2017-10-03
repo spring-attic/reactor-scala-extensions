@@ -61,7 +61,7 @@ import scala.util.{Failure, Success, Try}
   * @tparam T the type of the single value of this class
   * @see Flux
   */
-class Mono[T] private(private val jMono: JMono[T]) extends Publisher[T] with MapablePublisher[T] {
+class Mono[T] private(private val jMono: JMono[T]) extends Publisher[T] with MapablePublisher[T] with OnErrorReturn[T] {
   override def subscribe(s: Subscriber[_ >: T]): Unit = jMono.subscribe(s)
 
   /**
@@ -529,6 +529,22 @@ class Mono[T] private(private val jMono: JMono[T]) extends Publisher[T] with Map
   }
 
   /**
+    * Transform the item emitted by this [[Mono]] asynchronously, returning the
+    * value emitted by another [[Mono]] (possibly changing the value type).
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/then.png" alt="">
+    * <p>
+    *
+    * @param transformer the function to dynamically bind a new [[Mono]]
+    * @tparam R the result type bound
+    * @return a new [[Mono]] with an asynchronously mapped value.
+    */
+  final def flatMap[R](transformer: T => Mono[R]): Mono[R] = Mono[R](jMono.flatMap(new Function[T, JMono[R]] {
+    override def apply(t: T): JMono[R] = transformer(t).jMono
+  }))
+
+  /**
     * Transform the item emitted by this [[Mono]] into a Publisher, then forward
     * its emissions into the returned [[Flux]].
     *
@@ -659,45 +675,6 @@ class Mono[T] private(private val jMono: JMono[T]) extends Publisher[T] with Map
   }
 
   /**
-    * Transform the error emitted by this [[Mono]] by applying a function.
-    * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/maperror.png" alt="">
-    * <p>
-    *
-    * @param mapper the error transforming [[Function1]]
-    * @return a transformed [[Mono]]
-    */
-  final def onErrorMap(mapper: Throwable => Throwable): Mono[T] = Mono[T](jMono.onErrorMap(mapper))
-
-  /**
-    * Transform the error emitted by this [[Mono]] by applying a function if the
-    * error matches the given type, otherwise let the error flow.
-    * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/maperror.png" alt="">
-    * <p>
-    *
-    * @param type   the type to match
-    * @param mapper the error transforming [[Function1]]
-    * @tparam E the error type
-    * @return a transformed [[Mono]]
-    */
-  final def onErrorMap[E <: Throwable](`type`: Class[E], mapper: E => Throwable): Mono[T] = Mono[T](jMono.onErrorMap(`type`, mapper))
-
-  /**
-    * Transform the error emitted by this [[Mono]] by applying a function if the
-    * error matches the given predicate, otherwise let the error flow.
-    * <p>
-    * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/maperror.png"
-    * alt="">
-    *
-    * @param predicate the error predicate
-    * @param mapper    the error transforming [[Function1]]
-    * @return a transformed [[Mono]]
-    */
-  final def onErrorMap(predicate: Throwable => Boolean, mapper: Throwable => Throwable): Mono[T] = Mono[T](jMono.onErrorMap(predicate, mapper))
-
-  /**
     * Transform the incoming onNext, onError and onComplete signals into [[Signal]].
     * Since the error is materialized as a `Signal`, the propagation will be stopped and onComplete will be
     * emitted. Complete signal will first emit a `Signal.complete()` and then effectively complete the flux.
@@ -749,10 +726,49 @@ class Mono[T] private(private val jMono: JMono[T]) extends Publisher[T] with Map
   final def ofType[U](clazz: Class[U]) = Mono[U](jMono.ofType(clazz))
 
   /**
+    * Transform the error emitted by this [[Mono]] by applying a function.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/maperror.png"
+    * <p>
+    *
+    * @param mapper the error transforming [[Function1]]
+    * @return a transformed [[Mono]]
+    */
+  final def onErrorMap(mapper: Throwable => Throwable): Mono[T] = Mono[T](jMono.onErrorMap(mapper))
+
+  /**
+    * Transform the error emitted by this [[Mono]] by applying a function if the
+    * error matches the given type, otherwise let the error flow.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/maperror.png"
+    * <p>
+    *
+    * @param type   the type to match
+    * @param mapper the error transforming [[Function1]]
+    * @tparam E the error type
+    * @return a transformed [[Mono]]
+    */
+  final def onErrorMap[E <: Throwable](`type`: Class[E], mapper: E => Throwable): Mono[T] = Mono[T](jMono.onErrorMap(`type`, mapper))
+
+  /**
+    * Transform the error emitted by this [[Mono]] by applying a function if the
+    * error matches the given predicate, otherwise let the error flow.
+    * <p>
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/maperror.png"
+    * alt="">
+    *
+    * @param predicate the error predicate
+    * @param mapper    the error transforming [[Function1]]
+    * @return a transformed [[Mono]]
+    */
+  final def onErrorMap(predicate: Throwable => Boolean, mapper: Throwable => Throwable): Mono[T] = Mono[T](jMono.onErrorMap(predicate, mapper))
+
+  /**
     * Subscribe to a returned fallback publisher when any error occurs.
     *
     * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/otherwise.png" alt="">
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/otherwise.png" alt="">
     * <p>
     *
     * @param fallback the function to map an alternative { @link Mono}
@@ -770,7 +786,7 @@ class Mono[T] private(private val jMono: JMono[T]) extends Publisher[T] with Map
     * Subscribe to a returned fallback publisher when an error matching the given type
     * occurs.
     * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/otherwise.png"
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/otherwise.png" alt="">
     * alt="">
     *
     * @param type     the error type to match
@@ -791,7 +807,7 @@ class Mono[T] private(private val jMono: JMono[T]) extends Publisher[T] with Map
     * Subscribe to a returned fallback publisher when an error matching the given predicate
     * occurs.
     * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/otherwise.png"
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/otherwise.png" alt="">
     * alt="">
     *
     * @param predicate the error predicate to match
@@ -808,23 +824,10 @@ class Mono[T] private(private val jMono: JMono[T]) extends Publisher[T] with Map
   }
 
   /**
-    * Provide an alternative [[Mono]] if this mono is completed without data
-    *
-    * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/otherwiseempty.png" alt="">
-    * <p>
-    *
-    * @param alternate the alternate mono if this mono is empty
-    * @return an alternating [[Mono]] on source onComplete without elements
-    * @see [[Flux.switchIfEmpty]]
-    */
-  final def switchIfEmpty(alternate: Mono[_ <: T]): Mono[T] = Mono[T](jMono.switchIfEmpty(alternate.jMono))
-
-  /**
     * Simply emit a captured fallback value when any error is observed on this [[Mono]].
     *
     * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/otherwisereturn.png" alt="">
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/otherwisereturn.png" alt="">
     * <p>
     *
     * @param fallback the value to emit if an error occurs
@@ -836,7 +839,7 @@ class Mono[T] private(private val jMono: JMono[T]) extends Publisher[T] with Map
     * Simply emit a captured fallback value when an error of the specified type is
     * observed on this [[Mono]].
     * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/otherwisereturn.png" alt="">
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/otherwisereturn.png" alt="">
     *
     * @param type          the error type to match
     * @param fallbackValue the value to emit if a matching error occurs
@@ -849,7 +852,7 @@ class Mono[T] private(private val jMono: JMono[T]) extends Publisher[T] with Map
     * Simply emit a captured fallback value when an error matching the given predicate is
     * observed on this [[Mono]].
     * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/otherwisereturn.png" alt="">
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/otherwisereturn.png" alt="">
     *
     * @param predicate     the error predicate to match
     * @param fallbackValue the value to emit if a matching error occurs
@@ -1183,11 +1186,25 @@ class Mono[T] private(private val jMono: JMono[T]) extends Publisher[T] with Map
     * Subscribe the [[Mono]] with the givne [[Subscriber]] and return it.
     *
     * @param subscriber the [[Subscriber]] to subscribe
-    * @param < E> the reified type of the { @link Subscriber} for chaining
-    * @return the passed { @link Subscriber} after subscribing it to this { @link Mono}
+    * @tparam E the reified type of the [[Subscriber]] for chaining
+    * @return the passed [[Subscriber]] after subscribing it to this { @link Mono}
     */
   //  TODO: How to test this?
   final def subscribeWith[E <: Subscriber[_ >: T]](subscriber: E): E = jMono.subscribeWith(subscriber)
+
+  /**
+    * Provide an alternative [[Mono]] if this mono is completed without data
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/otherwiseempty.png" alt="">
+    * <p>
+    *
+    * @param alternate the alternate mono if this mono is empty
+    * @return an alternating [[Mono]] on source onComplete without elements
+    * @see [[Flux.switchIfEmpty]]
+    */
+  final def switchIfEmpty(alternate: Mono[_ <: T]): Mono[T] = Mono[T](jMono.switchIfEmpty(alternate.jMono))
+
 
   implicit def jMonoVoid2jMonoUnit(jMonoVoid: JMono[Void]): JMono[Unit] = jMonoVoid.map((_: Void) => ())
 

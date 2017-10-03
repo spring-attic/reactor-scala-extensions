@@ -3,7 +3,7 @@ package reactor.core.scala.publisher
 import java.time.{Duration => JDuration}
 import java.util.concurrent._
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicLong, AtomicReference}
-import java.util.function.{Predicate, Supplier}
+import java.util.function.Supplier
 
 import org.mockito.Mockito.spy
 import org.mockito.{ArgumentMatchers, Mockito}
@@ -393,7 +393,7 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
       "should combine this mono and the other" in {
         val mono: Mono[Unit] = just(1) and just(2)
         StepVerifier.create(mono)
-//          .expectNext((1, 2))
+          //          .expectNext((1, 2))
           .verifyComplete()
       }
     }
@@ -650,7 +650,14 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
         .verifyComplete()
     }
 
-    ".flatMap" - {
+    ".flatMap should flatmap the provided mono" in {
+      val mono = Mono.just(randomValue).flatMap(l => Mono.just(l.toString))
+      StepVerifier.create(mono)
+        .expectNext(randomValue.toString)
+        .verifyComplete()
+    }
+
+    ".flatMapMany" - {
       "with a single mapper should flatmap the value mapped by the provided mapper" in {
         val flux = Mono.just(1).flatMapMany(i => Flux.just(i, i * 2))
         StepVerifier.create(flux)
@@ -963,7 +970,7 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
 
     ".subscribe" - {
       "without parameter should return Disposable" in {
-        val x= Mono.just(randomValue).subscribe()
+        val x = Mono.just(randomValue).subscribe()
         x shouldBe a[Disposable]
       }
       "with consumer should invoke the consumer" in {

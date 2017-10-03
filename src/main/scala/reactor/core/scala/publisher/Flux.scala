@@ -41,7 +41,7 @@ import scala.concurrent.duration.Duration
   * @tparam T the element type of this Reactive Streams [[Publisher]]
   * @see [[Mono]]
   */
-class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends Publisher[T] with MapablePublisher[T] {
+class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends Publisher[T] with MapablePublisher[T] with OnErrorReturn[T] {
   override def subscribe(s: Subscriber[_ >: T]): Unit = jFlux.subscribe(s)
 
   /**
@@ -1802,7 +1802,7 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
   /**
     * Transform the error emitted by this [[Flux]] by applying a function.
     * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/maperror.png"
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/maperror.png"
     * alt="">
     * <p>
     *
@@ -1815,7 +1815,7 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * Transform the error emitted by this [[Flux]] by applying a function if the
     * error matches the given type, otherwise let the error flow.
     * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/maperror.png" alt="">
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/maperror.png"
     * <p>
     *
     * @param type   the class of the exception type to react to
@@ -1830,7 +1830,7 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * error matches the given predicate, otherwise let the error flow.
     * <p>
     * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/maperror.png"
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/maperror.png"
     * alt="">
     *
     * @param predicate the error predicate
@@ -2031,7 +2031,7 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
   /**
     * Subscribe to a returned fallback publisher when any error occurs.
     * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/onerrorresumewith.png" alt="">
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/onerrorresumewith.png" alt="">
     * <p>
     *
     * @param fallback the [[Function1]] mapping the error to a new [[Publisher]] sequence
@@ -2043,7 +2043,7 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * Subscribe to a returned fallback publisher when an error matching the given type
     * occurs.
     * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/onerrorresumewith.png"
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/onerrorresumewith.png" alt="">
     * alt="">
     *
     * @param type     the error type to match
@@ -2058,7 +2058,7 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * Subscribe to a returned fallback publisher when an error matching the given type
     * occurs.
     * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/onerrorresumewith.png"
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/onerrorresumewith.png" alt="">
     * alt="">
     *
     * @param predicate the error predicate to match
@@ -2071,39 +2071,39 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
   /**
     * Fallback to the given value if an error is observed on this [[Flux]]
     * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/onerrorreturn.png" alt="">
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/onerrorreturn.png" alt="">
     * <p>
     *
     * @param fallbackValue alternate value on fallback
     * @return a new [[Flux]]
     */
-  final def onErrorReturn(fallbackValue: T) = Flux(jFlux.onErrorReturn(fallbackValue))
+  final def onErrorReturn(fallbackValue: T): Flux[T] = Flux(jFlux.onErrorReturn(fallbackValue))
 
   /**
     * Fallback to the given value if an error of a given type is observed on this
     * [[Flux]]
     * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/onerrorreturn.png" alt="">
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/onerrorreturn.png" alt="">
     *
     * @param type          the error type to match
     * @param fallbackValue alternate value on fallback
     * @tparam E the error type
     * @return a new [[Flux]]
     */
-  final def onErrorReturn[E <: Throwable](`type`: Class[E], fallbackValue: T) = Flux(jFlux.onErrorReturn(`type`, fallbackValue))
+  final def onErrorReturn[E <: Throwable](`type`: Class[E], fallbackValue: T): Flux[T] = Flux(jFlux.onErrorReturn(`type`, fallbackValue))
 
   /**
     * Fallback to the given value if an error matching the given predicate is
     * observed on this
     * [[Flux]]
     * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/onerrorreturn.png" alt="">
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/onerrorreturn.png" alt="">
     *
     * @param predicate     the error predicate to match
     * @param fallbackValue alternate value on fallback
     * @return a new [[Flux]]
     */
-  final def onErrorReturn(predicate: Throwable => Boolean, fallbackValue: T) = Flux(jFlux.onErrorReturn(predicate, fallbackValue))
+  final def onErrorReturn(predicate: Throwable => Boolean, fallbackValue: T): Flux[T] = Flux(jFlux.onErrorReturn(predicate, fallbackValue))
 
   /**
     * Detaches the both the child [[Subscriber]] and the [[Subscription]] on
