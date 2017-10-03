@@ -29,6 +29,7 @@ import reactor.core.Disposable
 import reactor.core.publisher.{MonoProcessor, MonoSink, Signal, SignalType, SynchronousSink, Flux => JFlux, Mono => JMono}
 import reactor.core.scala.publisher.PimpMyPublisher._
 import reactor.core.scheduler.Scheduler
+import reactor.util.context.Context
 import reactor.util.function._
 
 import scala.collection.JavaConverters._
@@ -627,9 +628,7 @@ class Mono[T] private(private val jMono: JMono[T]) extends Publisher[T] with Map
     * @tparam R the transformed type
     * @return a transformed [[Mono]]
     */
-  final def handle[R](handler: (T, SynchronousSink[R]) => Unit) = Mono[R](
-    jMono.handle(handler)
-  )
+  final def handle[R](handler: (T, SynchronousSink[R]) => Unit): Mono[R] = Mono[R](jMono.handle(handler))
 
   /**
     * Hides the identity of this [[Mono]] instance.
@@ -640,7 +639,7 @@ class Mono[T] private(private val jMono: JMono[T]) extends Publisher[T] with Map
     * @return a new [[Mono]] instance
     */
   //TODO: How to test this?
-  final def hide = Mono[T](jMono.hide())
+  final def hide: Mono[T] = Mono[T](jMono.hide())
 
   /**
     * Ignores onNext signal (dropping it) and only reacts on termination.
@@ -651,28 +650,101 @@ class Mono[T] private(private val jMono: JMono[T]) extends Publisher[T] with Map
     *
     * @return a new completable [[Mono]].
     */
-  final def ignoreElement = Mono[T](jMono.ignoreElement())
+  final def ignoreElement: Mono[T] = Mono[T](jMono.ignoreElement())
 
+  /**
+    * Observe all Reactive Streams signals and trace them using [[reactor.util.Logger]] support.
+    * Default will use [[Level.INFO]] and `java.util.logging`.
+    * If SLF4J is available, it will be used instead.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/log1.png" alt="">
+    * <p>
+    * The default log category will be "reactor.Mono", followed by a suffix generated from
+    * the source operator, e.g. "reactor.Mono.Map".
+    *
+    * @return a new [[Mono]] that logs signals
+    * @see [[Flux.log()]]
+    */
   //  TODO: How to test all these .log(...) variants?
-  final def log: Mono[T] = {
-    new Mono[T](jMono.log())
-  }
+  final def log: Mono[T] = Mono[T](jMono.log())
 
-  final def log(category: String): Mono[T] = {
-    new Mono[T](jMono.log(category))
-  }
+  /**
+    * Observe all Reactive Streams signals and use [[reactor.util.Logger]] support to handle trace implementation. Default will
+    * use [[Level.INFO]] and java.util.logging. If SLF4J is available, it will be used instead.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/log1.png" alt="">
+    * <p>
+    *
+    * @param category to be mapped into logger configuration (e.g. org.springframework
+    *                 .reactor). If category ends with "." like "reactor.", a generated operator
+    *                 suffix will complete, e.g. "reactor.Flux.Map".
+    * @return a new [[Mono]]
+    */
+  final def log(category: Option[String]): Mono[T] = Mono[T](jMono.log(category.orNull))
 
-  final def log(category: String, level: Level, options: SignalType*): Mono[T] = {
-    new Mono[T](jMono.log(category, level, options: _*))
-  }
+  /**
+    * Observe Reactive Streams signals matching the passed flags `options` and use
+    * [[reactor.util.Logger]] support to handle trace implementation. Default will use the passed
+    * [[Level]] and java.util.logging. If SLF4J is available, it will be used instead.
+    *
+    * Options allow fine grained filtering of the traced signal, for instance to only capture onNext and onError:
+    * <pre>
+    *     mono.log("category", SignalType.ON_NEXT, SignalType.ON_ERROR)
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/log1.png" alt="">
+    * <p>
+    *
+    * @param category to be mapped into logger configuration (e.g. org.springframework
+    *                 .reactor). If category ends with "." like "reactor.", a generated operator
+    *                 suffix will complete, e.g. "reactor.Flux.Map".
+    * @param level    the { @link Level} to enforce for this tracing Mono (only FINEST, FINE,
+    *                             INFO, WARNING and SEVERE are taken into account)
+    * @param options a vararg [[SignalType]] option to filter log messages
+    * @return a new [[Mono]]
+    *
+    */
+  final def log(category: Option[String], level: Level, options: SignalType*): Mono[T] = Mono[T](jMono.log(category.orNull, level, options: _*))
 
-  final def log(category: String, level: Level, showOperatorLine: Boolean, options: SignalType*): Mono[T] = {
-    new Mono[T](jMono.log(category, level, showOperatorLine, options: _*))
-  }
+  /**
+    * Observe Reactive Streams signals matching the passed filter `options` and
+    * use [[reactor.util.Logger]] support to
+    * handle trace
+    * implementation. Default will
+    * use the passed [[Level]] and java.util.logging. If SLF4J is available, it will be used instead.
+    *
+    * Options allow fine grained filtering of the traced signal, for instance to only capture onNext and onError:
+    * <pre>
+    *     mono.log("category", Level.INFO, SignalType.ON_NEXT, SignalType.ON_ERROR)
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/log.png" alt="">
+    * <p>
+    *
+    * @param category to be mapped into logger configuration (e.g. org.springframework
+    *                 .reactor). If category ends with "." like "reactor.", a generated operator
+    *                 suffix will complete, e.g. "reactor.Mono.Map".
+    * @param level    the [[Level]] to enforce for this tracing Mono (only FINEST, FINE,
+    *                             INFO, WARNING and SEVERE are taken into account)
+    * @param showOperatorLine capture the current stack to display operator
+    *                         class/line number.
+    * @param options          a vararg [[SignalType]] option to filter log messages
+    * @return a new unaltered [[Mono]]
+    */
+  final def log(category: Option[String], level: Level, showOperatorLine: Boolean, options: SignalType*): Mono[T] = Mono[T](jMono.log(category.orNull, level, showOperatorLine, options: _*))
 
-  final def map[R](mapper: T => R): Mono[R] = {
-    Mono(jMono.map(mapper))
-  }
+  /**
+    * Transform the item emitted by this [[Mono]] by applying a synchronous function to it.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/map1.png" alt="">
+    * <p>
+    *
+    * @param mapper the synchronous transforming [[Function1]]
+    * @tparam R the transformed type
+    * @return a new [[Mono]]
+    */
+  final def map[R](mapper: T => R) = Mono(jMono.map(mapper))
 
   /**
     * Transform the incoming onNext, onError and onComplete signals into [[Signal]].
@@ -1166,6 +1238,47 @@ class Mono[T] private(private val jMono: JMono[T]) extends Publisher[T] with Map
     * @return a new [[Disposable]] to dispose the [[Subscription]]
     */
   final def subscribe(consumer: T => Unit, errorConsumer: Throwable => Unit, completeConsumer: => Unit, subscriptionConsumer: Subscription => Unit): Disposable = jMono.subscribe(consumer, errorConsumer, completeConsumer, subscriptionConsumer)
+
+  /**
+    * Enrich a potentially empty downstream [[Context]] by adding all values
+    * from the given [[Context]], producing a new [[Context]] that is propagated
+    * upstream.
+    * <p>
+    * The [[Context]] propagation happens once per subscription (not on each onNext):
+    * it is done during the `subscribe(Subscriber)` phase, which runs from
+    * the last operator of a chain towards the first.
+    * <p>
+    * So this operator enriches a [[Context]] coming from under it in the chain
+    * (downstream, by default an empty one) and passes the new enriched [[Context]]
+    * to operators above it in the chain (upstream, by way of them using
+    * [[Flux.subscribe(Subscriber,Context)]]).
+    *
+    * @param mergeContext the [[Context]] to merge with a previous [[Context]]
+    *                                 state, returning a new one.
+    * @return a contextualized [[Mono]]
+    * @see [[Context]]
+    */
+  final def subscriberContext(mergeContext: Context): Mono[T] = Mono[T](jMono.subscriberContext(mergeContext))
+
+  /**
+    * Enrich a potentially empty downstream [[Context]] by applying a [[Function1]]
+    * to it, producing a new [[Context]] that is propagated upstream.
+    * <p>
+    * The [[Context]] propagation happens once per subscription (not on each onNext):
+    * it is done during the `subscribe(Subscriber)` phase, which runs from
+    * the last operator of a chain towards the first.
+    * <p>
+    * So this operator enriches a [[Context]] coming from under it in the chain
+    * (downstream, by default an empty one) and passes the new enriched [[Context]]
+    * to operators above it in the chain (upstream, by way of them using
+    * `Flux#subscribe(Subscriber,Context)`).
+    *
+    * @param doOnContext the function taking a previous [[Context]] state
+    *                                                           and returning a new one.
+    * @return a contextualized [[Mono]]
+    * @see [[Context]]
+    */
+  final def subscriberContext(doOnContext: Context => Context): Mono[T] = Mono[T](jMono.subscriberContext(doOnContext))
 
   /**
     * Run the requests to this Publisher [[Mono]] on a given worker assigned by the supplied [[Scheduler]].
