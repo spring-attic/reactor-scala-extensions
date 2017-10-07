@@ -1207,6 +1207,21 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       }
     }
 
+    ".expandDeep" - {
+      "should expand the flux" in {
+        val flux = Flux.just("a", "b").expandDeep(s => Flux.just(s"$s$s", s"$s$s$s")).take(5)
+        StepVerifier.create(flux)
+          .expectNext("a", "aa", "aaaa", "aaaaaaaa", "aaaaaaaaaaaaaaaa")
+          .verifyComplete()
+      }
+      " with capacity hint should expand the flux" in {
+        val flux = Flux.just("a", "b").expandDeep(s => Flux.just(s"$s$s", s"$s$s$s"), 10).take(5)
+        StepVerifier.create(flux)
+          .expectNext("a", "aa", "aaaa", "aaaaaaaa", "aaaaaaaaaaaaaaaa")
+          .verifyComplete()
+      }
+    }
+
     ".filter should evaluate each value against given predicate" in {
       val flux = Flux.just(1, 2, 3).filter(i => i > 1)
       StepVerifier.create(flux)
