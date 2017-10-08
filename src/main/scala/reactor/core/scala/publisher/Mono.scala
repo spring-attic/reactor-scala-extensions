@@ -565,6 +565,77 @@ class Mono[T] private(private val jMono: JMono[T]) extends Publisher[T] with Map
     * @return this Mono expanded depth-first to a [[Flux]]
     */
   final def expandDeep(expander: T => Publisher[_ <: T]) = Flux(jMono.expandDeep(expander))
+
+  /**
+    * Recursively expand elements into a graph and emit all the resulting element using
+    * a breadth-first traversal strategy.
+    * <p>
+    * That is: emit the value from this [[Mono]] first, then it each at a first level of
+    * recursion and emit all of the resulting values, then expand all of these at a
+    * second level and so on...
+    * <p>
+    * For example, given the hierarchical structure
+    * <pre>
+    * A
+    *   - AA
+    *     - aa1
+    *   - AB
+    *     - ab1
+    *   - a1
+    * </pre>
+    *
+    * Expands `Mono.just(A)` into
+    * <pre>
+    * A
+    * AA
+    * AB
+    * a1
+    * aa1
+    * ab1
+    * </pre>
+    *
+    * @param expander the [[Function1]] applied at each level of recursion to expand
+    *                             values into a [[Publisher]], producing a graph.
+    * @param capacityHint a capacity hint to prepare the inner queues to accommodate n
+    *                     elements per level of recursion.
+    * @return this Mono expanded breadth-first to a [[Flux]]
+    */
+  final def expand(expander: T => Publisher[_ <: T], capacityHint: Int) = Flux(jMono.expand(expander, capacityHint))
+
+  /**
+    * Recursively expand elements into a graph and emit all the resulting element using
+    * a breadth-first traversal strategy.
+    * <p>
+    * That is: emit the value from this [[Mono]] first, then it each at a first level of
+    * recursion and emit all of the resulting values, then expand all of these at a
+    * second level and so on...
+    * <p>
+    * For example, given the hierarchical structure
+    * <pre>
+    * A
+    *   - AA
+    *     - aa1
+    *   - AB
+    *     - ab1
+    *   - a1
+    * </pre>
+    *
+    * Expands `Mono.just(A)` into
+    * <pre>
+    * A
+    * AA
+    * AB
+    * a1
+    * aa1
+    * ab1
+    * </pre>
+    *
+    * @param expander the [[Function1]] applied at each level of recursion to expand
+    *                             values into a [[Publisher]], producing a graph.
+    * @return this Mono expanded breadth-first to a [[Flux]]
+    */
+  final def expand(expander: T => Publisher[_ <: T]) = Flux(jMono.expand(expander))
+
   /**
     * Test the result if any of this [[Mono]] and replay it if predicate returns true.
     * Otherwise complete without value.

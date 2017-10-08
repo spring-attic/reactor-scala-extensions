@@ -1273,6 +1273,76 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
   final def expandDeep(expander: T => Publisher[_ <: T]) = Flux(jFlux.expandDeep(expander))
 
   /**
+    * Recursively expand elements into a graph and emit all the resulting element using
+    * a breadth-first traversal strategy.
+    * <p>
+    * That is: emit the values from this [[Flux]] first, then expand each at a first level of
+    * recursion and emit all of the resulting values, then expand all of these at a second
+    * level and so on..
+    * <p>
+    * For example, given the hierarchical structure
+    * <pre>
+    * A
+    *   - AA
+    *     - aa1
+    * B
+    *   - BB
+    *     - bb1
+    * </pre>
+    *
+    * Expands `Flux.just(A, B)` into
+    * <pre>
+    * A
+    * B
+    * AA
+    * AB
+    * aa1
+    * bb1
+    * </pre>
+    *
+    * @param expander the [[Function1]] applied at each level of recursion to expand
+    *                             values into a [[Publisher]], producing a graph.
+    * @param capacityHint a capacity hint to prepare the inner queues to accommodate n
+    *                     elements per level of recursion.
+    * @return an breadth-first expanded [[Flux]]
+    */
+  final def expand(expander: T => Publisher[_ <: T], capacityHint: Int) = Flux(jFlux.expandDeep(expander, capacityHint))
+
+  /**
+    * Recursively expand elements into a graph and emit all the resulting element using
+    * a breadth-first traversal strategy.
+    * <p>
+    * That is: emit the values from this [[Flux]] first, then expand each at a first level of
+    * recursion and emit all of the resulting values, then expand all of these at a second
+    * level and so on..
+    * <p>
+    * For example, given the hierarchical structure
+    * <pre>
+    * A
+    *   - AA
+    *     - aa1
+    * B
+    *   - BB
+    *     - bb1
+    * </pre>
+    *
+    * Expands `Flux.just(A, B)` into
+    * <pre>
+    * A
+    * B
+    * AA
+    * AB
+    * aa1
+    * bb1
+    * </pre>
+    *
+    * @param expander the [[Function1]] applied at each level of recursion to expand
+    *                             values into a [[Publisher]], producing a graph.
+    * @return an breadth-first expanded [[Flux]]
+    */
+  final def expand(expander: T => Publisher[_ <: T]) = Flux(jFlux.expandDeep(expander))
+
+  /**
     * Evaluate each accepted value against the given predicate T => Boolean. If the predicate test succeeds, the value is
     * passed into the new [[Flux]]. If the predicate test fails, the value is ignored and a request of 1 is
     * emitted.

@@ -643,8 +643,23 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
           .expectNext("a", "aa", "aaaa")
           .verifyComplete()
       }
-      "with capacity hint should expant the mono" in {
+      "with capacity hint should expand the mono" in {
         val flux = Mono.just("a").expandDeep(s => Mono.just(s"$s$s"), 10).take(3)
+        StepVerifier.create(flux)
+          .expectNext("a", "aa", "aaaa")
+          .verifyComplete()
+      }
+    }
+
+    ".expand" - {
+      "should expand the mono" in {
+        val flux = Mono.just("a").expand(s => Mono.just(s"$s$s")).take(3)
+        StepVerifier.create(flux)
+          .expectNext("a", "aa", "aaaa")
+          .verifyComplete()
+      }
+      "with capacity hint should expand the mono" in {
+        val flux = Mono.just("a").expand(s => Mono.just(s"$s$s"), 10).take(3)
         StepVerifier.create(flux)
           .expectNext("a", "aa", "aaaa")
           .verifyComplete()
