@@ -2004,6 +2004,15 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
   final def mergeWith(other: Publisher[_ <: T]) = Flux(jFlux.mergeWith(other))
 
   /**
+    * Give a name to this sequence, which can be retrieved using [[reactor.core.scala.Scannable.name()]]
+    * as long as this is the first reachable [[reactor.core.scala.Scannable.parents()]].
+    *
+    * @param name a name for the sequence
+    * @return the same sequence, but bearing a name
+    */
+  final def name(name: String) = Flux(jFlux.name(name))
+
+  /**
     * Emit only the first item emitted by this [[Flux]].
     * <p>
     * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/next.png" alt="">

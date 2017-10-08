@@ -911,6 +911,15 @@ class Mono[T] private(private val jMono: JMono[T]) extends Publisher[T] with Map
   final def mergeWith(other: Publisher[_ <: T]) = Flux(jMono.mergeWith(other))
 
   /**
+    * Give a name to this sequence, which can be retrieved using [[reactor.core.scala.Scannable.name()]]
+    * as long as this is the first reachable [[reactor.core.scala.Scannable.parents()]].
+    *
+    * @param name a name for the sequence
+    * @return the same sequence, but bearing a name
+    */
+  final def name(name: String) = Mono(jMono.name(name))
+
+  /**
     * Emit the any of the result from this mono or from the given mono
     *
     * <p>
