@@ -165,9 +165,9 @@ class Mono[T] private(private val jMono: JMono[T]) extends Publisher[T] with Map
     *
     * @return a replaying [[Mono]]
     */
-  final def cache(): Mono[T] = Mono[T](
-    jMono.cache()
-  )
+  final def cache(): Mono[T] = Mono[T](jMono.cache())
+
+  final def cache(ttl: Duration) = Mono(jMono.cache(ttl))
 
   /**
     * Prepare this [[Mono]] so that subscribers will cancel from it on a

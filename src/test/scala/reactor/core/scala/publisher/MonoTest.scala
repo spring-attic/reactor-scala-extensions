@@ -412,10 +412,17 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
       number shouldBe a[ScalaNumber]
     }
 
-    ".cache should call the underlying cache method" in {
-      val jMono = spy(JMono.just(1))
-      Mono(jMono).cache()
-      Mockito.verify(jMono).cache()
+    ".cache" - {
+      "should call the underlying cache method" in {
+        val jMono = spy(JMono.just(1))
+        Mono(jMono).cache()
+        Mockito.verify(jMono).cache()
+      }
+      "with ttl should call the underlying cache method" in {
+        val jMono = spy(JMono.just(1))
+        Mono(jMono).cache(10 seconds)
+        Mockito.verify(jMono).cache(10 seconds)
+      }
     }
 
     ".cancelOn should cancel the subscriber on a particular scheduler" in {
