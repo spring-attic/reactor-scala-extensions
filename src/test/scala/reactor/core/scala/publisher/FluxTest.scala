@@ -1007,6 +1007,12 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
           .expectNext(1, 2, 7, 9, 7)
           .verifyComplete()
       }
+      "with keySelector and keyComparator" in {
+        val flux = Flux.just(1, 2, 5, 8, 7, 4, 9, 6, 7).distinctUntilChanged(i => i % 3, (x: Int, y: Int) => x == y)
+        StepVerifier.create(flux)
+          .expectNext(1, 2, 7, 9, 7)
+          .verifyComplete()
+      }
     }
 
     ".doAfterTerminate should perform an action after it is terminated" in {

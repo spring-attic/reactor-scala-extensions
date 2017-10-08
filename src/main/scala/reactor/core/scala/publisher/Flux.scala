@@ -1014,6 +1014,23 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
   final def distinctUntilChanged[V](keySelector: T => V) = Flux(jFlux.distinctUntilChanged[V](keySelector))
 
   /**
+    * Filter out subsequent repetitions of an element (that is, if they arrive right
+    * after one another), as compared by a key extracted through the user provided [[Function1]]
+    * and then comparing keys with the supplied [[Function2]].
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/distinctuntilchangedk.png"
+    * alt="">
+    *
+    * @param keySelector   function to compute comparison key for each element
+    * @param keyComparator predicate used to compare keys.
+    * @tparam V the type of the key extracted from each value in this sequence
+    * @return a filtering [[Flux]] with only one occurrence in a row of each element
+    *                             of the same key for which the predicate returns true (yet element keys can repeat
+    *                             in the overall sequence)
+    */
+  final def distinctUntilChanged[V](keySelector: T => V, keyComparator: (V, V) => Boolean) = Flux(jFlux.distinctUntilChanged[V](keySelector, keyComparator))
+
+  /**
     * Triggered after the [[Flux]] terminates, either by completing downstream successfully or with an error.
     * <p>
     * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/doafterterminate.png" alt="">

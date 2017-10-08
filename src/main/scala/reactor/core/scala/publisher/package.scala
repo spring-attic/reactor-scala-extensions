@@ -5,7 +5,7 @@ import java.time.{Duration => JDuration}
 import java.util.Optional
 import java.util.Optional.empty
 import java.util.concurrent.Callable
-import java.util.function.{BiConsumer, BiFunction, BooleanSupplier, Consumer, Function, LongConsumer, Predicate, Supplier}
+import java.util.function.{BiConsumer, BiFunction, BiPredicate, BooleanSupplier, Consumer, Function, LongConsumer, Predicate, Supplier}
 
 import org.reactivestreams.Publisher
 import reactor.core.publisher.{Flux => JFlux, Mono => JMono}
@@ -154,5 +154,9 @@ Uncomment this when used. It is not used for now and reduce the code coverage
     new Runnable {
       override def run(): Unit = scalaFunction()
     }
+  }
+
+  implicit def scalaBiPredicate2JavaBiPredicate[T, U](scalaBiPredicate: (T, U) => Boolean): BiPredicate[T, U] = new BiPredicate[T, U] {
+    override def test(t: T, u: U) = scalaBiPredicate(t, u)
   }
 }
