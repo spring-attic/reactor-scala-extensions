@@ -1032,6 +1032,24 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
       }
     }
 
+    ".take" - {
+      "should complete after duration elapse" in {
+        StepVerifier.withVirtualTime(() => Mono.delay(10 seconds).take(5 seconds))
+          .thenAwait(JDuration.ofSeconds(5))
+          .verifyComplete()
+      }
+      "with duration and scheduler should complete after duration elapse" in {
+        StepVerifier.withVirtualTime(() => Mono.delay(10 seconds, Schedulers.parallel()).take(5 seconds))
+          .thenAwait(JDuration.ofSeconds(5))
+          .verifyComplete()
+      }
+    }
+
+    ".takeUntilOther should complete if the companion publisher emit any signal first" in {
+      StepVerifier.withVirtualTime(() => Mono.delay(10 seconds).takeUntilOther(Mono.just("a")))
+        .verifyComplete()
+    }
+
     ".then" - {
       "without parameter should only replays complete and error signals from this mono" in {
         val mono = Mono.just(randomValue).`then`()

@@ -1479,6 +1479,45 @@ class Mono[T] private(private val jMono: JMono[T]) extends Publisher[T] with Map
     */
   final def tag(key: String, value: String) = Mono(jMono.tag(key, value))
 
+  /**
+    * Give this Mono a chance to resolve within a specified time frame but complete if it
+    * doesn't. This works a bit like [[Mono.timeout(Duration)]] except that the resulting
+    * [[Mono]] completes rather than errors when the timer expires.
+    * <p>
+    * The timeframe is evaluated using the [[reactor.core.scheduler.Schedulers.parallel() parallel Scheduler]].
+    *
+    * @param duration the maximum duration to wait for the source Mono to resolve.
+    * @return a new [[Mono]] that will propagate the signals from the source unless
+    *                       no signal is received for `duration`, in which case it completes.
+    */
+  final def take(duration: Duration) = Mono(jMono.take(duration))
+
+  /**
+    * Give this Mono a chance to resolve within a specified time frame but complete if it
+    * doesn't. This works a bit like [[Mono.timeout(Duration)]] except that the resulting
+    * [[Mono]] completes rather than errors when the timer expires.
+    * <p>
+    * The timeframe is evaluated using the provided [[Scheduler]].
+    *
+    * @param duration the maximum duration to wait for the source Mono to resolve.
+    * @param timer    the [[Scheduler]] on which to measure the duration.
+    * @return a new [[Mono]] that will propagate the signals from the source unless
+    *                       no signal is received for `duration`, in which case it completes.
+    */
+  final def take(duration: Duration, timer: Scheduler) = Mono(jMono.take(duration, timer))
+
+  /**
+    * Give this Mono a chance to resolve before a companion [[Publisher]] emits. If
+    * the companion emits before any signal from the source, the resulting Mono will
+    * complete. Otherwise, it will relay signals from the source.
+    *
+    * @param other a companion [[Publisher]] that short-circuits the source with an
+    *                                  onComplete signal if it emits before the source emits.
+    * @return a new [[Mono]] that will propagate the signals from the source unless
+    *                       a signal is first received from the companion [[Publisher]], in which case it
+    *                       completes.
+    */
+  final def takeUntilOther(other: Publisher[_]) = Mono(jMono.takeUntilOther(other))
 
   implicit def jMonoVoid2jMonoUnit(jMonoVoid: JMono[Void]): JMono[Unit] = jMonoVoid.map((_: Void) => ())
 
