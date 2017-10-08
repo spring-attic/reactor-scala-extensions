@@ -263,6 +263,27 @@ class Mono[T] private(private val jMono: JMono[T]) extends Publisher[T] with Map
   final def delayElement(delay: Duration, timer: Scheduler) = Mono(jMono.delayElement(delay, timer))
 
   /**
+    * Subscribe to this [[Mono Mono]] and another [[Publisher]] that is generated from
+    * this Mono's element and which will be used as a trigger for relaying said element.
+    * <p>
+    * That is to say, the resulting [[Mono]] delays until this Mono's element is
+    * emitted, generates a trigger Publisher and then delays again until the trigger
+    * Publisher terminates.
+    * <p>
+    * Note that contiguous calls to all delayUntil are fused together.
+    * The triggers are generated and subscribed to in sequence, once the previous trigger
+    * completes. Error is propagated immediately
+    * downstream. In both cases, an error in the source is immediately propagated.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/delayUntil.png" alt="">
+    *
+    * @param triggerProvider a [[Function1]] that maps this Mono's value into a
+    *                                  [[Publisher]] whose termination will trigger relaying the value.
+    * @return this Mono, but delayed until the derived publisher terminates.
+    */
+  final def delayUntil(triggerProvider: T => Publisher[_]) = Mono(jMono.delayUntil(triggerProvider))
+
+  /**
     * Delay the [[Mono.subscribe subscription]] to this [[Mono]] source until the given
     * period elapses.
     *
