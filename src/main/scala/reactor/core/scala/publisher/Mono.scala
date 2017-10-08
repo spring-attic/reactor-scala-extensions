@@ -1467,6 +1467,18 @@ class Mono[T] private(private val jMono: JMono[T]) extends Publisher[T] with Map
     */
   final def switchIfEmpty(alternate: Mono[_ <: T]): Mono[T] = Mono[T](jMono.switchIfEmpty(alternate.jMono))
 
+  /**
+    * Tag this mono with a key/value pair. These can be retrieved as a [[Stream]] of
+    * all tags throughout the publisher chain by using [[reactor.core.scala.Scannable.tags()]] (as
+    * traversed
+    * by [[reactor.core.scala.Scannable.parents()]]).
+    *
+    * @param key   a tag key
+    * @param value a tag value
+    * @return the same sequence, but bearing tags
+    */
+  final def tag(key: String, value: String) = Mono(jMono.tag(key, value))
+
 
   implicit def jMonoVoid2jMonoUnit(jMonoVoid: JMono[Void]): JMono[Unit] = jMonoVoid.map((_: Void) => ())
 

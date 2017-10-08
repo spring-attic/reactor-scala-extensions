@@ -3235,6 +3235,18 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
   final def switchMap[V](fn: T => Publisher[_ <: V], prefetch: Int) = Flux(jFlux.switchMap[V](fn, prefetch))
 
   /**
+    * Tag this flux with a key/value pair. These can be retrieved as a [[Stream]] of
+    * all tags throughout the publisher chain by using [[reactor.core.scala.Scannable.tags()]] (as
+    * traversed
+    * by [[reactor.core.scala.Scannable.parents()]]).
+    *
+    * @param key   a tag key
+    * @param value a tag value
+    * @return the same sequence, but bearing tags
+    */
+  final def tag(key: String, value: String) = Flux(jFlux.tag(key, value))
+
+  /**
     * Take only the first N values from this [[Flux]].
     * <p>
     * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/take.png" alt="">
