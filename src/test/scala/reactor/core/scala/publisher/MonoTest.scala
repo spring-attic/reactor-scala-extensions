@@ -455,6 +455,21 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
         .verifyComplete()
     }
 
+    ".delayElement" - {
+      "should delay the element" in {
+        StepVerifier.withVirtualTime(() => Mono.just(randomValue).delayElement(5 seconds))
+          .thenAwait(5 seconds)
+          .expectNext(randomValue)
+          .verifyComplete()
+      }
+      "with timer should delay using timer" in {
+        StepVerifier.withVirtualTime(() => Mono.just(randomValue).delayElement(5 seconds, Schedulers.parallel()))
+          .thenAwait(5 seconds)
+          .expectNext(randomValue)
+          .verifyComplete()
+      }
+    }
+
     ".delaySubscription" - {
       "with delay duration should delay subscription as long as the provided duration" in {
         StepVerifier.withVirtualTime(() => Mono.just(1).delaySubscription(1 hour))

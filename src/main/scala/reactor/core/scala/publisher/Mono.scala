@@ -225,9 +225,42 @@ class Mono[T] private(private val jMono: JMono[T]) extends Publisher[T] with Map
     * @return a new [[Mono]]
     * @see [[Flux.defaultIfEmpty]]
     */
-  final def defaultIfEmpty(defaultV: T): Mono[T] = new Mono[T](
-    jMono.defaultIfEmpty(defaultV)
-  )
+  final def defaultIfEmpty(defaultV: T): Mono[T] = Mono[T](jMono.defaultIfEmpty(defaultV))
+
+  /**
+    * Delay this [[Mono]] element ([[Subscriber.onNext]] signal) by a given
+    * duration. Empty Monos or error signals are not delayed.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/delayonnext.png" alt="">
+    *
+    * <p>
+    * Note that the scheduler on which the Mono chain continues execution will be the
+    * [[reactor.core.scheduler.Schedulers#parallel() parallel]] scheduler if the mono is valued, or the
+    * current scheduler if the mono completes empty or errors.
+    *
+    * @param delay duration by which to delay the [[Subscriber.onNext]] signal
+    * @return a delayed [[Mono]]
+    */
+  final def delayElement(delay: Duration) = Mono(jMono.delayElement(delay))
+
+  /**
+    * Delay this [[Mono]] element ([[Subscriber.onNext]] signal) by a given
+    * [[Duration]], on a particular [[Scheduler]]. Empty monos or error signals are not delayed.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/delayonnext.png" alt="">
+    *
+    * <p>
+    * Note that the scheduler on which the mono chain continues execution will be the
+    * scheduler provided if the mono is valued, or the current scheduler if the mono
+    * completes empty or errors.
+    *
+    * @param delay [[Duration]] by which to delay the { @link Subscriber#onNext} signal
+    * @param timer a time-capable [[Scheduler]] instance to delay the value signal on
+    * @return a delayed [[Mono]]
+    */
+  final def delayElement(delay: Duration, timer: Scheduler) = Mono(jMono.delayElement(delay, timer))
 
   /**
     * Delay the [[Mono.subscribe subscription]] to this [[Mono]] source until the given
