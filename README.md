@@ -4,7 +4,7 @@
 [![Build Status](https://travis-ci.org/reactor/reactor-scala-extensions.svg?branch=master)](https://travis-ci.org/reactor/reactor-scala-extensions)
 [![codecov](https://codecov.io/gh/reactor/reactor-scala-extensions/branch/master/graph/badge.svg)](https://codecov.io/gh/reactor/reactor-scala-extensions)
                             
-This project is a Scala wrapper for [reactor-core](https://github.com/reactor/reactor-core).
+This project is a Scala extension for [reactor-core](https://github.com/reactor/reactor-core).
 
 Using reactor-core project as it is in scala code will look ugly because
 a lot of methods use Java 8 lambda which is not compatible with Scala lambda.
@@ -21,6 +21,8 @@ it becomes
 
     val mono = Mono.just(1).map(_.toString)
 
+This extension will also return scala's `scala.collection.immutable.Stream` instead of Java's `java.util.stream.Stream`
+and `scala.concurrent.Future` instead of `java.util.concurrent.CompletableFuture`
 ## Getting it
 
 With Gradle:
@@ -31,8 +33,8 @@ With Gradle:
     }
     
     dependencies {
-        //compile "io.projectreactor:reactor-scala-extensions:0.2.6-SNAPSHOT
-        compile "io.projectreactor:reactor-scala-extensions:0.2.5
+        //compile "io.projectreactor:reactor-scala-extensions:0.3.1-SNAPSHOT
+        compile "io.projectreactor:reactor-scala-extensions:0.3.0
     }
 
 With Maven:
@@ -53,13 +55,13 @@ With Maven:
     <dependency>
         <groupId>io.projectreactor</groupId>
         <artifactId>reactor-scala-extensions</artifactId>
-        <version>0.2.6-SNAPSHOT</version>
+        <version>0.3.1-SNAPSHOT</version>
     </dependency>
     -->
     <dependency>
         <groupId>io.projectreactor</groupId>
         <artifactId>reactor-scala-extensions</artifactId>
-        <version>0.2.5</version>
+        <version>0.3.0</version>
     </dependency>
 
 ## Contributing
