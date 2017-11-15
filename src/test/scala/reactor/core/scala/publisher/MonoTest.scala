@@ -471,7 +471,7 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
     }
 
     ".delayUntil should delay until the other provider terminate" in {
-      StepVerifier.withVirtualTime(() => Mono.just(randomValue).delayUntil(t => Flux.just(1, 2).delayElements(2 seconds)))
+      StepVerifier.withVirtualTime(() => Mono.just(randomValue).delayUntil(_ => Flux.just(1, 2).delayElements(2 seconds)))
         .thenAwait(4 seconds)
         .expectNext(randomValue)
         .verifyComplete()
@@ -1161,6 +1161,16 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
       StepVerifier.create(mono)
         .expectNext(randomValue.toString)
         .verifyComplete()
+    }
+
+    ".asJava should convert to java" in {
+      val mono = Mono.just(randomValue).asJava()
+      mono shouldBe a[JMono[_]]
+    }
+
+    ".apply should convert to scala" in {
+      val mono = Mono(JMono.just(randomValue))
+      mono shouldBe a[Mono[_]]
     }
   }
 

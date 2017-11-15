@@ -404,6 +404,16 @@ class Mono[T] private(private val jMono: JMono[T]) extends Publisher[T] with Map
     )
   }
 
+  /**
+    * Add behavior triggered when the [[Mono]] emits a data successfully.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/doonnext.png" alt="">
+    * <p>
+    *
+    * @param onNext the callback to call on [[Subscriber.onNext]]
+    * @return a new [[Mono]]
+    */
   final def doOnNext(onNext: (T => Unit)): Mono[T] = {
     val onNextFunction = new Consumer[T] {
       override def accept(t: T): Unit = onNext(t)

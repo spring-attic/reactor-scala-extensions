@@ -2042,5 +2042,15 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
           .verifyComplete()
       }
     }
+
+    ".asJava should convert to java" in {
+      val flux = Flux.just(1, 2, 3).asJava()
+      flux shouldBe a[reactor.core.publisher.Flux[_]]
+    }
+
+    ".apply should convert to scala" in {
+      val flux = Flux(reactor.core.publisher.Flux.just(1, 2, 3))
+      flux shouldBe a[Flux[_]]
+    }
   }
 }
