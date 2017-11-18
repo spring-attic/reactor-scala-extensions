@@ -1174,7 +1174,7 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       }
       "with Scheduler should provide the time elapsed using the provided scheduler when this mono emit value" in {
         val virtualTimeScheduler = VirtualTimeScheduler.getOrSet()
-        StepVerifier.create(Flux.just(1, 2, 3)
+        StepVerifier.withVirtualTime(() => Flux.just(1, 2, 3)
           .delaySubscription(1 second, virtualTimeScheduler)
           .delayElements(1 second, virtualTimeScheduler)
           .elapsed(virtualTimeScheduler), 3)
