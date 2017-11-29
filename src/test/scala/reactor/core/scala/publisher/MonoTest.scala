@@ -1027,6 +1027,22 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
         .verifyComplete()
     }
 
+    ".single" - {
+      "should enforce the existence of element" in {
+        val mono = Mono.just(randomValue).single()
+        StepVerifier.create(mono)
+          .expectNext(randomValue)
+          .verifyComplete()
+      }
+      "should throw exception if it is empty" in {
+        val mono = Mono.empty.single()
+        StepVerifier.create(mono)
+          .expectError(classOf[NoSuchElementException])
+          .verify()
+      }
+
+    }
+
     ".subscribe" - {
       "without parameter should return Disposable" in {
         val x = Mono.just(randomValue).subscribe()

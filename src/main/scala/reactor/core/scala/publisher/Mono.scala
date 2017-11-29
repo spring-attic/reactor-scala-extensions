@@ -1372,6 +1372,19 @@ class Mono[T] private(private val jMono: JMono[T]) extends Publisher[T] with Map
   final def retryWhen(whenFactory: Flux[Throwable] => Publisher[_]): Mono[T] = Mono[T](jMono.retryWhen(whenFactory))
 
   /**
+    * Expect exactly one item from this [[Mono]] source or signal
+    * [[java.util.NoSuchElementException]] for an empty source.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.1.RELEASE/src/docs/marble/single.png" alt="">
+    * <p>
+    * Note Mono doesn't need [[Flux.single(AnyRef)]], since it is equivalent to
+    * [[Mono.defaultIfEmpty(AnyRef)]] in a [[Mono]].
+    *
+    * @return a [[Mono]] with the single item or an error signal
+    */
+  final def single() = Mono(jMono.single())
+
+  /**
     * Subscribe to this [[Mono]] and request unbounded demand.
     * <p>
     * This version doesn't specify any consumption behavior for the events from the
