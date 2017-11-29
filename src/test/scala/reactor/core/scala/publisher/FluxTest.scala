@@ -309,6 +309,14 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
           .verifyComplete()
       }
     }
+
+    ".index should return tuple with the index" in {
+      val flux = Flux.just("a", "b", "c").index()
+      StepVerifier.create(flux)
+        .expectNext((0l, "a"), (1l, "b"), (2l, "c"))
+        .verifyComplete()
+    }
+
     ".interval" - {
       "without delay should produce flux of Long starting from 0 every provided timespan immediately" in {
         StepVerifier.withVirtualTime(() => Flux.interval(1 second).take(5))
