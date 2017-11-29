@@ -1791,6 +1791,24 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
   }
 
   /**
+    * Keep information about the order in which source values were received by
+    * indexing them internally with a 0-based incrementing long then combining this
+    * information with the source value into a `I` using the provided [[Function2]] ,
+    * returning a [[Flux[I]]].
+    * <p>
+    * Typical usage would be to produce a [[scala.Tuple2]] similar to [[Flux.index()]], but
+    * 1-based instead of 0-based:
+    * <p>
+    * `index((i, v) => (i+1, v))`
+    *
+    * @param indexMapper the [[Function2]] to use to combine elements and their index.
+    * @return an indexed [[Flux]] with each source value combined with its computed index.
+    */
+  final def index[I](indexMapper: (Long, T) => I) = Flux(jFlux.index[I](new BiFunction[JLong, T, I] {
+    override def apply(t: JLong, u: T) = indexMapper(Long2long(t), u)
+  }))
+
+  /**
     * Ignores onNext signals (dropping them) and only reacts on termination.
     *
     * <p>

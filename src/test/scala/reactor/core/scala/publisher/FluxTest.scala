@@ -310,11 +310,19 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       }
     }
 
-    ".index should return tuple with the index" in {
-      val flux = Flux.just("a", "b", "c").index()
-      StepVerifier.create(flux)
-        .expectNext((0l, "a"), (1l, "b"), (2l, "c"))
-        .verifyComplete()
+    ".index" - {
+      "should return tuple with the index" in {
+        val flux = Flux.just("a", "b", "c").index()
+        StepVerifier.create(flux)
+          .expectNext((0l, "a"), (1l, "b"), (2l, "c"))
+          .verifyComplete()
+      }
+      "with index mapper should return the mapped value" in {
+        val flux = Flux.just("a", "b", "c").index((i, v) => s"$i-$v")
+        StepVerifier.create(flux)
+          .expectNext("0-a", "1-b", "2-c")
+          .verifyComplete()
+      }
     }
 
     ".interval" - {
