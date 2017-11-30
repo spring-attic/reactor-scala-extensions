@@ -159,4 +159,6 @@ Uncomment this when used. It is not used for now and reduce the code coverage
   implicit def scalaBiPredicate2JavaBiPredicate[T, U](scalaBiPredicate: (T, U) => Boolean): BiPredicate[T, U] = new BiPredicate[T, U] {
     override def test(t: T, u: U) = scalaBiPredicate(t, u)
   }
+
+  implicit def javaOptional2ScalaOption[T](jOptional: Optional[T]): Option[T] = if(jOptional.isPresent) Some(jOptional.get()) else None
 }

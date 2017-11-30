@@ -143,6 +143,43 @@ class Mono[T] private(private val jMono: JMono[T]) extends Publisher[T] with Map
   final def block(timeout: Duration): T = jMono.block(timeout)
 
   /**
+    * Subscribe to this {[[Mono]] Mono} and <strong>block indefinitely</strong> until a next signal is
+    * received or the Mono completes empty. Returns an [[Option]], which can be used
+    * to replace the empty case with an Exception via [[Option.orElse(throw exception)]].
+    * In case the Mono itself errors, the original exception is thrown (wrapped in a
+    * [[RuntimeException]] if it was a checked exception).
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.1.RELEASE/src/docs/marble/block.png" alt="">
+    * <p>
+    * Note that each blockOptional() will trigger a new subscription: in other words, the result
+    * might miss signal from hot publishers.
+    *
+    * @return T the result
+    */
+  final def blockOption(): Option[T] = jMono.blockOptional()
+
+  /**
+    * Subscribe to this [[Mono]] and <strong>block</strong> until a next signal is
+    * received, the Mono completes empty or a timeout expires. Returns an [[Option]]
+    * for the first two cases, which can be used to replace the empty case with an
+    * Exception via [[Option.orElse(throw exception)]].
+    * In case the Mono itself errors, the original exception is thrown (wrapped in a
+    * [[RuntimeException]] if it was a checked exception).
+    * If the provided timeout expires, a [[RuntimeException]] is thrown.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.1.RELEASE/src/docs/marble/block.png" alt="">
+    * <p>
+    * Note that each block() will trigger a new subscription: in other words, the result
+    * might miss signal from hot publishers.
+    *
+    * @param timeout maximum time period to wait for before raising a [[RuntimeException]]
+    * @return T the result
+    */
+  final def blockOption(timeout: Duration): Option[T] = jMono.blockOptional(timeout)
+
+  /**
     * Cast the current [[Mono]] produced type into a target produced type.
     *
     * <p>

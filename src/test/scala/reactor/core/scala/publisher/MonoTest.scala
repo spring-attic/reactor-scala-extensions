@@ -407,6 +407,28 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
       }
     }
 
+    ".blockOption" - {
+      "without duration" - {
+        "should block the mono to get value" in {
+          Mono.just(randomValue).blockOption() shouldBe Some(randomValue)
+        }
+        "should retun None if mono is empty" in {
+          Mono.empty.blockOption() shouldBe None
+        }
+      }
+      "with duration" - {
+        "should block the mono up to the duration" in {
+          Mono.just(randomValue).blockOption(10 seconds) shouldBe Some(randomValue)
+        }
+        "shouldBlock the mono up to the duration and return None" in {
+          StepVerifier.withVirtualTime(() => Mono.just(Mono.empty.blockOption(10 seconds)))
+            .thenAwait(10 seconds)
+            .expectNext(None)
+            .verifyComplete()
+        }
+      }
+    }
+
     ".cast should cast the underlying value" in {
       val number = Mono.just(BigDecimal("123")).cast(classOf[ScalaNumber]).block()
       number shouldBe a[ScalaNumber]
