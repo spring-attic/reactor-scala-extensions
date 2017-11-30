@@ -5,7 +5,7 @@ import java.util
 import java.util.concurrent.Callable
 import java.util.function.{BiFunction, Consumer, Function, Supplier}
 import java.util.logging.Level
-import java.util.{Comparator, List => JList}
+import java.util.{Comparator, stream, List => JList}
 
 import org.reactivestreams.{Publisher, Subscriber, Subscription}
 import reactor.core.Disposable
@@ -4591,16 +4591,37 @@ object Flux {
 
   /**
     * Create a [[Flux]] that emits the items contained in the provided [[Stream]].
-    * A new iterator will be created for each subscriber.
+    * Keep in mind that a [[Stream]] cannot be re-used, which can be problematic in
+    * case of multiple subscriptions or re-subscription (like with [[Flux.repeat()]] or
+    * [[Flux.retry]]). The [[Stream]] is [[Stream.close closed]] automatically
+    * by the operator on cancellation, error or completion.
     * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/fromstream.png" alt="">
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.1.RELEASE/src/docs/marble/fromstream.png" alt="">
     * <p>
     *
     * @param s the [[Stream]] to read data from
-    * @tparam T the [[Stream]] type to flux
+    * @tparam T The type of values in the source [[Stream]] and resulting Flux
     * @return a new [[Flux]]
     */
-  def fromStream[T](s: Stream[T]): Flux[T] = Flux.fromIterable(s)
+  def fromStream[T](s: Stream[T]) = Flux(JFlux.fromStream(s))
+
+  /**
+    * Create a [[Flux]] that emits the items contained in a [[Stream]] created by
+    * the provided [[Function0]] for each subscription. The [[Stream]] is
+    * [[Stream.close closed]] automatically by the operator on cancellation, error
+    * or completion.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.1.RELEASE/src/docs/marble/fromstream.png" alt="">
+    * <p>
+    *
+    * @param streamSupplier the [[Function0]] that generates the [[Stream]] from
+    *                                   which to read data
+    * @tparam T The type of values in the source [[Stream]] and resulting Flux
+    * @return a new [[Flux]]
+    */
+  def fromStream[T](streamSupplier: () => Stream[T]) = Flux(JFlux.fromStream[T](new Supplier[stream.Stream[_ <: T]] {
+    override def get() = streamSupplier()
+  }))
 
   /**
     * Generate signals one-by-one via a consumer callback.

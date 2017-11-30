@@ -258,11 +258,19 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         .verifyComplete()
     }
 
-    ".fromStream should create flux that emit items contained in the provided stream" in {
-      val flux = Flux.fromStream(Stream(1, 2, 3))
-      StepVerifier.create(flux)
-        .expectNext(1, 2, 3)
-        .verifyComplete()
+    ".fromStream" - {
+      "should create flux that emit items contained in the provided stream" in {
+        val flux = Flux.fromStream(Stream(1, 2, 3))
+        StepVerifier.create(flux)
+          .expectNext(1, 2, 3)
+          .verifyComplete()
+      }
+      "with supplier should create flux that emit items contained in the supplier" in {
+        val flux = Flux.fromStream(() => Stream(1, 2, 3))
+        StepVerifier.create(flux)
+          .expectNext(1, 2, 3)
+          .verifyComplete()
+      }
     }
 
     ".generate" - {
