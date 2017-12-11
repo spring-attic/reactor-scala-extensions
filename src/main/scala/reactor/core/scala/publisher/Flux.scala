@@ -1786,9 +1786,7 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     *
     * @return an indexed [[Flux]] with each source value combined with its 0-based index.
     */
-  final def index(): Flux[(Long, T)] = Flux(jFlux.index()).map(tupleTwo2ScalaTuple2) map {
-    case (jLong: JLong, t: T) => (Long2long(jLong), t)
-  }
+  final def index(): Flux[(Long, T)] = Flux(jFlux.index()).map(t2 => (Long2long(t2.getT1), t2.getT2))
 
   /**
     * Keep information about the order in which source values were received by
