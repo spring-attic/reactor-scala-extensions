@@ -33,9 +33,9 @@ With Gradle:
     }
     
     dependencies {
-        //compile "io.projectreactor:reactor-scala-extensions_2.12:0.3.2-SNAPSHOT
-        compile "io.projectreactor:reactor-scala-extensions_2.12:0.3.1 //for scala 2.12
-        //compile "io.projectreactor:reactor-scala-extensions_2.11:0.3.1 //for scala 2.11
+        //compile "io.projectreactor:reactor-scala-extensions_2.12:0.3.3-SNAPSHOT
+        compile "io.projectreactor:reactor-scala-extensions_2.12:0.3.2 //for scala 2.12
+        //compile "io.projectreactor:reactor-scala-extensions_2.11:0.3.2 //for scala 2.11
     }
 
 With Maven:
@@ -56,14 +56,14 @@ With Maven:
     <dependency>
         <groupId>io.projectreactor</groupId>
         <artifactId>reactor-scala-extensions</artifactId>
-        <version>0.3.2-SNAPSHOT</version>
+        <version>0.3.3-SNAPSHOT</version>
     </dependency>
     -->
     <dependency>
         <groupId>io.projectreactor</groupId>
         <artifactId>reactor-scala-extensions_2.12</artifactId> <!-- for scala 2.12 -->
         <!--<artifactId>reactor-scala-extensions_2.11</artifactId> for scala 2.11 -->
-        <version>0.3.1</version>
+        <version>0.3.2</version>
     </dependency>
 
 ## Contributing
