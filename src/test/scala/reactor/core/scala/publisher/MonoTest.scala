@@ -663,11 +663,7 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
 
     ".elapsed" - {
       "should provide the time elapse when this mono emit value" in {
-        StepVerifier.withVirtualTime(new Supplier[Mono[(Long, Long)]] {
-          override def get(): Mono[(Long, Long)] = Mono.just(randomValue)
-            .delaySubscription(1 second)
-            .elapsed()
-        }, 1)
+        StepVerifier.withVirtualTime(() => Mono.just(randomValue).delaySubscription(1 second).elapsed(), 1)
           .thenAwait(1 second)
           .expectNextMatches((t: (Long, Long)) => t match {
             case (time, data) => time >= 1000 && data == randomValue
