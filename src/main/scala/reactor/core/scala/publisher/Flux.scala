@@ -2037,10 +2037,16 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
   final def materialize(): Flux[Signal[T]] = Flux(jFlux.materialize())
 
   /**
-    * Merge emissions of this [[Flux]] with the provided [[Publisher]], so that they may interleave.
+    * Merge data from this [[Flux]] and a [[Publisher]] into an interleaved merged
+    * sequence. Unlike {[[Flux.concatWith(Publisher) concat]], inner sources are subscribed
+    * to eagerly.
     * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/merge.png" alt="">
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/merge.png" alt="">
     * <p>
+    * Note that merge is tailored to work with asynchronous sources or finite sources. When dealing with
+    * an infinite source that doesn't already publish on a dedicated Scheduler, you must isolate that source
+    * in its own Scheduler, as merge would otherwise attempt to drain it before subscribing to
+    * another source.
     *
     * @param other the [[Publisher]] to merge with
     * @return a new [[Flux]]
@@ -4743,142 +4749,185 @@ object Flux {
   }
 
   /**
-    * Merge emitted [[Publisher]] sequences by the passed [[Publisher]] into an interleaved merged sequence.
+    * Merge data from [[Publisher]] sequences emitted by the passed [[Publisher]]
+    * into an interleaved merged sequence. Unlike [[Flux.concat(Publisher) concat]], inner
+    * sources are subscribed to eagerly.
     * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/mergeinner.png" alt="">
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/mergeinner.png" alt="">
     * <p>
+    * Note that merge is tailored to work with asynchronous sources or finite sources. When dealing with
+    * an infinite source that doesn't already publish on a dedicated Scheduler, you must isolate that source
+    * in its own Scheduler, as merge would otherwise attempt to drain it before subscribing to
+    * another source.
     *
-    * @param source a [[Publisher]] of [[Publisher]] sequence to merge
+    * @param source a [[Publisher]] of [[Publisher]] sources to merge
     * @tparam T the merged type
     * @return a merged [[Flux]]
     */
   //  TODO: How to test merge(...)?
-  def merge[T](source: Publisher[Publisher[_ <: T]]): Flux[T] = Flux(JFlux.merge[T](source))
+  def merge[T](source: Publisher[Publisher[_ <: T]]) = Flux(JFlux.merge[T](source))
 
   /**
-    * Merge emitted [[Publisher]] sequences by the passed [[Publisher]] into an interleaved merged sequence.
+    * Merge data from [[Publisher]] sequences emitted by the passed [[Publisher]]
+    * into an interleaved merged sequence. Unlike [[Flux.concat(Publisher) concat]], inner
+    * sources are subscribed to eagerly (but at most `concurrency` sources are
+    * subscribed to at the same time).
     * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/mergeinner.png" alt="">
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/mergeinner.png" alt="">
     * <p>
+    * Note that merge is tailored to work with asynchronous sources or finite sources. When dealing with
+    * an infinite source that doesn't already publish on a dedicated Scheduler, you must isolate that source
+    * in its own Scheduler, as merge would otherwise attempt to drain it before subscribing to
+    * another source.
     *
-    * @param source      a [[Publisher]] of [[Publisher]] sequence to merge
+    * @param source a [[Publisher]] of [[Publisher]] sources to merge
     * @param concurrency the request produced to the main source thus limiting concurrent merge backlog
     * @tparam T the merged type
     * @return a merged [[Flux]]
     */
-  def merge[T](source: Publisher[Publisher[_ <: T]], concurrency: Int): Flux[T] = Flux(JFlux.merge[T](source, concurrency))
+  def merge[T](source: Publisher[Publisher[_ <: T]], concurrency: Int) = Flux(JFlux.merge[T](source, concurrency))
 
   /**
-    * Merge emitted [[Publisher]] sequences by the passed [[Publisher]] into an interleaved merged sequence.
+    * Merge data from [[Publisher]] sequences emitted by the passed [[Publisher]]
+    * into an interleaved merged sequence. Unlike [[Flux.concat(Publisher) concat]], inner
+    * sources are subscribed to eagerly (but at most `concurrency` sources are
+    * subscribed to at the same time).
     * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/mergeinner.png" alt="">
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/mergeinner.png" alt="">
     * <p>
+    * Note that merge is tailored to work with asynchronous sources or finite sources. When dealing with
+    * an infinite source that doesn't already publish on a dedicated Scheduler, you must isolate that source
+    * in its own Scheduler, as merge would otherwise attempt to drain it before subscribing to
+    * another source.
     *
-    * @param source      a [[Publisher]] of [[Publisher]] sequence to merge
+    * @param source a [[Publisher]] of [[Publisher]] sources to merge
     * @param concurrency the request produced to the main source thus limiting concurrent merge backlog
     * @param prefetch    the inner source request size
     * @tparam T the merged type
     * @return a merged [[Flux]]
     */
-  def merge[T](source: Publisher[Publisher[_ <: T]], concurrency: Int, prefetch: Int): Flux[T] = Flux(JFlux.merge[T](source, concurrency, prefetch))
+  def merge[T](source: Publisher[Publisher[_ <: T]], concurrency: Int, prefetch: Int) = Flux(JFlux.merge[T](source, concurrency, prefetch))
 
   /**
-    * Merge emitted [[Publisher]] sequences from the passed [[Publisher]] into an interleaved merged sequence.
-    * [[Iterable.iterator()]] will be called for each [[Publisher.subscribe]].
+    * Merge data from [[Publisher]] sequences contained in an [[Iterable]]
+    * into an interleaved merged sequence. Unlike [[Flux.concat(Publisher) concat]], inner
+    * sources are subscribed to eagerly.
+    * A new [[Iterator]] will be created for each subscriber.
     * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/merge.png" alt="">
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/merge.png" alt="">
     * <p>
+    * Note that merge is tailored to work with asynchronous sources or finite sources. When dealing with
+    * an infinite source that doesn't already publish on a dedicated Scheduler, you must isolate that source
+    * in its own Scheduler, as merge would otherwise attempt to drain it before subscribing to
+    * another source.
     *
-    * @param sources the [[scala.Iterable]] to lazily iterate on [[Publisher.subscribe]]
+    * @param sources the [[Iterable]] of sources to merge (will be lazily iterated on subscribe)
     * @tparam I The source type of the data sequence
-    * @return a fresh Reactive [[Flux]] publisher ready to be subscribed
+    * @return a merged [[Flux]]
     */
-  def merge[I](sources: Iterable[Publisher[_ <: I]]): Flux[I] = Flux(JFlux.merge[I](sources))
+  def merge[I](sources: Iterable[Publisher[_ <: I]]) = Flux(JFlux.merge[I](sources))
 
   /**
-    * Merge emitted [[Publisher]] sequences from the passed [[Publisher]] array into an interleaved merged
-    * sequence.
+    * Merge data from [[Publisher]] sequences contained in an [[Iterable]]
+    * into an interleaved merged sequence. Unlike [[Flux.concat(Publisher) concat]], inner
+    * sources are subscribed to eagerly.
+    * A new [[Iterator]] will be created for each subscriber.
     * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/merge.png" alt="">
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/merge.png" alt="">
     * <p>
+    * Note that merge is tailored to work with asynchronous sources or finite sources. When dealing with
+    * an infinite source that doesn't already publish on a dedicated Scheduler, you must isolate that source
+    * in its own Scheduler, as merge would otherwise attempt to drain it before subscribing to
+    * another source.
     *
-    * @param sources the [[Publisher]] array to iterate on [[Publisher.subscribe]]
+    * @param sources the [[Iterable]] of sources to merge (will be lazily iterated on subscribe)
     * @tparam I The source type of the data sequence
-    * @return a fresh Reactive [[Flux]] publisher ready to be subscribed
+    * @return a merged [[Flux]]
     */
-  def merge[I](sources: Publisher[_ <: I]*): Flux[I] = Flux(JFlux.merge[I](sources))
+  def merge[I](sources: Publisher[_ <: I]*) = Flux(JFlux.merge[I](sources))
 
   /**
-    * Merge emitted [[Publisher]] sequences from the passed [[Publisher]] array into an interleaved merged
-    * sequence.
+    * Merge data from [[Publisher]] sequences contained in an array / vararg
+    * into an interleaved merged sequence. Unlike [[Flux.concat(Publisher) concat]],
+    * sources are subscribed to eagerly.
     * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/merge.png" alt="">
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/merge.png" alt="">
     * <p>
+    * Note that merge is tailored to work with asynchronous sources or finite sources. When dealing with
+    * an infinite source that doesn't already publish on a dedicated Scheduler, you must isolate that source
+    * in its own Scheduler, as merge would otherwise attempt to drain it before subscribing to
+    * another source.
     *
-    * @param sources  the [[Publisher]] array to iterate on [[Publisher.subscribe]]
+    * @param sources the array of [[Publisher]] sources to merge
     * @param prefetch the inner source request size
     * @tparam I The source type of the data sequence
     * @return a fresh Reactive [[Flux]] publisher ready to be subscribed
     */
-  def merge[I](prefetch: Int, sources: Publisher[_ <: I]*): Flux[I] = Flux(JFlux.merge[I](prefetch, sources: _*))
+  def merge[I](prefetch: Int, sources: Publisher[_ <: I]*) = Flux(JFlux.merge[I](prefetch, sources: _*))
 
   /**
-    * Merge emitted [[Publisher]] sequences from the passed [[Publisher]] array into an interleaved merged
-    * sequence.
+    * Merge data from [[Publisher]] sequences contained in an array / vararg
+    * into an interleaved merged sequence. Unlike [[Flux.concat(Publisher) concat]],
+    * sources are subscribed to eagerly.
+    * This variant will delay any error until after the rest of the merge backlog has been processed.
     * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/merge.png" alt="">
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/merge.png" alt="">
     * <p>
+    * Note that merge is tailored to work with asynchronous sources or finite sources. When dealing with
+    * an infinite source that doesn't already publish on a dedicated Scheduler, you must isolate that source
+    * in its own Scheduler, as merge would otherwise attempt to drain it before subscribing to
+    * another source.
     *
-    * @param sources    the [[Publisher]] array to iterate on [[Publisher.subscribe]]
-    * @param prefetch   the inner source request size
+    * @param sources the array of [[Publisher]] sources to merge
+    * @param prefetch the inner source request size
     * @tparam I The source type of the data sequence
     * @return a fresh Reactive [[Flux]] publisher ready to be subscribed
     */
-  def mergeDelayError[I](prefetch: Int, sources: Publisher[_ <: I]*): Flux[I] = Flux(JFlux.mergeDelayError[I](prefetch, sources: _*))
+  def mergeDelayError[I](prefetch: Int, sources: Publisher[_ <: I]*) = Flux(JFlux.mergeDelayError[I](prefetch, sources: _*))
 
   /**
-    * Merge emitted [[Publisher]] sequences by the passed [[Publisher]] into
-    * an ordered merged sequence. Unlike concat, the inner publishers are subscribed to
+    * Merge data from [[Publisher]] sequences emitted by the passed [[Publisher]]
+    * into an ordered merged sequence. Unlike concat, the inner publishers are subscribed to
     * eagerly. Unlike merge, their emitted values are merged into the final sequence in
     * subscription order.
     * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/mergesequential.png" alt="">
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/mergesequential.png" alt="">
     * <p>
     *
-    * @param sources a [[Publisher]] of [[Publisher]] sequence to merge
+    * @param sources a [[Publisher]] of [[Publisher]] sources to merge
     * @tparam T the merged type
-    * @return a merged  [[Flux]]
+    * @return a merged [[Flux]], subscribing early but keeping the original ordering
     */
-  def mergeSequential[T](sources: Publisher[Publisher[T]]): Flux[T] = Flux(JFlux.mergeSequential[T](sources))
+  def mergeSequential[T](sources: Publisher[Publisher[T]]) = Flux(JFlux.mergeSequential[T](sources))
 
   /**
-    * Merge emitted [[Publisher]] sequences by the passed [[Publisher]] into
-    * an ordered merged sequence. Unlike concat, the inner publishers are subscribed to
-    * eagerly. Unlike merge, their emitted values are merged into the final sequence in
-    * subscription order.
+    * Merge data from [[Publisher]] sequences emitted by the passed [[Publisher]]
+    * into an ordered merged sequence. Unlike concat, the inner publishers are subscribed to
+    * eagerly (but at most `maxConcurrency` sources at a time). Unlike merge, their
+    * emitted values are merged into the final sequence in subscription order.
     * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/mergesequential.png" alt="">
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/mergesequential.png" alt="">
     * <p>
     *
-    * @param sources        a [[Publisher]] of [[Publisher]] sequence to merge
+    * @param sources a [[Publisher]] of [[Publisher]] sources to merge
     * @param prefetch       the inner source request size
     * @param maxConcurrency the request produced to the main source thus limiting concurrent merge backlog
     * @tparam T the merged type
-    * @return a merged [[Flux]]
+    * @return a merged [[Flux]], subscribing early but keeping the original ordering
     */
-  def mergeSequential[T](sources: Publisher[_ <: Publisher[_ <: T]], maxConcurrency: Int, prefetch: Int): Flux[T] = Flux(JFlux.mergeSequential[T](sources, maxConcurrency, prefetch))
+  def mergeSequential[T](sources: Publisher[_ <: Publisher[_ <: T]], maxConcurrency: Int, prefetch: Int) = Flux(JFlux.mergeSequential[T](sources, maxConcurrency, prefetch))
 
   /**
-    * Merge emitted [[Publisher]] sequences by the passed [[Publisher]] into
-    * an ordered merged sequence. Unlike concat, the inner publishers are subscribed to
-    * eagerly. Unlike merge, their emitted values are merged into the final sequence in
-    * subscription order. This variant will delay any error until after the rest of the
-    * mergeSequential backlog has been processed.
+    * Merge data from [[Publisher]] sequences emitted by the passed [[Publisher]]
+    * into an ordered merged sequence. Unlike concat, the inner publishers are subscribed to
+    * eagerly (but at most `maxConcurrency` sources at a time). Unlike merge, their
+    * emitted values are merged into the final sequence in subscription order.
+    * This variant will delay any error until after the rest of the mergeSequential backlog has been processed.
     * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/mergesequential.png" alt="">
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/mergesequential.png" alt="">
     * <p>
     *
-    * @param sources a [[Publisher]] of [[Publisher]] sequence to merge
+    * @param sources a [[Publisher]] of [[Publisher]] sources to merge
     * @param prefetch       the inner source request size
     * @param maxConcurrency the request produced to the main source thus limiting concurrent merge backlog
     * @tparam T the merged type
@@ -4887,25 +4936,25 @@ object Flux {
   def mergeSequentialDelayError[T](sources: Publisher[_ <: Publisher[_ <: T]], maxConcurrency: Int, prefetch: Int) = Flux(JFlux.mergeSequentialDelayError[T](sources, maxConcurrency, prefetch))
 
   /**
-    * Merge a number of [[Publisher]] sequences into an ordered merged sequence.
-    * Unlike concat, the inner publishers are subscribed to eagerly. Unlike merge, their
-    * emitted values are merged into the final sequence in subscription order.
+    * Merge data from [[Publisher]] sequences provided in an array/vararg
+    * into an ordered merged sequence. Unlike concat, sources are subscribed to
+    * eagerly. Unlike merge, their emitted values are merged into the final sequence in subscription order.
     * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/mergesequential.png" alt="">
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/mergesequential.png" alt="">
     * <p>
     *
     * @param sources a number of [[Publisher]] sequences to merge
     * @tparam I the merged type
-    * @return a merged [[Flux]]
+    * @return a merged [[Flux]], subscribing early but keeping the original ordering
     */
-  def mergeSequential[I](sources: Publisher[_ <: I]*): Flux[I] = Flux(JFlux.mergeSequential(sources: _*))
+  def mergeSequential[I](sources: Publisher[_ <: I]*) = Flux(JFlux.mergeSequential(sources: _*))
 
   /**
-    * Merge a number of [[Publisher]] sequences into an ordered merged sequence.
-    * Unlike concat, the inner publishers are subscribed to eagerly. Unlike merge, their
-    * emitted values are merged into the final sequence in subscription order.
+    * Merge data from [[Publisher]] sequences provided in an array/vararg
+    * into an ordered merged sequence. Unlike concat, sources are subscribed to
+    * eagerly. Unlike merge, their emitted values are merged into the final sequence in subscription order.
     * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/mergesequential.png" alt="">
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/mergesequential.png" alt="">
     * <p>
     *
     * @param prefetch the inner source request size
@@ -4916,40 +4965,43 @@ object Flux {
   def mergeSequential[I](prefetch: Int, sources: Publisher[_ <: I]*) = Flux(JFlux.mergeSequential[I](prefetch, sources: _*))
 
   /**
-    * Merge a number of [[Publisher]] sequences into an ordered merged sequence.
-    * Unlike concat, the inner publishers are subscribed to eagerly. Unlike merge, their
-    * emitted values are merged into the final sequence in subscription order.
+    * Merge data from [[Publisher]] sequences provided in an array/vararg
+    * into an ordered merged sequence. Unlike concat, sources are subscribed to
+    * eagerly. Unlike merge, their emitted values are merged into the final sequence in subscription order.
+    * This variant will delay any error until after the rest of the mergeSequential backlog
+    * has been processed.
     * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/mergesequential.png" alt="">
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/mergesequential.png" alt="">
     * <p>
     *
-    * @param prefetch   the inner source request size
-    * @param sources    a number of [[Publisher]] sequences to merge
+    * @param prefetch the inner source request size
+    * @param sources  a number of [[Publisher]] sequences to merge
     * @tparam I the merged type
-    * @return a merged [[Flux]]
+    * @return a merged [[Flux]], subscribing early but keeping the original ordering
     */
-  def mergeSequentialDelayError[I](prefetch: Int, sources: Publisher[_ <: I]*): Flux[I] = Flux(JFlux.mergeSequentialDelayError(prefetch, sources: _*))
+  def mergeSequentialDelayError[I](prefetch: Int, sources: Publisher[_ <: I]*) = Flux(JFlux.mergeSequentialDelayError(prefetch, sources: _*))
 
   /**
-    * Merge [[Publisher]] sequences from an [[Iterable]] into an ordered merged
-    * sequence. Unlike concat, the inner publishers are subscribed to eagerly. Unlike
-    * merge, their emitted values are merged into the final sequence in subscription order.
+    * Merge data from [[Publisher]] sequences provided in an [[Iterable]]
+    * into an ordered merged sequence. Unlike concat, sources are subscribed to
+    * eagerly. Unlike merge, their emitted values are merged into the final sequence in subscription order.
     * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/mergesequential.png" alt="">
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/mergesequential.png" alt="">
     * <p>
     *
     * @param sources an [[Iterable]] of [[Publisher]] sequences to merge
     * @tparam I the merged type
     * @return a merged [[Flux]], subscribing early but keeping the original ordering
     */
-  def mergeSequential[I](sources: Iterable[Publisher[_ <: I]]): Flux[I] = Flux(JFlux.mergeSequential[I](sources))
+  def mergeSequential[I](sources: Iterable[Publisher[_ <: I]]) = Flux(JFlux.mergeSequential[I](sources))
 
   /**
-    * Merge [[Publisher]] sequences from an [[Iterable]] into an ordered merged
-    * sequence. Unlike concat, the inner publishers are subscribed to eagerly. Unlike
-    * merge, their emitted values are merged into the final sequence in subscription order.
+    * Merge data from [[Publisher]] sequences provided in an [[Iterable]]
+    * into an ordered merged sequence. Unlike concat, sources are subscribed to
+    * eagerly (but at most `maxConcurrency` sources at a time). Unlike merge, their
+    * emitted values are merged into the final sequence in subscription order.
     * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/mergesequential.png" alt="">
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/mergesequential.png" alt="">
     * <p>
     *
     * @param sources an [[Iterable]] of [[Publisher]] sequences to merge
@@ -4961,20 +5013,23 @@ object Flux {
   def mergeSequential[I](sources: Iterable[Publisher[_ <: I]], maxConcurrency: Int, prefetch: Int) = Flux(JFlux.mergeSequential[I](sources, maxConcurrency, prefetch))
 
   /**
-    * Merge [[Publisher]] sequences from an [[Iterable]] into an ordered merged
-    * sequence. Unlike concat, the inner publishers are subscribed to eagerly. Unlike
-    * merge, their emitted values are merged into the final sequence in subscription order.
+    * Merge data from [[Publisher]] sequences provided in an [[Iterable]]
+    * into an ordered merged sequence. Unlike concat, sources are subscribed to
+    * eagerly (but at most `maxConcurrency` sources at a time). Unlike merge, their
+    * emitted values are merged into the final sequence in subscription order.
+    * This variant will delay any error until after the rest of the mergeSequential backlog
+    * has been processed.
     * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/mergesequential.png" alt="">
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/mergesequential.png" alt="">
     * <p>
     *
-    * @param sources        an [[Iterable]] of [[Publisher]] sequences to merge
+    * @param sources an [[Iterable]] of [[Publisher]] sequences to merge
     * @param maxConcurrency the request produced to the main source thus limiting concurrent merge backlog
     * @param prefetch       the inner source request size
     * @tparam I the merged type
-    * @return a merged [[Flux]]
+    * @return a merged [[Flux]], subscribing early but keeping the original ordering
     */
-  def mergeSequentialDelayError[I](sources: Iterable[Publisher[_ <: I]], maxConcurrency: Int, prefetch: Int): Flux[I] = Flux(JFlux.mergeSequentialDelayError[I](sources, maxConcurrency, prefetch))
+  def mergeSequentialDelayError[I](sources: Iterable[Publisher[_ <: I]], maxConcurrency: Int, prefetch: Int) = Flux(JFlux.mergeSequentialDelayError[I](sources, maxConcurrency, prefetch))
 
   /**
     * Create a [[Flux]] that will never signal any data, error or completion signal.
