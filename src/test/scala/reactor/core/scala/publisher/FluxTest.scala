@@ -377,9 +377,9 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
 
     ".mergeSequential" - {
       "with publisher of publisher should merge the underlying publisher in sequence of publisher" in {
-        val flux = Flux.mergeSequential[Int](Flux.just(Flux.just(1, 2, 3), Flux.just(2, 3, 4)): Publisher[Publisher[Int]])
+        val flux = Flux.mergeSequential[Int](Flux.just(Flux.just(1, 2, 3, 4), Flux.just(2, 3, 4)): Publisher[Publisher[Int]])
         StepVerifier.create(flux)
-          .expectNext(1, 2, 3, 2, 3, 4)
+          .expectNext(1, 2, 3, 4, 2, 3, 4)
           .verifyComplete()
       }
       "with publisher of publisher, maxConcurrency and prefetch should merge the underlying publisher in sequence of publisher" in {
@@ -389,8 +389,8 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
           .verifyComplete()
       }
       "with varargs of publishers should merge the underlying publisher in sequence of publisher" in {
-        val flux = Flux.mergeSequential[Int](Flux.just(1, 2, 3), Flux.just(2, 3, 4))
-        StepVerifier.create(flux)
+        val flux = Flux.mergeSequential[Int](Flux.just[Int](1, 2, 3), Flux.just[Int](2, 3, 4))
+        StepVerifier.create[Int](flux)
           .expectNext(1, 2, 3, 2, 3, 4)
           .verifyComplete()
       }
@@ -423,7 +423,7 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       }
       "with prefetch, delayError and varargs of publishers should merge the underlying publisher in sequence of publisher" in {
         val flux = Flux.mergeSequentialDelayError[Int](2, Flux.just(1, 2, 3), Flux.just(2, 3, 4))
-        StepVerifier.create(flux)
+        StepVerifier.create[Int](flux)
           .expectNext(1, 2, 3, 2, 3, 4)
           .verifyComplete()
       }
@@ -973,6 +973,21 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
 
     }
 
+    ".delaySequence" - {
+      "should delay the element but not subscription" in {
+        StepVerifier.withVirtualTime[(Long, (Long, Int))](() => Flux.from(Flux.just[Int](1, 2, 3).delayElements(100 milliseconds).elapsed()).delaySequence(1 seconds).elapsed())
+          .thenAwait(1300 milliseconds)
+          .expectNext((1100l, (100l, 1)), (100l, (100l, 2)), (100l, (100l, 3)))
+          .verifyComplete()
+      }
+      "with scheduler should use the scheduler" in {
+        StepVerifier.withVirtualTime[(Long, (Long, Int))](() => Flux.from(Flux.just[Int](1, 2, 3).delayElements(100 milliseconds).elapsed()).delaySequence(1 seconds, VirtualTimeScheduler.getOrSet()).elapsed())
+          .thenAwait(1300 milliseconds)
+          .expectNext((1100l, (100l, 1)), (100l, (100l, 2)), (100l, (100l, 3)))
+          .verifyComplete()
+      }
+    }
+
     ".count should return Mono which emit the number of value in this flux" in {
       val mono = Flux.just(10, 9, 8).count()
       StepVerifier.create(mono)
@@ -1498,8 +1513,7 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       }
       "with defaultValue should give the last element or defaultValue if the flux is empty" in {
         val mono = Flux.empty.last(5)
-        StepVerifier.create(mono)
-          .expectNext(5)
+        StepVerifier.create(mono).expectNext(5)
           .verifyComplete()
       }
     }

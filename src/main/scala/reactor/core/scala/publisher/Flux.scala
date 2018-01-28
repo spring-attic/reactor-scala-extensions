@@ -913,6 +913,51 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
   final def delayElements(delay: Duration, timer: Scheduler) = Flux(jFlux.delayElements(delay, timer))
 
   /**
+    * Shift this [[Flux]] forward in time by a given [[Duration]].
+    * Unlike with [[Flux.delayElements(Duration)]], elements are shifted forward in time
+    * as they are emitted, always resulting in the delay between two elements being
+    * the same as in the source (only the first element is visibly delayed from the
+    * previous event, that is the subscription).
+    * Signals are delayed and continue on the [[reactor.core.scheduler.Schedulers.parallel() parallel]]
+    * [[Scheduler]], but empty sequences or immediate error signals are not delayed.
+    * <p>
+    * With this operator, a source emitting at 10Hz with a delaySequence [[Duration]]
+    * of 1s will still emit at 10Hz, with an initial "hiccup" of 1s.
+    * On the other hand, [[Flux.delayElements(Duration)]] would end up emitting
+    * at 1Hz.
+    * <p>
+    * This is closer to [[Flux.delaySubscription(Duration)]], except the source
+    * is subscribed to immediately.
+    *
+    * @param delay [[Duration]] to shift the sequence by
+    * @return an shifted [[Flux]] emitting at the same frequency as the source
+    */
+  final def delaySequence(delay: Duration) = Flux(jFlux.delaySequence(delay))
+
+  /**
+    * Shift this [[Flux]] forward in time by a given [[Duration]].
+    * Unlike with [[Flux.delayElements(Duration)]], elements are shifted forward in time
+    * as they are emitted, always resulting in the delay between two elements being
+    * the same as in the source (only the first element is visibly delayed from the
+    * previous event, that is the subscription).
+    * Signals are delayed and continue on an user-specified [[Scheduler]], but empty
+    * sequences or immediate error signals are not delayed.
+    * <p>
+    * With this operator, a source emitting at 10Hz with a delaySequence [[Duration]]
+    * of 1s will still emit at 10Hz, with an initial "hiccup" of 1s.
+    * On the other hand, [[Flux.delayElements(Duration)]] would end up emitting
+    * at 1Hz.
+    * <p>
+    * This is closer to [[Flux.delaySubscription(Duration)]], except the source
+    * is subscribed to immediately.
+    *
+    * @param delay [[Duration]] to shift the sequence by
+    * @param timer a time-capable [[Scheduler]] instance to delay signals on
+    * @return an shifted [[Flux]] emitting at the same frequency as the source
+    */
+  final def delaySequence(delay: Duration, timer: Scheduler) = Flux(jFlux.delaySequence(delay, timer))
+
+  /**
     * Delay the [[Flux.subscribe subscription]] to this [[Flux]] source until the given
     * period elapses.
     *
