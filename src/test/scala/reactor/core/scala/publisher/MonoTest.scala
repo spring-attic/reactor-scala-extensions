@@ -5,7 +5,7 @@ import java.util.concurrent._
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicLong, AtomicReference}
 import java.util.function.Supplier
 
-import org.mockito.Mockito.spy
+import org.mockito.Mockito.{spy, verify}
 import org.mockito.{ArgumentMatchers, Mockito}
 import org.reactivestreams.Subscription
 import org.scalatest.mockito.MockitoSugar
@@ -1093,6 +1093,13 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
         disposable shouldBe a[Disposable]
         counter.await(1, TimeUnit.SECONDS) shouldBe true
       }
+    }
+
+    ".tag should call the underlying Mono.tag method" in {
+      val jMono = spy(JMono.just(1))
+      val flux = Mono(jMono)
+      flux.tag("integer", "one")
+      verify(jMono).tag("integer", "one")
     }
 
     ".take" - {

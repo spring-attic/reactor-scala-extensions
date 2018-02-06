@@ -7,10 +7,11 @@ import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger, AtomicLong, At
 import java.util.concurrent.{Callable, CountDownLatch, TimeUnit}
 import java.util.function.Predicate
 
+import org.mockito.Mockito.{spy, verify}
 import org.reactivestreams.{Publisher, Subscription}
 import org.scalatest.prop.TableDrivenPropertyChecks
 import org.scalatest.{FreeSpec, Matchers}
-import reactor.core.publisher.{GroupedFlux => JGroupedFlux, _}
+import reactor.core.publisher.{Flux => JFlux, GroupedFlux => JGroupedFlux, _}
 import reactor.core.scheduler.Schedulers
 import reactor.test.StepVerifier
 import reactor.test.scheduler.VirtualTimeScheduler
@@ -1881,7 +1882,7 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
     }
 
     ".switchIfEmpty should switch if the current flux is empty" in {
-      val flux = Flux.empty.switchIfEmpty(Flux.just(10, 20, 30))
+      val flux = Flux.empty.switchIfEmpty(Flux.just[Int](10, 20, 30))
       StepVerifier.create(flux)
         .expectNext(10, 20, 30)
         .verifyComplete()
@@ -1900,6 +1901,13 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
           .expectNext(10, 20, 20, 40, 30, 60)
           .verifyComplete()
       }
+    }
+
+    ".tag should call the underlying Flux.tag method" in {
+      val jFlux = spy(JFlux.just(1, 2, 3))
+      val flux = Flux(jFlux)
+      flux.tag("integer", "one, two, three")
+      verify(jFlux).tag("integer", "one, two, three")
     }
 
     ".take" - {
