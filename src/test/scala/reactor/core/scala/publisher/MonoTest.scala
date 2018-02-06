@@ -1102,7 +1102,7 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
           .verifyComplete()
       }
       "with duration and scheduler should complete after duration elapse" in {
-        StepVerifier.withVirtualTime(() => Mono.delay(10 seconds, Schedulers.parallel()).take(5 seconds))
+        StepVerifier.withVirtualTime(() => Mono.delay(10 seconds).take(5 seconds, Schedulers.parallel()))
           .thenAwait(JDuration.ofSeconds(5))
           .verifyComplete()
       }
