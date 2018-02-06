@@ -1563,6 +1563,13 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         .verifyComplete()
     }
 
+    ".name should call the underlying Flux.name method" in {
+      val jFlux = spy(JFlux.just(1, 2, 3))
+      val flux = Flux(jFlux)
+      flux.name("flux-integer")
+      verify(jFlux).name("flux-integer")
+    }
+
     ".ofType should filter the value emitted by this flux according to the class" in {
       val flux = Flux.just(1, "2", "3", 4).ofType(classOf[String])
       StepVerifier.create(flux)

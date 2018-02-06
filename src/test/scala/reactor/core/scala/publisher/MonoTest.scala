@@ -207,6 +207,13 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
       }
     }
 
+    ".name should call the underlying Mono.name method" in {
+      val jMono = spy(JMono.just(1))
+      val mono = Mono(jMono)
+      mono.name("mono-integer")
+      verify(jMono).name("mono-integer")
+    }
+
     ".never will never signal any data, error or completion signal" in {
       val mono = Mono.never
       StepVerifier.create(mono)
