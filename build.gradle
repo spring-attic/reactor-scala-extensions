@@ -34,8 +34,8 @@ dependencies {
     testCompile "org.scalatest:scalatest_%%:3.0.3"
     testRuntime "org.pegdown:pegdown:1.6.0"
     testCompile group: 'io.projectreactor', name: 'reactor-test', version: "$reactorVersion"
-//    testCompile "org.mockito:mockito-core:$mockitoVersion"
     testCompile "org.mockito:mockito-inline:$mockitoVersion"
+    testCompile "com.typesafe.scala-logging:scala-logging_%%:3.7.2"
 
     scoverage "org.scoverage:scalac-scoverage-plugin_%%:$scoverageVersion", "org.scoverage:scalac-scoverage-runtime_%%:$scoverageVersion"
 }
