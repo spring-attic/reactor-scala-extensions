@@ -1577,6 +1577,13 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         .verifyComplete()
     }
 
+    ".onBackpressureBuffer should call the underlying method" in {
+      val jFlux = spy(JFlux.just(1, 2, 3))
+      val flux = Flux(jFlux)
+      flux.onBackpressureBuffer()
+      verify(jFlux).onBackpressureBuffer()
+    }
+
     ".onErrorResume" - {
       "should resume with a fallback publisher when error happen" in {
         val flux = Flux.just(1, 2).concatWith(Mono.error(new RuntimeException("exception"))).onErrorResume((t: Throwable) => Flux.just(10, 20, 30))
