@@ -5,15 +5,13 @@ import java.nio.file.Files
 import java.util
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger, AtomicLong, AtomicReference}
 import java.util.concurrent.{Callable, CountDownLatch, TimeUnit}
-import java.util.function.{Consumer, Predicate}
+import java.util.function.Predicate
 
 import com.typesafe.scalalogging.LazyLogging
-import org.mockito.ArgumentMatchers
 import org.mockito.Mockito.{spy, verify}
 import org.reactivestreams.{Publisher, Subscription}
-import org.scalatest.mockito.MockitoSugar
 import org.scalatest.prop.TableDrivenPropertyChecks
-import org.scalatest.{FreeSpec, Matchers, MatchersHelper}
+import org.scalatest.{FreeSpec, Matchers}
 import reactor.core.publisher.{Flux => JFlux, GroupedFlux => JGroupedFlux, _}
 import reactor.core.scheduler.Schedulers
 import reactor.test.StepVerifier
@@ -28,7 +26,6 @@ import scala.io.Source
 import scala.language.postfixOps
 import scala.math.Ordering.IntOrdering
 import scala.math.ScalaNumber
-import scala.runtime.LazyLong
 import scala.util.{Failure, Try}
 
 /**
