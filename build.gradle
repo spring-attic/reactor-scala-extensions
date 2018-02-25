@@ -92,6 +92,7 @@ if (!project.parent) {
         project.uploadArchivesAll
     }
 }
+archivesBaseName = "${rootProject.name}_$baseScalaVersion"
 
 ext.isReleaseVersion = !version.endsWith("SNAPSHOT")
 signing {
