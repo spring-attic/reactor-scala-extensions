@@ -53,10 +53,11 @@ buildscript {
 dependencyCheck {
     skipConfigurations = ["apiElements", "implementation", "runtimeElements", "runtimeOnly", "testImplementation", "testRuntimeOnly", "scoverageImplementation", "scoverageRuntimeOnly"]
 }
+targetCompatibility = "1.8"
 
 if (!project.parent) {
     apply plugin: 'net.researchgate.release'
-    final svs = ['2.12.4', '2.11.8']
+    final svs = ['2.12.4', '2.11.12']
 
     for (sv in svs) {
         String scalaVersionInDot = sv.replaceAll("_", ".")
