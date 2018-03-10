@@ -18,7 +18,7 @@ ext {
     mockitoVersion      = "2.15.0"
     pegdownVersion      = "1.6.0"
     reactorVersion      = "3.1.5.RELEASE"
-    scalaLoggingVersion = "3.7.2"
+    scalaLoggingVersion = "3.8.0"
     scalatestVersion    = "3.0.3"
     scoverageVersion    = "1.4.0-M3"
 }
