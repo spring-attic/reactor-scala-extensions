@@ -57,7 +57,7 @@ targetCompatibility = "1.8"
 
 if (!project.parent) {
     apply plugin: 'net.researchgate.release'
-    final svs = ['2.12.4', '2.11.11']
+    final svs = ['2.12.4', '2.11.12']
 
     for (sv in svs) {
         String scalaVersionInDot = sv.replaceAll("_", ".")
@@ -171,6 +171,8 @@ ScalaCompileOptions.metaClass.useAnt = false
 ScalaCompileOptions.metaClass.useCompileDaemon = false
 
 project.tasks.scaladoc.scalaDocOptions.additionalParameters = ["-no-link-warnings"]
+project.tasks.compileScala.scalaCompileOptions.additionalParameters = ["-target:jvm-1.8"]
+project.tasks.compileTestScala.scalaCompileOptions.additionalParameters = ["-target:jvm-1.8"]
 
 release {
     git {
