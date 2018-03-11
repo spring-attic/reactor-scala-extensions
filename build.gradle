@@ -25,7 +25,7 @@ dependencies {
     testCompile libraries.reactorTest
     testCompile libraries.mockitoInline
     testCompile libraries.scalaLogging
-
+    testRuntime libraries.logbackVersion
     scoverage libraries.scoveragePlugin, libraries.scoverageRuntime
 }
 
