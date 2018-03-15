@@ -26,7 +26,7 @@ ext {
 
 ext.libraries = [
         findbugs            : "com.google.code.findbugs:jsr305:$findBugsVersion",
-        logbackVersion      : "ch.qos.logback:logback-classic:$logbackVersion",
+        logback             : "ch.qos.logback:logback-classic:$logbackVersion",
         mockitoInline       : "org.mockito:mockito-inline:$mockitoVersion",
         pegdown             : "org.pegdown:pegdown:$pegdownVersion",
         reactorCore         : "io.projectreactor:reactor-core:$reactorVersion",
