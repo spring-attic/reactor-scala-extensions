@@ -3984,7 +3984,7 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * @return a zipped [[Flux]]
     *
     */
-  final def zipWith[T2](source2: Publisher[_ <: T2]): Flux[(T, T2)] = Flux(jFlux.zipWith(source2)).map(tupleTwo2ScalaTuple2)
+  final def zipWith[T2](source2: Publisher[_ <: T2]): Flux[(T, T2)] = zipWith(source2, (t: T, t2: T2) => (t, t2))
 
   /**
     * "Step-Merge" especially useful in Scatter-Gather scenarios. The operator will forward all combinations
@@ -4034,7 +4034,7 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * @return a zipped [[Flux]]
     *
     */
-  final def zipWith[T2](source2: Publisher[_ <: T2], prefetch: Int) = Flux(jFlux.zipWith[T2](source2, prefetch)).map(tupleTwo2ScalaTuple2)
+  final def zipWith[T2](source2: Publisher[_ <: T2], prefetch: Int): Flux[(T, T2)] = zipWith(source2, prefetch, (t: T, t2: T2) => (t, t2))
 
   /**
     * Pairwise combines as `Tuple2` elements of this [[Flux]] and an [[Iterable]] sequence.
@@ -4047,7 +4047,7 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * @return a zipped [[Flux]]
     *
     */
-  final def zipWithIterable[T2](iterable: Iterable[_ <: T2]): Flux[(T, T2)] = Flux(jFlux.zipWithIterable[T2](iterable)).map(tupleTwo2ScalaTuple2)
+  final def zipWithIterable[T2](iterable: Iterable[_ <: T2]): Flux[(T, T2)] = zipWithIterable(iterable, (t: T, t2: T2) => (t, t2))
 
   /**
     * Pairwise combines elements of this
@@ -5219,8 +5219,7 @@ object Flux {
     * @return a zipped [[Flux]]
     */
   def zip[T1, T2](source1: Publisher[_ <: T1], source2: Publisher[_ <: T2]): Flux[(T1, T2)] =
-    Flux(JFlux.zip[T1, T2](source1, source2))
-      .map(tupleTwo2ScalaTuple2)
+    Flux(JFlux.zip[T1, T2, (T1, T2)](source1, source2, (t1: T1, t2: T2) => (t1, t2)))
 
   /**
     * "Step-Merge" especially useful in Scatter-Gather scenarios. The operator will forward all combinations of the
