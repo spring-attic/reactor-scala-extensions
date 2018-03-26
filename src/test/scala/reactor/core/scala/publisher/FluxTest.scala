@@ -1365,6 +1365,14 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
       }
     }
 
+    ".flatten" - {
+      "with mapper should map the element sequentially" in {
+        val flux = Flux.just(1, 2, 3).flatten(i => Flux.just(i * 2, i * 3))
+        StepVerifier.create(flux)
+          .expectNext(2, 3, 4, 6, 6, 9)
+          .verifyComplete()
+      }
+    }
     ".groupBy" - {
       "with keyMapper should group the flux by the key mapper" in {
         val oddBuffer = ListBuffer.empty[Int]

@@ -1659,6 +1659,14 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
   final def flatMapSequentialDelayError[R](mapper: (T) => Publisher[_ <: R], maxConcurrency: Int, prefetch: Int) = Flux(jFlux.flatMapSequentialDelayError[R](mapper, maxConcurrency, prefetch))
 
   /**
+    * Alias for [[Flux.concatMap]]
+    * @param mapper the function to transform this sequence of T into concatenated sequences of V
+    * @tparam V the produced concatenated type
+    * @return a flattened [[Flux]]
+    */
+  final def flatten[V](mapper: T => Publisher[_ <: V]): Flux[V] = concatMap[V](mapper)
+
+  /**
     * The prefetch configuration of the [[Flux]]
     *
     * @return the prefetch configuration of the [[Flux]], -1L if unspecified
