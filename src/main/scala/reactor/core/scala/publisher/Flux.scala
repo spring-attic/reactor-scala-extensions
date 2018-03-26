@@ -2,7 +2,7 @@ package reactor.core.scala.publisher
 
 import java.lang.{Boolean => JBoolean, Iterable => JIterable, Long => JLong}
 import java.util
-import java.util.concurrent.Callable
+import java.util.concurrent.{Callable, TimeUnit}
 import java.util.function.{BiFunction, Consumer, Function, Supplier}
 import java.util.logging.Level
 import java.util.{Comparator, stream, List => JList}
@@ -11,7 +11,7 @@ import org.reactivestreams.{Publisher, Subscriber, Subscription}
 import reactor.core.Disposable
 import reactor.core.publisher.FluxSink.OverflowStrategy
 import reactor.core.publisher.{BufferOverflowStrategy, FluxSink, Signal, SignalType, SynchronousSink, Flux => JFlux, GroupedFlux => JGroupedFlux}
-import reactor.core.scheduler.Scheduler
+import reactor.core.scheduler.{Scheduler, Schedulers}
 import reactor.util.Logger
 import reactor.util.context.Context
 import reactor.util.function.Tuple2
@@ -4064,6 +4064,13 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     *
     */
   final def zipWithIterable[T2, V](iterable: Iterable[_ <: T2], zipper: (T, T2) => _ <: V) = Flux(jFlux.zipWithIterable[T2, V](iterable, zipper))
+
+  final def zipWithTimeSinceSubscribe(): Flux[(T, Long)] = {
+    val scheduler = Schedulers.single()
+    var subscriptionTime: Long = 0
+    doOnSubscribe(_ => subscriptionTime = scheduler.now(TimeUnit.MILLISECONDS))
+      .map(t => (t, scheduler.now(TimeUnit.MILLISECONDS) - subscriptionTime))
+  }
 
   final def asJava(): JFlux[T] = jFlux
 }

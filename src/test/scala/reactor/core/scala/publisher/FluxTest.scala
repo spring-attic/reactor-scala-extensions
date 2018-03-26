@@ -2120,6 +2120,13 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
       }
     }
 
+    ".zipWithTimeSinceSubscribe should emit tuple2 with the second element as the time taken to emit since subscription in milliseconds" in {
+      StepVerifier.withVirtualTime(() => Flux.just(1, 2, 3).delayElements(1 second).zipWithTimeSinceSubscribe())
+        .thenAwait(3 seconds)
+        .expectNext((1, 1000l), (2, 2000l), (3, 3000l))
+        .verifyComplete()
+    }
+
     ".asJava should convert to java" in {
       val flux = Flux.just(1, 2, 3).asJava()
       flux shouldBe a[reactor.core.publisher.Flux[_]]
