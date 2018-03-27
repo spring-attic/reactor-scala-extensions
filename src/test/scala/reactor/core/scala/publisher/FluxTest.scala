@@ -1522,8 +1522,9 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
           .verifyComplete()
       }
       "with defaultValue should give the last element or defaultValue if the flux is empty" in {
-        val mono = Flux.empty.last(5)
-        StepVerifier.create(mono).expectNext(5)
+        val mono = Flux.empty[Int].last(5)
+        StepVerifier.create(mono)
+          .expectNext(5)
           .verifyComplete()
       }
     }
@@ -1767,18 +1768,11 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
         .verifyComplete()
     }
 
-    ".sample should emit the last value for given interval" ignore {
-      val flux = Flux.just[Long](1L).sample(Duration(1, "second"))
-      val counter = new CountDownLatch(3)
-      flux.subscribe(new BaseSubscriber[Long] {
-        override def hookOnSubscribe(subscription: Subscription): Unit = subscription.request(Long.MaxValue)
-
-        override def hookOnNext(value: Long): Unit = {
-          counter.countDown()
-          Console.out.println(value)
-        }
-      })
-      counter.await(4, TimeUnit.SECONDS)
+    ".sample should emit the last value for given interval" in {
+      StepVerifier.withVirtualTime(() =>Flux.just(1, 2, 3, 4, 5, 6).delayElements(1 second).sample(1500 milliseconds))
+        .thenAwait(6 seconds)
+        .expectNext(1, 2, 4, 5, 6)
+        .verifyComplete()
     }
 
     ".sampleFirst should emit the first value during the timespan" in {
@@ -1913,7 +1907,7 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
     }
 
     ".switchIfEmpty should switch if the current flux is empty" in {
-      val flux = Flux.empty.switchIfEmpty(Flux.just[Int](10, 20, 30))
+      val flux = Flux.empty[Int].switchIfEmpty(Flux.just[Int](10, 20, 30))
       StepVerifier.create(flux)
         .expectNext(10, 20, 30)
         .verifyComplete()
