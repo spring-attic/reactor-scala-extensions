@@ -42,7 +42,8 @@ import scala.concurrent.duration.Duration
   * @tparam T the element type of this Reactive Streams [[Publisher]]
   * @see [[Mono]]
   */
-class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends Publisher[T] with MapablePublisher[T] with OnErrorReturn[T] {
+class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T])
+  extends Publisher[T] with MapablePublisher[T] with OnErrorReturn[T] with FluxLike[T] {
   override def subscribe(s: Subscriber[_ >: T]): Unit = jFlux.subscribe(s)
 
   /**
@@ -1657,14 +1658,6 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T]) extends
     * @return a merged [[Flux]], subscribing early but keeping the original ordering
     */
   final def flatMapSequentialDelayError[R](mapper: (T) => Publisher[_ <: R], maxConcurrency: Int, prefetch: Int) = Flux(jFlux.flatMapSequentialDelayError[R](mapper, maxConcurrency, prefetch))
-
-  /**
-    * Alias for [[Flux.concatMap]]
-    * @param mapper the function to transform this sequence of T into concatenated sequences of V
-    * @tparam V the produced concatenated type
-    * @return a flattened [[Flux]]
-    */
-  final def flatten[V](mapper: T => Publisher[_ <: V]): Flux[V] = concatMap[V](mapper)
 
   /**
     * The prefetch configuration of the [[Flux]]
