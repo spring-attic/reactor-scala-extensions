@@ -62,7 +62,8 @@ import scala.util.{Failure, Success, Try}
   * @tparam T the type of the single value of this class
   * @see Flux
   */
-class Mono[T] private(private val jMono: JMono[T]) extends Publisher[T] with MapablePublisher[T] with OnErrorReturn[T] {
+class Mono[T] private(private val jMono: JMono[T])
+  extends Publisher[T] with MapablePublisher[T] with OnErrorReturn[T] with MonoLike[T] {
   override def subscribe(s: Subscriber[_ >: T]): Unit = jMono.subscribe(s)
 
   /**

@@ -1,10 +1,10 @@
 package reactor.core.scala.publisher
 
-import java.io.{BufferedReader, File, FileInputStream, InputStreamReader, PrintWriter}
+import java.io._
 import java.nio.file.Files
 import java.util
+import java.util.concurrent.Callable
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger, AtomicLong, AtomicReference}
-import java.util.concurrent.{Callable, CountDownLatch, TimeUnit}
 import java.util.function.Predicate
 
 import com.typesafe.scalalogging.LazyLogging
@@ -31,7 +31,7 @@ import scala.util.{Failure, Try}
 /**
   * Created by winarto on 1/10/17.
   */
-class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks with LazyLogging {
+class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks with LazyLogging with TestSupport {
   "Flux" - {
     ".combineLatest" - {
       "with combinator and sources should produce latest elements into a single element" in {
@@ -1601,9 +1601,7 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
         verify(jFlux).onBackpressureBuffer(5)
       }
     }
-    sealed trait Vehicle
-    case class Sedan(id: Int) extends Vehicle
-    case class Truck(id: Int) extends Vehicle
+
     ".onErrorRecover" - {
       "should recover with a Flux of element that has been recovered" in {
         val convoy = Flux.just[Vehicle](Sedan(1), Sedan(2)).concatWith(Flux.error(new RuntimeException("oops")))
@@ -1834,7 +1832,7 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
           .verifyComplete()
       }
       "with default value should return the default value if the flux is empty" in {
-        val mono = Flux.empty.single(2)
+        val mono = Flux.empty[Int].single(2)
         StepVerifier.create(mono)
           .expectNext(2)
           .verifyComplete()
@@ -1899,8 +1897,8 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
       }
       "with sort function should sort the elements based on the function" in {
         val flux = Flux.just(3, 4, 2, 5, 1, 6).sort(new IntOrdering() {
-          override def compare(x: Int, y: Int): Int = super.compare(x, y) * -1
-        })
+          override def compare(x: Int, y: Int): Int = super.compare(x, y)
+        }.reverse)
         StepVerifier.create(flux)
           .expectNext(6, 5, 4, 3, 2, 1)
           .verifyComplete()

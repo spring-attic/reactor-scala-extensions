@@ -27,7 +27,7 @@ import scala.util.Random
 /**
   * Created by winarto on 12/26/16.
   */
-class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks with MockitoSugar {
+class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks with MockitoSugar with TestSupport {
 
   private val randomValue = Random.nextLong()
   "Mono" - {
@@ -907,6 +907,26 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
         StepVerifier.create(mono)
           .expectComplete()
           .verify()
+      }
+    }
+
+    ".onErrorRecover" - {
+      "should recover with a Mono of element that has been recovered" in {
+        val convoy = Mono.error(new RuntimeException("oops"))
+          .onErrorRecover {case _ => Truck(5)}
+        StepVerifier.create(convoy)
+          .expectNext(Truck(5))
+          .verifyComplete()
+      }
+    }
+
+    ".onErrorRecoverWith" - {
+      "should recover with a Flux of element that is provided for recovery" in {
+        val convoy = Mono.error(new RuntimeException("oops"))
+          .onErrorRecoverWith {case _ => Mono.just(Truck(5))}
+        StepVerifier.create(convoy)
+          .expectNext(Truck(5))
+          .verifyComplete()
       }
     }
 
