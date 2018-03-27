@@ -3,7 +3,7 @@ package reactor.core.scala.publisher
 import java.lang.{Boolean => JBoolean, Iterable => JIterable, Long => JLong}
 import java.util
 import java.util.concurrent.{Callable, TimeUnit}
-import java.util.function.{BiFunction, Consumer, Function, Supplier}
+import java.util.function.{BiFunction, Consumer, Function, Predicate, Supplier}
 import java.util.logging.Level
 import java.util.{Comparator, stream, List => JList}
 
@@ -2274,16 +2274,33 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T])
   /// TODO: test this please
   final def onBackpressureLatest() = Flux(jFlux.onBackpressureLatest())
 
+  final def onErrorRecover[U <: T](pf: PartialFunction[Throwable, U]): Flux[T] = {
+    def defaultToError(t: Throwable): Flux[U] = Flux.error(t)
+
+    def recover(t: Throwable): Flux[U] = pf.andThen(u => Flux.just(u)).applyOrElse(t, defaultToError)
+    /*onErrorResume( (ex: Throwable) => {
+      val x = pf.andThen(Flux.just[U](_)).applyOrElse(ex, throwableToError)
+      x
+    })*/
+    onErrorResume(recover)
+  }
+
   /**
     * Subscribe to a returned fallback publisher when any error occurs.
     * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/onerrorresumewith.png" alt="">
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.5/src/docs/marble/onerrorresume.png" alt="">
     * <p>
     *
     * @param fallback the [[Function1]] mapping the error to a new [[Publisher]] sequence
     * @return a new [[Flux]]
     */
-  final def onErrorResume(fallback: Throwable => _ <: Publisher[_ <: T]) = Flux(jFlux.onErrorResume(fallback))
+  final def onErrorResume[U <: T](fallback: Throwable => _ <: Publisher[_ <: U]): Flux[U] = {
+    val predicate = new Function[Throwable, Publisher[_ <: U]] {
+      override def apply(t: Throwable): Publisher[_ <: U] = fallback(t)
+    }
+    val x = Flux(jFlux.onErrorResume(predicate))
+    x.as[Flux[U]](t => t.map(u => u.asInstanceOf[U]))
+  }
 
   /**
     * Subscribe to a returned fallback publisher when an error matching the given type

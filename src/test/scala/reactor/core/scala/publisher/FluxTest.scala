@@ -1602,9 +1602,23 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
       }
     }
 
+    ".onErrorRecover" - {
+      "should recover with a Flux of element that has been recovered" in {
+        sealed trait Vehicle
+        case class Sedan(id: Int) extends Vehicle
+        case class Truck(id: Int) extends Vehicle
+
+        val convoy = Flux.just[Vehicle](Sedan(1), Sedan(2)).concatWith(Flux.error(new RuntimeException("oops")))
+          .onErrorRecover {case _ => Truck(5)}
+        StepVerifier.create(convoy)
+          .expectNext(Sedan(1), Sedan(2), Truck(5))
+          .verifyComplete()
+      }
+    }
+
     ".onErrorResume" - {
       "should resume with a fallback publisher when error happen" in {
-        val flux = Flux.just(1, 2).concatWith(Mono.error(new RuntimeException("exception"))).onErrorResume((t: Throwable) => Flux.just(10, 20, 30))
+        val flux = Flux.just(1, 2).concatWith(Mono.error(new RuntimeException("exception"))).onErrorResume((_: Throwable) => Flux.just(10, 20, 30))
         StepVerifier.create(flux)
           .expectNext(1, 2, 10, 20, 30)
           .verifyComplete()
