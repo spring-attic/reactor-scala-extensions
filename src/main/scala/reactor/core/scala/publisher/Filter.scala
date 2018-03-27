@@ -11,7 +11,7 @@ trait Filter[T] { self: Publisher[T] =>
     * <p>
     * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/filter.png" alt="">
     *
-    * @param p the [[Function1]] predicate to test values against
+    * @param f the [[Function1]] predicate to test values against
     * @return a new [[Publisher]] containing only values that pass the predicate test
     */
   def filter(f: T => Boolean): Publisher[T]
