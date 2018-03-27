@@ -43,7 +43,7 @@ import scala.concurrent.duration.Duration
   * @see [[Mono]]
   */
 class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T])
-  extends Publisher[T] with MapablePublisher[T] with OnErrorReturn[T] with FluxLike[T] {
+  extends Publisher[T] with MapablePublisher[T] with OnErrorReturn[T] with FluxLike[T] with Filter [T] {
   override def subscribe(s: Subscriber[_ >: T]): Unit = jFlux.subscribe(s)
 
   /**
