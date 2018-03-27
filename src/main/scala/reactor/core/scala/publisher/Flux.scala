@@ -2274,17 +2274,6 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T])
   /// TODO: test this please
   final def onBackpressureLatest() = Flux(jFlux.onBackpressureLatest())
 
-  final def onErrorRecover[U <: T](pf: PartialFunction[Throwable, U]): Flux[T] = {
-    def defaultToError(t: Throwable): Flux[U] = Flux.error(t)
-
-    def recover(t: Throwable): Flux[U] = pf.andThen(u => Flux.just(u)).applyOrElse(t, defaultToError)
-    /*onErrorResume( (ex: Throwable) => {
-      val x = pf.andThen(Flux.just[U](_)).applyOrElse(ex, throwableToError)
-      x
-    })*/
-    onErrorResume(recover)
-  }
-
   /**
     * Subscribe to a returned fallback publisher when any error occurs.
     * <p>
