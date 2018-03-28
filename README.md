@@ -1,6 +1,6 @@
 # Reactor Core Scala
 [![Join the chat at https://gitter.im/reactor/reactor](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/reactor/reactor?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-[![Reactor Core Scala](https://maven-badges.herokuapp.com/maven-central/io.projectreactor/reactor-scala-extensions_2.11/badge.svg?style=plastic)](http://mvnrepository.com/artifact/io.projectreactor/reactor-scala-extensions_2.11) 
+[![Reactor Scala Extensions](https://maven-badges.herokuapp.com/maven-central/io.projectreactor/reactor-scala-extensions_2.12/badge.svg?style=plastic)](http://mvnrepository.com/artifact/io.projectreactor/reactor-scala-extensions_2.12)
 [![Build Status](https://travis-ci.org/reactor/reactor-scala-extensions.svg?branch=master)](https://travis-ci.org/reactor/reactor-scala-extensions)
 [![codecov](https://codecov.io/gh/reactor/reactor-scala-extensions/branch/master/graph/badge.svg)](https://codecov.io/gh/reactor/reactor-scala-extensions)
                             
@@ -33,9 +33,9 @@ With Gradle:
     }
     
     dependencies {
-        //compile "io.projectreactor:reactor-scala-extensions_2.12:0.3.4-SNAPSHOT
-        compile "io.projectreactor:reactor-scala-extensions_2.12:0.3.3 //for scala 2.12
-        //compile "io.projectreactor:reactor-scala-extensions_2.11:0.3.3 //for scala 2.11
+        //compile "io.projectreactor:reactor-scala-extensions_2.12:0.3.5-SNAPSHOT
+        compile "io.projectreactor:reactor-scala-extensions_2.12:0.3.4 //for scala 2.12
+        //compile "io.projectreactor:reactor-scala-extensions_2.11:0.3.4 //for scala 2.11
     }
 
 With Maven:
@@ -56,14 +56,14 @@ With Maven:
     <dependency>
         <groupId>io.projectreactor</groupId>
         <artifactId>reactor-scala-extensions</artifactId>
-        <version>0.3.4-SNAPSHOT</version>
+        <version>0.3.5-SNAPSHOT</version>
     </dependency>
     -->
     <dependency>
         <groupId>io.projectreactor</groupId>
         <artifactId>reactor-scala-extensions_2.12</artifactId> <!-- for scala 2.12 -->
         <!--<artifactId>reactor-scala-extensions_2.11</artifactId> for scala 2.11 -->
-        <version>0.3.3</version>
+        <version>0.3.4</version>
     </dependency>
 
 ## Contributing
