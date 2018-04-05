@@ -12,7 +12,7 @@ import org.mockito.Mockito.{spy, verify}
 import org.reactivestreams.{Publisher, Subscription}
 import org.scalatest.prop.TableDrivenPropertyChecks
 import org.scalatest.{FreeSpec, Matchers}
-import reactor.core.publisher.{Flux => JFlux, GroupedFlux => JGroupedFlux, _}
+import reactor.core.publisher.{Flux => JFlux, _}
 import reactor.core.scheduler.Schedulers
 import reactor.test.StepVerifier
 import reactor.test.scheduler.VirtualTimeScheduler
@@ -48,7 +48,7 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
           .verifyComplete()
       }
       "with source1, source2 and combinator should produce latest elements into a single element" in {
-        val flux = Flux.combineLatest(Mono.just(1), Mono.just("a"), (int: Int, string: String) => s"${int.toString}-$string")
+        val flux = Flux.combineLatest(Mono.just(1), Mono.just("a"), (int: Int, string: String) => s"$int-$string")
         StepVerifier.create(flux)
           .expectNext("1-a")
           .verifyComplete()

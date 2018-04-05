@@ -21,6 +21,8 @@ dependencies {
     compile libraries.reactorCore
     compile libraries.findbugs
 
+    compile "io.monix:monix_$baseScalaVersion:2.3.3"
+
 //    test dependencies
     testCompile libraries.scalatest
     testRuntime libraries.pegdown

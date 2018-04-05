@@ -1,20 +1,20 @@
 package reactor.core.scala
 
-import java.lang.{Boolean => JBoolean, Iterable => JIterable, Long => JLong}
+import java.lang.{Iterable => JIterable, Long => JLong}
 import java.time.{Duration => JDuration}
-import java.util.{Optional, Spliterator, Spliterators}
 import java.util.Optional.empty
 import java.util.concurrent.Callable
 import java.util.function.{BiConsumer, BiFunction, BiPredicate, BooleanSupplier, Consumer, Function, LongConsumer, Predicate, Supplier}
 import java.util.stream.{StreamSupport, Stream => JStream}
+import java.util.{Optional, Spliterator, Spliterators}
 
 import org.reactivestreams.Publisher
 import reactor.core.publisher.{Flux => JFlux, Mono => JMono}
 import reactor.util.function.{Tuple2, Tuple3, Tuple4, Tuple5, Tuple6}
 
+import scala.collection.JavaConverters._
 import scala.concurrent.duration.Duration
 import scala.language.implicitConversions
-import scala.collection.JavaConverters._
 
 /**
   * Created by winarto on 12/31/16.
@@ -45,14 +45,6 @@ package object publisher {
   implicit def tupleSix2ScalaTuple6[T1, T2, T3, T4, T5, T6](javaTuple6: Tuple6[T1, T2, T3, T4, T5, T6]): (T1, T2, T3, T4, T5, T6) = {
     (javaTuple6.getT1, javaTuple6.getT2, javaTuple6.getT3, javaTuple6.getT4, javaTuple6.getT5, javaTuple6.getT6)
   }
-
-/*
-Uncomment this when used. It is not used for now and reduce the code coverage
-  implicit def try2Boolean[T](atry: Try[T]): Boolean = atry match {
-    case Success(_) => true
-    case Failure(_) => false
-  }
-*/
 
   type SConsumer[T] = (T => Unit)
   type SPredicate[T] = (T => Boolean)
