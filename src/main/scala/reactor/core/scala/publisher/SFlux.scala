@@ -7,7 +7,8 @@ import scala.collection.JavaConverters._
 import scala.language.postfixOps
 import scala.reflect.ClassTag
 
-trait SFlux[T] extends Publisher[T] {
+trait SFlux[T] extends SFluxLike[T, SFlux] with Publisher[T] { self =>
+
   private[publisher] def coreFlux: JFlux[T]
 
   override def subscribe(s: Subscriber[_ >: T]): Unit = coreFlux.subscribe(s)
@@ -21,18 +22,22 @@ object SFlux {
 
   def combineLatest[T](sources: Publisher[T]*): SFlux[Seq[T]] =
     new ReactiveSFlux[Seq[T]](JFlux.combineLatest[T, Seq[T]]
-      (sources, (arr: Array[AnyRef]) => arr.toSeq map {case t: T => t }))
+      (sources, (arr: Array[AnyRef]) => arr.toSeq map(_.asInstanceOf[T])))
 
   def combineLatestMap[T1, T2, V](p1: Publisher[T1], p2: Publisher[T2], mapper: (T1, T2) => V): SFlux[V] =
     new ReactiveSFlux[V](JFlux.combineLatest(p1, p2, mapper))
 
   def combineLatestMap[T: ClassTag, V](mapper: Array[T] => V, sources: Publisher[T]*): SFlux[V] = {
     val f = (arr: Array[AnyRef]) => {
-      val x: Seq[T] = arr.toSeq collect { case t: T => t }
+      val x: Seq[T] = arr.toSeq map(_.asInstanceOf[T])
       mapper(x.toArray)
     }
     new ReactiveSFlux[V](JFlux.combineLatest(sources, f))
   }
+
+  def concat[T](sources: Publisher[T]*): SFlux[T] = new ReactiveSFlux(JFlux.concat(sources))
+
+  def concatDelayError[T](sources: Publisher[T]*): SFlux[T] = new ReactiveSFlux[T](JFlux.concatDelayError(sources: _*))
 
   def empty[T]: SFlux[T] = new ReactiveSFlux(JFlux.empty[T]())
 

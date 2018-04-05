@@ -1,5 +1,6 @@
 package reactor.core.scala.publisher
 
+import monix.reactive.Observable
 import org.scalatest.FreeSpec
 import reactor.test.StepVerifier
 
@@ -40,9 +41,29 @@ class SFluxTest extends FreeSpec {
       }
     }
 
-    ".empty should return an empty SFlux" in {
+    ".concat" - {
+      "with varargs of publisher should concatenate the underlying publisher" in {
+        val flux = SFlux.concat(Flux.just(1, 2, 3), Mono.just(3), Flux.just(3, 4))
+        StepVerifier.create(flux)
+          .expectNext(1, 2, 3, 3, 3, 4)
+          .verifyComplete()
+      }
+    }
+
+    ".concatDelayError" - {
+      "with varargs of publishers should concatenate all sources emitted from parents" in {
+        val flux = SFlux.concatDelayError[Int](Mono.just(1), Mono.just(2), Mono.just(3))
+        StepVerifier.create(flux)
+          .expectNext(1, 2, 3)
+          .verifyComplete()
+      }
+    }
+
+      ".empty should return an empty SFlux" in {
       StepVerifier.create(SFlux.empty)
         .verifyComplete()
     }
   }
+
+  Observable.concatDelayError()
 }
