@@ -34,7 +34,7 @@ class SFluxTest extends FreeSpec {
       "of many should combine them into single SFlux and apply mapper" in {
         val flux = SFlux.combineLatestMap((array: Array[Int]) => s"${array(0)}-${array(1)}-${array(2)}", SFlux(1, 2), SFlux(10, 20), SFlux(100, 200))
         StepVerifier.create(flux)
-          .expectNext("2-2`0-100")
+          .expectNext("2-20-100")
           .expectNext("2-20-200")
           .verifyComplete()
       }
