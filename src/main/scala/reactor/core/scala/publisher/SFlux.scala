@@ -42,9 +42,11 @@ object SFlux {
 
   def create[T](emitter: FluxSink[T] => Unit, backPressure: FluxSink.OverflowStrategy = OverflowStrategy.BUFFER): SFlux[T] = new ReactiveSFlux[T](JFlux.create(emitter, backPressure))
 
+  def defer[T](f: => SFlux[T]): SFlux[T] = new ReactiveSFlux[T](JFlux.defer(() => f))
+
   def empty[T]: SFlux[T] = new ReactiveSFlux(JFlux.empty[T]())
 
-  def defer[T](f: => SFlux[T]): SFlux[T] = new ReactiveSFlux[T](JFlux.defer(() => f))
+  def error[T](e: Throwable): SFlux[T] = new ReactiveSFlux[T](JFlux.error(e))
 
   def fromIterable[T](iterable: Iterable[T]): SFlux[T] = new ReactiveSFlux[T](JFlux.fromIterable(iterable.asJava))
 
