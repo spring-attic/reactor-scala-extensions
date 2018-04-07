@@ -69,6 +69,13 @@ class SFluxTest extends FreeSpec {
         .verifyComplete()
     }
 
+    ".defer should create a flux" in {
+      def f = SFlux(1, 2, 3)
+      StepVerifier.create(SFlux.defer(f))
+        .expectNext(1, 2, 3)
+        .verifyComplete()
+    }
+
     ".empty should return an empty SFlux" in {
       StepVerifier.create(SFlux.empty)
         .verifyComplete()
