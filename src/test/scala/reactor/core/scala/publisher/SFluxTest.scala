@@ -1,6 +1,7 @@
 package reactor.core.scala.publisher
 
 import org.scalatest.FreeSpec
+import reactor.core.publisher.FluxSink
 import reactor.test.StepVerifier
 
 class SFluxTest extends FreeSpec {
@@ -58,8 +59,29 @@ class SFluxTest extends FreeSpec {
       }
     }
 
-      ".empty should return an empty SFlux" in {
+    ".create should create a flux" in {
+      val flux = SFlux.create[Int]((emitter: FluxSink[Int]) => {
+        emitter.next(1)
+        emitter.complete()
+      })
+      StepVerifier.create(flux)
+        .expectNext(1)
+        .verifyComplete()
+    }
+
+    ".empty should return an empty SFlux" in {
       StepVerifier.create(SFlux.empty)
+        .verifyComplete()
+    }
+
+    ".push should create a flux" in {
+      val flux = SFlux.push[Int]((emitter: FluxSink[Int]) => {
+        emitter.next(1)
+        emitter.next(2)
+        emitter.complete()
+      })
+      StepVerifier.create(flux)
+        .expectNext(1, 2)
         .verifyComplete()
     }
   }

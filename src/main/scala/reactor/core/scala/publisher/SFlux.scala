@@ -1,7 +1,8 @@
 package reactor.core.scala.publisher
 
 import org.reactivestreams.{Publisher, Subscriber}
-import reactor.core.publisher.{Flux => JFlux}
+import reactor.core.publisher.FluxSink.OverflowStrategy
+import reactor.core.publisher.{FluxSink, Flux => JFlux}
 
 import scala.collection.JavaConverters._
 import scala.language.postfixOps
@@ -39,9 +40,13 @@ object SFlux {
 
   def concatDelayError[T](sources: Publisher[T]*): SFlux[T] = new ReactiveSFlux[T](JFlux.concatDelayError(sources: _*))
 
+  def create[T](emitter: FluxSink[T] => Unit, backPressure: FluxSink.OverflowStrategy = OverflowStrategy.BUFFER): SFlux[T] = new ReactiveSFlux[T](JFlux.create(emitter, backPressure))
+
   def empty[T]: SFlux[T] = new ReactiveSFlux(JFlux.empty[T]())
 
   def fromIterable[T](iterable: Iterable[T]): SFlux[T] = new ReactiveSFlux[T](JFlux.fromIterable(iterable.asJava))
+
+  def push[T](emitter: FluxSink[T] => Unit, backPressure: FluxSink.OverflowStrategy = OverflowStrategy.BUFFER): SFlux[T] = new ReactiveSFlux[T](JFlux.push(emitter, backPressure))
 }
 
 private[publisher] class ReactiveSFlux[T](publisher: Publisher[T]) extends SFlux[T] {
