@@ -1,6 +1,5 @@
 package reactor.core.scala.publisher
 
-import monix.reactive.Observable
 import org.scalatest.FreeSpec
 import reactor.test.StepVerifier
 
@@ -64,6 +63,4 @@ class SFluxTest extends FreeSpec {
         .verifyComplete()
     }
   }
-
-  Observable.concatDelayError()
 }
