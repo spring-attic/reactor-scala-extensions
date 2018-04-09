@@ -82,13 +82,20 @@ class SFluxTest extends FreeSpec {
     }
 
     ".error" - {
-      "with throwable should create a flux with error" in {
+      "with throwable should create a flux with error with requested = false" in {
         val flux = SFlux.error(new RuntimeException())
         StepVerifier.create(flux)
           .expectError(classOf[RuntimeException])
           .verify()
       }
+      "with throwable should create a flux with error with requested = true" in {
+        val flux = SFlux.error(new RuntimeException(), true)
+        StepVerifier.create(flux)
+          .expectError(classOf[RuntimeException])
+          .verify()
+      }
     }
+
     ".push should create a flux" in {
       val flux = SFlux.push[Int]((emitter: FluxSink[Int]) => {
         emitter.next(1)

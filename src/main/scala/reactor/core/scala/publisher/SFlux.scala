@@ -46,7 +46,7 @@ object SFlux {
 
   def empty[T]: SFlux[T] = new ReactiveSFlux(JFlux.empty[T]())
 
-  def error[T](e: Throwable): SFlux[T] = new ReactiveSFlux[T](JFlux.error(e))
+  def error[T](e: Throwable, whenRequested: Boolean = false): SFlux[T] = new ReactiveSFlux[T](JFlux.error(e, whenRequested))
 
   def fromIterable[T](iterable: Iterable[T]): SFlux[T] = new ReactiveSFlux[T](JFlux.fromIterable(iterable.asJava))
 
