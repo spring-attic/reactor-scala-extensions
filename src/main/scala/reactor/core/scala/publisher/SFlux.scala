@@ -12,6 +12,8 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with Publisher[T] { self =>
 
   private[publisher] def coreFlux: JFlux[T]
 
+  def doOnRequest(f: Long => Unit): SFlux[T] = new ReactiveSFlux[T]( coreFlux.doOnRequest(f))
+
   override def subscribe(s: Subscriber[_ >: T]): Unit = coreFlux.subscribe(s)
 }
 

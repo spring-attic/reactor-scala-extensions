@@ -1,10 +1,15 @@
 package reactor.core.scala.publisher
 
-import org.scalatest.FreeSpec
-import reactor.core.publisher.FluxSink
+import java.util.concurrent.atomic.AtomicBoolean
+
+import org.reactivestreams.Subscription
+import org.scalatest.{FreeSpec, Matchers}
+import reactor.core.publisher.{BaseSubscriber, FluxSink}
 import reactor.test.StepVerifier
 
-class SFluxTest extends FreeSpec {
+import scala.util.{Failure, Try}
+
+class SFluxTest extends FreeSpec with Matchers {
   "SFlux" - {
     ".apply should return a proper SFlux" in {
       StepVerifier.create(SFlux(1, 2, 3))
@@ -82,17 +87,34 @@ class SFluxTest extends FreeSpec {
     }
 
     ".error" - {
-      "with throwable should create a flux with error with requested = false" in {
-        val flux = SFlux.error(new RuntimeException())
-        StepVerifier.create(flux)
-          .expectError(classOf[RuntimeException])
-          .verify()
-      }
-      "with throwable should create a flux with error with requested = true" in {
-        val flux = SFlux.error(new RuntimeException(), true)
-        StepVerifier.create(flux)
-          .expectError(classOf[RuntimeException])
-          .verify()
+      "with throwable and whenRequest flag should" - {
+        "emit onError during onSubscribe if the flag is false" in {
+          val flag = new AtomicBoolean(false)
+          val flux = SFlux.error(new RuntimeException())
+            .doOnRequest(_ => flag.compareAndSet(false, true))
+          Try(flux.subscribe(new BaseSubscriber[Long] {
+            override def hookOnSubscribe(subscription: Subscription): Unit = {
+              ()
+            }
+
+            override def hookOnNext(value: Long): Unit = ()
+          })) shouldBe a[Failure[_]]
+          flag.get() shouldBe false
+        }
+        "emit onError during onRequest if the flag is true" in {
+          val flag = new AtomicBoolean(false)
+          val flux = SFlux.error(new RuntimeException(), whenRequested = true)
+            .doOnRequest(_ => flag.compareAndSet(false, true))
+          Try(flux.subscribe(new BaseSubscriber[Long] {
+            override def hookOnSubscribe(subscription: Subscription): Unit = {
+              subscription.request(1)
+              ()
+            }
+
+            override def hookOnNext(value: Long): Unit = ()
+          })) shouldBe a[Failure[_]]
+          flag.get() shouldBe true
+        }
       }
     }
 
