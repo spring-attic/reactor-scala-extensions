@@ -50,6 +50,8 @@ object SFlux {
 
   def error[T](e: Throwable, whenRequested: Boolean = false): SFlux[T] = new ReactiveSFlux[T](JFlux.error(e, whenRequested))
 
+  def first[I](sources: Publisher[_ <: I]*): SFlux[I] = new ReactiveSFlux[I]((JFlux.first[I](sources: _*)))
+
   def fromIterable[T](iterable: Iterable[T]): SFlux[T] = new ReactiveSFlux[T](JFlux.fromIterable(iterable.asJava))
 
   def push[T](emitter: FluxSink[T] => Unit, backPressure: FluxSink.OverflowStrategy = OverflowStrategy.BUFFER): SFlux[T] = new ReactiveSFlux[T](JFlux.push(emitter, backPressure))

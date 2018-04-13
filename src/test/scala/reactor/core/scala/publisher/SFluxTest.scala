@@ -7,6 +7,7 @@ import org.scalatest.{FreeSpec, Matchers}
 import reactor.core.publisher.{BaseSubscriber, FluxSink}
 import reactor.test.StepVerifier
 
+import scala.concurrent.duration.Duration
 import scala.util.{Failure, Try}
 
 class SFluxTest extends FreeSpec with Matchers {
@@ -115,6 +116,15 @@ class SFluxTest extends FreeSpec with Matchers {
           })) shouldBe a[Failure[_]]
           flag.get() shouldBe true
         }
+      }
+    }
+
+    ".first" - {
+      "with varargs of publisher should create Flux based on the publisher that emit first onNext or onComplete or onError" in {
+        val flux: SFlux[Long] = SFlux.first(Mono.delay(Duration("10 seconds")), Mono.just[Long](1L))
+        StepVerifier.create(flux)
+          .expectNext(1)
+          .verifyComplete()
       }
     }
 
