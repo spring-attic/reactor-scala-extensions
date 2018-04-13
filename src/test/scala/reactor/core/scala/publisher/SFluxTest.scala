@@ -128,6 +128,12 @@ class SFluxTest extends FreeSpec with Matchers {
       }
     }
 
+    ".from should expose the specified publisher with flux API" in {
+      StepVerifier.create(SFlux.from(Mono.just(1)))
+        .expectNext(1)
+        .verifyComplete()
+    }
+
     ".push should create a flux" in {
       val flux = SFlux.push[Int]((emitter: FluxSink[Int]) => {
         emitter.next(1)
