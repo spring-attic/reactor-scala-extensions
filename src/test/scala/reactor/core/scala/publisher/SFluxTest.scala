@@ -146,6 +146,14 @@ class SFluxTest extends FreeSpec with Matchers {
         .verifyComplete()
     }
 
+    ".fromStream" - {
+      "with supplier should create flux that emit items contained in the supplier" in {
+        StepVerifier.create(SFlux.fromStream(() => Stream(1, 2, 3)))
+          .expectNext(1, 2, 3)
+          .verifyComplete()
+      }
+    }
+
     ".push should create a flux" in {
       val flux = SFlux.push[Int]((emitter: FluxSink[Int]) => {
         emitter.next(1)
