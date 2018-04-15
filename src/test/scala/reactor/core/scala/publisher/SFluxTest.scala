@@ -119,17 +119,23 @@ class SFluxTest extends FreeSpec with Matchers {
       }
     }
 
-    ".first" - {
+    ".firstEmitter" - {
       "with varargs of publisher should create Flux based on the publisher that emit first onNext or onComplete or onError" in {
-        val flux: SFlux[Long] = SFlux.first(Mono.delay(Duration("10 seconds")), Mono.just[Long](1L))
+        val flux: SFlux[Long] = SFlux.firstEmitter(Mono.delay(Duration("10 seconds")), Mono.just[Long](1L))
         StepVerifier.create(flux)
           .expectNext(1)
           .verifyComplete()
       }
     }
 
-    ".from should expose the specified publisher with flux API" in {
-      StepVerifier.create(SFlux.from(Mono.just(1)))
+    ".fromArray should create a flux that emits the items contained in the provided array" in {
+      StepVerifier.create(SFlux.fromArray(Array("1", "2", "3")))
+        .expectNext("1", "2", "3")
+        .verifyComplete()
+    }
+
+    ".fromPublisher should expose the specified publisher with flux API" in {
+      StepVerifier.create(SFlux.fromPublisher(Mono.just(1)))
         .expectNext(1)
         .verifyComplete()
     }
