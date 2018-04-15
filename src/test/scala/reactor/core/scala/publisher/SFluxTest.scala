@@ -134,6 +134,12 @@ class SFluxTest extends FreeSpec with Matchers {
         .verifyComplete()
     }
 
+    ".fromIterable should create flux that emit the items contained in the provided iterable" in {
+      StepVerifier.create(SFlux.fromIterable(Iterable(1, 2, 3)))
+        .expectNext(1, 2, 3)
+        .verifyComplete()
+    }
+
     ".fromPublisher should expose the specified publisher with flux API" in {
       StepVerifier.create(SFlux.fromPublisher(Mono.just(1)))
         .expectNext(1)
