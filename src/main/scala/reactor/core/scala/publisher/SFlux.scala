@@ -1,8 +1,11 @@
 package reactor.core.scala.publisher
 
+import java.util.concurrent.Callable
+import java.util.function.BiFunction
+import java.lang.{Long => JLong}
 import org.reactivestreams.{Publisher, Subscriber}
 import reactor.core.publisher.FluxSink.OverflowStrategy
-import reactor.core.publisher.{FluxSink, Flux => JFlux}
+import reactor.core.publisher.{FluxSink, SynchronousSink, Flux => JFlux}
 
 import scala.collection.JavaConverters._
 import scala.language.postfixOps
@@ -13,6 +16,12 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with Publisher[T] { self =>
   private[publisher] def coreFlux: JFlux[T]
 
   def doOnRequest(f: Long => Unit): SFlux[T] = new ReactiveSFlux[T]( coreFlux.doOnRequest(f))
+
+  final def index(): SFlux[(Long, T)] = new ReactiveSFlux[(Long, T)](coreFlux.index().map(t2 => (Long2long(t2.getT1), t2.getT2)))
+
+  final def index[I](indexMapper: (Long, T) => I): SFlux[I] = new ReactiveSFlux[I](coreFlux.index[I](new BiFunction[JLong, T, I] {
+    override def apply(t: JLong, u: T) = indexMapper(Long2long(t), u)
+  }))
 
   override def subscribe(s: Subscriber[_ >: T]): Unit = coreFlux.subscribe(s)
 }
@@ -59,6 +68,12 @@ object SFlux {
   def fromPublisher[T](source: Publisher[_ <: T]): SFlux[T] = new ReactiveSFlux[T](JFlux.from(source))
 
   def fromStream[T](streamSupplier: () => Stream[T]): SFlux[T] = new ReactiveSFlux[T](JFlux.fromStream[T](streamSupplier()))
+
+  def generate[T, S](generator: (S, SynchronousSink[T]) => S,
+                     stateSupplier: Option[Callable[S]] = None,
+                     stateConsumer: Option[S => Unit] = None): SFlux[T] = new ReactiveSFlux[T](
+    JFlux.generate[T, S](stateSupplier.orNull[Callable[S]], generator, stateConsumer.orNull[S => Unit])
+  )
 
   def push[T](emitter: FluxSink[T] => Unit, backPressure: FluxSink.OverflowStrategy = OverflowStrategy.BUFFER): SFlux[T] = new ReactiveSFlux[T](JFlux.push(emitter, backPressure))
 }

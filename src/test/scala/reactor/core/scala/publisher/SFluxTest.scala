@@ -1,10 +1,13 @@
 package reactor.core.scala.publisher
 
+import java.io.{BufferedReader, FileInputStream, InputStreamReader, PrintWriter}
+import java.nio.file.Files
+import java.util.concurrent.Callable
 import java.util.concurrent.atomic.AtomicBoolean
 
 import org.reactivestreams.Subscription
 import org.scalatest.{FreeSpec, Matchers}
-import reactor.core.publisher.{BaseSubscriber, FluxSink}
+import reactor.core.publisher.{BaseSubscriber, FluxSink, SynchronousSink}
 import reactor.test.StepVerifier
 
 import scala.concurrent.duration.Duration
@@ -150,6 +153,46 @@ class SFluxTest extends FreeSpec with Matchers {
       "with supplier should create flux that emit items contained in the supplier" in {
         StepVerifier.create(SFlux.fromStream(() => Stream(1, 2, 3)))
           .expectNext(1, 2, 3)
+          .verifyComplete()
+      }
+    }
+
+    ".generate" - {
+      "with state supplier and state consumer" in {
+        val tempFile = Files.createTempFile("fluxtest-", ".tmp").toFile
+        tempFile.deleteOnExit()
+        new PrintWriter(tempFile) {
+          write(Range(1, 6).mkString(s"${sys.props("line.separator")}"))
+          flush()
+          close()
+        }
+        val flux = SFlux.generate[Int, BufferedReader](
+          (reader: BufferedReader, sink: SynchronousSink[Int]) => {
+            Option(reader.readLine()).filterNot(_.isEmpty).map(_.toInt) match {
+              case Some(x) => sink.next(x)
+              case None => sink.complete()
+            }
+            reader
+          }, Option((() => new BufferedReader(new InputStreamReader(new FileInputStream(tempFile)))): Callable[BufferedReader]),
+          Option((bufferredReader: BufferedReader) => bufferredReader.close())
+        )
+        StepVerifier.create(flux)
+          .expectNext(1, 2, 3, 4, 5)
+          .verifyComplete()
+      }
+    }
+
+    ".index" - {
+      "should return tuple with the index" in {
+        val flux = SFlux("a", "b", "c").index()
+        StepVerifier.create(flux)
+          .expectNext((0l, "a"), (1l, "b"), (2l, "c"))
+          .verifyComplete()
+      }
+      "with index mapper should return the mapped value" in {
+        val flux = SFlux("a", "b", "c").index((i, v) => s"$i-$v")
+        StepVerifier.create(flux)
+          .expectNext("0-a", "1-b", "2-c")
           .verifyComplete()
       }
     }
