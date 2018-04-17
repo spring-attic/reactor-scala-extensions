@@ -8,9 +8,12 @@ import java.util.concurrent.atomic.AtomicBoolean
 import org.reactivestreams.Subscription
 import org.scalatest.{FreeSpec, Matchers}
 import reactor.core.publisher.{BaseSubscriber, FluxSink, SynchronousSink}
+import reactor.core.scheduler.Schedulers
 import reactor.test.StepVerifier
 
 import scala.concurrent.duration.Duration
+import scala.concurrent.duration._
+import scala.language.postfixOps
 import scala.util.{Failure, Try}
 
 class SFluxTest extends FreeSpec with Matchers {
@@ -80,6 +83,7 @@ class SFluxTest extends FreeSpec with Matchers {
 
     ".defer should create a flux" in {
       def f = SFlux(1, 2, 3)
+
       StepVerifier.create(SFlux.defer(f))
         .expectNext(1, 2, 3)
         .verifyComplete()
@@ -197,6 +201,33 @@ class SFluxTest extends FreeSpec with Matchers {
       }
     }
 
+        ".interval" - {
+          "without delay should produce flux of Long starting from 0 every provided timespan immediately" in {
+            StepVerifier.withVirtualTime(() => SFlux.interval(1 second).take(5))
+              .thenAwait(5 seconds)
+              .expectNext(0, 1, 2, 3, 4)
+              .verifyComplete()
+          }
+          "with delay should produce flux of Long starting from 0 every provided timespan after provided delay" in {
+            StepVerifier.withVirtualTime(() => SFlux.interval(1 second)(2 seconds).take(5))
+              .thenAwait(11 seconds)
+              .expectNext(0, 1, 2, 3, 4)
+              .verifyComplete()
+          }
+          "with Scheduler should use the provided timed scheduler" in {
+            StepVerifier.withVirtualTime(() => SFlux.interval(1 second, Schedulers.single()).take(5))
+              .thenAwait(5 seconds)
+              .expectNext(0, 1, 2, 3, 4)
+              .verifyComplete()
+          }
+          "with delay and Scheduler should use the provided time scheduler after delay" in {
+            StepVerifier.withVirtualTime(() => SFlux.interval(2 seconds, Schedulers.single())(1 second).take(5))
+              .thenAwait(11 seconds)
+              .expectNext(0, 1, 2, 3, 4)
+              .verifyComplete()
+          }
+        }
+
     ".push should create a flux" in {
       val flux = SFlux.push[Int]((emitter: FluxSink[Int]) => {
         emitter.next(1)
@@ -206,6 +237,14 @@ class SFluxTest extends FreeSpec with Matchers {
       StepVerifier.create(flux)
         .expectNext(1, 2)
         .verifyComplete()
+    }
+
+    ".take" - {
+      "should emit only n values" in {
+        StepVerifier.create(SFlux(1, 2, 3, 4, 5, 6, 7, 8, 9, 10).take(3))
+          .expectNext(1, 2, 3)
+          .verifyComplete()
+      }
     }
   }
 }

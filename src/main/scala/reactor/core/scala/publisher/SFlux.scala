@@ -3,11 +3,14 @@ package reactor.core.scala.publisher
 import java.util.concurrent.Callable
 import java.util.function.BiFunction
 import java.lang.{Long => JLong}
+
 import org.reactivestreams.{Publisher, Subscriber}
 import reactor.core.publisher.FluxSink.OverflowStrategy
 import reactor.core.publisher.{FluxSink, SynchronousSink, Flux => JFlux}
+import reactor.core.scheduler.{Scheduler, Schedulers}
 
 import scala.collection.JavaConverters._
+import scala.concurrent.duration.Duration
 import scala.language.postfixOps
 import scala.reflect.ClassTag
 
@@ -24,6 +27,8 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with Publisher[T] { self =>
   }))
 
   override def subscribe(s: Subscriber[_ >: T]): Unit = coreFlux.subscribe(s)
+
+  def take(n: Long): SFlux[T] = new ReactiveSFlux[T](coreFlux.take(n))
 }
 
 object SFlux {
@@ -74,6 +79,8 @@ object SFlux {
                      stateConsumer: Option[S => Unit] = None): SFlux[T] = new ReactiveSFlux[T](
     JFlux.generate[T, S](stateSupplier.orNull[Callable[S]], generator, stateConsumer.orNull[S => Unit])
   )
+
+  def interval(period: Duration, scheduler: Scheduler = Schedulers.parallel())(implicit delay: Duration = period): SFlux[Long] = new ReactiveSFlux[Long](JFlux.interval(delay, period).map(Long2long(_)))
 
   def push[T](emitter: FluxSink[T] => Unit, backPressure: FluxSink.OverflowStrategy = OverflowStrategy.BUFFER): SFlux[T] = new ReactiveSFlux[T](JFlux.push(emitter, backPressure))
 }
