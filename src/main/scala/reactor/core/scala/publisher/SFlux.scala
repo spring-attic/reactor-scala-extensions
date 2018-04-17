@@ -82,6 +82,8 @@ object SFlux {
 
   def interval(period: Duration, scheduler: Scheduler = Schedulers.parallel())(implicit delay: Duration = period): SFlux[Long] = new ReactiveSFlux[Long](JFlux.interval(delay, period).map(Long2long(_)))
 
+  def just[T](data: T*): SFlux[T] = apply[T](data: _*)
+
   def push[T](emitter: FluxSink[T] => Unit, backPressure: FluxSink.OverflowStrategy = OverflowStrategy.BUFFER): SFlux[T] = new ReactiveSFlux[T](JFlux.push(emitter, backPressure))
 }
 

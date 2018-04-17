@@ -11,8 +11,7 @@ import reactor.core.publisher.{BaseSubscriber, FluxSink, SynchronousSink}
 import reactor.core.scheduler.Schedulers
 import reactor.test.StepVerifier
 
-import scala.concurrent.duration.Duration
-import scala.concurrent.duration._
+import scala.concurrent.duration.{Duration, _}
 import scala.language.postfixOps
 import scala.util.{Failure, Try}
 
@@ -201,32 +200,47 @@ class SFluxTest extends FreeSpec with Matchers {
       }
     }
 
-        ".interval" - {
-          "without delay should produce flux of Long starting from 0 every provided timespan immediately" in {
-            StepVerifier.withVirtualTime(() => SFlux.interval(1 second).take(5))
-              .thenAwait(5 seconds)
-              .expectNext(0, 1, 2, 3, 4)
-              .verifyComplete()
-          }
-          "with delay should produce flux of Long starting from 0 every provided timespan after provided delay" in {
-            StepVerifier.withVirtualTime(() => SFlux.interval(1 second)(2 seconds).take(5))
-              .thenAwait(11 seconds)
-              .expectNext(0, 1, 2, 3, 4)
-              .verifyComplete()
-          }
-          "with Scheduler should use the provided timed scheduler" in {
-            StepVerifier.withVirtualTime(() => SFlux.interval(1 second, Schedulers.single()).take(5))
-              .thenAwait(5 seconds)
-              .expectNext(0, 1, 2, 3, 4)
-              .verifyComplete()
-          }
-          "with delay and Scheduler should use the provided time scheduler after delay" in {
-            StepVerifier.withVirtualTime(() => SFlux.interval(2 seconds, Schedulers.single())(1 second).take(5))
-              .thenAwait(11 seconds)
-              .expectNext(0, 1, 2, 3, 4)
-              .verifyComplete()
-          }
-        }
+    ".interval" - {
+      "without delay should produce flux of Long starting from 0 every provided timespan immediately" in {
+        StepVerifier.withVirtualTime(() => SFlux.interval(1 second).take(5))
+          .thenAwait(5 seconds)
+          .expectNext(0, 1, 2, 3, 4)
+          .verifyComplete()
+      }
+      "with delay should produce flux of Long starting from 0 every provided timespan after provided delay" in {
+        StepVerifier.withVirtualTime(() => SFlux.interval(1 second)(2 seconds).take(5))
+          .thenAwait(11 seconds)
+          .expectNext(0, 1, 2, 3, 4)
+          .verifyComplete()
+      }
+      "with Scheduler should use the provided timed scheduler" in {
+        StepVerifier.withVirtualTime(() => SFlux.interval(1 second, Schedulers.single()).take(5))
+          .thenAwait(5 seconds)
+          .expectNext(0, 1, 2, 3, 4)
+          .verifyComplete()
+      }
+      "with delay and Scheduler should use the provided time scheduler after delay" in {
+        StepVerifier.withVirtualTime(() => SFlux.interval(2 seconds, Schedulers.single())(1 second).take(5))
+          .thenAwait(11 seconds)
+          .expectNext(0, 1, 2, 3, 4)
+          .verifyComplete()
+      }
+    }
+
+    ".just" - {
+      "with varargs should emit values from provided data" in {
+        val flux = SFlux.just(1, 2)
+        StepVerifier.create(flux)
+          .expectNext(1, 2)
+          .verifyComplete()
+      }
+      "with one element should emit value from provided data" in {
+        val flux = Flux.just[Int](1)
+        StepVerifier.create(flux)
+          .expectNext(1)
+          .verifyComplete()
+      }
+    }
 
     ".push should create a flux" in {
       val flux = SFlux.push[Int]((emitter: FluxSink[Int]) => {
