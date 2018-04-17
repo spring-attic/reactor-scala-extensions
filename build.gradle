@@ -27,13 +27,7 @@ dependencies {
     testCompile libraries.scalatest
     testRuntime libraries.pegdown
     testCompile libraries.reactorTest
-    testCompile (libraries.mockitoInline) {
-        exclude group: "net.bytebuddy"
-    }
-    //these bytebuddy libraries are required to be forced to use version 1.7.9 because 1.8.0 that is pulled down
-    //by mockito 2.17.0 seems to have problem
-    testRuntime libraries.bytebuddy
-    testRuntime libraries.bytebuddyAgent
+    testCompile libraries.mockitoInline
     testCompile libraries.scalaLogging
     testRuntime libraries.logback
     scoverage libraries.scoveragePlugin, libraries.scoverageRuntime

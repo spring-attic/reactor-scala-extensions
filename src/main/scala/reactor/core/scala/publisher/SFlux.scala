@@ -17,7 +17,7 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with Publisher[T] { self =>
 
   def doOnRequest(f: Long => Unit): SFlux[T] = new ReactiveSFlux[T]( coreFlux.doOnRequest(f))
 
-  final def index(): SFlux[(Long, T)] = new ReactiveSFlux[(Long, T)](coreFlux.index().map(t2 => (Long2long(t2.getT1), t2.getT2)))
+  final def index(): SFlux[(Long, T)] = index[(Long, T)]((x, y) => (x, y))
 
   final def index[I](indexMapper: (Long, T) => I): SFlux[I] = new ReactiveSFlux[I](coreFlux.index[I](new BiFunction[JLong, T, I] {
     override def apply(t: JLong, u: T) = indexMapper(Long2long(t), u)
