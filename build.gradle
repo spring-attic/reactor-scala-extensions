@@ -9,6 +9,7 @@ apply plugin: 'org.scoverage'
 apply plugin: 'io.codearte.nexus-staging'
 apply plugin: 'org.owasp.dependencycheck'
 apply plugin: 'com.github.ben-manes.versions'
+apply plugin: 'fr.brouillard.oss.gradle.jgitver'
 
 repositories {
     mavenCentral()
@@ -50,6 +51,7 @@ buildscript {
         classpath 'io.codearte.gradle.nexus:gradle-nexus-staging-plugin:0.11.0'
         classpath 'org.owasp:dependency-check-gradle:3.1.2'
         classpath 'com.github.ben-manes:gradle-versions-plugin:0.17.0'
+        classpath "gradle.plugin.fr.brouillard.oss.gradle:gradle-jgitver-plugin:0.3.2"
     }
 }
 
