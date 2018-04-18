@@ -9,7 +9,7 @@ apply plugin: 'org.scoverage'
 apply plugin: 'io.codearte.nexus-staging'
 apply plugin: 'org.owasp.dependencycheck'
 apply plugin: 'com.github.ben-manes.versions'
-apply plugin: 'fr.brouillard.oss.gradle.jgitver'
+//apply plugin: 'fr.brouillard.oss.gradle.jgitver'
 
 repositories {
     mavenCentral()
@@ -21,8 +21,6 @@ dependencies {
     compile libraries.scalaLibrary
     compile libraries.reactorCore
     compile libraries.findbugs
-
-//    compile "io.monix:monix_$baseScalaVersion:2.3.3"
 
 //    test dependencies
     testCompile libraries.scalatest
