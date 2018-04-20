@@ -1,13 +1,14 @@
 package reactor.core.scala.publisher
 
+import java.lang.{Long => JLong}
 import java.util.concurrent.Callable
 import java.util.function.BiFunction
-import java.lang.{Long => JLong}
 
 import org.reactivestreams.{Publisher, Subscriber}
 import reactor.core.publisher.FluxSink.OverflowStrategy
 import reactor.core.publisher.{FluxSink, SynchronousSink, Flux => JFlux}
 import reactor.core.scheduler.{Scheduler, Schedulers}
+import reactor.util.concurrent.Queues.{SMALL_BUFFER_SIZE, XS_BUFFER_SIZE}
 
 import scala.collection.JavaConverters._
 import scala.concurrent.duration.Duration
@@ -84,6 +85,14 @@ object SFlux {
     new ReactiveSFlux[Long](JFlux.interval(delay, period).map((l: JLong) => Long2long(l)))
 
   def just[T](data: T*): SFlux[T] = apply[T](data: _*)
+
+  def mergeSequentialPublisher[T](sources: Publisher[Publisher[T]], maxConcurrency: Int = SMALL_BUFFER_SIZE, prefetch: Int = XS_BUFFER_SIZE): SFlux[T] =
+    new ReactiveSFlux[T](JFlux.mergeSequential[T](sources, maxConcurrency, prefetch))
+
+  def mergeSequential[I](sources: Seq[Publisher[_ <: I]], prefetch: Int= XS_BUFFER_SIZE): SFlux[I] = new ReactiveSFlux[I](JFlux.mergeSequential(prefetch, sources: _*))
+
+  def mergeSequentialIterable[I](sources: Iterable[Publisher[_ <: I]], maxConcurrency: Int = SMALL_BUFFER_SIZE, prefetch: Int = XS_BUFFER_SIZE) =
+    new ReactiveSFlux[I](JFlux.mergeSequential[I](sources, maxConcurrency, prefetch))
 
   def push[T](emitter: FluxSink[T] => Unit, backPressure: FluxSink.OverflowStrategy = OverflowStrategy.BUFFER): SFlux[T] = new ReactiveSFlux[T](JFlux.push(emitter, backPressure))
 }

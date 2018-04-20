@@ -242,6 +242,39 @@ class SFluxTest extends FreeSpec with Matchers {
       }
     }
 
+    ".mergeSequential" - {
+      "with publisher of publisher should merge the underlying publisher in sequence of publisher" in {
+        StepVerifier.create(SFlux.mergeSequentialPublisher[Int](SFlux(SFlux(1, 2, 3, 4), SFlux(2, 3, 4))))
+          .expectNext(1, 2, 3, 4, 2, 3, 4)
+          .verifyComplete()
+      }
+      "with publisher of publisher, maxConcurrency and prefetch should merge the underlying publisher in sequence of publisher" in {
+        StepVerifier.create(SFlux.mergeSequentialPublisher[Int](SFlux(SFlux(1, 2, 3), SFlux(2, 3, 4)), 8, 2))
+          .expectNext(1, 2, 3, 2, 3, 4)
+          .verifyComplete()
+      }
+      "with varargs of publishers should merge the underlying publisher in sequence of publisher" in {
+        StepVerifier.create[Int](SFlux.mergeSequential[Int](Seq(SFlux(1, 2, 3), SFlux(2, 3, 4))))
+          .expectNext(1, 2, 3, 2, 3, 4)
+          .verifyComplete()
+      }
+      "with prefetch and varargs of publishers should merge the underlying publisher in sequence of publisher" in {
+        StepVerifier.create(SFlux.mergeSequential[Int](Seq(SFlux(1, 2, 3), SFlux(2, 3, 4)), 2))
+          .expectNext(1, 2, 3, 2, 3, 4)
+          .verifyComplete()
+      }
+      "with iterable of publisher should merge the underlying publisher in sequence of the publisher" in {
+        StepVerifier.create(SFlux.mergeSequentialIterable[Int](Iterable(SFlux(1, 2, 3), SFlux(2, 3, 4))))
+          .expectNext(1, 2, 3, 2, 3, 4)
+          .verifyComplete()
+      }
+      "with iterable of publisher, maxConcurrency and prefetch should merge the underlying publisher in sequence of the publisher" in {
+        StepVerifier.create(SFlux.mergeSequentialIterable[Int](Iterable(SFlux(1, 2, 3), SFlux(2, 3, 4)), 8, 2))
+          .expectNext(1, 2, 3, 2, 3, 4)
+          .verifyComplete()
+      }
+    }
+
     ".push should create a flux" in {
       val flux = SFlux.push[Int]((emitter: FluxSink[Int]) => {
         emitter.next(1)
