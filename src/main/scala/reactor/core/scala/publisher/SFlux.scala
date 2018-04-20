@@ -15,11 +15,12 @@ import scala.concurrent.duration.Duration
 import scala.language.postfixOps
 import scala.reflect.ClassTag
 
-trait SFlux[T] extends SFluxLike[T, SFlux] with Publisher[T] { self =>
+trait SFlux[T] extends SFluxLike[T, SFlux] with Publisher[T] {
+  self =>
 
   private[publisher] def coreFlux: JFlux[T]
 
-  def doOnRequest(f: Long => Unit): SFlux[T] = new ReactiveSFlux[T]( coreFlux.doOnRequest(f))
+  def doOnRequest(f: Long => Unit): SFlux[T] = new ReactiveSFlux[T](coreFlux.doOnRequest(f))
 
   final def index(): SFlux[(Long, T)] = index[(Long, T)]((x, y) => (x, y))
 
@@ -40,14 +41,14 @@ object SFlux {
 
   def combineLatest[T](sources: Publisher[T]*): SFlux[Seq[T]] =
     new ReactiveSFlux[Seq[T]](JFlux.combineLatest[T, Seq[T]]
-      (sources, (arr: Array[AnyRef]) => arr.toSeq map(_.asInstanceOf[T])))
+      (sources, (arr: Array[AnyRef]) => arr.toSeq map (_.asInstanceOf[T])))
 
   def combineLatestMap[T1, T2, V](p1: Publisher[T1], p2: Publisher[T2], mapper: (T1, T2) => V): SFlux[V] =
     new ReactiveSFlux[V](JFlux.combineLatest(p1, p2, mapper))
 
   def combineLatestMap[T: ClassTag, V](mapper: Array[T] => V, sources: Publisher[T]*): SFlux[V] = {
     val f = (arr: Array[AnyRef]) => {
-      val x: Seq[T] = arr.toSeq map(_.asInstanceOf[T])
+      val x: Seq[T] = arr.toSeq map (_.asInstanceOf[T])
       mapper(x.toArray)
     }
     new ReactiveSFlux[V](JFlux.combineLatest(sources, f))
@@ -86,13 +87,22 @@ object SFlux {
 
   def just[T](data: T*): SFlux[T] = apply[T](data: _*)
 
-  def mergeSequentialPublisher[T](sources: Publisher[Publisher[T]], maxConcurrency: Int = SMALL_BUFFER_SIZE, prefetch: Int = XS_BUFFER_SIZE): SFlux[T] =
-    new ReactiveSFlux[T](JFlux.mergeSequential[T](sources, maxConcurrency, prefetch))
+  def mergeSequentialPublisher[T](sources: Publisher[Publisher[T]], delayError: Boolean = false, maxConcurrency: Int = SMALL_BUFFER_SIZE, prefetch: Int = XS_BUFFER_SIZE): SFlux[T] =
+    new ReactiveSFlux[T](
+      if (delayError) JFlux.mergeSequentialDelayError[T](sources, maxConcurrency, prefetch)
+      else JFlux.mergeSequential[T](sources, maxConcurrency, prefetch)
+    )
 
-  def mergeSequential[I](sources: Seq[Publisher[_ <: I]], prefetch: Int= XS_BUFFER_SIZE): SFlux[I] = new ReactiveSFlux[I](JFlux.mergeSequential(prefetch, sources: _*))
+  def mergeSequential[I](sources: Seq[Publisher[_ <: I]], delayError: Boolean = false, prefetch: Int = XS_BUFFER_SIZE): SFlux[I] =
+    new ReactiveSFlux[I](
+      if (delayError) JFlux.mergeSequentialDelayError(prefetch, sources: _*)
+      else JFlux.mergeSequential(prefetch, sources: _*)
+    )
 
-  def mergeSequentialIterable[I](sources: Iterable[Publisher[_ <: I]], maxConcurrency: Int = SMALL_BUFFER_SIZE, prefetch: Int = XS_BUFFER_SIZE) =
-    new ReactiveSFlux[I](JFlux.mergeSequential[I](sources, maxConcurrency, prefetch))
+  def mergeSequentialIterable[I](sources: Iterable[Publisher[_ <: I]], delayError: Boolean = false, maxConcurrency: Int = SMALL_BUFFER_SIZE, prefetch: Int = XS_BUFFER_SIZE) =
+    new ReactiveSFlux[I](
+      if(delayError) JFlux.mergeSequentialDelayError[I](sources, maxConcurrency, prefetch)
+      else JFlux.mergeSequential[I](sources, maxConcurrency, prefetch))
 
   def push[T](emitter: FluxSink[T] => Unit, backPressure: FluxSink.OverflowStrategy = OverflowStrategy.BUFFER): SFlux[T] = new ReactiveSFlux[T](JFlux.push(emitter, backPressure))
 }

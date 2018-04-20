@@ -249,7 +249,12 @@ class SFluxTest extends FreeSpec with Matchers {
           .verifyComplete()
       }
       "with publisher of publisher, maxConcurrency and prefetch should merge the underlying publisher in sequence of publisher" in {
-        StepVerifier.create(SFlux.mergeSequentialPublisher[Int](SFlux(SFlux(1, 2, 3), SFlux(2, 3, 4)), 8, 2))
+        StepVerifier.create(SFlux.mergeSequentialPublisher[Int](SFlux(SFlux(1, 2, 3), SFlux(2, 3, 4)), maxConcurrency = 8, prefetch = 2))
+          .expectNext(1, 2, 3, 2, 3, 4)
+          .verifyComplete()
+      }
+      "with publisher of publisher, delayError, maxConcurrency and prefetch should merge the underlying publisher in sequence of publisher" in {
+        StepVerifier.create(SFlux.mergeSequentialPublisher[Int](SFlux(SFlux(1, 2, 3), SFlux(2, 3, 4)), delayError = true, 8, 2))
           .expectNext(1, 2, 3, 2, 3, 4)
           .verifyComplete()
       }
@@ -259,7 +264,12 @@ class SFluxTest extends FreeSpec with Matchers {
           .verifyComplete()
       }
       "with prefetch and varargs of publishers should merge the underlying publisher in sequence of publisher" in {
-        StepVerifier.create(SFlux.mergeSequential[Int](Seq(SFlux(1, 2, 3), SFlux(2, 3, 4)), 2))
+        StepVerifier.create(SFlux.mergeSequential[Int](Seq(SFlux(1, 2, 3), SFlux(2, 3, 4)), prefetch = 2))
+          .expectNext(1, 2, 3, 2, 3, 4)
+          .verifyComplete()
+      }
+      "with prefetch, delayError and varargs of publishers should merge the underlying publisher in sequence of publisher" in {
+        StepVerifier.create[Int](SFlux.mergeSequential[Int](Seq(SFlux(1, 2, 3), SFlux(2, 3, 4)), delayError = true, 2))
           .expectNext(1, 2, 3, 2, 3, 4)
           .verifyComplete()
       }
@@ -269,7 +279,13 @@ class SFluxTest extends FreeSpec with Matchers {
           .verifyComplete()
       }
       "with iterable of publisher, maxConcurrency and prefetch should merge the underlying publisher in sequence of the publisher" in {
-        StepVerifier.create(SFlux.mergeSequentialIterable[Int](Iterable(SFlux(1, 2, 3), SFlux(2, 3, 4)), 8, 2))
+        StepVerifier.create(SFlux.mergeSequentialIterable[Int](Iterable(SFlux(1, 2, 3), SFlux(2, 3, 4)), maxConcurrency = 8, prefetch = 2))
+          .expectNext(1, 2, 3, 2, 3, 4)
+          .verifyComplete()
+      }
+      "with iterable of publisher, delayError, maxConcurrency and prefetch should merge the underlying publisher in sequence of the publisher" in {
+        val flux = SFlux.mergeSequentialIterable[Int](Iterable(SFlux(1, 2, 3), SFlux(2, 3, 4)), true, 8, 2)
+        StepVerifier.create(flux)
           .expectNext(1, 2, 3, 2, 3, 4)
           .verifyComplete()
       }
