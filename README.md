@@ -33,7 +33,7 @@ With Gradle:
     }
     
     dependencies {
-        //compile "io.projectreactor:reactor-scala-extensions_2.12:0.3.5-SNAPSHOT
+        //compile "io.projectreactor:reactor-scala-extensions_2.12:0.4.0-SNAPSHOT
         compile "io.projectreactor:reactor-scala-extensions_2.12:0.3.4 //for scala 2.12
         //compile "io.projectreactor:reactor-scala-extensions_2.11:0.3.4 //for scala 2.11
     }
