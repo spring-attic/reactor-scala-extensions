@@ -104,7 +104,12 @@ object SFlux {
       if(delayError) JFlux.mergeSequentialDelayError[I](sources, maxConcurrency, prefetch)
       else JFlux.mergeSequential[I](sources, maxConcurrency, prefetch))
 
+  def never[T](): SFlux[T] = new ReactiveSFlux[T](JFlux.never[T]())
+
   def push[T](emitter: FluxSink[T] => Unit, backPressure: FluxSink.OverflowStrategy = OverflowStrategy.BUFFER): SFlux[T] = new ReactiveSFlux[T](JFlux.push(emitter, backPressure))
+
+  def range(start: Int, count: Int): SFlux[Int] = new ReactiveSFlux[Int](JFlux.range(start, count).map(i => Integer2int(i)))
+
 }
 
 private[publisher] class ReactiveSFlux[T](publisher: Publisher[T]) extends SFlux[T] {

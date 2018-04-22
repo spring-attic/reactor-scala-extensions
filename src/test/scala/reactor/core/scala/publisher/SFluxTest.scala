@@ -291,14 +291,25 @@ class SFluxTest extends FreeSpec with Matchers {
       }
     }
 
+    ".never should never emit any signal" in {
+      StepVerifier.create(SFlux.never())
+        .expectSubscription()
+        .expectNoEvent(Duration(1, "second"))
+    }
+
     ".push should create a flux" in {
-      val flux = SFlux.push[Int]((emitter: FluxSink[Int]) => {
+      StepVerifier.create(SFlux.push[Int]((emitter: FluxSink[Int]) => {
         emitter.next(1)
         emitter.next(2)
         emitter.complete()
-      })
-      StepVerifier.create(flux)
+      }))
         .expectNext(1, 2)
+        .verifyComplete()
+    }
+
+    ".range should emit int within the range" in {
+      StepVerifier.create(SFlux.range(10, 5))
+        .expectNext(10, 11, 12, 13, 14)
         .verifyComplete()
     }
 
