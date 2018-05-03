@@ -1,6 +1,6 @@
 package reactor.core.scala.publisher
 
-import java.io.{BufferedReader, FileInputStream, InputStreamReader, PrintWriter}
+import java.io._
 import java.nio.file.Files
 import java.util.concurrent.Callable
 import java.util.concurrent.atomic.AtomicBoolean
@@ -12,6 +12,7 @@ import reactor.core.scheduler.Schedulers
 import reactor.test.StepVerifier
 
 import scala.concurrent.duration.{Duration, _}
+import scala.io.Source
 import scala.language.postfixOps
 import scala.util.{Failure, Try}
 
@@ -284,7 +285,7 @@ class SFluxTest extends FreeSpec with Matchers {
           .verifyComplete()
       }
       "with iterable of publisher, delayError, maxConcurrency and prefetch should merge the underlying publisher in sequence of the publisher" in {
-        val flux = SFlux.mergeSequentialIterable[Int](Iterable(SFlux(1, 2, 3), SFlux(2, 3, 4)), true, 8, 2)
+        val flux = SFlux.mergeSequentialIterable[Int](Iterable(SFlux(1, 2, 3), SFlux(2, 3, 4)), delayError = true, 8, 2)
         StepVerifier.create(flux)
           .expectNext(1, 2, 3, 2, 3, 4)
           .verifyComplete()
@@ -311,6 +312,41 @@ class SFluxTest extends FreeSpec with Matchers {
       StepVerifier.create(SFlux.range(10, 5))
         .expectNext(10, 11, 12, 13, 14)
         .verifyComplete()
+    }
+
+    ".using" - {
+      "without eager flag should produce some data" in {
+        val tempFile = Files.createTempFile("fluxtest-", ".tmp")
+        tempFile.toFile.deleteOnExit()
+        new PrintWriter(tempFile.toFile) {
+          write(s"1${sys.props("line.separator")}2")
+          flush()
+          close()
+        }
+        StepVerifier.create(
+          SFlux.using[String, File](() => tempFile.toFile, (file: File) => SFlux.fromIterable[String](Source.fromFile(file).getLines().toIterable), (file: File) => {
+            file.delete()
+            ()
+          }))
+          .expectNext("1", "2")
+          .verifyComplete()
+      }
+      "with eager flag should produce some data" in {
+        val tempFile = Files.createTempFile("fluxtest-", ".tmp")
+        tempFile.toFile.deleteOnExit()
+        new PrintWriter(tempFile.toFile) {
+          write(s"1${sys.props("line.separator")}2")
+          flush()
+          close()
+        }
+        StepVerifier.create(
+          SFlux.using[String, File](() => tempFile.toFile, (file: File) => SFlux.fromIterable[String](Source.fromFile(file).getLines().toIterable), (file: File) => {
+            file.delete()
+            ()
+          }, eager = true))
+          .expectNext("1", "2")
+          .verifyComplete()
+      }
     }
 
     ".take" - {
