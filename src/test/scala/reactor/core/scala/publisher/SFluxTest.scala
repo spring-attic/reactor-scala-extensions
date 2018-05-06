@@ -31,8 +31,7 @@ class SFluxTest extends FreeSpec with Matchers {
           .verifyComplete()
       }
       "of many should combine all of them into single SFlux that emit Seq" in {
-        val flux = SFlux.combineLatest(Mono.just(1), Mono.just(2), Mono.just(3), Mono.just(4))
-        StepVerifier.create(flux)
+        StepVerifier.create(SFlux.combineLatest(Mono.just(1), Mono.just(2), Mono.just(3), Mono.just(4)))
           .expectNext(Seq(1, 2, 3, 4))
           .verifyComplete()
       }
@@ -353,6 +352,60 @@ class SFluxTest extends FreeSpec with Matchers {
       "should emit only n values" in {
         StepVerifier.create(SFlux(1, 2, 3, 4, 5, 6, 7, 8, 9, 10).take(3))
           .expectNext(1, 2, 3)
+          .verifyComplete()
+      }
+    }
+
+    ".zip" - {
+      "with source1, source2 and combinator should combine the data" in {
+        val flux = SFlux.zipMap(SFlux.just(1, 2, 3), SFlux.just("one", "two", "three"), (i: Int, str: String) => s"$i-$str")
+        StepVerifier.create(flux)
+          .expectNext("1-one", "2-two", "3-three")
+          .verifyComplete()
+      }
+      "with source1 and source2 should emit flux with tuple2" in {
+        StepVerifier.create(SFlux.zip(SFlux.just(1, 2, 3), SFlux.just("one", "two", "three")))
+          .expectNext((1, "one"), (2, "two"), (3, "three"))
+          .verifyComplete()
+      }
+      "with source1, source2, source3 should emit flux with tuple3" in {
+        StepVerifier.create(SFlux.zip3(SFlux.just(1, 2, 3), SFlux.just("one", "two", "three"), SFlux.just(1l, 2l, 3l)))
+          .expectNext((1, "one", 1l), (2, "two", 2l), (3, "three", 3l))
+          .verifyComplete()
+      }
+      "with source1, source2, source3, source4 should emit flux with tuple4" in {
+        StepVerifier.create(SFlux.zip4(SFlux.just(1, 2, 3), SFlux.just("one", "two", "three"), SFlux.just(1l, 2l, 3l), SFlux.just(BigDecimal("1"), BigDecimal("2"), BigDecimal("3"))))
+          .expectNext((1, "one", 1l, BigDecimal("1")), (2, "two", 2l, BigDecimal("2")), (3, "three", 3l, BigDecimal("3")))
+          .verifyComplete()
+      }
+      "with source1, source2, source3, source4, source5 should emit flux with tuple5" in {
+        StepVerifier.create(SFlux.zip5(SFlux.just(1, 2, 3), SFlux.just("one", "two", "three"), SFlux.just(1l, 2l, 3l), SFlux.just(BigDecimal("1"), BigDecimal("2"), BigDecimal("3")), SFlux.just("a", "i", "u")))
+          .expectNext((1, "one", 1l, BigDecimal("1"), "a"), (2, "two", 2l, BigDecimal("2"), "i"), (3, "three", 3l, BigDecimal("3"), "u"))
+          .verifyComplete()
+      }
+      "with source1, source2, source3, source4, source5, source6 should emit flux with tuple6" in {
+        StepVerifier.create(SFlux.zip6(SFlux.just(1, 2, 3), SFlux.just("one", "two", "three"), SFlux.just(1l, 2l, 3l), SFlux.just(BigDecimal("1"), BigDecimal("2"), BigDecimal("3")), SFlux.just("a", "i", "u"), SFlux.just("a", "b", "c")))
+          .expectNext((1, "one", 1l, BigDecimal("1"), "a", "a"), (2, "two", 2l, BigDecimal("2"), "i", "b"), (3, "three", 3l, BigDecimal("3"), "u", "c"))
+          .verifyComplete()
+      }
+      "with iterable and combinator should emit flux of combined data" in {
+        StepVerifier.create(SFlux.zipMapIterable[String](Iterable(SFlux.just(1, 2, 3), SFlux.just("one", "two", "three")), (array: Array[_]) => s"${array(0)}-${array(1)}"))
+          .expectNext("1-one", "2-two", "3-three")
+          .verifyComplete()
+      }
+      "with iterable, prefetch and combinator should emit flux of combined data" in {
+        StepVerifier.create(SFlux.zipMapIterable[String](Iterable(SFlux.just(1, 2, 3), SFlux.just("one", "two", "three")), (array: Array[_]) => s"${array(0)}-${array(1)}", 2))
+          .expectNext("1-one", "2-two", "3-three")
+          .verifyComplete()
+      }
+      "with combinator and varargs publisher should emit flux of combined data" in {
+        StepVerifier.create(SFlux.zipMap((array: Array[AnyRef]) => s"${array(0)}-${array(1)}", Seq(SFlux.just(1, 2, 3), SFlux.just(10, 20, 30))))
+          .expectNext("1-10", "2-20", "3-30")
+          .verifyComplete()
+      }
+      "with combinator, prefetch and varargs publisher should emit flux of combined data" in {
+        StepVerifier.create(SFlux.zipMap((array: Array[AnyRef]) => s"${array(0)}-${array(1)}", Seq(SFlux.just(1, 2, 3), SFlux.just(10, 20, 30)), 2))
+          .expectNext("1-10", "2-20", "3-30")
           .verifyComplete()
       }
     }
