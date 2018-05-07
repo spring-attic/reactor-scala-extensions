@@ -348,14 +348,6 @@ class SFluxTest extends FreeSpec with Matchers {
       }
     }
 
-    ".take" - {
-      "should emit only n values" in {
-        StepVerifier.create(SFlux(1, 2, 3, 4, 5, 6, 7, 8, 9, 10).take(3))
-          .expectNext(1, 2, 3)
-          .verifyComplete()
-      }
-    }
-
     ".zip" - {
       "with source1, source2 and combinator should combine the data" in {
         val flux = SFlux.zipMap(SFlux.just(1, 2, 3), SFlux.just("one", "two", "three"), (i: Int, str: String) => s"$i-$str")
@@ -406,6 +398,20 @@ class SFluxTest extends FreeSpec with Matchers {
       "with combinator, prefetch and varargs publisher should emit flux of combined data" in {
         StepVerifier.create(SFlux.zipMap((array: Array[AnyRef]) => s"${array(0)}-${array(1)}", Seq(SFlux.just(1, 2, 3), SFlux.just(10, 20, 30)), 2))
           .expectNext("1-10", "2-20", "3-30")
+          .verifyComplete()
+      }
+    }
+
+    ".all should check every single element satisfy the predicate" in {
+      StepVerifier.create(SFlux.just(1, 2, 3).all(i => i > 0))
+        .expectNext(true)
+        .verifyComplete()
+    }
+
+    ".take" - {
+      "should emit only n values" in {
+        StepVerifier.create(SFlux(1, 2, 3, 4, 5, 6, 7, 8, 9, 10).take(3))
+          .expectNext(1, 2, 3)
           .verifyComplete()
       }
     }

@@ -1,6 +1,6 @@
 package reactor.core.scala.publisher
 
-import java.lang.{Long => JLong}
+import java.lang.{Boolean => JBoolean, Long => JLong}
 import java.util.concurrent.Callable
 import java.util.function.BiFunction
 
@@ -18,6 +18,8 @@ import scala.reflect.ClassTag
 
 trait SFlux[T] extends SFluxLike[T, SFlux] with Publisher[T] {
   self =>
+
+  final def all(predicate: T => Boolean): SMono[Boolean] = new ReactiveSMono[Boolean](coreFlux.all(predicate).map((b: JBoolean) => Boolean2boolean(b)))
 
   private[publisher] def coreFlux: JFlux[T]
 
@@ -102,7 +104,7 @@ object SFlux {
 
   def mergeSequentialIterable[I](sources: Iterable[Publisher[_ <: I]], delayError: Boolean = false, maxConcurrency: Int = SMALL_BUFFER_SIZE, prefetch: Int = XS_BUFFER_SIZE) =
     new ReactiveSFlux[I](
-      if(delayError) JFlux.mergeSequentialDelayError[I](sources, maxConcurrency, prefetch)
+      if (delayError) JFlux.mergeSequentialDelayError[I](sources, maxConcurrency, prefetch)
       else JFlux.mergeSequential[I](sources, maxConcurrency, prefetch))
 
   def never[T](): SFlux[T] = new ReactiveSFlux[T](JFlux.never[T]())
