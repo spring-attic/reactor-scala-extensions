@@ -408,6 +408,18 @@ class SFluxTest extends FreeSpec with Matchers {
         .verifyComplete()
     }
 
+    ".any should check that there is at least one element satisfy the predicate" in {
+      StepVerifier.create(SFlux.just(1, 2, 3).any(i => i % 2 == 0))
+        .expectNext(true)
+        .verifyComplete()
+    }
+
+    ".as should transform this flux to another publisher" in {
+      StepVerifier.create(SFlux.just(1, 2, 3).as(Mono.from))
+        .expectNext(1)
+        .verifyComplete()
+    }
+
     ".take" - {
       "should emit only n values" in {
         StepVerifier.create(SFlux(1, 2, 3, 4, 5, 6, 7, 8, 9, 10).take(3))

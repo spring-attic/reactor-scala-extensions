@@ -21,6 +21,10 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with Publisher[T] {
 
   final def all(predicate: T => Boolean): SMono[Boolean] = new ReactiveSMono[Boolean](coreFlux.all(predicate).map((b: JBoolean) => Boolean2boolean(b)))
 
+  final def any(predicate: T => Boolean): SMono[Boolean] = new ReactiveSMono[Boolean](coreFlux.any(predicate).map((b: JBoolean) => Boolean2boolean(b)))
+
+  final def as[P](transformer: Flux[T] => P): P = coreFlux.as(transformer)
+
   private[publisher] def coreFlux: JFlux[T]
 
   def doOnRequest(f: Long => Unit): SFlux[T] = new ReactiveSFlux[T](coreFlux.doOnRequest(f))
