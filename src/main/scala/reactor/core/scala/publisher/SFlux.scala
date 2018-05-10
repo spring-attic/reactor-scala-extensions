@@ -13,6 +13,7 @@ import reactor.util.function.{Tuple3, Tuple4, Tuple5, Tuple6}
 
 import scala.collection.JavaConverters._
 import scala.concurrent.duration.Duration
+import scala.concurrent.duration.Duration.Infinite
 import scala.language.postfixOps
 import scala.reflect.ClassTag
 
@@ -25,6 +26,10 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with Publisher[T] {
 
   final def as[P](transformer: Flux[T] => P): P = coreFlux.as(transformer)
 
+  final def blockFirst(d: Duration = Duration.Inf): Option[T] = d match {
+    case _: Infinite => Option(coreFlux.blockFirst())
+    case duration => Option(coreFlux.blockFirst(duration))
+  }
   private[publisher] def coreFlux: JFlux[T]
 
   def doOnRequest(f: Long => Unit): SFlux[T] = new ReactiveSFlux[T](coreFlux.doOnRequest(f))
