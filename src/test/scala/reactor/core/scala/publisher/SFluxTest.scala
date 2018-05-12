@@ -431,6 +431,17 @@ class SFluxTest extends FreeSpec with Matchers {
       }
     }
 
+    ".blockLast" - {
+      "should block and return the last element" in {
+        val element = SFlux.just(1, 2, 3).blockLast()
+        element shouldBe Option(3)
+      }
+      "with duration should wait up to the maximum provided duration to get the last element" in {
+        val element = SFlux.just(1, 2, 3).blockLast(10 seconds)
+        element shouldBe Option(3)
+      }
+    }
+
     ".take" - {
       "should emit only n values" in {
         StepVerifier.create(SFlux(1, 2, 3, 4, 5, 6, 7, 8, 9, 10).take(3))

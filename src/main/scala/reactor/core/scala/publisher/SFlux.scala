@@ -26,10 +26,16 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with Publisher[T] {
 
   final def as[P](transformer: Flux[T] => P): P = coreFlux.as(transformer)
 
-  final def blockFirst(d: Duration = Duration.Inf): Option[T] = d match {
+  final def blockFirst(timeout: Duration = Duration.Inf): Option[T] = timeout match {
     case _: Infinite => Option(coreFlux.blockFirst())
-    case duration => Option(coreFlux.blockFirst(duration))
+    case t => Option(coreFlux.blockFirst(t))
   }
+
+  final def blockLast(timeout: Duration = Duration.Inf): Option[T] = timeout match {
+    case _: Infinite => Option(coreFlux.blockLast())
+    case t => Option(coreFlux.blockLast(t))
+  }
+
   private[publisher] def coreFlux: JFlux[T]
 
   def doOnRequest(f: Long => Unit): SFlux[T] = new ReactiveSFlux[T](coreFlux.doOnRequest(f))
