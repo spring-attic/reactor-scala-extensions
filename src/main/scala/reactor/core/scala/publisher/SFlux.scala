@@ -36,6 +36,8 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with Publisher[T] {
     case t => Option(coreFlux.blockLast(t))
   }
 
+  final def buffer(maxSize: Int = Int.MaxValue): SFlux[Seq[T]] = new ReactiveSFlux[Seq[T]](coreFlux.buffer(maxSize).map(_.asScala))
+
   private[publisher] def coreFlux: JFlux[T]
 
   def doOnRequest(f: Long => Unit): SFlux[T] = new ReactiveSFlux[T](coreFlux.doOnRequest(f))

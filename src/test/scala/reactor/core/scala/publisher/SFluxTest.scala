@@ -6,17 +6,20 @@ import java.util.concurrent.Callable
 import java.util.concurrent.atomic.AtomicBoolean
 
 import org.reactivestreams.Subscription
+import org.scalatest.prop.TableDrivenPropertyChecks
 import org.scalatest.{FreeSpec, Matchers}
 import reactor.core.publisher.{BaseSubscriber, FluxSink, SynchronousSink}
 import reactor.core.scheduler.Schedulers
 import reactor.test.StepVerifier
 
+import scala.collection.mutable
+import scala.collection.mutable.ListBuffer
 import scala.concurrent.duration.{Duration, _}
 import scala.io.Source
 import scala.language.postfixOps
 import scala.util.{Failure, Try}
 
-class SFluxTest extends FreeSpec with Matchers {
+class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
   "SFlux" - {
     ".apply should return a proper SFlux" in {
       StepVerifier.create(SFlux(1, 2, 3))
@@ -439,6 +442,136 @@ class SFluxTest extends FreeSpec with Matchers {
       "with duration should wait up to the maximum provided duration to get the last element" in {
         val element = SFlux.just(1, 2, 3).blockLast(10 seconds)
         element shouldBe Option(3)
+      }
+    }
+
+    ".buffer" - {
+      "should buffer all element into a Seq" in {
+        StepVerifier.create(SFlux.just(1, 2, 3).buffer())
+          .expectNext(Seq(1, 2, 3))
+          .verifyComplete()
+      }
+      "with maxSize should buffer element into a batch of Seqs" in {
+        StepVerifier.create(SFlux.just(1, 2, 3).buffer(2))
+          .expectNext(Seq(1, 2), Seq(3))
+          .verifyComplete()
+      }
+      "with maxSize and sequence supplier should buffer element into a batch of sequences provided by supplier" in {
+        val seqSet = mutable.Set[mutable.ListBuffer[Int]]()
+        val flux = Flux.just(1, 2, 3).buffer(2, () => {
+          val seq = mutable.ListBuffer[Int]()
+          seqSet += seq
+          seq
+        })
+        StepVerifier.create(flux)
+          .expectNextMatches((seq: Seq[Int]) => {
+            seq shouldBe Seq(1, 2)
+            seqSet should contain(seq)
+            true
+          })
+          .expectNextMatches((seq: Seq[Int]) => {
+            seq shouldBe Seq(3)
+            seqSet should contain(seq)
+            true
+          })
+          .verifyComplete()
+      }
+      "with maxSize and skip" - {
+        val originalFlux = Flux.just(1, 2, 3, 4, 5)
+        val data = Table(
+          ("scenario", "maxSize", "skip", "expectedSequence"),
+          ("maxSize < skip", 2, 3, Iterable(ListBuffer(1, 2), ListBuffer(4, 5))),
+          ("maxSize > skip", 3, 2, Iterable(ListBuffer(1, 2, 3), ListBuffer(3, 4, 5), ListBuffer(5))),
+          ("maxSize = skip", 2, 2, Iterable(ListBuffer(1, 2), ListBuffer(3, 4), ListBuffer(5)))
+        )
+        forAll(data) { (scenario, maxSize, skip, expectedSequence) => {
+          s"when $scenario" in {
+            val flux = originalFlux.buffer(maxSize, skip)
+            StepVerifier.create(flux)
+              .expectNextSequence(expectedSequence)
+              .verifyComplete()
+          }
+        }
+        }
+      }
+      "with maxSize, skip and buffer supplier" - {
+        val data = Table(
+          ("scenario", "maxSize", "skip", "expectedSequence"),
+          ("maxSize < skip", 1, 2, Iterable(ListBuffer(1), ListBuffer(3), ListBuffer(5))),
+          ("maxSize > skip", 3, 2, Iterable(ListBuffer(1, 2, 3), ListBuffer(3, 4, 5), ListBuffer(5))),
+          ("maxSize = skip", 2, 2, Iterable(ListBuffer(1, 2), ListBuffer(3, 4), ListBuffer(5)))
+        )
+        forAll(data) { (scenario, maxSize, skip, expectedSequence) => {
+          val iterator = expectedSequence.iterator
+          s"when $scenario" in {
+            val originalFlux = Flux.just(1, 2, 3, 4, 5)
+            val seqSet = mutable.Set[mutable.ListBuffer[Int]]()
+            val flux = originalFlux.buffer(maxSize, skip, () => {
+              val seq = mutable.ListBuffer[Int]()
+              seqSet += seq
+              seq
+            })
+            StepVerifier.create(flux)
+              .expectNextMatches((seq: Seq[Int]) => {
+                seq shouldBe iterator.next()
+                true
+              })
+              .expectNextMatches((seq: Seq[Int]) => {
+                seq shouldBe iterator.next()
+                true
+              })
+              .expectNextMatches((seq: Seq[Int]) => {
+                seq shouldBe iterator.next()
+                true
+              })
+              .verifyComplete()
+            iterator.hasNext shouldBe false
+          }
+        }
+        }
+      }
+
+      "with timespan should split values every timespan" in {
+        StepVerifier.withVirtualTime(() => Flux.interval(1 second).take(5).buffer(1500 milliseconds))
+          .thenAwait(5 seconds)
+          .expectNext(Seq(0L), Seq(1L), Seq(2L, 3L), Seq(4L))
+          .verifyComplete()
+      }
+
+      "with timespan duration and timeshift duration should split the values every timespan" - {
+        val data = Table(
+          ("scenario", "timespan", "timeshift", "expected"),
+          ("timeshift > timespan", 1500 milliseconds, 2 seconds, Seq(Seq(0l), Seq(1l, 2l), Seq(3l, 4l))),
+          ("timeshift < timespan", 1500 milliseconds, 1 second, Seq(Seq(0l), Seq(1l), Seq(2l), Seq(3l), Seq(4l))),
+          ("timeshift = timespan", 1500 milliseconds, 1500 milliseconds, Seq(Seq(0l), Seq(1l), Seq(2l, 3l), Seq(4l)))
+        )
+        forAll(data) { (scenario, timespan, timeshift, expected) => {
+          s"when $scenario" in {
+            StepVerifier.withVirtualTime(() => Flux.interval(1 second).take(5).buffer(timespan, timeshift))
+              .thenAwait(5 seconds)
+              .expectNext(expected: _*)
+              .verifyComplete()
+          }
+        }
+        }
+      }
+      "with other publisher should split the incoming value" in {
+        StepVerifier.withVirtualTime(() => Flux.just(1, 2, 3, 4, 5, 6, 7, 8).delayElements(1 second).buffer(Flux.interval(3 seconds)))
+          .thenAwait(9 seconds)
+          .expectNext(Seq(1, 2), Seq(3, 4, 5), Seq(6, 7, 8))
+          .verifyComplete()
+      }
+      "with other publisher and buffer supplier" in {
+        val buffer = ListBuffer.empty[ListBuffer[Int]]
+        StepVerifier.withVirtualTime(() => Flux.just(1, 2, 3, 4, 5, 6, 7, 8).delayElements(1 second).buffer(Flux.interval(3 seconds), () => {
+          val buff = ListBuffer.empty[Int]
+          buffer += buff
+          buff
+        }))
+          .thenAwait(9 seconds)
+          .expectNext(Seq(1, 2), Seq(3, 4, 5), Seq(6, 7, 8))
+          .verifyComplete()
+        buffer shouldBe Seq(Seq(1, 2), Seq(3, 4, 5), Seq(6, 7, 8))
       }
     }
 
