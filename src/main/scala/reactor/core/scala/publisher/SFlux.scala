@@ -2,7 +2,8 @@ package reactor.core.scala.publisher
 
 import java.lang.{Boolean => JBoolean, Long => JLong}
 import java.util.concurrent.Callable
-import java.util.function.BiFunction
+import java.util.function.{BiFunction, Supplier}
+import java.util.{List => JList}
 
 import org.reactivestreams.{Publisher, Subscriber}
 import reactor.core.publisher.FluxSink.OverflowStrategy
@@ -12,6 +13,7 @@ import reactor.util.concurrent.Queues.{SMALL_BUFFER_SIZE, XS_BUFFER_SIZE}
 import reactor.util.function.{Tuple3, Tuple4, Tuple5, Tuple6}
 
 import scala.collection.JavaConverters._
+import scala.collection.mutable
 import scala.concurrent.duration.Duration
 import scala.concurrent.duration.Duration.Infinite
 import scala.language.postfixOps
@@ -36,7 +38,13 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with Publisher[T] {
     case t => Option(coreFlux.blockLast(t))
   }
 
-  final def buffer(maxSize: Int = Int.MaxValue): SFlux[Seq[T]] = new ReactiveSFlux[Seq[T]](coreFlux.buffer(maxSize).map(_.asScala))
+  final def buffer[C >: mutable.Buffer[T]](maxSize: Int = Int.MaxValue, bufferSupplier: () => C = () => mutable.ListBuffer.empty[T] ): SFlux[Seq[T]] = {
+    new ReactiveSFlux[Seq[T]](coreFlux.buffer(maxSize, new Supplier[JList[T]] {
+      override def get(): JList[T] = {
+        bufferSupplier().asInstanceOf[mutable.Buffer[T]].asJava
+      }
+    }).map(_.asScala))
+  }
 
   private[publisher] def coreFlux: JFlux[T]
 

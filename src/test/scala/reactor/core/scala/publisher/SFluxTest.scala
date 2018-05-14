@@ -458,7 +458,7 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       }
       "with maxSize and sequence supplier should buffer element into a batch of sequences provided by supplier" in {
         val seqSet = mutable.Set[mutable.ListBuffer[Int]]()
-        val flux = Flux.just(1, 2, 3).buffer(2, () => {
+        val flux = SFlux.just(1, 2, 3).buffer(2, () => {
           val seq = mutable.ListBuffer[Int]()
           seqSet += seq
           seq
