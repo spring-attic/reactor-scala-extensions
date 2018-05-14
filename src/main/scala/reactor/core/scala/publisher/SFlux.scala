@@ -46,6 +46,8 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with Publisher[T] {
     }).map(_.asScala))
   }
 
+  final def bufferTimeSpan(timespan: Duration)(timeshift: Duration = timespan): SFlux[Seq[T]] = new ReactiveSFlux[Seq[T]](coreFlux.buffer(timespan, timeshift).map(_.asScala))
+
   private[publisher] def coreFlux: JFlux[T]
 
   def doOnRequest(f: Long => Unit): SFlux[T] = new ReactiveSFlux[T](coreFlux.doOnRequest(f))

@@ -532,28 +532,26 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       }
 
       "with timespan should split values every timespan" in {
-        StepVerifier.withVirtualTime(() => Flux.interval(1 second).take(5).buffer(1500 milliseconds))
+        StepVerifier.withVirtualTime(() => SFlux.interval(1 second).take(5).bufferTimeSpan(1500 milliseconds)())
           .thenAwait(5 seconds)
           .expectNext(Seq(0L), Seq(1L), Seq(2L, 3L), Seq(4L))
           .verifyComplete()
       }
 
-      "with timespan duration and timeshift duration should split the values every timespan" - {
-        val data = Table(
-          ("scenario", "timespan", "timeshift", "expected"),
-          ("timeshift > timespan", 1500 milliseconds, 2 seconds, Seq(Seq(0l), Seq(1l, 2l), Seq(3l, 4l))),
-          ("timeshift < timespan", 1500 milliseconds, 1 second, Seq(Seq(0l), Seq(1l), Seq(2l), Seq(3l), Seq(4l))),
-          ("timeshift = timespan", 1500 milliseconds, 1500 milliseconds, Seq(Seq(0l), Seq(1l), Seq(2l, 3l), Seq(4l)))
-        )
-        forAll(data) { (scenario, timespan, timeshift, expected) => {
-          s"when $scenario" in {
-            StepVerifier.withVirtualTime(() => Flux.interval(1 second).take(5).buffer(timespan, timeshift))
-              .thenAwait(5 seconds)
-              .expectNext(expected: _*)
-              .verifyComplete()
-          }
+      val data = Table(
+        ("scenario", "timespan", "timeshift", "expected"),
+        ("timeshift > timespan", 1500 milliseconds, 2 seconds, Seq(Seq(0l), Seq(1l, 2l), Seq(3l, 4l))),
+        ("timeshift < timespan", 1500 milliseconds, 1 second, Seq(Seq(0l), Seq(1l), Seq(2l), Seq(3l), Seq(4l))),
+        ("timeshift = timespan", 1500 milliseconds, 1500 milliseconds, Seq(Seq(0l), Seq(1l), Seq(2l, 3l), Seq(4l)))
+      )
+      "with duration and timeshift duration should split the values every timespan" in {
+      forAll(data) { (scenario, timespan, timeshift, expected) => {
+          StepVerifier.withVirtualTime(() => SFlux.interval(1 second).take(5).bufferTimeSpan(timespan)(timeshift))
+            .thenAwait(5 seconds)
+            .expectNext(expected: _*)
+            .verifyComplete()
         }
-        }
+      }
       }
       "with other publisher should split the incoming value" in {
         StepVerifier.withVirtualTime(() => Flux.just(1, 2, 3, 4, 5, 6, 7, 8).delayElements(1 second).buffer(Flux.interval(3 seconds)))
