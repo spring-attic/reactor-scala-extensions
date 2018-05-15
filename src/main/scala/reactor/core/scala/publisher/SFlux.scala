@@ -43,13 +43,13 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with Publisher[T] {
       override def get(): JList[T] = {
         bufferSupplier().asInstanceOf[mutable.Buffer[T]].asJava
       }
-    }).map(_.asScala))
+    }).map((l: JList[T]) => l.asScala))
   }
 
   final def bufferTimeSpan(timespan: Duration, timer: Scheduler = Schedulers.parallel())(timeshift: Duration = timespan): SFlux[Seq[T]] =
-    new ReactiveSFlux[Seq[T]](coreFlux.buffer(timespan, timeshift, timer).map(_.asScala))
+    new ReactiveSFlux[Seq[T]](coreFlux.buffer(timespan, timeshift, timer).map((l: JList[T]) => l.asScala))
 
-  final def bufferPublisher(other: Publisher[_]): SFlux[Seq[T]] = new ReactiveSFlux[Seq[T]](coreFlux.buffer(other).map(_.asScala))
+  final def bufferPublisher(other: Publisher[_]): SFlux[Seq[T]] = new ReactiveSFlux[Seq[T]](coreFlux.buffer(other).map((l: JList[T]) => l.asScala))
 
   private[publisher] def coreFlux: JFlux[T]
 
