@@ -2,7 +2,7 @@ package reactor.core.scala.publisher
 
 import java.lang.{Boolean => JBoolean, Long => JLong}
 import java.util.concurrent.Callable
-import java.util.function.{BiFunction, Supplier}
+import java.util.function.{BiFunction, Function, Supplier}
 import java.util.{List => JList}
 
 import org.reactivestreams.{Publisher, Subscriber}
@@ -10,7 +10,7 @@ import reactor.core.publisher.FluxSink.OverflowStrategy
 import reactor.core.publisher.{FluxSink, SynchronousSink, Flux => JFlux}
 import reactor.core.scheduler.{Scheduler, Schedulers}
 import reactor.util.concurrent.Queues.{SMALL_BUFFER_SIZE, XS_BUFFER_SIZE}
-import reactor.util.function.{Tuple3, Tuple4, Tuple5, Tuple6}
+import reactor.util.function.{Tuple2, Tuple3, Tuple4, Tuple5, Tuple6}
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
@@ -46,11 +46,24 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with Publisher[T] {
     }).map(_.asScala))
   }
 
-  final def bufferTimeSpan(timespan: Duration)(timeshift: Duration = timespan): SFlux[Seq[T]] = new ReactiveSFlux[Seq[T]](coreFlux.buffer(timespan, timeshift).map(_.asScala))
+  final def bufferTimeSpan(timespan: Duration, timer: Scheduler = Schedulers.parallel())(timeshift: Duration = timespan): SFlux[Seq[T]] =
+    new ReactiveSFlux[Seq[T]](coreFlux.buffer(timespan, timeshift, timer).map(_.asScala))
+
+  final def bufferPublisher(other: Publisher[_]): SFlux[Seq[T]] = new ReactiveSFlux[Seq[T]](coreFlux.buffer(other).map(_.asScala))
 
   private[publisher] def coreFlux: JFlux[T]
 
+  final def delayElements(delay: Duration, timer: Scheduler = Schedulers.parallel()): SFlux[T] = new ReactiveSFlux[T](coreFlux.delayElements(delay, timer))
+
+  final def delaySubscription(delay: Duration, timer: Scheduler = Schedulers.parallel()): SFlux[T] = new ReactiveSFlux[T](coreFlux.delaySubscription(delay, timer))
+
+  final def delaySubscription[U](subscriptionDelay: Publisher[U]): SFlux[T] = new ReactiveSFlux[T](coreFlux.delaySubscription(subscriptionDelay))
+
   def doOnRequest(f: Long => Unit): SFlux[T] = new ReactiveSFlux[T](coreFlux.doOnRequest(f))
+
+  final def elapsed(scheduler: Scheduler = Schedulers.parallel()): SFlux[(Long, T)] = new ReactiveSFlux[(Long, T)](coreFlux.elapsed(scheduler).map(new Function[Tuple2[JLong, T], (Long, T)] {
+    override def apply(t: Tuple2[JLong, T]): (Long, T) = (Long2long(t.getT1), t.getT2)
+  }))
 
   final def index(): SFlux[(Long, T)] = index[(Long, T)]((x, y) => (x, y))
 

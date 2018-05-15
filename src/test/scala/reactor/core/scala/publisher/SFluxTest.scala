@@ -4,6 +4,7 @@ import java.io._
 import java.nio.file.Files
 import java.util.concurrent.Callable
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.function.Predicate
 
 import org.reactivestreams.Subscription
 import org.scalatest.prop.TableDrivenPropertyChecks
@@ -11,6 +12,7 @@ import org.scalatest.{FreeSpec, Matchers}
 import reactor.core.publisher.{BaseSubscriber, FluxSink, SynchronousSink}
 import reactor.core.scheduler.Schedulers
 import reactor.test.StepVerifier
+import reactor.test.scheduler.VirtualTimeScheduler
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
@@ -570,6 +572,80 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
           .expectNext(Seq(1, 2), Seq(3, 4, 5), Seq(6, 7, 8))
           .verifyComplete()
         buffer shouldBe Seq(Seq(1, 2), Seq(3, 4, 5), Seq(6, 7, 8))
+      }
+    }
+
+    ".delayElement should delay every elements by provided delay in Duration" in {
+      try {
+        StepVerifier.withVirtualTime(() => SFlux.just(1, 2, 3).delayElements(1 second).elapsed())
+          .thenAwait(3 seconds)
+          .expectNext((1000L, 1), (1000L, 2), (1000L, 3))
+          .verifyComplete()
+      } finally {
+        VirtualTimeScheduler.reset()
+      }
+    }
+
+    ".delaySubscription" - {
+      "with delay duration should delay subscription as long as the provided duration" in {
+        StepVerifier.withVirtualTime(() => SFlux.just(1, 2, 3).delaySubscription(1 hour))
+          .thenAwait(1 hour)
+          .expectNext(1, 2, 3)
+          .verifyComplete()
+      }
+      "with another publisher should delay the current subscription until the other publisher completes" in {
+        StepVerifier.withVirtualTime(() => SFlux.just(1, 2, 3).delaySubscription(SMono.just("one").delaySubscription(1 hour)))
+          .thenAwait(1 hour)
+          .expectNext(1, 2, 3)
+          .verifyComplete()
+
+      }
+    }
+
+    ".elapsed" - {
+      "should provide the time elapse when this mono emit value" in {
+        StepVerifier.withVirtualTime(() => SFlux.just(1, 2, 3).delaySubscription(1 second).delayElements(1 second).elapsed(), 3)
+          .thenAwait(4 seconds)
+          .expectNextMatches(new Predicate[(Long, Int)] {
+            override def test(t: (Long, Int)): Boolean = t match {
+              case (time, data) => time >= 1000 && data == 1
+            }
+          })
+          .expectNextMatches(new Predicate[(Long, Int)] {
+            override def test(t: (Long, Int)): Boolean = t match {
+              case (time, data) => time >= 1000 && data == 2
+            }
+          })
+          .expectNextMatches(new Predicate[(Long, Int)] {
+            override def test(t: (Long, Int)): Boolean = t match {
+              case (time, data) => time >= 1000 && data == 3
+            }
+          })
+          .verifyComplete()
+      }
+      "with Scheduler should provide the time elapsed using the provided scheduler when this mono emit value" in {
+        val virtualTimeScheduler = VirtualTimeScheduler.getOrSet()
+        StepVerifier.withVirtualTime(() => SFlux.just(1, 2, 3)
+          .delaySubscription(1 second, virtualTimeScheduler)
+          .delayElements(1 second, virtualTimeScheduler)
+          .elapsed(virtualTimeScheduler), 3)
+          .`then`(() => virtualTimeScheduler.advanceTimeBy(4 seconds))
+          .expectNextMatches(new Predicate[(Long, Int)] {
+            override def test(t: (Long, Int)): Boolean = t match {
+              case (time, data) => time >= 1000 && data == 1
+            }
+          })
+          .expectNextMatches(new Predicate[(Long, Int)] {
+            override def test(t: (Long, Int)): Boolean = t match {
+              case (time, data) => time >= 1000 && data == 2
+            }
+          })
+          .expectNextMatches(new Predicate[(Long, Int)] {
+            override def test(t: (Long, Int)): Boolean = t match {
+              case (time, data) => time >= 1000 && data == 3
+            }
+          })
+          .verifyComplete()
       }
     }
 

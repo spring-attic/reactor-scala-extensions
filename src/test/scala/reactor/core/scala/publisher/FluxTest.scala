@@ -972,7 +972,6 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
       } finally {
         VirtualTimeScheduler.reset()
       }
-
     }
 
     ".delaySequence" - {
