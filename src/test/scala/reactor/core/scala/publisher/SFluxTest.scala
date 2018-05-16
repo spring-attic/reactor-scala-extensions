@@ -575,6 +575,15 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       }
     }
 
+    ".bufferTimeout" - {
+      "with maxSize and duration should split values every duration or after maximum has been reached" in {
+        StepVerifier.withVirtualTime(() => SFlux.interval(1 second).take(5).bufferTimeout(3, 1200 milliseconds))
+          .thenAwait(5 seconds)
+          .expectNext(Seq(0l, 1), Seq(2l, 3), Seq(4l))
+          .verifyComplete()
+      }
+    }
+
     ".delayElement should delay every elements by provided delay in Duration" in {
       try {
         StepVerifier.withVirtualTime(() => SFlux.just(1, 2, 3).delayElements(1 second).elapsed())
