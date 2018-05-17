@@ -51,13 +51,15 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with Publisher[T] {
 
   final def bufferPublisher(other: Publisher[_]): SFlux[Seq[T]] = new ReactiveSFlux[Seq[T]](coreFlux.buffer(other).map((l: JList[T]) => l.asScala))
 
-  final def bufferTimeout[C >: mutable.Buffer[T]](maxSize: Int, timespan: Duration, bufferSupplier: () => C = () => mutable.ListBuffer.empty[T] ): SFlux[Seq[T]] = {
-    new ReactiveSFlux[Seq[T]](coreFlux.bufferTimeout(maxSize, timespan, new Supplier[JList[T]] {
+  final def bufferTimeout[C >: mutable.Buffer[T]](maxSize: Int, timespan: Duration, timer: Scheduler = Schedulers.parallel(), bufferSupplier: () => C = () => mutable.ListBuffer.empty[T] ): SFlux[Seq[T]] = {
+    new ReactiveSFlux[Seq[T]](coreFlux.bufferTimeout(maxSize, timespan, timer, new Supplier[JList[T]] {
       override def get(): JList[T] = {
         bufferSupplier().asInstanceOf[mutable.Buffer[T]].asJava
       }
     }).map((l: JList[T]) => l.asScala))
   }
+
+  final def bufferUntil(predicate: T => Boolean, cutBefore: Boolean = false): SFlux[Seq[T]] = new ReactiveSFlux[Seq[T]](coreFlux.bufferUntil(predicate, cutBefore).map(_.asScala))
 
   private[publisher] def coreFlux: JFlux[T]
 
