@@ -68,6 +68,8 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with Publisher[T] {
       }
     }).map((l: JList[T]) => l.asScala))
 
+  final def bufferWhile(predicate: T => Boolean): SFlux[Seq[T]] = new ReactiveSFlux[Seq[T]](coreFlux.bufferWhile(predicate).map(_.asScala))
+
   private[publisher] def coreFlux: JFlux[T]
 
   final def delayElements(delay: Duration, timer: Scheduler = Schedulers.parallel()): SFlux[T] = new ReactiveSFlux[T](coreFlux.delayElements(delay, timer))

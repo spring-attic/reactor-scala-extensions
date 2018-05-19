@@ -623,6 +623,13 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       }
     }
 
+    ".bufferWhile should buffer while the predicate is true" in {
+      StepVerifier.withVirtualTime(() => SFlux.interval(1 second).take(10).bufferWhile(l => l % 2 == 0 || l % 3 == 0))
+        .thenAwait(10 seconds)
+        .expectNext(Seq(0L), Seq(2L, 3L, 4L), Seq(6L), Seq(8L, 9L))
+        .verifyComplete()
+    }
+
     ".delayElement should delay every elements by provided delay in Duration" in {
       try {
         StepVerifier.withVirtualTime(() => SFlux.just(1, 2, 3).delayElements(1 second).elapsed())
