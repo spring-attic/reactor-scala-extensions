@@ -630,6 +630,49 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         .verifyComplete()
     }
 
+    ".cache" - {
+      "should turn this into a hot source" in {
+        val flux = SFlux.just(1, 2, 3).cache()
+        StepVerifier.create(flux)
+          .expectNext(1, 2, 3)
+          .verifyComplete()
+        StepVerifier.create(flux)
+          .expectNext(1, 2, 3)
+          .verifyComplete()
+      }
+      "with history should just retain up to history" in {
+        val flux = SFlux.just(1, 2, 3).cache(2)
+        StepVerifier.create(flux)
+          .expectNext(1, 2, 3)
+          .verifyComplete()
+        StepVerifier.create(flux)
+          .expectNext(2, 3)
+          .verifyComplete()
+      }
+      "with ttl should retain the cache as long as the provided duration" in {
+        try {
+          StepVerifier.withVirtualTime(() => SFlux.just(1, 2, 3).delayElements(1 second).cache(ttl = 2 seconds))
+            .thenAwait(3 seconds)
+            .expectNext(1, 2, 3)
+            .verifyComplete()
+        } finally {
+          VirtualTimeScheduler.reset()
+        }
+
+      }
+      "with history and ttl should retain the cache up to ttl and max history" in {
+        val supplier = () => {
+          val tested = SFlux.just(1, 2, 3).cache(2, 10 seconds)
+          tested.subscribe()
+          tested
+        }
+        StepVerifier.withVirtualTime(supplier)
+          .thenAwait(5 seconds)
+          .expectNext(2, 3)
+          .verifyComplete()
+      }
+    }
+
     ".delayElement should delay every elements by provided delay in Duration" in {
       try {
         StepVerifier.withVirtualTime(() => SFlux.just(1, 2, 3).delayElements(1 second).elapsed())

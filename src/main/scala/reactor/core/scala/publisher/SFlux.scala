@@ -6,6 +6,7 @@ import java.util.function.{BiFunction, Function, Supplier}
 import java.util.{List => JList}
 
 import org.reactivestreams.{Publisher, Subscriber}
+import reactor.core.Disposable
 import reactor.core.publisher.FluxSink.OverflowStrategy
 import reactor.core.publisher.{FluxSink, SynchronousSink, Flux => JFlux}
 import reactor.core.scheduler.{Scheduler, Schedulers}
@@ -38,7 +39,7 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with Publisher[T] {
     case t => Option(coreFlux.blockLast(t))
   }
 
-  final def buffer[C >: mutable.Buffer[T]](maxSize: Int = Int.MaxValue, bufferSupplier: () => C = () => mutable.ListBuffer.empty[T] ): SFlux[Seq[T]] = {
+  final def buffer[C >: mutable.Buffer[T]](maxSize: Int = Int.MaxValue, bufferSupplier: () => C = () => mutable.ListBuffer.empty[T]): SFlux[Seq[T]] = {
     new ReactiveSFlux[Seq[T]](coreFlux.buffer(maxSize, new Supplier[JList[T]] {
       override def get(): JList[T] = {
         bufferSupplier().asInstanceOf[mutable.Buffer[T]].asJava
@@ -51,7 +52,7 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with Publisher[T] {
 
   final def bufferPublisher(other: Publisher[_]): SFlux[Seq[T]] = new ReactiveSFlux[Seq[T]](coreFlux.buffer(other).map((l: JList[T]) => l.asScala))
 
-  final def bufferTimeout[C >: mutable.Buffer[T]](maxSize: Int, timespan: Duration, timer: Scheduler = Schedulers.parallel(), bufferSupplier: () => C = () => mutable.ListBuffer.empty[T] ): SFlux[Seq[T]] = {
+  final def bufferTimeout[C >: mutable.Buffer[T]](maxSize: Int, timespan: Duration, timer: Scheduler = Schedulers.parallel(), bufferSupplier: () => C = () => mutable.ListBuffer.empty[T]): SFlux[Seq[T]] = {
     new ReactiveSFlux[Seq[T]](coreFlux.bufferTimeout(maxSize, timespan, timer, new Supplier[JList[T]] {
       override def get(): JList[T] = {
         bufferSupplier().asInstanceOf[mutable.Buffer[T]].asJava
@@ -69,6 +70,13 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with Publisher[T] {
     }).map((l: JList[T]) => l.asScala))
 
   final def bufferWhile(predicate: T => Boolean): SFlux[Seq[T]] = new ReactiveSFlux[Seq[T]](coreFlux.bufferWhile(predicate).map((l: JList[T]) => l.asScala))
+
+  final def cache(history: Int = Int.MaxValue, ttl: Duration = Duration.Inf): SFlux[T] = {
+    ttl match {
+      case _: Duration.Infinite => new ReactiveSFlux[T](coreFlux.cache(history))
+      case _ =>  new ReactiveSFlux[T](coreFlux.cache(history, ttl))
+    }
+  }
 
   private[publisher] def coreFlux: JFlux[T]
 
@@ -89,6 +97,8 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with Publisher[T] {
   final def index[I](indexMapper: (Long, T) => I): SFlux[I] = new ReactiveSFlux[I](coreFlux.index[I](new BiFunction[JLong, T, I] {
     override def apply(t: JLong, u: T) = indexMapper(Long2long(t), u)
   }))
+
+  final def subscribe(): Disposable = coreFlux.subscribe()
 
   override def subscribe(s: Subscriber[_ >: T]): Unit = coreFlux.subscribe(s)
 
