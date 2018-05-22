@@ -19,6 +19,7 @@ import scala.collection.mutable.ListBuffer
 import scala.concurrent.duration.{Duration, _}
 import scala.io.Source
 import scala.language.postfixOps
+import scala.math.ScalaNumber
 import scala.util.{Failure, Try}
 
 class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
@@ -671,6 +672,11 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
           .expectNext(2, 3)
           .verifyComplete()
       }
+    }
+
+    ".cast should cast the underlying value to a different type" in {
+      val number = SFlux.just(BigDecimal("1"), BigDecimal("2"), BigDecimal("3")).cast(classOf[ScalaNumber]).blockLast()
+      number.get shouldBe a[ScalaNumber]
     }
 
     ".delayElement should delay every elements by provided delay in Duration" in {
