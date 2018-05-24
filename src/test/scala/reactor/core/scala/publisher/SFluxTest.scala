@@ -685,6 +685,12 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         .verifyComplete()
     }
 
+    ".collectList should collect the value into a sequence" in {
+      StepVerifier.create(SFlux.just(1, 2, 3).collectSeq())
+        .expectNext(Seq(1, 2, 3))
+        .verifyComplete()
+    }
+
     ".delayElement should delay every elements by provided delay in Duration" in {
       try {
         StepVerifier.withVirtualTime(() => SFlux.just(1, 2, 3).delayElements(1 second).elapsed())

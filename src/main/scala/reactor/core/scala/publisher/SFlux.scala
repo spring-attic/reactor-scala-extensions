@@ -82,6 +82,8 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with Publisher[T] {
 
   final def collect[E](containerSupplier: () => E, collector: (E, T) => Unit): SMono[E] = new ReactiveSMono[E](coreFlux.collect(containerSupplier, collector: JBiConsumer[E, T]))
 
+  final def collectSeq(): SMono[Seq[T]] = new ReactiveSMono[Seq[T]](coreFlux.collectList().map(_.asScala))
+
   private[publisher] def coreFlux: JFlux[T]
 
   final def delayElements(delay: Duration, timer: Scheduler = Schedulers.parallel()): SFlux[T] = new ReactiveSFlux[T](coreFlux.delayElements(delay, timer))
