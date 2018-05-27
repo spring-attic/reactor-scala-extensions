@@ -92,17 +92,9 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with Publisher[T] {
       override def get(): JMap[K, V] = mapSupplier().asJava
     }).map((m: JMap[K, V]) => m.asScala.toMap))
 
-  final def collectMultimap[K](keyExtractor: T => K): SMono[Map[K, Traversable[T]]] =
-    new ReactiveSMono[Map[K, Traversable[T]]](coreFlux.collectMultimap[K](keyExtractor).map((m: JMap[K, JCollection[T]]) => m.asScala.toMap.map {
-      case (k, v: JCollection[T]) => k -> v.asScala.toSeq
-    }))
+  final def collectMultimap[K](keyExtractor: T => K): SMono[Map[K, Traversable[T]]] = collectMultimap(keyExtractor, (t: T) => t)
 
-  final def collectMultimap[K, V](keyExtractor: T => K, valueExtractor: T => V): SMono[Map[K, Traversable[V]]] =
-    new ReactiveSMono[Map[K, Traversable[V]]](coreFlux.collectMultimap[K, V](keyExtractor, valueExtractor).map((m: JMap[K, JCollection[V]]) => m.asScala.toMap.map {
-    case (k, v: JCollection[V]) => k -> v.asScala.toSeq
-  }))
-
-  final def collectMultimap[K, V](keyExtractor: T => K, valueExtractor: T => V, mapSupplier: () => mutable.Map[K, util.Collection[V]]): SMono[Map[K, Traversable[V]]] =
+  final def collectMultimap[K, V](keyExtractor: T => K, valueExtractor: T => V, mapSupplier: () => mutable.Map[K, util.Collection[V]] = () => mutable.HashMap.empty[K, util.Collection[V]]): SMono[Map[K, Traversable[V]]] =
     new ReactiveSMono[Map[K, Traversable[V]]](coreFlux.collectMultimap[K, V](keyExtractor, valueExtractor,
     new Supplier[util.Map[K, util.Collection[V]]] {
       override def get(): util.Map[K, util.Collection[V]] = {
