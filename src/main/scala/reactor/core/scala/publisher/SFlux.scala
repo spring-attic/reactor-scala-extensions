@@ -1,9 +1,10 @@
 package reactor.core.scala.publisher
 
 import java.lang.{Boolean => JBoolean, Long => JLong}
+import java.util
 import java.util.concurrent.Callable
 import java.util.function.{BiFunction, Function, Supplier}
-import java.util.{List => JList, Map => JMap}
+import java.util.{Collection => JCollection, List => JList, Map => JMap}
 
 import org.reactivestreams.{Publisher, Subscriber}
 import reactor.core.Disposable
@@ -90,6 +91,24 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with Publisher[T] {
     new ReactiveSMono[Map[K, V]](coreFlux.collectMap[K, V](keyExtractor, valueExtractor, new Supplier[JMap[K, V]] {
       override def get(): JMap[K, V] = mapSupplier().asJava
     }).map((m: JMap[K, V]) => m.asScala.toMap))
+
+  final def collectMultimap[K](keyExtractor: T => K): SMono[Map[K, Traversable[T]]] =
+    new ReactiveSMono[Map[K, Traversable[T]]](coreFlux.collectMultimap[K](keyExtractor).map((m: JMap[K, JCollection[T]]) => m.asScala.toMap.map {
+      case (k, v: JCollection[T]) => k -> v.asScala.toSeq
+    }))
+
+  final def collectMultimap[K, V](keyExtractor: T => K, valueExtractor: T => V): SMono[Map[K, Traversable[V]]] =
+    new ReactiveSMono[Map[K, Traversable[V]]](coreFlux.collectMultimap[K, V](keyExtractor, valueExtractor).map((m: JMap[K, JCollection[V]]) => m.asScala.toMap.map {
+    case (k, v: JCollection[V]) => k -> v.asScala.toSeq
+  }))
+
+  final def collectMultimap[K, V](keyExtractor: T => K, valueExtractor: T => V, mapSupplier: () => mutable.Map[K, util.Collection[V]]): SMono[Map[K, Traversable[V]]] =
+    new ReactiveSMono[Map[K, Traversable[V]]](coreFlux.collectMultimap[K, V](keyExtractor, valueExtractor,
+    new Supplier[util.Map[K, util.Collection[V]]] {
+      override def get(): util.Map[K, util.Collection[V]] = {
+        mapSupplier().asJava
+      }
+    }).map((m: JMap[K, JCollection[V]]) => m.asScala.toMap.mapValues((vs: JCollection[V]) => vs.asScala.toSeq)))
 
   private[publisher] def coreFlux: JFlux[T]
 
