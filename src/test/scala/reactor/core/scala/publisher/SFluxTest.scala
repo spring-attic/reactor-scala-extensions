@@ -691,6 +691,25 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         .verifyComplete()
     }
 
+    ".collectMap" - {
+      "with keyExtractor should collect the value and extract the key to return as Map" in {
+        StepVerifier.create(SFlux.just(1, 2, 3).collectMap(i => i + 5))
+          .expectNext(Map((6, 1), (7, 2), (8, 3)))
+          .verifyComplete()
+      }
+      "with keyExtractor and valueExtractor should collect the value, extract the key and value from it" in {
+        StepVerifier.create(SFlux.just(1, 2, 3).collectMap(i => i + 5, i => i + 6))
+          .expectNext(Map((6, 7), (7, 8), (8, 9)))
+          .verifyComplete()
+      }
+      "with keyExtractor, valueExtractor and mapSupplier should collect value, extract the key and value from it and put in the provided map" in {
+        val map = mutable.HashMap[Int, Int]()
+        StepVerifier.create(SFlux.just(1, 2, 3).collectMap(i => i + 5, i => i + 6, () => map))
+          .expectNextMatches((m: Map[Int, Int]) => m == Map((6, 7), (7, 8), (8, 9)) && m == map)
+          .verifyComplete()
+      }
+    }
+
     ".delayElement should delay every elements by provided delay in Duration" in {
       try {
         StepVerifier.withVirtualTime(() => SFlux.just(1, 2, 3).delayElements(1 second).elapsed())

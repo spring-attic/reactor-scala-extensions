@@ -3,7 +3,7 @@ package reactor.core.scala.publisher
 import java.lang.{Boolean => JBoolean, Long => JLong}
 import java.util.concurrent.Callable
 import java.util.function.{BiFunction, Function, Supplier}
-import java.util.{List => JList}
+import java.util.{List => JList, Map => JMap}
 
 import org.reactivestreams.{Publisher, Subscriber}
 import reactor.core.Disposable
@@ -83,6 +83,14 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with Publisher[T] {
   final def collect[E](containerSupplier: () => E, collector: (E, T) => Unit): SMono[E] = new ReactiveSMono[E](coreFlux.collect(containerSupplier, collector: JBiConsumer[E, T]))
 
   final def collectSeq(): SMono[Seq[T]] = new ReactiveSMono[Seq[T]](coreFlux.collectList().map((l: JList[T]) => l.asScala))
+
+  final def collectMap[K](keyExtractor: T => K): SMono[Map[K, T]] = new ReactiveSMono[Map[K, T]](coreFlux.collectMap[K](keyExtractor).map((m: JMap[K, T]) => m.asScala.toMap))
+
+  final def collectMap[K, V](keyExtractor: T => K, valueExtractor: T => V): SMono[Map[K, V]] = new ReactiveSMono[Map[K, V]](coreFlux.collectMap[K, V](keyExtractor, valueExtractor).map((m: JMap[K, V]) => m.asScala.toMap))
+
+  final def collectMap[K, V](keyExtractor: T => K, valueExtractor: T => V, mapSupplier: () => mutable.Map[K, V]): SMono[Map[K, V]] = new ReactiveSMono[Map[K, V]](coreFlux.collectMap[K, V](keyExtractor, valueExtractor, new Supplier[JMap[K, V]] {
+    override def get(): JMap[K, V] = mapSupplier().asJava
+  }).map((m: JMap[K, V]) => m.asScala.toMap))
 
   private[publisher] def coreFlux: JFlux[T]
 
