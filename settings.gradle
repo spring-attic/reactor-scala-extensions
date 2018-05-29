@@ -5,7 +5,7 @@ buildCache {
         enabled = false
     }
     remote(HttpBuildCache) {
-        url = "http://cache1.winar.to:32500/"
+        url = "https://cache1.winar.to:32500/"
         enabled = true
         push = true
     }
