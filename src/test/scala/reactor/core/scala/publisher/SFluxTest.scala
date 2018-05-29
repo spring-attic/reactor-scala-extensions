@@ -20,6 +20,7 @@ import scala.collection.mutable.ListBuffer
 import scala.concurrent.duration.{Duration, _}
 import scala.io.Source
 import scala.language.postfixOps
+import scala.math.Ordering.IntOrdering
 import scala.math.ScalaNumber
 import scala.util.{Failure, Try}
 
@@ -733,6 +734,22 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
           .verifyComplete()
       }
     }
+
+    ".collectSortedSeq" - {
+      "should collect and sort the elements" in {
+        StepVerifier.create(SFlux.just(5, 2, 3, 1, 4).collectSortedSeq())
+          .expectNext(Seq(1, 2, 3, 4, 5))
+          .verifyComplete()
+      }
+      "with ordering should collect and sort the elements based on the provided ordering" in {
+        StepVerifier.create(SFlux.just(2, 3, 1, 4, 5).collectSortedSeq(new IntOrdering {
+          override def compare(x: Int, y: Int): Int = Ordering.Int.compare(x, y) * -1
+        }))
+          .expectNext(Seq(5, 4, 3, 2, 1))
+          .verifyComplete()
+      }
+    }
+
 
     ".delayElement should delay every elements by provided delay in Duration" in {
       try {
