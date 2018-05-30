@@ -769,6 +769,19 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       }
     }
 
+    ".concatMapDelayError" - {
+      "with mapper, delayUntilEnd and prefetch" in {
+        val flux = SFlux.just(1, 2, 3).concatMapDelayError(i => {
+          if (i == 2) SFlux.error[Int](new RuntimeException("runtime ex"))
+          else SFlux.just(i * 2, i * 3)
+        }, delayUntilEnd = true, 2)
+        StepVerifier.create(flux)
+          .expectNext(2, 3, 6, 9)
+          .expectError(classOf[RuntimeException])
+          .verify()
+      }
+    }
+
     ".delayElement should delay every elements by provided delay in Duration" in {
       try {
         StepVerifier.withVirtualTime(() => SFlux.just(1, 2, 3).delayElements(1 second).elapsed())
