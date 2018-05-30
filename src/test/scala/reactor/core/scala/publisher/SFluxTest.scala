@@ -750,6 +750,11 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       }
     }
 
+    ".compose should defer transformation of this flux to another publisher" in {
+      StepVerifier.create(SFlux.just(1, 2, 3).compose(Mono.from))
+        .expectNext(1)
+        .verifyComplete()
+    }
 
     ".delayElement should delay every elements by provided delay in Duration" in {
       try {
