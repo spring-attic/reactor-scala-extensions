@@ -1,6 +1,6 @@
 package reactor.core.scala.publisher
 
-import java.lang.{Boolean => JBoolean, Long => JLong}
+import java.lang.{Boolean => JBoolean, Iterable => JIterable, Long => JLong}
 import java.util
 import java.util.concurrent.Callable
 import java.util.function.{BiFunction, Function, Supplier}
@@ -96,11 +96,11 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with Publisher[T] {
 
   final def collectMultimap[K, V](keyExtractor: T => K, valueExtractor: T => V, mapSupplier: () => mutable.Map[K, util.Collection[V]] = () => mutable.HashMap.empty[K, util.Collection[V]]): SMono[Map[K, Traversable[V]]] =
     new ReactiveSMono[Map[K, Traversable[V]]](coreFlux.collectMultimap[K, V](keyExtractor, valueExtractor,
-    new Supplier[util.Map[K, util.Collection[V]]] {
-      override def get(): util.Map[K, util.Collection[V]] = {
-        mapSupplier().asJava
-      }
-    }).map((m: JMap[K, JCollection[V]]) => m.asScala.toMap.mapValues((vs: JCollection[V]) => vs.asScala.toSeq)))
+      new Supplier[util.Map[K, util.Collection[V]]] {
+        override def get(): util.Map[K, util.Collection[V]] = {
+          mapSupplier().asJava
+        }
+      }).map((m: JMap[K, JCollection[V]]) => m.asScala.toMap.mapValues((vs: JCollection[V]) => vs.asScala.toSeq)))
 
   final def collectSortedSeq(ordering: Ordering[T] = None.orNull): SMono[Seq[T]] = new ReactiveSMono[Seq[T]](coreFlux.collectSortedList(ordering).map((l: JList[T]) => l.asScala))
 
@@ -110,6 +110,11 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with Publisher[T] {
 
   final def concatMapDelayError[V](mapper: T => Publisher[_ <: V], delayUntilEnd: Boolean = false, prefetch: Int = XS_BUFFER_SIZE): SFlux[V] =
     new ReactiveSFlux[V](coreFlux.concatMapDelayError[V](mapper, delayUntilEnd, prefetch))
+
+  final def concatMapIterable[R](mapper: T => Iterable[_ <: R], prefetch: Int = XS_BUFFER_SIZE): SFlux[R] =
+    new ReactiveSFlux[R](coreFlux.concatMapIterable(new Function[T, JIterable[R]] {
+      override def apply(t: T): JIterable[R] = mapper(t)
+    }, prefetch))
 
   private[publisher] def coreFlux: JFlux[T]
 

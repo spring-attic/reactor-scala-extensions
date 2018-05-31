@@ -782,6 +782,19 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       }
     }
 
+    ".concatMapIterable" - {
+      "with mapper should concat and map an iterable" in {
+        StepVerifier.create(SFlux.just(1, 2, 3).concatMapIterable(i => Iterable(i * 2, i * 3)))
+          .expectNext(2, 3, 4, 6, 6, 9)
+          .verifyComplete()
+      }
+      "with mapper and prefetch should concat and map an iterable" in {
+        StepVerifier.create(SFlux.just(1, 2, 3).concatMapIterable(i => Iterable(i * 2, i * 3), 2))
+          .expectNext(2, 3, 4, 6, 6, 9)
+          .verifyComplete()
+      }
+    }
+
     ".delayElement should delay every elements by provided delay in Duration" in {
       try {
         StepVerifier.withVirtualTime(() => SFlux.just(1, 2, 3).delayElements(1 second).elapsed())
