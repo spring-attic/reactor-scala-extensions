@@ -129,6 +129,8 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with Publisher[T] {
 
   final def delaySubscription[U](subscriptionDelay: Publisher[U]): SFlux[T] = new ReactiveSFlux[T](coreFlux.delaySubscription(subscriptionDelay))
 
+  final def dematerialize[X](): Flux[X] = Flux(coreFlux.dematerialize[X]())
+
   def doOnRequest(f: Long => Unit): SFlux[T] = new ReactiveSFlux[T](coreFlux.doOnRequest(f))
 
   final def elapsed(scheduler: Scheduler = Schedulers.parallel()): SFlux[(Long, T)] = new ReactiveSFlux[(Long, T)](coreFlux.elapsed(scheduler).map(new Function[Tuple2[JLong, T], (Long, T)] {

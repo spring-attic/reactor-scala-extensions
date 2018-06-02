@@ -10,7 +10,7 @@ import java.util.function.Predicate
 import org.reactivestreams.Subscription
 import org.scalatest.prop.TableDrivenPropertyChecks
 import org.scalatest.{FreeSpec, Matchers}
-import reactor.core.publisher.{BaseSubscriber, FluxSink, SynchronousSink}
+import reactor.core.publisher._
 import reactor.core.scheduler.Schedulers
 import reactor.test.StepVerifier
 import reactor.test.scheduler.VirtualTimeScheduler
@@ -825,6 +825,12 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
           .expectNext((1100l, (100l, 1)), (100l, (100l, 2)), (100l, (100l, 3)))
           .verifyComplete()
       }
+    }
+
+    ".dematerialize should dematerialize the underlying flux" in {
+      StepVerifier.create(SFlux.just(Signal.next(1), Signal.next(2)).dematerialize())
+        .expectNext(1, 2)
+        .verifyComplete
     }
 
     ".delaySubscription" - {
