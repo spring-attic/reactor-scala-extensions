@@ -849,6 +849,19 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       }
     }
 
+    ".distinct" - {
+      "should make the flux distinct" in {
+        StepVerifier.create(SFlux.just(1, 2, 3, 2, 4, 3, 6).distinct())
+          .expectNext(1, 2, 3, 4, 6)
+          .verifyComplete()
+      }
+      "with keySelector should make the flux distinct by using the keySelector" in {
+        StepVerifier.create(SFlux.just(1, 2, 3, 4, 5, 6, 7, 8, 9).distinct(i => i % 3))
+          .expectNext(1, 2, 3)
+          .verifyComplete()
+      }
+    }
+
     ".elapsed" - {
       "should provide the time elapse when this mono emit value" in {
         StepVerifier.withVirtualTime(() => SFlux.just(1, 2, 3).delaySubscription(1 second).delayElements(1 second).elapsed(), 3)
