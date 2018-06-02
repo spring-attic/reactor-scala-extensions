@@ -806,6 +806,21 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       }
     }
 
+    ".delaySequence" - {
+      "should delay the element but not subscription" in {
+        StepVerifier.withVirtualTime[(Long, (Long, Int))](() => SFlux.fromPublisher(SFlux.just[Int](1, 2, 3).delayElements(100 milliseconds).elapsed()).delaySequence(1 seconds).elapsed())
+          .thenAwait(1300 milliseconds)
+          .expectNext((1100l, (100l, 1)), (100l, (100l, 2)), (100l, (100l, 3)))
+          .verifyComplete()
+      }
+      "with scheduler should use the scheduler" in {
+        StepVerifier.withVirtualTime[(Long, (Long, Int))](() => SFlux.fromPublisher(SFlux.just[Int](1, 2, 3).delayElements(100 milliseconds).elapsed()).delaySequence(1 seconds, VirtualTimeScheduler.getOrSet()).elapsed())
+          .thenAwait(1300 milliseconds)
+          .expectNext((1100l, (100l, 1)), (100l, (100l, 2)), (100l, (100l, 3)))
+          .verifyComplete()
+      }
+    }
+
     ".delaySubscription" - {
       "with delay duration should delay subscription as long as the provided duration" in {
         StepVerifier.withVirtualTime(() => SFlux.just(1, 2, 3).delaySubscription(1 hour))
