@@ -795,6 +795,12 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       }
     }
 
+    ".count should return Mono which emit the number of value in this flux" in {
+      StepVerifier.create(SFlux.just(10, 9, 8).count())
+        .expectNext(3)
+        .verifyComplete()
+    }
+
     ".delayElement should delay every elements by provided delay in Duration" in {
       try {
         StepVerifier.withVirtualTime(() => SFlux.just(1, 2, 3).delayElements(1 second).elapsed())

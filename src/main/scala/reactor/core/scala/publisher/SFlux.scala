@@ -10,6 +10,7 @@ import org.reactivestreams.{Publisher, Subscriber}
 import reactor.core.Disposable
 import reactor.core.publisher.FluxSink.OverflowStrategy
 import reactor.core.publisher.{FluxSink, SynchronousSink, Flux => JFlux}
+import reactor.core.scala.publisher.PimpMyPublisher._
 import reactor.core.scheduler.{Scheduler, Schedulers}
 import reactor.util.concurrent.Queues.{SMALL_BUFFER_SIZE, XS_BUFFER_SIZE}
 import reactor.util.function.{Tuple2, Tuple3, Tuple4, Tuple5, Tuple6}
@@ -117,6 +118,8 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with Publisher[T] {
     }, prefetch))
 
   private[publisher] def coreFlux: JFlux[T]
+
+  def count(): SMono[Long] = new ReactiveSMono[Long](coreFlux.count())
 
   final def delayElements(delay: Duration, timer: Scheduler = Schedulers.parallel()): SFlux[T] = new ReactiveSFlux[T](coreFlux.delayElements(delay, timer))
 

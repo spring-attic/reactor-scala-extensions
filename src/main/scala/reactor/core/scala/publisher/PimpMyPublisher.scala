@@ -1,11 +1,9 @@
 package reactor.core.scala.publisher
 
-import reactor.core.publisher.{Flux => JFlux, Mono => JMono}
 import java.lang.{Long => JLong}
-import java.util
 
-import scala.collection.JavaConverters._
-import scala.collection.mutable
+import reactor.core.publisher.{Flux => JFlux, Mono => JMono}
+
 import scala.language.implicitConversions
 
 /**
@@ -25,4 +23,5 @@ object PimpMyPublisher {
 
   implicit def jFluxJInt2JFluxInt(jFluxInt: JFlux[Integer]): JFlux[Int] = jFluxInt.map[Int]((i: Integer) => Integer2int(i))
 
+  implicit def jMonoJLong2JMonoLong(mono: JMono[JLong]): JMono[Long] = mono.map(Long2long(_: JLong))
 }
