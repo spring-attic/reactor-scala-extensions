@@ -9,7 +9,7 @@ import java.util.{Collection => JCollection, List => JList, Map => JMap}
 import org.reactivestreams.{Publisher, Subscriber}
 import reactor.core.Disposable
 import reactor.core.publisher.FluxSink.OverflowStrategy
-import reactor.core.publisher.{FluxSink, SynchronousSink, Flux => JFlux}
+import reactor.core.publisher.{FluxSink, Signal, SynchronousSink, Flux => JFlux}
 import reactor.core.scala.publisher.PimpMyPublisher._
 import reactor.core.scheduler.{Scheduler, Schedulers}
 import reactor.util.concurrent.Queues.{SMALL_BUFFER_SIZE, XS_BUFFER_SIZE}
@@ -144,6 +144,8 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with Publisher[T] {
   final def doOnCancel(onCancel: () => Unit): SFlux[T] = new ReactiveSFlux[T](coreFlux.doOnCancel(onCancel))
 
   final def doOnComplete(onComplete: () => Unit): SFlux[T] = new ReactiveSFlux[T](coreFlux.doOnComplete(onComplete))
+
+  final def doOnEach(signalConsumer: Signal[T] => Unit): SFlux[T] = new ReactiveSFlux[T](coreFlux.doOnEach(signalConsumer))
 
   def doOnRequest(f: Long => Unit): SFlux[T] = new ReactiveSFlux[T](coreFlux.doOnRequest(f))
 
