@@ -4,7 +4,7 @@ import java.io._
 import java.nio.file.Files
 import java.util
 import java.util.concurrent.Callable
-import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.{AtomicBoolean, AtomicReference}
 import java.util.function.Predicate
 
 import org.reactivestreams.Subscription
@@ -890,6 +890,27 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         .expectNext(1, 2, 3)
         .verifyComplete()
       flag shouldBe 'get
+    }
+
+    ".doOnCancel should perform an action after it is cancelled" in {
+      val atomicBoolean = new AtomicBoolean(false)
+      val flux = SFlux.just(1, 2, 3).delayElements(1 minute)
+        .doOnCancel(() => {
+          atomicBoolean.compareAndSet(false, true) shouldBe true
+          ()
+        })
+
+      val subscriptionReference = new AtomicReference[Subscription]()
+      flux.subscribe(new BaseSubscriber[Int] {
+        override def hookOnSubscribe(subscription: Subscription): Unit = {
+          subscriptionReference.set(subscription)
+          subscription.request(3)
+        }
+
+        override def hookOnNext(value: Int): Unit = ()
+      })
+      subscriptionReference.get().cancel()
+      atomicBoolean shouldBe 'get
     }
 
     ".elapsed" - {
