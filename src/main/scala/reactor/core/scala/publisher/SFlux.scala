@@ -9,7 +9,7 @@ import java.util.{Collection => JCollection, List => JList, Map => JMap}
 import org.reactivestreams.{Publisher, Subscriber, Subscription}
 import reactor.core.Disposable
 import reactor.core.publisher.FluxSink.OverflowStrategy
-import reactor.core.publisher.{FluxSink, Signal, SynchronousSink, Flux => JFlux}
+import reactor.core.publisher.{FluxSink, Signal, SignalType, SynchronousSink, Flux => JFlux}
 import reactor.core.scala.publisher.PimpMyPublisher._
 import reactor.core.scheduler.{Scheduler, Schedulers}
 import reactor.util.concurrent.Queues.{SMALL_BUFFER_SIZE, XS_BUFFER_SIZE}
@@ -156,6 +156,8 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with Publisher[T] {
   final def doOnSubscribe(onSubscribe: Subscription => Unit): SFlux[T] = new ReactiveSFlux[T](coreFlux.doOnSubscribe(onSubscribe))
 
   final def doOnTerminate(onTerminate: () => Unit): SFlux[T] = new ReactiveSFlux[T](coreFlux.doOnTerminate(onTerminate))
+
+  final def doFinally(onFinally: SignalType => Unit): SFlux[T] = new ReactiveSFlux[T](coreFlux.doFinally(onFinally))
 
   final def elapsed(scheduler: Scheduler = Schedulers.parallel()): SFlux[(Long, T)] = new ReactiveSFlux[(Long, T)](coreFlux.elapsed(scheduler).map(new Function[Tuple2[JLong, T], (Long, T)] {
     override def apply(t: Tuple2[JLong, T]): (Long, T) = (Long2long(t.getT1), t.getT2)
