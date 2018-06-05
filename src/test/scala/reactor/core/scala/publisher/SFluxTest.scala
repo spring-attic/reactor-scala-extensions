@@ -934,6 +934,22 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       buffer shouldBe Seq("onNext-1", "onNext-2", "onNext-3", "onComplete-null")
     }
 
+    ".doOnError" - {
+      "with callback function should call the callback function when the flux encounter error" in {
+        val atomicBoolean = new AtomicBoolean(false)
+        StepVerifier.create(SFlux.error(new RuntimeException())
+          .doOnError(_ => atomicBoolean.compareAndSet(false, true) shouldBe true))
+          .expectError(classOf[RuntimeException])
+          .verify()
+      }
+      "that check exception type should call the callback function when the flux encounter exception with the provided type" in {
+        val atomicBoolean = new AtomicBoolean(false)
+        StepVerifier.create(SFlux.error(new RuntimeException())
+          .doOnError { case _: RuntimeException => atomicBoolean.compareAndSet(false, true) shouldBe true })
+          .expectError(classOf[RuntimeException])
+      }
+    }
+
     ".elapsed" - {
       "should provide the time elapse when this mono emit value" in {
         StepVerifier.withVirtualTime(() => SFlux.just(1, 2, 3).delaySubscription(1 second).delayElements(1 second).elapsed(), 3)
