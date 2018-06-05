@@ -950,6 +950,15 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       }
     }
 
+    ".doOnNext should call the callback function when the flux emit data successfully" in {
+      val buffer = ListBuffer[Int]()
+      StepVerifier.create(SFlux.just(1, 2, 3)
+        .doOnNext(t => buffer += t))
+        .expectNext(1, 2, 3)
+        .verifyComplete()
+      buffer shouldBe Seq(1, 2, 3)
+    }
+
     ".elapsed" - {
       "should provide the time elapse when this mono emit value" in {
         StepVerifier.withVirtualTime(() => SFlux.just(1, 2, 3).delaySubscription(1 second).delayElements(1 second).elapsed(), 3)
