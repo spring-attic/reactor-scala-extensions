@@ -24,4 +24,8 @@ object PimpMyPublisher {
   implicit def jFluxJInt2JFluxInt(jFluxInt: JFlux[Integer]): JFlux[Int] = jFluxInt.map[Int]((i: Integer) => Integer2int(i))
 
   implicit def jMonoJLong2JMonoLong(mono: JMono[JLong]): JMono[Long] = mono.map(Long2long(_: JLong))
+
+  implicit def jFlux2SFlux[T](jFlux: JFlux[T]): SFlux[T] = new ReactiveSFlux[T](jFlux)
+
+  implicit def jMono2SMono[T](jMono: JMono[T]): SMono[T] = new ReactiveSMono[T](jMono)
 }

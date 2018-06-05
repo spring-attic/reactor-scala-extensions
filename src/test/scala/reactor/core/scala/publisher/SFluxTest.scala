@@ -10,7 +10,7 @@ import java.util.function.Predicate
 import org.reactivestreams.Subscription
 import org.scalatest.prop.TableDrivenPropertyChecks
 import org.scalatest.{FreeSpec, Matchers}
-import reactor.core.publisher.{Flux, _}
+import reactor.core.publisher._
 import reactor.core.scheduler.Schedulers
 import reactor.test.StepVerifier
 import reactor.test.scheduler.VirtualTimeScheduler
@@ -1042,6 +1042,19 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
               case (time, data) => time >= 1000 && data == 3
             }
           })
+          .verifyComplete()
+      }
+    }
+
+    ".elementAt" - {
+      "should emit only the element at given index position" in {
+        StepVerifier.create(SFlux.just(1, 2, 3).elementAt(2))
+          .expectNext(3)
+          .verifyComplete()
+      }
+      "should emit only the element at given index position or default value if the sequence is shorter" in {
+        StepVerifier.create(SFlux.just(1, 2, 3, 4).elementAt(10, Option(-1)))
+          .expectNext(-1)
           .verifyComplete()
       }
     }

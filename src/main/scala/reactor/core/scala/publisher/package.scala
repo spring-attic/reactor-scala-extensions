@@ -46,8 +46,8 @@ package object publisher {
     (javaTuple6.getT1, javaTuple6.getT2, javaTuple6.getT3, javaTuple6.getT4, javaTuple6.getT5, javaTuple6.getT6)
   }
 
-  type SConsumer[T] = (T => Unit)
-  type SPredicate[T] = (T => Boolean)
+  type SConsumer[T] = T => Unit
+  type SPredicate[T] = T => Boolean
   type SBiConsumer[T, U] = (T, U) => Unit
   type JBiConsumer[T, U] = BiConsumer[T, U]
 
