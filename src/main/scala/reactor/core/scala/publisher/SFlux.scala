@@ -6,7 +6,7 @@ import java.util.concurrent.Callable
 import java.util.function.{BiFunction, Function, Supplier}
 import java.util.{Collection => JCollection, List => JList, Map => JMap}
 
-import org.reactivestreams.{Publisher, Subscriber}
+import org.reactivestreams.{Publisher, Subscriber, Subscription}
 import reactor.core.Disposable
 import reactor.core.publisher.FluxSink.OverflowStrategy
 import reactor.core.publisher.{FluxSink, Signal, SynchronousSink, Flux => JFlux}
@@ -152,6 +152,8 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with Publisher[T] {
   final def doOnNext(onNext: T => Unit): SFlux[T] = new ReactiveSFlux[T](coreFlux.doOnNext(onNext))
 
   def doOnRequest(f: Long => Unit): SFlux[T] = new ReactiveSFlux[T](coreFlux.doOnRequest(f))
+
+  final def doOnSubscribe(onSubscribe: Subscription => Unit): SFlux[T] = new ReactiveSFlux[T](coreFlux.doOnSubscribe(onSubscribe))
 
   final def elapsed(scheduler: Scheduler = Schedulers.parallel()): SFlux[(Long, T)] = new ReactiveSFlux[(Long, T)](coreFlux.elapsed(scheduler).map(new Function[Tuple2[JLong, T], (Long, T)] {
     override def apply(t: Tuple2[JLong, T]): (Long, T) = (Long2long(t.getT1), t.getT2)

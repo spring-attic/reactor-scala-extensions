@@ -10,7 +10,7 @@ import java.util.function.Predicate
 import org.reactivestreams.Subscription
 import org.scalatest.prop.TableDrivenPropertyChecks
 import org.scalatest.{FreeSpec, Matchers}
-import reactor.core.publisher._
+import reactor.core.publisher.{Flux, _}
 import reactor.core.scheduler.Schedulers
 import reactor.test.StepVerifier
 import reactor.test.scheduler.VirtualTimeScheduler
@@ -970,6 +970,15 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         }
       })
       atomicLong.get() shouldBe 1
+    }
+
+    ".doOnSubscribe should be called upon subscribe" in {
+      val atomicBoolean = new AtomicBoolean(false)
+      StepVerifier.create(Flux.just[Long](1L)
+        .doOnSubscribe(_ => atomicBoolean.compareAndSet(false, true)))
+        .expectNextCount(1)
+        .verifyComplete()
+      atomicBoolean shouldBe 'get
     }
 
     ".elapsed" - {
