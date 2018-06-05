@@ -4,7 +4,7 @@ import java.io._
 import java.nio.file.Files
 import java.util
 import java.util.concurrent.Callable
-import java.util.concurrent.atomic.{AtomicBoolean, AtomicReference}
+import java.util.concurrent.atomic.{AtomicBoolean, AtomicLong, AtomicReference}
 import java.util.function.Predicate
 
 import org.reactivestreams.Subscription
@@ -957,6 +957,19 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         .expectNext(1, 2, 3)
         .verifyComplete()
       buffer shouldBe Seq(1, 2, 3)
+    }
+
+    ".doOnRequest should be called upon request" in {
+      val atomicLong = new AtomicLong(0)
+      val flux = SFlux.just[Long](1L)
+        .doOnRequest(l => atomicLong.compareAndSet(0, l))
+      flux.subscribe(new BaseSubscriber[Long] {
+        override def hookOnSubscribe(subscription: Subscription): Unit = {
+          subscription.request(1)
+          ()
+        }
+      })
+      atomicLong.get() shouldBe 1
     }
 
     ".elapsed" - {
