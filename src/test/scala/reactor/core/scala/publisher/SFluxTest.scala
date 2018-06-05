@@ -981,6 +981,15 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       atomicBoolean shouldBe 'get
     }
 
+    ".doOnTerminate should do something on terminate" in {
+      val flag = new AtomicBoolean(false)
+      StepVerifier.create(SFlux.just(1, 2, 3).doOnTerminate { () => flag.compareAndSet(false, true) })
+        .expectNext(1, 2, 3)
+        .expectComplete()
+        .verify()
+      flag shouldBe 'get
+    }
+
     ".elapsed" - {
       "should provide the time elapse when this mono emit value" in {
         StepVerifier.withVirtualTime(() => SFlux.just(1, 2, 3).delaySubscription(1 second).delayElements(1 second).elapsed(), 3)
