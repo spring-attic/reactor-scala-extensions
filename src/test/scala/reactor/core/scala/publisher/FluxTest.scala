@@ -12,7 +12,7 @@ import org.mockito.Mockito.{spy, verify}
 import org.reactivestreams.{Publisher, Subscription}
 import org.scalatest.prop.TableDrivenPropertyChecks
 import org.scalatest.{FreeSpec, Matchers}
-import reactor.core.publisher.{Flux => JFlux, GroupedFlux => JGroupedFlux, _}
+import reactor.core.publisher.{Flux => JFlux, _}
 import reactor.core.scheduler.Schedulers
 import reactor.test.StepVerifier
 import reactor.test.scheduler.VirtualTimeScheduler
@@ -1271,15 +1271,15 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
 
     ".expand" - {
       "should expand the flux" in {
-        val flux = Flux.just("a", "b").expand(s => Flux.just(s"$s$s", s"$s$s$s")).take(5)
+        val flux = Flux.just("a", "b").expand(s => Flux.just(s"$s$s", s"$s$s$s")).take(10)
         StepVerifier.create(flux)
-          .expectNext("a", "aa", "aaaa", "aaaaaaaa", "aaaaaaaaaaaaaaaa")
+          .expectNext("a", "b", "aa", "aaa", "bb", "bbb", "aaaa", "aaaaaa", "aaaaaa", "aaaaaaaaa")
           .verifyComplete()
       }
       " with capacity hint should expand the flux" in {
-        val flux = Flux.just("a", "b").expand(s => Flux.just(s"$s$s", s"$s$s$s"), 10).take(5)
+        val flux = Flux.just("a", "b").expand(s => Flux.just(s"$s$s", s"$s$s$s"), 5).take(10)
         StepVerifier.create(flux)
-          .expectNext("a", "aa", "aaaa", "aaaaaaaa", "aaaaaaaaaaaaaaaa")
+          .expectNext("a", "b", "aa", "aaa", "bb", "bbb", "aaaa", "aaaaaa", "aaaaaa", "aaaaaaaaa")
           .verifyComplete()
       }
     }

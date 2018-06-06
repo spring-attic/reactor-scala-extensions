@@ -1369,7 +1369,7 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T])
     *                     elements per level of recursion.
     * @return an breadth-first expanded [[Flux]]
     */
-  final def expand(expander: T => Publisher[_ <: T], capacityHint: Int) = Flux(jFlux.expandDeep(expander, capacityHint))
+  final def expand(expander: T => Publisher[_ <: T], capacityHint: Int) = Flux(jFlux.expand(expander, capacityHint))
 
   /**
     * Recursively expand elements into a graph and emit all the resulting element using
@@ -1403,7 +1403,7 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T])
     *                             values into a [[Publisher]], producing a graph.
     * @return an breadth-first expanded [[Flux]]
     */
-  final def expand(expander: T => Publisher[_ <: T]) = Flux(jFlux.expandDeep(expander))
+  final def expand(expander: T => Publisher[_ <: T]) = Flux(jFlux.expand(expander))
 
   /**
     * Evaluate each accepted value against the given predicate T => Boolean. If the predicate test succeeds, the value is
