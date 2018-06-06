@@ -1059,6 +1059,19 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       }
     }
 
+    ".expandDeep" - {
+      "should expand the flux" in {
+        StepVerifier.create(SFlux.just("a", "b").expandDeep(s => SFlux.just(s"$s$s", s"$s$s$s")).take(5))
+          .expectNext("a", "aa", "aaaa", "aaaaaaaa", "aaaaaaaaaaaaaaaa")
+          .verifyComplete()
+      }
+      " with capacity hint should expand the flux" in {
+        StepVerifier.create(SFlux.just("a", "b").expandDeep(s => SFlux.just(s"$s$s", s"$s$s$s"), 10).take(5))
+          .expectNext("a", "aa", "aaaa", "aaaaaaaa", "aaaaaaaaaaaaaaaa")
+          .verifyComplete()
+      }
+    }
+
     ".take" - {
       "should emit only n values" in {
         StepVerifier.create(SFlux(1, 2, 3, 4, 5, 6, 7, 8, 9, 10).take(3))

@@ -167,6 +167,8 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with Publisher[T] {
     defaultValue.map((t: T) => coreFlux.elementAt(index, t))
       .getOrElse(coreFlux.elementAt(index)))
 
+  final def expandDeep(expander: T => Publisher[_ <: T], capacity: Int = SMALL_BUFFER_SIZE): SFlux[T] = coreFlux.expandDeep(expander, capacity)
+
   final def index(): SFlux[(Long, T)] = index[(Long, T)]((x, y) => (x, y))
 
   final def index[I](indexMapper: (Long, T) => I): SFlux[I] = new ReactiveSFlux[I](coreFlux.index[I](new BiFunction[JLong, T, I] {
