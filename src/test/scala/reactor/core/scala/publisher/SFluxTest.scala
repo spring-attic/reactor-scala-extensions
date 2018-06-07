@@ -1110,6 +1110,19 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         .verifyComplete()
     }
 
+    ".flatMapIterable" - {
+      "should transform the items emitted by this flux into iterable" in {
+        StepVerifier.create(SFlux.just(1, 2, 3).flatMapIterable(i => Iterable(i * 2, i * 3)))
+          .expectNext(2, 3, 4, 6, 6, 9)
+          .verifyComplete()
+      }
+      "with prefetch should transform the items and prefetch" in {
+        StepVerifier.create(SFlux.just(1, 2, 3).flatMapIterable(i => Iterable(i * 2, i * 3), 2))
+          .expectNext(2, 3, 4, 6, 6, 9)
+          .verifyComplete()
+      }
+    }
+
     ".or should emit from the fastest first sequence" in {
       StepVerifier.create(SFlux.just(10, 20, 30).or(SFlux.just(1, 2, 3).delayElements(1 second)))
         .expectNext(10, 20, 30)

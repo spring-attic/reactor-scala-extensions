@@ -184,6 +184,10 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with Publisher[T] {
                        mapperOnError: Throwable => Publisher[_ <: R],
                        mapperOnComplete: () => Publisher[_ <: R]): SFlux[R] = coreFlux.flatMap[R](mapperOnNext, mapperOnError, mapperOnComplete)
 
+  final def flatMapIterable[R](mapper: T => Iterable[_ <: R], prefetch: Int = SMALL_BUFFER_SIZE): SFlux[R] = coreFlux.flatMapIterable(new Function[T, JIterable[R]] {
+    override def apply(t: T): JIterable[R] = mapper(t)
+  }, prefetch)
+
   final def index(): SFlux[(Long, T)] = index[(Long, T)]((x, y) => (x, y))
 
   final def index[I](indexMapper: (Long, T) => I): SFlux[I] = new ReactiveSFlux[I](coreFlux.index[I](new BiFunction[JLong, T, I] {
