@@ -1,5 +1,5 @@
 ext.defaultScala_2_11_Version = '2.11.12'
-ext.defaultScala_2_12_Version = '2.12.5'
+ext.defaultScala_2_12_Version = '2.12.6'
 
 if (!hasProperty('scalaVersion')) {
     ext.scalaVersion = ext.defaultScala_2_12_Version
