@@ -180,6 +180,10 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with Publisher[T] {
     coreFlux.filterWhen(asyncPredicateFunction, bufferSize)
   }
 
+  final def flatMap[R](mapperOnNext: T => Publisher[_ <: R],
+                       mapperOnError: Throwable => Publisher[_ <: R],
+                       mapperOnComplete: () => Publisher[_ <: R]): SFlux[R] = coreFlux.flatMap[R](mapperOnNext, mapperOnError, mapperOnComplete)
+
   final def index(): SFlux[(Long, T)] = index[(Long, T)]((x, y) => (x, y))
 
   final def index[I](indexMapper: (Long, T) => I): SFlux[I] = new ReactiveSFlux[I](coreFlux.index[I](new BiFunction[JLong, T, I] {

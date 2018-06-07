@@ -1104,6 +1104,12 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       }
     }
 
+    ".flatMap should transform signal emitted by this flux into publishers" in {
+      StepVerifier.create(SFlux.just(1, 2, 3).flatMap(_ => SMono.just("next"), _ => SMono.just("error"), () => SMono.just("complete")))
+        .expectNext("next", "next", "next", "complete")
+        .verifyComplete()
+    }
+
     ".or should emit from the fastest first sequence" in {
       StepVerifier.create(SFlux.just(10, 20, 30).or(SFlux.just(1, 2, 3).delayElements(1 second)))
         .expectNext(10, 20, 30)
