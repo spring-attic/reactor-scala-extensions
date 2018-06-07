@@ -1091,6 +1091,21 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         .verifyComplete()
     }
 
+    ".filterWhen" - {
+      "should replay the value of mono if the first item emitted by the test is true" in {
+        val flux = SFlux.just(10, 20, 30).filterWhen((i: Int) => SMono.just(i % 2 == 0))
+        StepVerifier.create(flux)
+          .expectNext(10, 20, 30)
+          .verifyComplete()
+      }
+      "with bufferSize should replay the value of mono if the first item emitted by the test is true" in {
+        val flux = SFlux.just(10, 20, 30).filterWhen((i: Int) => SMono.just(i % 2 == 0), 1)
+        StepVerifier.create(flux)
+          .expectNext(10, 20, 30)
+          .verifyComplete()
+      }
+    }
+
     ".take" - {
       "should emit only n values" in {
         StepVerifier.create(SFlux(1, 2, 3, 4, 5, 6, 7, 8, 9, 10).take(3))

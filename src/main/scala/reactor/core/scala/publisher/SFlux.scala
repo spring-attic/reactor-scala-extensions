@@ -173,6 +173,13 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with Publisher[T] {
 
   final def filter(p: T => Boolean): SFlux[T] = coreFlux.filter(p)
 
+  final def filterWhen(asyncPredicate: T => _ <: MapablePublisher[Boolean], bufferSize: Int = SMALL_BUFFER_SIZE): SFlux[T] = {
+    val asyncPredicateFunction = new Function[T, Publisher[JBoolean]] {
+      override def apply(t: T): Publisher[JBoolean] = asyncPredicate(t).map(Boolean2boolean(_))
+    }
+    coreFlux.filterWhen(asyncPredicateFunction, bufferSize)
+  }
+
   final def index(): SFlux[(Long, T)] = index[(Long, T)]((x, y) => (x, y))
 
   final def index[I](indexMapper: (Long, T) => I): SFlux[I] = new ReactiveSFlux[I](coreFlux.index[I](new BiFunction[JLong, T, I] {

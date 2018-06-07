@@ -39,5 +39,12 @@ class SMonoTest extends FreeSpec with Matchers {
 
       }
     }
+
+    ".map should map the type of Mono from T to R" in {
+      StepVerifier.create(SMono.just(randomValue).map(_.toString))
+        .expectNext(randomValue.toString)
+        .expectComplete()
+        .verify()
+    }
   }
 }

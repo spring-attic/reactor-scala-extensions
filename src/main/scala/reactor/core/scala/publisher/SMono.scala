@@ -2,17 +2,21 @@ package reactor.core.scala.publisher
 
 import org.reactivestreams.{Publisher, Subscriber}
 import reactor.core.publisher.{Mono => JMono}
+import reactor.core.scala.publisher.PimpMyPublisher._
 import reactor.core.scheduler.{Scheduler, Schedulers}
 
 import scala.concurrent.duration.Duration
 
-trait SMono[T] extends SMonoLike[T, SMono] with Publisher[T] { self =>
+trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
+  self =>
 
   private[publisher] def coreMono: JMono[T]
 
   final def delaySubscription(delay: Duration, timer: Scheduler = Schedulers.parallel()): SMono[T] = new ReactiveSMono[T](coreMono.delaySubscription(delay, timer))
 
   final def delaySubscription[U](subscriptionDelay: Publisher[U]): SMono[T] = new ReactiveSMono[T](coreMono.delaySubscription(subscriptionDelay))
+
+  final def map[R](mapper: T => R): SMono[R] = coreMono.map[R](mapper)
 
   override def subscribe(s: Subscriber[_ >: T]): Unit = coreMono.subscribe(s)
 
