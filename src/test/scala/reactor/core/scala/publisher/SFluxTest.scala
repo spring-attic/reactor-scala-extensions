@@ -1085,6 +1085,12 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       }
     }
 
+    ".filter should evaluate each value against given predicate" in {
+      StepVerifier.create(SFlux.just(1, 2, 3).filter(i => i > 1))
+        .expectNext(2, 3)
+        .verifyComplete()
+    }
+
     ".take" - {
       "should emit only n values" in {
         StepVerifier.create(SFlux(1, 2, 3, 4, 5, 6, 7, 8, 9, 10).take(3))
