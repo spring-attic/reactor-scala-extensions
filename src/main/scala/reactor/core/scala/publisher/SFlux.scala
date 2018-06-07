@@ -186,6 +186,8 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with Publisher[T] {
     override def apply(t: JLong, u: T) = indexMapper(Long2long(t), u)
   }))
 
+  final def or(other: Publisher[_ <: T]): SFlux[T] = coreFlux.or(other)
+
   final def subscribe(): Disposable = coreFlux.subscribe()
 
   override def subscribe(s: Subscriber[_ >: T]): Unit = coreFlux.subscribe(s)
