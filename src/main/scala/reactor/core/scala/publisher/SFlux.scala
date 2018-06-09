@@ -192,14 +192,10 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] {
 
   final def groupBy[K](keyMapper: T => K): SFlux[GroupedFlux[K, T]] =
     groupBy(keyMapper, identity)
-  /*{
-    val jFluxOfGroupedFlux: JFlux[JGroupedFlux[K, T]] = coreFlux.groupBy(keyMapper, prefetch)
-    new ReactiveSFlux[GroupedFlux[K, T]](jFluxOfGroupedFlux.map((jGroupFlux: JGroupedFlux[K, T]) => GroupedFlux(jGroupFlux)))
-  }*/
 
   final def groupBy[K, V](keyMapper: T => K, valueMapper: T => V, prefetch: Int = SMALL_BUFFER_SIZE): SFlux[GroupedFlux[K, V]] = {
     val jFluxOfGroupedFlux: JFlux[JGroupedFlux[K, V]] = coreFlux.groupBy(keyMapper, valueMapper, prefetch)
-    new ReactiveSFlux[GroupedFlux[K, V]](jFluxOfGroupedFlux.map(GroupedFlux(_)))
+    new ReactiveSFlux[GroupedFlux[K, V]](jFluxOfGroupedFlux.map((jg: JGroupedFlux[K, V]) => GroupedFlux(jg)))
   }
 
   final def index(): SFlux[(Long, T)] = index[(Long, T)]((x, y) => (x, y))
