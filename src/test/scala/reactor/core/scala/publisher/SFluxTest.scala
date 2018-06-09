@@ -1123,6 +1123,32 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       }
     }
 
+    ".flatMapSequential" - {
+      "should transform items emitted by this flux into publisher then flatten them, in order" in {
+        StepVerifier.create(SFlux.just(1, 2, 3).flatMapSequential(i => SFlux.just(i * 2, i * 3)))
+          .expectNext(2, 3, 4, 6, 6, 9)
+          .verifyComplete()
+      }
+      "with maxConcurrency, should do the same as before just with provided maxConcurrency" in {
+        StepVerifier.create(SFlux.just(1, 2, 3).flatMapSequential(i => SFlux.just(i * 2, i * 3), 2))
+          .expectNext(2, 3, 4, 6, 6, 9)
+          .verifyComplete()
+      }
+      "with maxConcurrency and prefetch, should do the same as before just with provided maxConcurrency and prefetch" in {
+        StepVerifier.create(SFlux.just(1, 2, 3).flatMapSequential(i => SFlux.just(i * 2, i * 3), 2, 2))
+          .expectNext(2, 3, 4, 6, 6, 9)
+          .verifyComplete()
+      }
+      "with delayError should respect whether error be delayed after current merge backlog" in {
+        StepVerifier.create(SFlux.just(1, 2, 3).flatMapSequential(i => {
+          if (i == 2) Flux.error[Int](new RuntimeException("just an error"))
+          else Flux.just(i * 2, i * 3)
+        }, 2, 2, delayError = true))
+          .expectNext(2, 3, 6, 9)
+          .verifyError(classOf[RuntimeException])
+      }
+    }
+
     ".or should emit from the fastest first sequence" in {
       StepVerifier.create(SFlux.just(10, 20, 30).or(SFlux.just(1, 2, 3).delayElements(1 second)))
         .expectNext(10, 20, 30)

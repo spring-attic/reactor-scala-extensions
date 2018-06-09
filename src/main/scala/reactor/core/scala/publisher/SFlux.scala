@@ -188,6 +188,10 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with Publisher[T] {
     override def apply(t: T): JIterable[R] = mapper(t)
   }, prefetch)
 
+  final def flatMapSequential[R](mapper: T => Publisher[_ <: R], maxConcurrency: Int = SMALL_BUFFER_SIZE, prefetch: Int = XS_BUFFER_SIZE, delayError: Boolean = false): SFlux[R] =
+    if(!delayError) coreFlux.flatMapSequential[R](mapper, maxConcurrency, prefetch)
+    else coreFlux.flatMapSequentialDelayError[R](mapper, maxConcurrency, prefetch)
+
   final def index(): SFlux[(Long, T)] = index[(Long, T)]((x, y) => (x, y))
 
   final def index[I](indexMapper: (Long, T) => I): SFlux[I] = new ReactiveSFlux[I](coreFlux.index[I](new BiFunction[JLong, T, I] {
