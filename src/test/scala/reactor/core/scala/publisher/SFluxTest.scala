@@ -1157,6 +1157,111 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       }
     }
 
+    ".groupBy" - {
+      "with keyMapper should group the flux by the key mapper" in {
+        val oddBuffer = ListBuffer.empty[Int]
+        val evenBuffer = ListBuffer.empty[Int]
+
+        StepVerifier.create(SFlux.just(1, 2, 3, 4, 5, 6).groupBy {
+          case even: Int if even % 2 == 0 => "even"
+          case _: Int => "odd"
+        })
+          .expectNextMatches(new Predicate[GroupedFlux[String, Int]] {
+            override def test(t: GroupedFlux[String, Int]): Boolean = {
+              t.subscribe(oddBuffer += _)
+              t.key() == "odd"
+            }
+          })
+          .expectNextMatches(new Predicate[GroupedFlux[String, Int]] {
+            override def test(t: GroupedFlux[String, Int]): Boolean = {
+              t.subscribe(evenBuffer += _)
+              t.key() == "even"
+            }
+          })
+          .verifyComplete()
+
+        oddBuffer shouldBe Seq(1, 3, 5)
+        evenBuffer shouldBe Seq(2, 4, 6)
+      }
+      "with keyMapper and prefetch should group the flux by the key mapper and prefetch the elements from the source" in {
+        val oddBuffer = ListBuffer.empty[Int]
+        val evenBuffer = ListBuffer.empty[Int]
+
+        StepVerifier.create(SFlux.just(1, 2, 3, 4, 5, 6).groupBy({
+          case even: Int if even % 2 == 0 => "even"
+          case _: Int => "odd"
+        }: Int => String, identity, 6))
+          .expectNextMatches(new Predicate[GroupedFlux[String, Int]] {
+            override def test(t: GroupedFlux[String, Int]): Boolean = {
+              t.subscribe(oddBuffer += _)
+              t.key() == "odd"
+            }
+          })
+          .expectNextMatches(new Predicate[GroupedFlux[String, Int]] {
+            override def test(t: GroupedFlux[String, Int]): Boolean = {
+              t.subscribe(evenBuffer += _)
+              t.key() == "even"
+            }
+          })
+          .verifyComplete()
+
+        oddBuffer shouldBe Seq(1, 3, 5)
+        evenBuffer shouldBe Seq(2, 4, 6)
+      }
+
+      "with keyMapper and valueMapper should group the flux by the key mapper and convert the value by value mapper" in {
+        val oddBuffer = ListBuffer.empty[String]
+        val evenBuffer = ListBuffer.empty[String]
+
+        StepVerifier.create(SFlux.just(1, 2, 3, 4, 5, 6).groupBy[String, String]({
+          case even: Int if even % 2 == 0 => "even"
+          case _: Int => "odd"
+        }: Int => String, (i => i.toString): Int => String))
+          .expectNextMatches(new Predicate[GroupedFlux[String, String]] {
+            override def test(t: GroupedFlux[String, String]): Boolean = {
+              t.subscribe(oddBuffer += _)
+              t.key() == "odd"
+            }
+          })
+          .expectNextMatches(new Predicate[GroupedFlux[String, String]] {
+            override def test(t: GroupedFlux[String, String]): Boolean = {
+              t.subscribe(evenBuffer += _)
+              t.key() == "even"
+            }
+          })
+          .verifyComplete()
+
+        oddBuffer shouldBe Seq("1", "3", "5")
+        evenBuffer shouldBe Seq("2", "4", "6")
+      }
+
+      "with keyMapper, valueMapper and prefetch should do the above with prefetch" in {
+        val oddBuffer = ListBuffer.empty[String]
+        val evenBuffer = ListBuffer.empty[String]
+
+        StepVerifier.create(SFlux.just(1, 2, 3, 4, 5, 6).groupBy[String, String]({
+          case even: Int if even % 2 == 0 => "even"
+          case _: Int => "odd"
+        }: Int => String, (i => i.toString): Int => String, 6))
+          .expectNextMatches(new Predicate[GroupedFlux[String, String]] {
+            override def test(t: GroupedFlux[String, String]): Boolean = {
+              t.subscribe(oddBuffer += _)
+              t.key() == "odd"
+            }
+          })
+          .expectNextMatches(new Predicate[GroupedFlux[String, String]] {
+            override def test(t: GroupedFlux[String, String]): Boolean = {
+              t.subscribe(evenBuffer += _)
+              t.key() == "even"
+            }
+          })
+          .verifyComplete()
+
+        oddBuffer shouldBe Seq("1", "3", "5")
+        evenBuffer shouldBe Seq("2", "4", "6")
+      }
+    }
+
     ".map should map the type of Flux from T to R" in {
       StepVerifier.create(SFlux.just(1, 2, 3).map(_.toString))
         .expectNext("1", "2", "3")

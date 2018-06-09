@@ -9,7 +9,7 @@ import java.util.{Collection => JCollection, List => JList, Map => JMap}
 import org.reactivestreams.{Publisher, Subscriber, Subscription}
 import reactor.core.Disposable
 import reactor.core.publisher.FluxSink.OverflowStrategy
-import reactor.core.publisher.{FluxSink, Signal, SignalType, SynchronousSink, Flux => JFlux}
+import reactor.core.publisher.{FluxSink, Signal, SignalType, SynchronousSink, Flux => JFlux, GroupedFlux => JGroupedFlux}
 import reactor.core.scala.publisher.PimpMyPublisher._
 import reactor.core.scheduler.{Scheduler, Schedulers}
 import reactor.util.concurrent.Queues.{SMALL_BUFFER_SIZE, XS_BUFFER_SIZE}
@@ -187,8 +187,20 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] {
   }, prefetch)
 
   final def flatMapSequential[R](mapper: T => Publisher[_ <: R], maxConcurrency: Int = SMALL_BUFFER_SIZE, prefetch: Int = XS_BUFFER_SIZE, delayError: Boolean = false): SFlux[R] =
-    if(!delayError) coreFlux.flatMapSequential[R](mapper, maxConcurrency, prefetch)
+    if (!delayError) coreFlux.flatMapSequential[R](mapper, maxConcurrency, prefetch)
     else coreFlux.flatMapSequentialDelayError[R](mapper, maxConcurrency, prefetch)
+
+  final def groupBy[K](keyMapper: T => K): SFlux[GroupedFlux[K, T]] =
+    groupBy(keyMapper, identity)
+  /*{
+    val jFluxOfGroupedFlux: JFlux[JGroupedFlux[K, T]] = coreFlux.groupBy(keyMapper, prefetch)
+    new ReactiveSFlux[GroupedFlux[K, T]](jFluxOfGroupedFlux.map((jGroupFlux: JGroupedFlux[K, T]) => GroupedFlux(jGroupFlux)))
+  }*/
+
+  final def groupBy[K, V](keyMapper: T => K, valueMapper: T => V, prefetch: Int = SMALL_BUFFER_SIZE): SFlux[GroupedFlux[K, V]] = {
+    val jFluxOfGroupedFlux: JFlux[JGroupedFlux[K, V]] = coreFlux.groupBy(keyMapper, valueMapper, prefetch)
+    new ReactiveSFlux[GroupedFlux[K, V]](jFluxOfGroupedFlux.map(GroupedFlux(_)))
+  }
 
   final def index(): SFlux[(Long, T)] = index[(Long, T)]((x, y) => (x, y))
 
@@ -318,5 +330,5 @@ object SFlux {
 }
 
 private[publisher] class ReactiveSFlux[T](publisher: Publisher[T]) extends SFlux[T] {
-  override private[publisher] def coreFlux = JFlux.from(publisher)
+  override private[publisher] def coreFlux: JFlux[T] = JFlux.from(publisher)
 }
