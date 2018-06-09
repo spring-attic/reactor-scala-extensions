@@ -731,16 +731,14 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T])
   final def compose[V](transformer: Flux[T] => Publisher[V]) = Flux(jFlux.compose[V](transformer))
 
   /**
-    * Bind dynamic sequences given this input sequence like [[Flux.flatMap]], but preserve
-    * ordering and concatenate emissions instead of merging (no interleave).
-    * Errors will immediately short circuit current concat backlog.
+    * $concatDescription
     *
     * <p>
     * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/concatmap.png" alt="">
     *
     * @param mapper the function to transform this sequence of T into concatenated sequences of V
     * @tparam V the produced concatenated type
-    * @return a concatenated [[Flux]]
+    * @return $concatReturn
     */
   final def concatMap[V](mapper: T => Publisher[_ <: V]) = Flux(jFlux.concatMap[V](mapper))
 
@@ -1695,7 +1693,7 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T])
     * @return a [[Flux]] of [[GroupedFlux]] grouped sequences
     */
   final def groupBy[K](keyMapper: T => K, prefetch: Int): Flux[GroupedFlux[K, T]] = {
-    val jFluxOfGroupedFlux: JFlux[JGroupedFlux[K, T]] = jFlux.groupBy(keyMapper)
+    val jFluxOfGroupedFlux: JFlux[JGroupedFlux[K, T]] = jFlux.groupBy(keyMapper, prefetch)
     Flux(jFluxOfGroupedFlux).map(GroupedFlux(_))
   }
 
