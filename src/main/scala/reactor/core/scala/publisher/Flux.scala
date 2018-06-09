@@ -1693,7 +1693,7 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T])
     * @return a [[Flux]] of [[GroupedFlux]] grouped sequences
     */
   final def groupBy[K](keyMapper: T => K, prefetch: Int): Flux[GroupedFlux[K, T]] = {
-    val jFluxOfGroupedFlux: JFlux[JGroupedFlux[K, T]] = jFlux.groupBy(keyMapper)
+    val jFluxOfGroupedFlux: JFlux[JGroupedFlux[K, T]] = jFlux.groupBy(keyMapper, prefetch)
     Flux(jFluxOfGroupedFlux).map(GroupedFlux(_))
   }
 
