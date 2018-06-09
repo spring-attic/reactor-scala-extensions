@@ -1149,6 +1149,21 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       }
     }
 
+    ".flatten" - {
+      "with mapper should map the element sequentially" in {
+        StepVerifier.create(SFlux.just(1, 2, 3).map(i => SFlux.just(i * 2, i * 3)).flatten)
+          .expectNext(2, 3, 4, 6, 6, 9)
+          .verifyComplete()
+      }
+    }
+
+    ".map should map the type of Flux from T to R" in {
+      StepVerifier.create(SFlux.just(1, 2, 3).map(_.toString))
+        .expectNext("1", "2", "3")
+        .expectComplete()
+        .verify()
+    }
+
     ".or should emit from the fastest first sequence" in {
       StepVerifier.create(SFlux.just(10, 20, 30).or(SFlux.just(1, 2, 3).delayElements(1 second)))
         .expectNext(10, 20, 30)

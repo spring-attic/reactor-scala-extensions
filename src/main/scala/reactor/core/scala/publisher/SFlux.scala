@@ -22,7 +22,7 @@ import scala.concurrent.duration.Duration.Infinite
 import scala.language.postfixOps
 import scala.reflect.ClassTag
 
-trait SFlux[T] extends SFluxLike[T, SFlux] with Publisher[T] {
+trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] {
   self =>
 
   final def all(predicate: T => Boolean): SMono[Boolean] = new ReactiveSMono[Boolean](coreFlux.all(predicate).map((b: JBoolean) => Boolean2boolean(b)))
@@ -106,8 +106,6 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with Publisher[T] {
   final def collectSortedSeq(ordering: Ordering[T] = None.orNull): SMono[Seq[T]] = new ReactiveSMono[Seq[T]](coreFlux.collectSortedList(ordering).map((l: JList[T]) => l.asScala))
 
   final def compose[V](transformer: Flux[T] => Publisher[V]): SFlux[V] = new ReactiveSFlux[V](coreFlux.compose[V](transformer))
-
-  final def concatMap[V](mapper: T => Publisher[_ <: V], prefetch: Int = XS_BUFFER_SIZE): SFlux[V] = new ReactiveSFlux[V](coreFlux.concatMap[V](mapper, prefetch))
 
   final def concatMapDelayError[V](mapper: T => Publisher[_ <: V], delayUntilEnd: Boolean = false, prefetch: Int = XS_BUFFER_SIZE): SFlux[V] =
     new ReactiveSFlux[V](coreFlux.concatMapDelayError[V](mapper, delayUntilEnd, prefetch))
@@ -197,6 +195,8 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with Publisher[T] {
   final def index[I](indexMapper: (Long, T) => I): SFlux[I] = new ReactiveSFlux[I](coreFlux.index[I](new BiFunction[JLong, T, I] {
     override def apply(t: JLong, u: T) = indexMapper(Long2long(t), u)
   }))
+
+  override final def map[V](mapper: T => V): SFlux[V] = coreFlux.map[V](mapper)
 
   final def or(other: Publisher[_ <: T]): SFlux[T] = coreFlux.or(other)
 
