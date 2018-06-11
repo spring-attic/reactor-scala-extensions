@@ -1279,6 +1279,12 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       buffer shouldBe expected
     }
 
+    ".hasElement should return true if the flux has element matched" in {
+      StepVerifier.create(SFlux.just(1, 2, 3, 4, 5).hasElement(4))
+        .expectNext(true)
+        .verifyComplete()
+    }
+
     ".map should map the type of Flux from T to R" in {
       StepVerifier.create(SFlux.just(1, 2, 3).map(_.toString))
         .expectNext("1", "2", "3")
