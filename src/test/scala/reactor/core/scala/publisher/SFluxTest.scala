@@ -550,13 +550,13 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         ("timeshift = timespan", 1500 milliseconds, 1500 milliseconds, Seq(Seq(0l), Seq(1l), Seq(2l, 3l), Seq(4l)))
       )
       "with duration and timeshift duration should split the values every timespan" in {
-      forAll(data) { (scenario, timespan, timeshift, expected) => {
+        forAll(data) { (scenario, timespan, timeshift, expected) => {
           StepVerifier.withVirtualTime(() => SFlux.interval(1 second).take(5).bufferTimeSpan(timespan)(timeshift))
             .thenAwait(5 seconds)
             .expectNext(expected: _*)
             .verifyComplete()
         }
-      }
+        }
       }
       "with other publisher should split the incoming value" in {
         StepVerifier.withVirtualTime(() => Flux.just(1, 2, 3, 4, 5, 6, 7, 8).delayElements(1 second).buffer(Flux.interval(3 seconds)))
@@ -1260,6 +1260,23 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         oddBuffer shouldBe Seq("1", "3", "5")
         evenBuffer shouldBe Seq("2", "4", "6")
       }
+    }
+
+    ".handle should handle the values" in {
+      val buffer = ListBuffer.empty[Int]
+      val flux = SFlux.just(1, 2, 3, 4, 5, 6).handle[Seq[Int]] {
+        case (v, sink) =>
+          buffer += v
+          if (v == 6) {
+            sink.next(buffer)
+            sink.complete()
+          }
+      }
+      val expected = Seq(1, 2, 3, 4, 5, 6)
+      StepVerifier.create(flux)
+        .expectNext(expected)
+        .verifyComplete()
+      buffer shouldBe expected
     }
 
     ".map should map the type of Flux from T to R" in {
