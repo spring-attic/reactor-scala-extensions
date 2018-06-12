@@ -1285,11 +1285,23 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         .verifyComplete()
     }
 
+    ".hasElements should return true if this flux has at least one element" in {
+      StepVerifier.create(SFlux.just(1, 2, 3).hasElements)
+        .expectNext(true)
+        .verifyComplete()
+    }
+
     ".map should map the type of Flux from T to R" in {
       StepVerifier.create(SFlux.just(1, 2, 3).map(_.toString))
         .expectNext("1", "2", "3")
         .expectComplete()
         .verify()
+    }
+
+    ".nonEmpty should return true if this flux has at least one element" in {
+      StepVerifier.create(SFlux.just(1, 2, 3).nonEmpty)
+        .expectNext(true)
+        .verifyComplete()
     }
 
     ".or should emit from the fastest first sequence" in {
