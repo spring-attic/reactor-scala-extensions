@@ -1311,10 +1311,17 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         .verifyComplete()
     }
 
-    ".min should emit the lowest value of ordering" in {
-      StepVerifier.create(SFlux.just(4, 3, 6, 5, 8).min)
-        .expectNext(Option(3))
-        .verifyComplete()
+    ".min" - {
+      "of numbers should emit the lowest value of ordering" in {
+        StepVerifier.create(SFlux.just(4, 3, 6, 5, 8).min)
+          .expectNext(Option(3))
+          .verifyComplete()
+      }
+      "of strings should emit the lowest value of ordering" in {
+        StepVerifier.create(SFlux.just("d", "c", "g", "j").min)
+          .expectNext(Option("c"))
+          .verifyComplete()
+      }
     }
 
     ".nonEmpty should return true if this flux has at least one element" in {
