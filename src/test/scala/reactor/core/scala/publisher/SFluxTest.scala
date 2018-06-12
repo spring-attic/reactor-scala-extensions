@@ -1157,6 +1157,13 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       }
     }
 
+    ".foldLeft should apply a binary operator to an initial value and all element of the source" in {
+      val mono = SFlux.just(1, 2, 3).foldLeft(0)((acc: Int, el: Int) => acc + el)
+      StepVerifier.create(mono)
+        .expectNext(6)
+        .verifyComplete()
+    }
+
     ".groupBy" - {
       "with keyMapper should group the flux by the key mapper" in {
         val oddBuffer = ListBuffer.empty[Int]
@@ -1298,6 +1305,12 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         .verify()
     }
 
+    ".materialize should convert the flux into a flux that emit its signal" in {
+      StepVerifier.create(SFlux.just(1, 2, 3).materialize())
+        .expectNext(Signal.next(1), Signal.next(2), Signal.next(3), Signal.complete[Int]())
+        .verifyComplete()
+    }
+
     ".nonEmpty should return true if this flux has at least one element" in {
       StepVerifier.create(SFlux.just(1, 2, 3).nonEmpty)
         .expectNext(true)
@@ -1307,6 +1320,12 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
     ".or should emit from the fastest first sequence" in {
       StepVerifier.create(SFlux.just(10, 20, 30).or(SFlux.just(1, 2, 3).delayElements(1 second)))
         .expectNext(10, 20, 30)
+        .verifyComplete()
+    }
+
+    ".sum should sum up all values at onComplete it emits the total, given the source that emit numeric values" in {
+      StepVerifier.create(SFlux.just(1, 2, 3, 4, 5).sum)
+        .expectNext(15)
         .verifyComplete()
     }
 

@@ -82,7 +82,6 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] {
 
   final def cast[E](clazz: Class[E]): SFlux[E] = new ReactiveSFlux[E](coreFlux.cast(clazz))
 
-  final def collect[E](containerSupplier: () => E, collector: (E, T) => Unit): SMono[E] = new ReactiveSMono[E](coreFlux.collect(containerSupplier, collector: JBiConsumer[E, T]))
 
   final def collectSeq(): SMono[Seq[T]] = new ReactiveSMono[Seq[T]](coreFlux.collectList().map((l: JList[T]) => l.asScala))
 
@@ -190,6 +189,8 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] {
     if (!delayError) coreFlux.flatMapSequential[R](mapper, maxConcurrency, prefetch)
     else coreFlux.flatMapSequentialDelayError[R](mapper, maxConcurrency, prefetch)
 
+
+
   final def groupBy[K](keyMapper: T => K): SFlux[GroupedFlux[K, T]] =
     groupBy(keyMapper, identity)
 
@@ -212,6 +213,8 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] {
 
   override final def map[V](mapper: T => V): SFlux[V] = coreFlux.map[V](mapper)
 
+  final def materialize(): SFlux[Signal[T]] = coreFlux.materialize()
+
   final def nonEmpty: SMono[Boolean] = hasElements
 
   final def or(other: Publisher[_ <: T]): SFlux[T] = coreFlux.or(other)
@@ -219,6 +222,8 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] {
   final def subscribe(): Disposable = coreFlux.subscribe()
 
   override def subscribe(s: Subscriber[_ >: T]): Unit = coreFlux.subscribe(s)
+
+
 
   def take(n: Long): SFlux[T] = new ReactiveSFlux[T](coreFlux.take(n))
 }
