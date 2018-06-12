@@ -1311,6 +1311,19 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         .verifyComplete()
     }
 
+    ".max" - {
+      "of numbers should emit the highest value of ordering" in {
+        StepVerifier.create(SFlux.just(4, 3, 6, 5, 8, 7).max)
+          .expectNext(Option(8))
+          .verifyComplete()
+      }
+      "of strings should emit the highest value of ordering" in {
+        StepVerifier.create(SFlux.just("d", "c", "g", "j", "i").max)
+          .expectNext(Option("j"))
+          .verifyComplete()
+      }
+    }
+
     ".min" - {
       "of numbers should emit the lowest value of ordering" in {
         StepVerifier.create(SFlux.just(4, 3, 6, 5, 8).min)

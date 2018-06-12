@@ -28,6 +28,12 @@ trait SFluxLike[T, Self[U] <: SFluxLike[U, Self]] {
       .map(ar => ar.get())
   }
 
+  final def max[R >: T](implicit  ev: Ordering[R]): SMono[Option[R]] = {
+    foldLeft(None: Option[R]){(acc: Option[R], el: T) => {
+      acc.map(a => ev.max(a, el)).orElse(Option(el))
+    }}
+  }
+
   final def min[R >: T](implicit  ev: Ordering[R]): SMono[Option[R]] = {
     foldLeft(None: Option[R]){(acc: Option[R], el: T) => {
       acc.map(a => ev.min(a, el)).orElse(Option(el))
