@@ -205,6 +205,8 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] {
 
   final def hasElements: SMono[Boolean] = new ReactiveSMono[JBoolean](coreFlux.hasElements).map(Boolean2boolean)
 
+  final def ignoreElements(): SMono[T] = coreFlux.ignoreElements()
+
   final def index(): SFlux[(Long, T)] = index[(Long, T)]((x, y) => (x, y))
 
   final def index[I](indexMapper: (Long, T) => I): SFlux[I] = new ReactiveSFlux[I](coreFlux.index[I](new BiFunction[JLong, T, I] {

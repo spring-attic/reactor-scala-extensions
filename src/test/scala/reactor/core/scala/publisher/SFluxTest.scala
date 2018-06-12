@@ -10,7 +10,7 @@ import java.util.function.Predicate
 import org.reactivestreams.Subscription
 import org.scalatest.prop.TableDrivenPropertyChecks
 import org.scalatest.{FreeSpec, Matchers}
-import reactor.core.publisher._
+import reactor.core.publisher.{Flux, _}
 import reactor.core.scheduler.Schedulers
 import reactor.test.StepVerifier
 import reactor.test.scheduler.VirtualTimeScheduler
@@ -1295,6 +1295,11 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
     ".hasElements should return true if this flux has at least one element" in {
       StepVerifier.create(SFlux.just(1, 2, 3).hasElements)
         .expectNext(true)
+        .verifyComplete()
+    }
+
+    ".ignoreElements should ignore all elements and only reacts on termination" in {
+      StepVerifier.create(SFlux.just(1, 2, 3).ignoreElements())
         .verifyComplete()
     }
 
