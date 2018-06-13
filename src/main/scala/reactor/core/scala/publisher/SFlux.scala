@@ -213,6 +213,10 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] {
     override def apply(t: JLong, u: T) = indexMapper(Long2long(t), u)
   }))
 
+  final def last(defaultValue: Option[T] = None): SMono[T] = new ReactiveSMono[T](
+    defaultValue map (coreFlux.last(_)) getOrElse coreFlux.last()
+  )
+
   override final def map[V](mapper: T => V): SFlux[V] = coreFlux.map[V](mapper)
 
   final def materialize(): SFlux[Signal[T]] = coreFlux.materialize()

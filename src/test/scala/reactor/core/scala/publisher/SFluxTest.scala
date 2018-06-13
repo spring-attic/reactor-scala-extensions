@@ -10,7 +10,7 @@ import java.util.function.Predicate
 import org.reactivestreams.Subscription
 import org.scalatest.prop.TableDrivenPropertyChecks
 import org.scalatest.{FreeSpec, Matchers}
-import reactor.core.publisher.{Flux, _}
+import reactor.core.publisher._
 import reactor.core.scheduler.Schedulers
 import reactor.test.StepVerifier
 import reactor.test.scheduler.VirtualTimeScheduler
@@ -1301,6 +1301,19 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
     ".ignoreElements should ignore all elements and only reacts on termination" in {
       StepVerifier.create(SFlux.just(1, 2, 3).ignoreElements())
         .verifyComplete()
+    }
+
+    ".last" - {
+      "should give last element" in {
+        StepVerifier.create(SFlux.just(1, 2, 3).last())
+          .expectNext(3)
+          .verifyComplete()
+      }
+      "with defaultValue should give the last element or defaultValue if the flux is empty" in {
+        StepVerifier.create(SFlux.empty[Int].last(Option(5)))
+          .expectNext(5)
+          .verifyComplete()
+      }
     }
 
     ".map should map the type of Flux from T to R" in {
