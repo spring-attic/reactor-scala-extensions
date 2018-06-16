@@ -91,8 +91,16 @@ trait Scannable {
 }
 
 object Scannable {
-  def from(any: AnyRef): Scannable = new Scannable {
-    override def jScannable: JScannable = JScannable.from(any)
+//  def from(any: AnyRef): Scannable = new Scannable {
+//    override def jScannable: JScannable = JScannable.from(any)
+//  }
+
+  def from(any: Option[AnyRef]): Scannable = {
+    any match {
+      case None => JScannable.from(None.orNull)
+      case Some(s: Scannable) => s.jScannable
+      case _ => JScannable.from(new Object())
+    }
   }
 
   implicit def JScannable2Scannable(js: JScannable): Scannable = new Scannable {

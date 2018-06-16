@@ -7,9 +7,10 @@ import java.util.function.{BiFunction, Function, Supplier}
 import java.util.{Collection => JCollection, List => JList, Map => JMap}
 
 import org.reactivestreams.{Publisher, Subscriber, Subscription}
-import reactor.core.Disposable
+import reactor.core.{Disposable, Scannable => JScannable}
 import reactor.core.publisher.FluxSink.OverflowStrategy
 import reactor.core.publisher.{FluxSink, Signal, SignalType, SynchronousSink, Flux => JFlux, GroupedFlux => JGroupedFlux}
+import reactor.core.scala.Scannable
 import reactor.core.scala.publisher.PimpMyPublisher._
 import reactor.core.scheduler.{Scheduler, Schedulers}
 import reactor.util.concurrent.Queues.{SMALL_BUFFER_SIZE, XS_BUFFER_SIZE}
@@ -223,6 +224,8 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] {
 
   final def mergeWith(other: Publisher[_ <: T]): SFlux[T] = coreFlux.mergeWith(other)
 
+  final def name(name: String): SFlux[T] = coreFlux.name(name)
+
   final def nonEmpty: SMono[Boolean] = hasElements
 
   final def onErrorMap(mapper: Throwable => _ <: Throwable): SFlux[T] = coreFlux.onErrorMap(mapper)
@@ -348,6 +351,10 @@ object SFlux {
     new ReactiveSFlux[O](JFlux.zip[I, O](combinator, prefetch, sources: _*))
 }
 
-private[publisher] class ReactiveSFlux[T](publisher: Publisher[T]) extends SFlux[T] {
-  override private[publisher] def coreFlux: JFlux[T] = JFlux.from(publisher)
+private[publisher] class ReactiveSFlux[T](publisher: Publisher[T]) extends SFlux[T] with Scannable {
+  override private[publisher] val coreFlux: JFlux[T] = JFlux.from(publisher)
+
+  override def scanUnsafe(key: JScannable.Attr[_]): Option[AnyRef] = Option(jScannable.scanUnsafe(key))
+
+  override val jScannable: JScannable = JScannable.from(coreFlux)
 }

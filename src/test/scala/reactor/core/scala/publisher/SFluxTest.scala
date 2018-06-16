@@ -10,7 +10,8 @@ import java.util.function.Predicate
 import org.reactivestreams.Subscription
 import org.scalatest.prop.TableDrivenPropertyChecks
 import org.scalatest.{FreeSpec, Matchers}
-import reactor.core.publisher.{Flux, _}
+import reactor.core.publisher._
+import reactor.core.scala.Scannable
 import reactor.core.scheduler.Schedulers
 import reactor.test.StepVerifier
 import reactor.test.scheduler.VirtualTimeScheduler
@@ -1361,6 +1362,13 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
           .expectNext(Option("c"))
           .verifyComplete()
       }
+    }
+
+    ".name should call the underlying Flux.name method" in {
+      val name = "one two three four"
+      val flux = SFlux.just(1, 2, 3, 4).name(name)
+      val scannable: Scannable = Scannable.from(Option(flux))
+      scannable.name shouldBe name
     }
 
     ".nonEmpty should return true if this flux has at least one element" in {
