@@ -13,6 +13,7 @@ import org.reactivestreams.{Publisher, Subscription}
 import org.scalatest.prop.TableDrivenPropertyChecks
 import org.scalatest.{FreeSpec, Matchers}
 import reactor.core.publisher.{Flux => JFlux, _}
+import reactor.core.scala.Scannable
 import reactor.core.scheduler.Schedulers
 import reactor.test.StepVerifier
 import reactor.test.scheduler.VirtualTimeScheduler
@@ -1573,10 +1574,10 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
     }
 
     ".name should call the underlying Flux.name method" in {
-      val jFlux = spy(JFlux.just(1, 2, 3))
-      val flux = Flux(jFlux)
-      flux.name("flux-integer")
-      verify(jFlux).name("flux-integer")
+      val name = "flux integer"
+      val flux = Flux.just(1, 2, 3, 4).name(name)
+      val scannable: Scannable = Scannable.from(Option(flux))
+      scannable.name shouldBe name
     }
 
     ".ofType should filter the value emitted by this flux according to the class" in {
@@ -1809,7 +1810,7 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
           .verifyComplete()
       }
       "with initial value should scan with provided initial value" in {
-        val flux = Flux.just(1, 2, 3, 4).scan[Int](2, { (a, b) => a * b })
+        val flux = Flux.just[Int](1, 2, 3, 4).scan[Int](2, { (a: Int, b: Int) => a * b })
         StepVerifier.create(flux)
           .expectNext(2, 2, 4, 12, 48)
           .verifyComplete()
