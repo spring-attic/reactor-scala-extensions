@@ -9,7 +9,8 @@ apply plugin: 'org.scoverage'
 apply plugin: 'io.codearte.nexus-staging'
 apply plugin: 'org.owasp.dependencycheck'
 apply plugin: 'com.github.ben-manes.versions'
-//apply plugin: 'fr.brouillard.oss.gradle.jgitver'
+apply plugin: 'com.jfrog.bintray'
+apply plugin: 'maven-publish'
 
 repositories {
     mavenCentral()
@@ -49,7 +50,7 @@ buildscript {
         classpath 'io.codearte.gradle.nexus:gradle-nexus-staging-plugin:0.11.0'
         classpath 'org.owasp:dependency-check-gradle:3.2.1'
         classpath 'com.github.ben-manes:gradle-versions-plugin:0.17.0'
-        classpath "gradle.plugin.fr.brouillard.oss.gradle:gradle-jgitver-plugin:0.3.2"
+        classpath "com.jfrog.bintray.gradle:gradle-bintray-plugin:1.8.1"
     }
 }
 
@@ -120,8 +121,35 @@ artifacts {
 }
 
 ext.sonatypeUsername = hasProperty("ossrhUsername") ? ossrhUsername : System.getenv("ossrhUsername")
-
 ext.sonatypePassword = hasProperty("ossrhPassword") ? ossrhPassword : System.getenv("ossrhPassword")
+ext.bintrayUsername = hasProperty("bintrayUser") ? bintrayUser : System.getenv("ossrhUsername")
+ext.bintrayKey = hasProperty("bintrayApiKey") ? bintrayApiKey : System.getenv("ossrhPassword")
+
+bintray {
+    user = "$bintrayUsername"
+    key = "$bintrayKey"
+    publications = ['MyPublication']
+    configurations = ['archives']
+    pkg {
+        repo = "${project.group}"
+        name = "${project.archivesBaseName}"
+        version {
+            name = "${project.version}"
+            released = new Date()
+        }
+    }
+}
+
+publishing {
+    publications {
+        MyPublication(MavenPublication) {
+            from components.java
+            groupId "${project.group}"
+            artifactId "${project.archivesBaseName}"
+            version "${project.version}"
+        }
+    }
+}
 
 uploadArchives {
     repositories {
@@ -167,6 +195,7 @@ uploadArchives {
 }
 
 afterReleaseBuild.dependsOn uploadArchives
+uploadArchives.dependsOn bintrayUpload
 
 ScalaCompileOptions.metaClass.daemonServer = true
 ScalaCompileOptions.metaClass.fork = true
