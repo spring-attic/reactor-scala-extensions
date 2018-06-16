@@ -194,10 +194,7 @@ uploadArchives {
     }
 }
 
-task afterReleaseBuild {
-    dependsOn uploadArchives
-    dependsOn bintrayUpload
-}
+afterReleaseBuild.dependsOn(uploadArchives, bintrayUpload)
 
 ScalaCompileOptions.metaClass.daemonServer = true
 ScalaCompileOptions.metaClass.fork = true
