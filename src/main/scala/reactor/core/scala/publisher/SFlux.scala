@@ -219,11 +219,13 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] {
 
   override final def map[V](mapper: T => V): SFlux[V] = coreFlux.map[V](mapper)
 
-  final def onErrorMap(mapper: Throwable => _ <: Throwable): SFlux[T] = coreFlux.onErrorMap(mapper)
-
   final def materialize(): SFlux[Signal[T]] = coreFlux.materialize()
 
+  final def mergeWith(other: Publisher[_ <: T]): SFlux[T] = coreFlux.mergeWith(other)
+
   final def nonEmpty: SMono[Boolean] = hasElements
+
+  final def onErrorMap(mapper: Throwable => _ <: Throwable): SFlux[T] = coreFlux.onErrorMap(mapper)
 
   final def or(other: Publisher[_ <: T]): SFlux[T] = coreFlux.or(other)
 

@@ -10,7 +10,7 @@ import java.util.function.Predicate
 import org.reactivestreams.Subscription
 import org.scalatest.prop.TableDrivenPropertyChecks
 import org.scalatest.{FreeSpec, Matchers}
-import reactor.core.publisher._
+import reactor.core.publisher.{Flux, _}
 import reactor.core.scheduler.Schedulers
 import reactor.test.StepVerifier
 import reactor.test.scheduler.VirtualTimeScheduler
@@ -1340,6 +1340,14 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
           .expectNext(Option("j"))
           .verifyComplete()
       }
+    }
+
+    ".mergeWith should merge with the provided publisher so they may interleave" in {
+      StepVerifier.withVirtualTime(() => SFlux.just(1, 3, 5).delayElements(1 second)
+        .mergeWith(SFlux.just(2, 4, 6).delayElements(1 second).delaySubscription(500 milliseconds)))
+        .thenAwait(7 seconds)
+        .expectNext(1, 2, 3, 4, 5, 6)
+        .verifyComplete()
     }
 
     ".min" - {
