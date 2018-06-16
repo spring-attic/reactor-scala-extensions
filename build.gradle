@@ -132,7 +132,7 @@ bintray {
     configurations = ['archives']
     pkg {
         repo = "${project.group}"
-        name = "${project.name}"
+        name = "${project.archivesBaseName}"
         version {
             name = "${project.version}"
             released = new Date()
@@ -145,7 +145,7 @@ publishing {
         MyPublication(MavenPublication) {
             from components.java
             groupId "${project.group}"
-            artifactId "${project.name}"
+            artifactId "${project.archivesBaseName}"
             version "${project.version}"
         }
     }
