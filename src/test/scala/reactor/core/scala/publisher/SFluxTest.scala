@@ -1361,6 +1361,24 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         .verifyComplete()
     }
 
+    ".onErrorMap" - {
+      "with mapper should map the error" in {
+        StepVerifier.create(SFlux.error[Int](new RuntimeException("runtime exception"))
+          .onErrorMap((t: Throwable) => new UnsupportedOperationException(t.getMessage)))
+          .expectError(classOf[UnsupportedOperationException])
+          .verify()
+      }
+
+      "with type and mapper should map the error if the error is of the provided type" in {
+        StepVerifier.create(SFlux.error[Int](new RuntimeException("runtime ex"))
+          .onErrorMap { throwable: Throwable => throwable match {
+            case t: RuntimeException => new UnsupportedOperationException(t.getMessage)
+          }})
+          .expectError(classOf[UnsupportedOperationException])
+          .verify()
+      }
+    }
+
     ".or should emit from the fastest first sequence" in {
       StepVerifier.create(SFlux.just(10, 20, 30).or(SFlux.just(1, 2, 3).delayElements(1 second)))
         .expectNext(10, 20, 30)

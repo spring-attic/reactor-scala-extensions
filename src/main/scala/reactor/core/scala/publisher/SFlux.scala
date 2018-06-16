@@ -116,7 +116,7 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] {
 
   private[publisher] def coreFlux: JFlux[T]
 
-  def count(): SMono[Long] = new ReactiveSMono[Long](coreFlux.count())
+  final def count(): SMono[Long] = new ReactiveSMono[Long](coreFlux.count())
 
   final def delayElements(delay: Duration, timer: Scheduler = Schedulers.parallel()): SFlux[T] = new ReactiveSFlux[T](coreFlux.delayElements(delay, timer))
 
@@ -148,7 +148,7 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] {
 
   final def doOnNext(onNext: T => Unit): SFlux[T] = new ReactiveSFlux[T](coreFlux.doOnNext(onNext))
 
-  def doOnRequest(f: Long => Unit): SFlux[T] = new ReactiveSFlux[T](coreFlux.doOnRequest(f))
+  final def doOnRequest(f: Long => Unit): SFlux[T] = new ReactiveSFlux[T](coreFlux.doOnRequest(f))
 
   final def doOnSubscribe(onSubscribe: Subscription => Unit): SFlux[T] = new ReactiveSFlux[T](coreFlux.doOnSubscribe(onSubscribe))
 
@@ -218,6 +218,8 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] {
   )
 
   override final def map[V](mapper: T => V): SFlux[V] = coreFlux.map[V](mapper)
+
+  final def onErrorMap(mapper: Throwable => _ <: Throwable): SFlux[T] = coreFlux.onErrorMap(mapper)
 
   final def materialize(): SFlux[Signal[T]] = coreFlux.materialize()
 
