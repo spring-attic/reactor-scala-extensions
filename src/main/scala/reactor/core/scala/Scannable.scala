@@ -10,7 +10,7 @@ import scala.language.implicitConversions
   * Created by winarto on 17/6/17.
   */
 trait Scannable {
-  def jScannable: JScannable
+  private[scala] def jScannable: JScannable
 
   def actuals(): Stream[_ <: Scannable] = jScannable.actuals().iterator().asScala.map(js => js: Scannable).toStream
 
@@ -91,8 +91,15 @@ trait Scannable {
 }
 
 object Scannable {
-  def from(any: AnyRef): Scannable = new Scannable {
-    override def jScannable: JScannable = JScannable.from(any)
+  def from(any: Option[AnyRef]): Scannable = new Scannable {
+    override def jScannable: JScannable = {
+      any match {
+        case None => JScannable.from(None.orNull)
+        case Some(s: Scannable) => JScannable.from(s.jScannable)
+        case Some(js: JScannable) => JScannable.from(js)
+        case Some(other) => JScannable.from(other)
+      }
+    }
   }
 
   implicit def JScannable2Scannable(js: JScannable): Scannable = new Scannable {

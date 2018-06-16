@@ -8,9 +8,11 @@ import java.util.logging.Level
 import java.util.{Comparator, stream, List => JList}
 
 import org.reactivestreams.{Publisher, Subscriber, Subscription}
-import reactor.core.Disposable
+import reactor.core
+import reactor.core.{Disposable, Scannable => JScannable}
 import reactor.core.publisher.FluxSink.OverflowStrategy
 import reactor.core.publisher.{BufferOverflowStrategy, FluxSink, Signal, SignalType, SynchronousSink, Flux => JFlux, GroupedFlux => JGroupedFlux}
+import reactor.core.scala.Scannable
 import reactor.core.scheduler.{Scheduler, Schedulers}
 import reactor.util.Logger
 import reactor.util.context.Context
@@ -43,7 +45,10 @@ import scala.concurrent.duration.Duration
   * @see [[Mono]]
   */
 class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T])
-  extends Publisher[T] with MapablePublisher[T] with OnErrorReturn[T] with FluxLike[T] with Filter [T] {
+  extends Publisher[T] with MapablePublisher[T] with OnErrorReturn[T] with FluxLike[T] with Filter [T] with Scannable {
+
+  override def jScannable: JScannable = JScannable.from(jFlux)
+
   override def subscribe(s: Subscriber[_ >: T]): Unit = jFlux.subscribe(s)
 
   /**
@@ -2104,7 +2109,7 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T])
     * @param name a name for the sequence
     * @return the same sequence, but bearing a name
     */
-  final def name(name: String) = Flux(jFlux.name(name))
+  final def name(name: String): Flux[T] = Flux(jFlux.name(name))
 
   /**
     * Emit only the first item emitted by this [[Flux]].
