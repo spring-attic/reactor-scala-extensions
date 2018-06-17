@@ -1377,6 +1377,12 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         .verifyComplete()
     }
 
+    ".ofType should filter the value emitted by this flux according to the class" in {
+      StepVerifier.create(SFlux.just(1, "2", "3", 4).ofType(classOf[String]))
+        .expectNext("2", "3")
+        .verifyComplete()
+    }
+
     ".onErrorMap" - {
       "with mapper should map the error" in {
         StepVerifier.create(SFlux.error[Int](new RuntimeException("runtime exception"))
