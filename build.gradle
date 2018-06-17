@@ -193,9 +193,9 @@ uploadArchives {
         }
     }
 }
-
+bintrayUpload.onlyIf {isReleaseVersion}
 afterReleaseBuild.dependsOn uploadArchives
-uploadArchives.dependsOn(bintrayUpload).onlyIf {isReleaseVersion}
+uploadArchives.dependsOn bintrayUpload
 
 ScalaCompileOptions.metaClass.daemonServer = true
 ScalaCompileOptions.metaClass.fork = true
