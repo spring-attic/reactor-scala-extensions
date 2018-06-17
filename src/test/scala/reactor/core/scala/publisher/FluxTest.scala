@@ -1581,7 +1581,7 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
     }
 
     ".ofType should filter the value emitted by this flux according to the class" in {
-      StepVerifier.create(SFlux.just(1, "2", "3", 4).ofType(classOf[String]))
+      StepVerifier.create(Flux.just(1, "2", "3", 4).ofType(classOf[String]))
         .expectNext("2", "3")
         .verifyComplete()
     }
