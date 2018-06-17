@@ -193,7 +193,7 @@ uploadArchives {
         }
     }
 }
-
+bintrayUpload.onlyIf {isReleaseVersion}
 afterReleaseBuild.dependsOn uploadArchives
 uploadArchives.dependsOn bintrayUpload
 
