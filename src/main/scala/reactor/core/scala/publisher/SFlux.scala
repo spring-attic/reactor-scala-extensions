@@ -7,12 +7,12 @@ import java.util.function.{BiFunction, Function, Supplier}
 import java.util.{Collection => JCollection, List => JList, Map => JMap}
 
 import org.reactivestreams.{Publisher, Subscriber, Subscription}
-import reactor.core.{Disposable, Scannable => JScannable}
 import reactor.core.publisher.FluxSink.OverflowStrategy
-import reactor.core.publisher.{FluxSink, Signal, SignalType, SynchronousSink, Flux => JFlux, GroupedFlux => JGroupedFlux}
+import reactor.core.publisher.{BufferOverflowStrategy, FluxSink, Signal, SignalType, SynchronousSink, Flux => JFlux, GroupedFlux => JGroupedFlux}
 import reactor.core.scala.Scannable
 import reactor.core.scala.publisher.PimpMyPublisher._
 import reactor.core.scheduler.{Scheduler, Schedulers}
+import reactor.core.{Disposable, Scannable => JScannable}
 import reactor.util.concurrent.Queues.{SMALL_BUFFER_SIZE, XS_BUFFER_SIZE}
 import reactor.util.function.{Tuple2, Tuple3, Tuple4, Tuple5, Tuple6}
 
@@ -190,7 +190,6 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] {
     else coreFlux.flatMapSequentialDelayError[R](mapper, maxConcurrency, prefetch)
 
 
-
   final def groupBy[K](keyMapper: T => K): SFlux[GroupedFlux[K, T]] =
     groupBy(keyMapper, identity)
 
@@ -229,6 +228,16 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] {
 
   final def ofType[U](implicit classTag: ClassTag[U]): SFlux[U] = coreFlux.ofType(classTag.runtimeClass.asInstanceOf[Class[U]])
 
+  final def onBackpressureBuffer(): SFlux[T] = coreFlux.onBackpressureBuffer()
+
+  final def onBackpressureBuffer(maxSize: Int): SFlux[T] = coreFlux.onBackpressureBuffer(maxSize)
+
+  final def onBackpressureBuffer(maxSize: Int, onOverflow: T => Unit): SFlux[T] = coreFlux.onBackpressureBuffer(maxSize, onOverflow)
+
+  final def onBackpressureBuffer(maxSize: Int, bufferOverflowStrategy: BufferOverflowStrategy): SFlux[T] = coreFlux.onBackpressureBuffer(maxSize, bufferOverflowStrategy)
+
+  final def onBackpressureBuffer(maxSize: Int, onBufferOverflow: T => Unit, bufferOverflowStrategy: BufferOverflowStrategy): SFlux[T] = coreFlux.onBackpressureBuffer(maxSize, onBufferOverflow, bufferOverflowStrategy)
+
   final def onErrorMap(mapper: Throwable => _ <: Throwable): SFlux[T] = coreFlux.onErrorMap(mapper)
 
   final def or(other: Publisher[_ <: T]): SFlux[T] = coreFlux.or(other)
@@ -236,8 +245,6 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] {
   final def subscribe(): Disposable = coreFlux.subscribe()
 
   override def subscribe(s: Subscriber[_ >: T]): Unit = coreFlux.subscribe(s)
-
-
 
   def take(n: Long): SFlux[T] = new ReactiveSFlux[T](coreFlux.take(n))
 }

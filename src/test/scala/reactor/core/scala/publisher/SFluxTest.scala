@@ -5,12 +5,15 @@ import java.nio.file.Files
 import java.util
 import java.util.concurrent.Callable
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicLong, AtomicReference}
-import java.util.function.Predicate
+import java.util.function.{Consumer, Predicate}
 
+import org.mockito.ArgumentMatchers
+import org.mockito.Mockito.{spy, verify}
 import org.reactivestreams.Subscription
 import org.scalatest.prop.TableDrivenPropertyChecks
 import org.scalatest.{FreeSpec, Matchers}
-import reactor.core.publisher._
+import reactor.core.publisher.BufferOverflowStrategy.DROP_LATEST
+import reactor.core.publisher.{Flux => JFlux, _}
 import reactor.core.scala.Scannable
 import reactor.core.scheduler.Schedulers
 import reactor.test.StepVerifier
@@ -1382,6 +1385,38 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         .expectNext("2", "3")
         .verifyComplete()
     }
+
+    ".onBackpressureBuffer" - {
+      "should call the underlying method" in {
+        val jFlux = spy(JFlux.just(1, 2, 3))
+        val flux = SFlux.fromPublisher(jFlux)
+        flux.onBackpressureBuffer()
+        verify(jFlux).onBackpressureBuffer()
+      }
+      "with maxSize should call the underlying method" in {
+        val jFlux = spy(JFlux.just(1, 2, 3))
+        val flux = SFlux.fromPublisher(jFlux)
+        flux.onBackpressureBuffer(5)
+        verify(jFlux).onBackpressureBuffer(5)
+      }
+      "with maxSize and onOverflow handler" in {
+        val jFlux = spy(JFlux.just(1, 2, 3))
+        val flux = SFlux.fromPublisher(jFlux)
+        flux.onBackpressureBuffer(5, _ => ())
+        verify(jFlux).onBackpressureBuffer(ArgumentMatchers.eq(5), ArgumentMatchers.any(classOf[Consumer[Int]]))
+      }
+      "with maxSize and overflow strategy" in {
+        val jFlux = spy(JFlux.just(1, 2, 3))
+        val flux = SFlux.fromPublisher(jFlux)
+        flux.onBackpressureBuffer(5, DROP_LATEST)
+        verify(jFlux).onBackpressureBuffer(5, DROP_LATEST)
+      }
+      "with maxSize, overflow handler and overflow strategy" in {
+        val jFlux = spy(JFlux.just(1, 2, 3))
+        val flux = SFlux.fromPublisher(jFlux)
+        flux.onBackpressureBuffer(5, _ => (), DROP_LATEST)
+        verify(jFlux).onBackpressureBuffer(ArgumentMatchers.eq(5), ArgumentMatchers.any(classOf[Consumer[Int]]), ArgumentMatchers.eq(DROP_LATEST))
+      }    }
 
     ".onErrorMap" - {
       "with mapper should map the error" in {
