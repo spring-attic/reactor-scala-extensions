@@ -81,8 +81,7 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] {
     }
   }
 
-  final def cast[E](clazz: Class[E]): SFlux[E] = new ReactiveSFlux[E](coreFlux.cast(clazz))
-
+  final def cast[E](implicit classTag: ClassTag[E]): SFlux[E] = new ReactiveSFlux[E](coreFlux.cast(classTag.runtimeClass.asInstanceOf[Class[E]]))
 
   final def collectSeq(): SMono[Seq[T]] = new ReactiveSMono[Seq[T]](coreFlux.collectList().map((l: JList[T]) => l.asScala))
 

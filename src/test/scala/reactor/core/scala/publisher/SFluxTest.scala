@@ -678,7 +678,7 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
     }
 
     ".cast should cast the underlying value to a different type" in {
-      val number = SFlux.just(BigDecimal("1"), BigDecimal("2"), BigDecimal("3")).cast(classOf[ScalaNumber]).blockLast()
+      val number = SFlux.just(BigDecimal("1"), BigDecimal("2"), BigDecimal("3")).cast[ScalaNumber].blockLast()
       number.get shouldBe a[ScalaNumber]
     }
 
