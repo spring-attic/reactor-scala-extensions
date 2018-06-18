@@ -1416,7 +1416,21 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
         val flux = SFlux.fromPublisher(jFlux)
         flux.onBackpressureBuffer(5, _ => (), DROP_LATEST)
         verify(jFlux).onBackpressureBuffer(ArgumentMatchers.eq(5), ArgumentMatchers.any(classOf[Consumer[Int]]), ArgumentMatchers.eq(DROP_LATEST))
-      }    }
+      }
+    }
+
+    ".onBackpressureDrop" - {
+      val jFlux = spy(JFlux.just(1, 2, 3))
+      val flux = SFlux.fromPublisher(jFlux)
+      "without consumer" in {
+        flux.onBackpressureDrop()
+        verify(jFlux).onBackpressureDrop()
+      }
+      "with consumer" in {
+        flux.onBackpressureDrop(i => ())
+        verify(jFlux).onBackpressureDrop(ArgumentMatchers.any(classOf[Consumer[Int]]))
+      }
+    }
 
     ".onErrorMap" - {
       "with mapper should map the error" in {
