@@ -48,6 +48,11 @@ trait SFluxLike[T, Self[U] <: SFluxLike[U, Self]] {
     onErrorResume(recover)
   }
 
+  final def onErrorRecoverWith[U <: T](pf: PartialFunction[Throwable, SFlux[U]]): SFlux[T] = {
+    def recover(t: Throwable): SFlux[U] = pf.applyOrElse(t, defaultToFluxError)
+    onErrorResume(recover)
+  }
+
   final def onErrorResume[U <: T](fallback: Throwable => _ <: Publisher[_ <: U]): SFlux[U] = {
     val predicate = new Function[Throwable, Publisher[_ <: U]] {
       override def apply(t: Throwable): Publisher[_ <: U] = fallback(t)

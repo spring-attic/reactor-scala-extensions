@@ -1482,6 +1482,16 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
       }
     }
 
+    ".onErrorRecoverWith" - {
+      "should recover with a Flux of element that is provided for recovery" in {
+        val convoy = SFlux.just[Vehicle](Sedan(1), Sedan(2)).concatWith(SFlux.error(new RuntimeException("oops")))
+          .onErrorRecoverWith {case _ => SFlux.just(Truck(5))}
+        StepVerifier.create(convoy)
+          .expectNext(Sedan(1), Sedan(2), Truck(5))
+          .verifyComplete()
+      }
+    }
+
     ".onErrorResume" - {
       "should resume with a fallback publisher when error happen" in {
         val flux = Flux.just(1, 2).concatWith(Mono.error(new RuntimeException("exception"))).onErrorResume((_: Throwable) => Flux.just(10, 20, 30))
