@@ -254,6 +254,8 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] {
 
   final def onErrorMap(mapper: Throwable => _ <: Throwable): SFlux[T] = coreFlux.onErrorMap(mapper)
 
+  final def onErrorReturn(fallbackValue: T, predicate: Throwable => Boolean = (_: Throwable ) => true): SFlux[T] = coreFlux.onErrorReturn(predicate, fallbackValue)
+
   final def or(other: Publisher[_ <: T]): SFlux[T] = coreFlux.or(other)
 
   final def subscribe(): Disposable = coreFlux.subscribe()
@@ -293,8 +295,6 @@ object SFlux {
   def defer[T](f: => SFlux[T]): SFlux[T] = new ReactiveSFlux[T](JFlux.defer(() => f))
 
   def empty[T]: SFlux[T] = new ReactiveSFlux(JFlux.empty[T]())
-
-  def raiseError[T](e: Throwable, whenRequested: Boolean = false): SFlux[T] = new ReactiveSFlux[T](JFlux.error(e, whenRequested))
 
   def firstEmitter[I](sources: Publisher[_ <: I]*): SFlux[I] = new ReactiveSFlux[I](JFlux.first[I](sources: _*))
 
@@ -337,6 +337,8 @@ object SFlux {
   def never[T](): SFlux[T] = new ReactiveSFlux[T](JFlux.never[T]())
 
   def push[T](emitter: FluxSink[T] => Unit, backPressure: FluxSink.OverflowStrategy = OverflowStrategy.BUFFER): SFlux[T] = new ReactiveSFlux[T](JFlux.push(emitter, backPressure))
+
+  def raiseError[T](e: Throwable, whenRequested: Boolean = false): SFlux[T] = new ReactiveSFlux[T](JFlux.error(e, whenRequested))
 
   def range(start: Int, count: Int): SFlux[Int] = new ReactiveSFlux[Int](JFlux.range(start, count).map((i: java.lang.Integer) => Integer2int(i)))
 

@@ -1500,6 +1500,21 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
       }
     }
 
+    ".onErrorReturn" - {
+      "should return the fallback value if error happen" in {
+        StepVerifier.create(SFlux.just(1, 2).concatWith(SMono.raiseError(new RuntimeException("exc"))).onErrorReturn(10))
+          .expectNext(1, 2, 10)
+          .verifyComplete()
+      }
+      "with predicate and fallbackValue should return the fallback value if the predicate is true" in {
+        val predicate = (_: Throwable).isInstanceOf[RuntimeException]
+        StepVerifier.create(SFlux.just(1, 2).concatWith(SMono.raiseError(new RuntimeException("exc")))
+          .onErrorReturn(10, predicate))
+          .expectNext(1, 2, 10)
+          .verifyComplete()
+      }
+    }
+
     ".or should emit from the fastest first sequence" in {
       StepVerifier.create(SFlux.just(10, 20, 30).or(SFlux.just(1, 2, 3).delayElements(1 second)))
         .expectNext(10, 20, 30)
