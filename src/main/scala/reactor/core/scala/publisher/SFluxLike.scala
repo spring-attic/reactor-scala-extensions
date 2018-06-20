@@ -19,7 +19,7 @@ trait SFluxLike[T, Self[U] <: SFluxLike[U, Self]] {
 
   private[publisher] def coreFlux: JFlux[T]
 
-  private def defaultToFluxError[U](t: Throwable): SFlux[U] = SFlux.error(t)
+  private def defaultToFluxError[U](t: Throwable): SFlux[U] = SFlux.raiseError(t)
 
   final def flatten[S](implicit ev: T <:< SFlux[S]): SFlux[S] = concatMap[S](x => ev(x), XS_BUFFER_SIZE)
 

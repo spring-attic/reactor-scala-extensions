@@ -16,7 +16,7 @@ class SMonoTest extends FreeSpec with Matchers {
 
   "SMono" - {
     ".error should create Mono that emit error" in {
-      StepVerifier.create(SMono.error(new RuntimeException("runtime error")))
+      StepVerifier.create(SMono.raiseError(new RuntimeException("runtime error")))
         .expectError(classOf[RuntimeException])
         .verify()
     }
