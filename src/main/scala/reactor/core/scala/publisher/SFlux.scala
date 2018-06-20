@@ -244,6 +244,8 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] {
 
   final def onBackpressureError(): SFlux[T] = coreFlux.onBackpressureError()
 
+  final def onBackpressureLatest(): SFlux[T] = coreFlux.onBackpressureLatest()
+
   final def onErrorMap(mapper: Throwable => _ <: Throwable): SFlux[T] = coreFlux.onErrorMap(mapper)
 
   final def or(other: Publisher[_ <: T]): SFlux[T] = coreFlux.or(other)

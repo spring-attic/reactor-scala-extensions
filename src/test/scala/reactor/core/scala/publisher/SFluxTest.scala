@@ -1439,6 +1439,13 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
       verify(jFlux).onBackpressureError()
     }
 
+    ".onBackpressureLatest" in {
+      val jFlux = spy(JFlux.just(1, 2, 3))
+      val flux = SFlux.fromPublisher(jFlux)
+      flux.onBackpressureLatest()
+      verify(jFlux).onBackpressureLatest()
+    }
+
     ".onErrorMap" - {
       "with mapper should map the error" in {
         StepVerifier.create(SFlux.error[Int](new RuntimeException("runtime exception"))
