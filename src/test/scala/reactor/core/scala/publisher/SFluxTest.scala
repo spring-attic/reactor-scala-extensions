@@ -105,38 +105,6 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
         .verifyComplete()
     }
 
-    ".error" - {
-      "with throwable and whenRequest flag should" - {
-        "emit onError during onSubscribe if the flag is false" in {
-          val flag = new AtomicBoolean(false)
-          val flux = SFlux.raiseError(new RuntimeException())
-            .doOnRequest(_ => flag.compareAndSet(false, true))
-          Try(flux.subscribe(new BaseSubscriber[Long] {
-            override def hookOnSubscribe(subscription: Subscription): Unit = {
-              ()
-            }
-
-            override def hookOnNext(value: Long): Unit = ()
-          })) shouldBe a[Failure[_]]
-          flag.get() shouldBe false
-        }
-        "emit onError during onRequest if the flag is true" in {
-          val flag = new AtomicBoolean(false)
-          val flux = SFlux.raiseError(new RuntimeException(), whenRequested = true)
-            .doOnRequest(_ => flag.compareAndSet(false, true))
-          Try(flux.subscribe(new BaseSubscriber[Long] {
-            override def hookOnSubscribe(subscription: Subscription): Unit = {
-              subscription.request(1)
-              ()
-            }
-
-            override def hookOnNext(value: Long): Unit = ()
-          })) shouldBe a[Failure[_]]
-          flag.get() shouldBe true
-        }
-      }
-    }
-
     ".firstEmitter" - {
       "with varargs of publisher should create Flux based on the publisher that emit first onNext or onComplete or onError" in {
         val flux: SFlux[Long] = SFlux.firstEmitter(Mono.delay(Duration("10 seconds")), Mono.just[Long](1L))
@@ -317,6 +285,38 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
       }))
         .expectNext(1, 2)
         .verifyComplete()
+    }
+
+    ".raiseError" - {
+      "with throwable and whenRequest flag should" - {
+        "emit onError during onSubscribe if the flag is false" in {
+          val flag = new AtomicBoolean(false)
+          val flux = SFlux.raiseError(new RuntimeException())
+            .doOnRequest(_ => flag.compareAndSet(false, true))
+          Try(flux.subscribe(new BaseSubscriber[Long] {
+            override def hookOnSubscribe(subscription: Subscription): Unit = {
+              ()
+            }
+
+            override def hookOnNext(value: Long): Unit = ()
+          })) shouldBe a[Failure[_]]
+          flag.get() shouldBe false
+        }
+        "emit onError during onRequest if the flag is true" in {
+          val flag = new AtomicBoolean(false)
+          val flux = SFlux.raiseError(new RuntimeException(), whenRequested = true)
+            .doOnRequest(_ => flag.compareAndSet(false, true))
+          Try(flux.subscribe(new BaseSubscriber[Long] {
+            override def hookOnSubscribe(subscription: Subscription): Unit = {
+              subscription.request(1)
+              ()
+            }
+
+            override def hookOnNext(value: Long): Unit = ()
+          })) shouldBe a[Failure[_]]
+          flag.get() shouldBe true
+        }
+      }
     }
 
     ".range should emit int within the range" in {

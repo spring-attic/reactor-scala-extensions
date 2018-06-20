@@ -15,16 +15,16 @@ class SMonoTest extends FreeSpec with Matchers {
   private val randomValue = Random.nextLong()
 
   "SMono" - {
-    ".error should create Mono that emit error" in {
-      StepVerifier.create(SMono.raiseError(new RuntimeException("runtime error")))
-        .expectError(classOf[RuntimeException])
-        .verify()
-    }
-
     ".just should emit the specified item" in {
       StepVerifier.create(SMono.just(randomValue))
         .expectNext(randomValue)
         .verifyComplete()
+    }
+
+    ".raiseError should create Mono that emit error" in {
+      StepVerifier.create(SMono.raiseError(new RuntimeException("runtime error")))
+        .expectError(classOf[RuntimeException])
+        .verify()
     }
 
     ".delaySubscription" - {
