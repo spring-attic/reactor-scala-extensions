@@ -1,9 +1,12 @@
 package reactor.core.scala.publisher
 
+import java.util.concurrent.Callable
+
 import org.scalatest.{FreeSpec, Matchers}
 import reactor.core.scheduler.Schedulers
 import reactor.test.StepVerifier
 
+import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.language.postfixOps
 import scala.util.Random
@@ -37,6 +40,39 @@ class SMonoTest extends FreeSpec with Matchers {
           .expectNext(1)
           .verifyComplete()
 
+      }
+    }
+
+    ".from" - {
+      "a publisher should ensure that the publisher will emit 0 or 1 item." in {
+        StepVerifier.create(SMono.from(SFlux.just(1, 2, 3, 4, 5)))
+          .expectNext(1)
+          .expectComplete()
+          .verify()
+      }
+
+      "a callable should ensure that Mono will return a value from the Callable" in {
+        StepVerifier.create(SMono.fromCallable(new Callable[Long] {
+          override def call(): Long = randomValue
+        }))
+          .expectNext(randomValue)
+          .expectComplete()
+          .verify()
+      }
+
+      "source direct should return mono of the source" in {
+        StepVerifier.create(SMono.fromDirect(Flux.just(1, 2, 3)))
+          .expectNext(1, 2, 3)
+          .verifyComplete()
+      }
+
+      "a future should result Mono that will return the value from the future object" in {
+        import scala.concurrent.ExecutionContext.Implicits.global
+        StepVerifier.create(SMono.fromFuture(Future[Long] {
+          randomValue
+        }))
+          .expectNext(randomValue)
+          .verifyComplete()
       }
     }
 

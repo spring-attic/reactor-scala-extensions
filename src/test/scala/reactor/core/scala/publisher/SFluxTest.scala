@@ -28,7 +28,7 @@ import scala.math.Ordering.IntOrdering
 import scala.math.ScalaNumber
 import scala.util.{Failure, Try}
 
-class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
+class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks with TestSupport {
   "SFlux" - {
     ".apply should return a proper SFlux" in {
       StepVerifier.create(SFlux(1, 2, 3))
@@ -427,7 +427,7 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
     }
 
     ".as should transform this flux to another publisher" in {
-      StepVerifier.create(SFlux.just(1, 2, 3).as(Mono.from))
+      StepVerifier.create(SFlux.just(1, 2, 3).as(SMono.from))
         .expectNext(1)
         .verifyComplete()
     }
@@ -797,6 +797,12 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
           .expectNext(2, 3, 4, 6, 6, 9)
           .verifyComplete()
       }
+    }
+
+    ".concatWith should concatenate with another publisher" in {
+      StepVerifier.create(SFlux.just(1, 2, 3).concatWith(SFlux.just(6, 7, 8)))
+        .expectNext(1, 2, 3, 6, 7, 8)
+        .verifyComplete()
     }
 
     ".count should return Mono which emit the number of value in this flux" in {
@@ -1463,6 +1469,40 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks {
           })
           .expectError(classOf[UnsupportedOperationException])
           .verify()
+      }
+    }
+
+    ".onErrorRecover" - {
+      "should recover with a Flux of element that has been recovered" in {
+        val convoy = SFlux.just[Vehicle](Sedan(1), Sedan(2)).concatWith(SFlux.error(new RuntimeException("oops")))
+          .onErrorRecover {case _ => Truck(5)}
+        StepVerifier.create(convoy)
+          .expectNext(Sedan(1), Sedan(2), Truck(5))
+          .verifyComplete()
+      }
+    }
+
+    ".onErrorResume" - {
+      "should resume with a fallback publisher when error happen" in {
+        val flux = Flux.just(1, 2).concatWith(Mono.error(new RuntimeException("exception"))).onErrorResume((_: Throwable) => Flux.just(10, 20, 30))
+        StepVerifier.create(flux)
+          .expectNext(1, 2, 10, 20, 30)
+          .verifyComplete()
+      }
+      "with class type and fallback should resume with fallback publisher when the exception is of provided type" in {
+        val flux = Flux.just(1, 2).concatWith(Mono.error(new RuntimeException("exception"))).onErrorResume(classOf[RuntimeException], (t: RuntimeException) => Flux.just(10, 20, 30))
+        StepVerifier.create(flux)
+          .expectNext(1, 2, 10, 20, 30)
+          .verifyComplete()
+      }
+      "with predicate and fallback should resume with fallback publisher when the predicate is true" in {
+        val predicate = (_: Throwable).isInstanceOf[RuntimeException]
+        val flux = Flux.just(1, 2)
+          .concatWith(Mono.error(new RuntimeException("exception")))
+          .onErrorResume(predicate, (t: Throwable) => Flux.just(10, 20, 30))
+        StepVerifier.create(flux)
+          .expectNext(1, 2, 10, 20, 30)
+          .verifyComplete()
       }
     }
 

@@ -30,7 +30,11 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] {
 
   final def any(predicate: T => Boolean): SMono[Boolean] = new ReactiveSMono[Boolean](coreFlux.any(predicate).map((b: JBoolean) => Boolean2boolean(b)))
 
-  final def as[P](transformer: Flux[T] => P): P = coreFlux.as(transformer)
+  final def as[P](transformer: SFlux[T] => P): P = {
+    coreFlux.as[P](new Function[JFlux[T], P] {
+      override def apply(t: JFlux[T]): P = transformer(t)
+    })
+  }
 
   final def blockFirst(timeout: Duration = Duration.Inf): Option[T] = timeout match {
     case _: Infinite => Option(coreFlux.blockFirst())
@@ -113,6 +117,8 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] {
     new ReactiveSFlux[R](coreFlux.concatMapIterable(new Function[T, JIterable[R]] {
       override def apply(t: T): JIterable[R] = mapper(t)
     }, prefetch))
+
+  final def concatWith(other: Publisher[_ <: T]): SFlux[T] = coreFlux.concatWith(other)
 
   private[publisher] def coreFlux: JFlux[T]
 

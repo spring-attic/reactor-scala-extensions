@@ -1,9 +1,11 @@
 package reactor.core.scala.publisher
 
 import java.util.concurrent.atomic.AtomicReference
+import java.util.function.Function
 
 import org.reactivestreams.Publisher
 import reactor.core.publisher.{Flux => JFlux}
+import reactor.core.scala.publisher.PimpMyPublisher._
 import reactor.util.concurrent.Queues.XS_BUFFER_SIZE
 
 import scala.language.higherKinds
@@ -17,6 +19,8 @@ trait SFluxLike[T, Self[U] <: SFluxLike[U, Self]] {
 
   private[publisher] def coreFlux: JFlux[T]
 
+  private def defaultToFluxError[U](t: Throwable): SFlux[U] = SFlux.error(t)
+
   final def flatten[S](implicit ev: T <:< SFlux[S]): SFlux[S] = concatMap[S](x => ev(x), XS_BUFFER_SIZE)
 
   final def foldLeft[R](initial: R)(binaryOps: (R, T) => R): SMono[R] = {
@@ -28,16 +32,32 @@ trait SFluxLike[T, Self[U] <: SFluxLike[U, Self]] {
       .map(ar => ar.get())
   }
 
-  final def max[R >: T](implicit  ev: Ordering[R]): SMono[Option[R]] = foldLeft(None: Option[R]){ (acc: Option[R], el: T) => {
+  final def max[R >: T](implicit ev: Ordering[R]): SMono[Option[R]] = foldLeft(None: Option[R]) { (acc: Option[R], el: T) => {
     acc map (a => ev.max(a, el)) orElse Option(el)
-  }}
+  }
+  }
 
-  final def min[R >: T](implicit  ev: Ordering[R]): SMono[Option[R]] = foldLeft(None: Option[R]){ (acc: Option[R], el: T) => {
+  final def min[R >: T](implicit ev: Ordering[R]): SMono[Option[R]] = foldLeft(None: Option[R]) { (acc: Option[R], el: T) => {
     acc map (a => ev.min(a, el)) orElse Option(el)
-  }}
+  }
+  }
+
+  final def onErrorRecover[U <: T](pf: PartialFunction[Throwable, U]): SFlux[T] = {
+    def recover(t: Throwable): SFlux[U] = pf.andThen(u => SFlux.just(u)).applyOrElse(t, defaultToFluxError)
+
+    onErrorResume(recover)
+  }
+
+  final def onErrorResume[U <: T](fallback: Throwable => _ <: Publisher[_ <: U]): SFlux[U] = {
+    val predicate = new Function[Throwable, Publisher[_ <: U]] {
+      override def apply(t: Throwable): Publisher[_ <: U] = fallback(t)
+    }
+    val x: SFlux[T] = coreFlux.onErrorResume(predicate)
+    x.as[SFlux[U]](t => t.map(u => u.asInstanceOf[U]))
+  }
 
   final def sum[R >: T](implicit R: Numeric[R]): SMono[R] = {
     import R._
-    foldLeft(R.zero){(acc: R, el: T) => acc + el}
+    foldLeft(R.zero) { (acc: R, el: T) => acc + el }
   }
 }
