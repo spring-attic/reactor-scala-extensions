@@ -1494,23 +1494,7 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
 
     ".onErrorResume" - {
       "should resume with a fallback publisher when error happen" in {
-        val flux = Flux.just(1, 2).concatWith(Mono.error(new RuntimeException("exception"))).onErrorResume((_: Throwable) => Flux.just(10, 20, 30))
-        StepVerifier.create(flux)
-          .expectNext(1, 2, 10, 20, 30)
-          .verifyComplete()
-      }
-      "with class type and fallback should resume with fallback publisher when the exception is of provided type" in {
-        val flux = Flux.just(1, 2).concatWith(Mono.error(new RuntimeException("exception"))).onErrorResume(classOf[RuntimeException], (t: RuntimeException) => Flux.just(10, 20, 30))
-        StepVerifier.create(flux)
-          .expectNext(1, 2, 10, 20, 30)
-          .verifyComplete()
-      }
-      "with predicate and fallback should resume with fallback publisher when the predicate is true" in {
-        val predicate = (_: Throwable).isInstanceOf[RuntimeException]
-        val flux = Flux.just(1, 2)
-          .concatWith(Mono.error(new RuntimeException("exception")))
-          .onErrorResume(predicate, (t: Throwable) => Flux.just(10, 20, 30))
-        StepVerifier.create(flux)
+        StepVerifier.create(SFlux.just(1, 2).concatWith(SMono.error(new RuntimeException("exception"))).onErrorResume((_: Throwable) => SFlux.just(10, 20, 30)))
           .expectNext(1, 2, 10, 20, 30)
           .verifyComplete()
       }

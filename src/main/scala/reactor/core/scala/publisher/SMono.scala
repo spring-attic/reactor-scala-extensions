@@ -29,6 +29,8 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
 object SMono {
   def just[T](data: T): SMono[T] = new ReactiveSMono[T](JMono.just(data))
 
+  def error[T](error: Throwable): SMono[T] = JMono.error[T](error)
+
   def from[T](source: Publisher[_ <: T]): SMono[T] = JMono.from[T](source)
 
   def fromCallable[T](supplier: Callable[T]): SMono[T] = JMono.fromCallable[T](supplier)
