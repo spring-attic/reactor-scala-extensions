@@ -1380,6 +1380,12 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
       scannable.name shouldBe name
     }
 
+    ".next should emit only the first item" in {
+      StepVerifier.create(SFlux.just(1, 2, 3).next())
+        .expectNext(1)
+        .verifyComplete()
+    }
+
     ".nonEmpty should return true if this flux has at least one element" in {
       StepVerifier.create(SFlux.just(1, 2, 3).nonEmpty)
         .expectNext(true)

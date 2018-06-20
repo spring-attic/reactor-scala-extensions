@@ -230,6 +230,8 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] {
 
   final def name(name: String): SFlux[T] = coreFlux.name(name)
 
+  final def next(): SMono[T] = coreFlux.next()
+
   final def nonEmpty: SMono[Boolean] = hasElements
 
   final def ofType[U](implicit classTag: ClassTag[U]): SFlux[U] = coreFlux.ofType(classTag.runtimeClass.asInstanceOf[Class[U]])
