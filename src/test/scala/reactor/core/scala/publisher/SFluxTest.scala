@@ -1527,6 +1527,12 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
         .verifyComplete()
     }
 
+    ".publishNext should make this flux a hot mono" in {
+      StepVerifier.create(SFlux.just(1, 2, 3).publishNext())
+        .expectNext(1)
+        .verifyComplete()
+    }
+
     ".sum should sum up all values at onComplete it emits the total, given the source that emit numeric values" in {
       StepVerifier.create(SFlux.just(1, 2, 3, 4, 5).sum)
         .expectNext(15)

@@ -260,6 +260,8 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] {
 
   final def or(other: Publisher[_ <: T]): SFlux[T] = coreFlux.or(other)
 
+  final def publishNext(): SMono[T] = coreFlux.publishNext()
+
   final def subscribe(): Disposable = coreFlux.subscribe()
 
   override def subscribe(s: Subscriber[_ >: T]): Unit = coreFlux.subscribe(s)
