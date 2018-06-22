@@ -264,7 +264,7 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] {
 
   final def reduce(aggregator: (T, T) => T): SMono[T] = coreFlux.reduce(aggregator)
 
-  final def reduce[A](initial: A, accumulator: (A, T) => A): SMono[A] = coreFlux.reduce[A](initial, accumulator)
+  final def reduceWith[A](initial: () => A, accumulator: (A, T) => A): SMono[A] = coreFlux.reduceWith[A](initial, accumulator)
 
   final def subscribe(): Disposable = coreFlux.subscribe()
 

@@ -554,7 +554,7 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
         ("timeshift = timespan", 1500 milliseconds, 1500 milliseconds, Seq(Seq(0l), Seq(1l), Seq(2l, 3l), Seq(4l)))
       )
       "with duration and timeshift duration should split the values every timespan" in {
-        forAll(data) { (scenario, timespan, timeshift, expected) => {
+        forAll(data) { (_, timespan, timeshift, expected) => {
           StepVerifier.withVirtualTime(() => SFlux.interval(1 second).take(5).bufferTimeSpan(timespan)(timeshift))
             .thenAwait(5 seconds)
             .expectNext(expected: _*)
@@ -1439,7 +1439,7 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
         verify(jFlux).onBackpressureDrop()
       }
       "with consumer" in {
-        flux.onBackpressureDrop(i => ())
+        flux.onBackpressureDrop(_ => ())
         verify(jFlux).onBackpressureDrop(ArgumentMatchers.any(classOf[Consumer[Int]]))
       }
     }
@@ -1544,6 +1544,12 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
           .expectNext("0-1-2-3")
           .verifyComplete()
       }
+    }
+
+    ".reduceWith should aggregate the values with initial one" in {
+      StepVerifier.create(SFlux.just(1, 2, 3).reduceWith[String](() => "0", (agg, v) => s"$agg-${v.toString}"))
+        .expectNext("0-1-2-3")
+        .verifyComplete()
     }
 
     ".sum should sum up all values at onComplete it emits the total, given the source that emit numeric values" in {

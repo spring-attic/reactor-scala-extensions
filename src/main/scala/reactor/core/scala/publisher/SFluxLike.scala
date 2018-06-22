@@ -1,6 +1,5 @@
 package reactor.core.scala.publisher
 
-import java.util.concurrent.atomic.AtomicReference
 import java.util.function.Function
 
 import org.reactivestreams.Publisher
@@ -23,14 +22,7 @@ trait SFluxLike[T, Self[U] <: SFluxLike[U, Self]] {
 
   final def flatten[S](implicit ev: T <:< SFlux[S]): SFlux[S] = concatMap[S](x => ev(x), XS_BUFFER_SIZE)
 
-  final def foldLeft[R](initial: R)(binaryOps: (R, T) => R): SMono[R] = {
-    val acc = new AtomicReference[R](initial)
-    collect(() => acc, (acc: AtomicReference[R], el: T) => {
-      val newAcc = binaryOps(acc.get(), el)
-      acc.set(newAcc)
-    })
-      .map(ar => ar.get())
-  }
+  final def foldLeft[R](initial: R)(binaryOps: (R, T) => R): SMono[R] = reduce[R](initial, binaryOps)
 
   final def max[R >: T](implicit ev: Ordering[R]): SMono[Option[R]] = foldLeft(None: Option[R]) { (acc: Option[R], el: T) => {
     acc map (a => ev.max(a, el)) orElse Option(el)
@@ -60,6 +52,8 @@ trait SFluxLike[T, Self[U] <: SFluxLike[U, Self]] {
     val x: SFlux[T] = coreFlux.onErrorResume(predicate)
     x.as[SFlux[U]](t => t.map(u => u.asInstanceOf[U]))
   }
+
+  final def reduce[A](initial: A, accumulator: (A, T) => A): SMono[A] = coreFlux.reduce[A](initial, accumulator)
 
   final def sum[R >: T](implicit R: Numeric[R]): SMono[R] = {
     import R._
