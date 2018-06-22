@@ -208,7 +208,7 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] {
 
   final def hasElement(value: T): SMono[Boolean] = new ReactiveSMono[JBoolean](coreFlux.hasElement(value)).map(Boolean2boolean)
 
-  final def hasElements: SMono[Boolean] = new ReactiveSMono[JBoolean](coreFlux.hasElements).map(Boolean2boolean)
+  final def hasElements: SMono[Boolean] = new ReactiveSMono[JBoolean](coreFlux.hasElements()).map(Boolean2boolean)
 
   final def ignoreElements(): SMono[T] = coreFlux.ignoreElements()
 
@@ -261,6 +261,10 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] {
   final def or(other: Publisher[_ <: T]): SFlux[T] = coreFlux.or(other)
 
   final def publishNext(): SMono[T] = coreFlux.publishNext()
+
+  final def reduce(aggregator: (T, T) => T): SMono[T] = coreFlux.reduce(aggregator)
+
+  final def reduce[A](initial: A, accumulator: (A, T) => A): SMono[A] = coreFlux.reduce[A](initial, accumulator)
 
   final def subscribe(): Disposable = coreFlux.subscribe()
 

@@ -1533,6 +1533,19 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
         .verifyComplete()
     }
 
+    ".reduce" - {
+      "should aggregate the values" in {
+        StepVerifier.create(SFlux.just(1, 2, 3).reduce(_ + _))
+          .expectNext(6)
+          .verifyComplete()
+      }
+      "with initial value should aggregate the values with initial one" in {
+        StepVerifier.create(SFlux.just(1, 2, 3).reduce[String]("0", (agg, v) => s"$agg-${v.toString}"))
+          .expectNext("0-1-2-3")
+          .verifyComplete()
+      }
+    }
+
     ".sum should sum up all values at onComplete it emits the total, given the source that emit numeric values" in {
       StepVerifier.create(SFlux.just(1, 2, 3, 4, 5).sum)
         .expectNext(15)
