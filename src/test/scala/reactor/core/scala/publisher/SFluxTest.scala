@@ -1679,6 +1679,12 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
       }
     }
 
+    ".singleOrEmpty should return mono with single value or empty" in {
+      StepVerifier.create(SFlux.just(3).singleOrEmpty())
+        .expectNext(3)
+        .verifyComplete()
+    }
+
     ".sum should sum up all values at onComplete it emits the total, given the source that emit numeric values" in {
       StepVerifier.create(SFlux.just(1, 2, 3, 4, 5).sum)
         .expectNext(15)
