@@ -1655,6 +1655,12 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
       }
     }
 
+    ".scanWith should scan with initial value" in {
+      StepVerifier.create(SFlux.just(1, 2, 3, 4).scanWith[Int](() => 2, { (a, b) => a * b }))
+        .expectNext(2, 2, 4, 12, 48)
+        .verifyComplete()
+    }
+
     ".sum should sum up all values at onComplete it emits the total, given the source that emit numeric values" in {
       StepVerifier.create(SFlux.just(1, 2, 3, 4, 5).sum)
         .expectNext(15)
