@@ -1580,7 +1580,8 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
 
     ".retry" - {
       "with numRetries will retry a number of times according to provided parameter" in {
-        StepVerifier.create(SFlux.just(1, 2, 3).concatWith(SMono.raiseError(new RuntimeException("ex"))).retry(2))
+        StepVerifier.create(SFlux.just(1, 2, 3).concatWith(SMono.raiseError(new RuntimeException("ex"))).retry(3))
+          .expectNext(1, 2, 3)
           .expectNext(1, 2, 3)
           .expectNext(1, 2, 3)
           .expectNext(1, 2, 3)
