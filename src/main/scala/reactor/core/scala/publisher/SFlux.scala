@@ -270,7 +270,14 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] {
 
   final def retry(numRetries: Long = Long.MaxValue, retryMatcher: Throwable => Boolean = (_: Throwable) => true): SFlux[T] = coreFlux.retry(numRetries, retryMatcher)
 
-  final def retryWhen(whenFactory: Flux[Throwable] => Publisher[_]): SFlux[T] = coreFlux.retryWhen(whenFactory)
+  final def retryWhen(whenFactory: SFlux[Throwable] => Publisher[_]): SFlux[T] = {
+    val func = new Function[JFlux[Throwable], Publisher[_]] {
+      override def apply(t: JFlux[Throwable]): Publisher[_] = whenFactory(new ReactiveSFlux[Throwable](t))
+    }
+    coreFlux.retryWhen(func)
+  }
+
+  final def sample(timespan: Duration): SFlux[T] = coreFlux.sample(timespan)
 
   final def subscribe(): Disposable = coreFlux.subscribe()
 
