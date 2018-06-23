@@ -1634,6 +1634,13 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
         .verifyComplete()
     }
 
+    ".sampleFirst should emit the first value during the timespan" in {
+      StepVerifier.withVirtualTime(() => SFlux.just(1, 2, 3, 4, 5).delayElements(1 second).sampleFirst(1500 milliseconds))
+        .thenAwait(6 seconds)
+        .expectNext(1, 3, 5)
+        .verifyComplete()
+    }
+
     ".sum should sum up all values at onComplete it emits the total, given the source that emit numeric values" in {
       StepVerifier.create(SFlux.just(1, 2, 3, 4, 5).sum)
         .expectNext(15)
