@@ -1481,7 +1481,7 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
     ".onErrorRecover" - {
       "should recover with a Flux of element that has been recovered" in {
         val convoy = SFlux.just[Vehicle](Sedan(1), Sedan(2)).concatWith(SFlux.raiseError(new RuntimeException("oops")))
-          .onErrorRecover {case _ => Truck(5)}
+          .onErrorRecover { case _ => Truck(5) }
         StepVerifier.create(convoy)
           .expectNext(Sedan(1), Sedan(2), Truck(5))
           .verifyComplete()
@@ -1491,7 +1491,7 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
     ".onErrorRecoverWith" - {
       "should recover with a Flux of element that is provided for recovery" in {
         val convoy = SFlux.just[Vehicle](Sedan(1), Sedan(2)).concatWith(SFlux.raiseError(new RuntimeException("oops")))
-          .onErrorRecoverWith {case _ => SFlux.just(Truck(5))}
+          .onErrorRecoverWith { case _ => SFlux.just(Truck(5)) }
         StepVerifier.create(convoy)
           .expectNext(Sedan(1), Sedan(2), Truck(5))
           .verifyComplete()
@@ -1590,7 +1590,7 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
       }
       "with predicate will retry until the predicate returns false" in {
         val counter = new AtomicInteger(0)
-        StepVerifier.create(SFlux.just(1, 2, 3).concatWith(SMono.raiseError(new RuntimeException("ex"))).retry (retryMatcher = (_: Throwable) =>
+        StepVerifier.create(SFlux.just(1, 2, 3).concatWith(SMono.raiseError(new RuntimeException("ex"))).retry(retryMatcher = (_: Throwable) =>
           if (counter.getAndIncrement() > 0) false
           else true
         ))
@@ -1659,6 +1659,24 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
       StepVerifier.create(SFlux.just(1, 2, 3, 4).scanWith[Int](() => 2, { (a, b) => a * b }))
         .expectNext(2, 2, 4, 12, 48)
         .verifyComplete()
+    }
+
+    ".single" - {
+      "should return a mono" in {
+        StepVerifier.create(SFlux.just(1).single())
+          .expectNext(1)
+          .verifyComplete()
+      }
+      "or emit onError with IndexOutOfBoundsException" in {
+        StepVerifier.create(SFlux.just(1, 2, 3).single())
+          .expectError(classOf[IndexOutOfBoundsException])
+          .verify()
+      }
+      "with default value should return the default value if the flux is empty" in {
+        StepVerifier.create(SFlux.empty[Int].single(Option(2)))
+          .expectNext(2)
+          .verifyComplete()
+      }
     }
 
     ".sum should sum up all values at onComplete it emits the total, given the source that emit numeric values" in {

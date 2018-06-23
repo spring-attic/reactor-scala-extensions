@@ -12,7 +12,7 @@ import reactor.core.publisher.{BufferOverflowStrategy, FluxSink, Signal, SignalT
 import reactor.core.scala.Scannable
 import reactor.core.scala.publisher.PimpMyPublisher._
 import reactor.core.scheduler.{Scheduler, Schedulers}
-import reactor.core.{Disposable, Scannable => JScannable}
+import reactor.core.{Disposable, publisher, Scannable => JScannable}
 import reactor.util.concurrent.Queues.{SMALL_BUFFER_SIZE, XS_BUFFER_SIZE}
 import reactor.util.function.{Tuple2, Tuple3, Tuple4, Tuple5, Tuple6}
 
@@ -286,6 +286,10 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] {
   final def scan[A](initial: A, accumulator: (A, T) => A): SFlux[A] = coreFlux.scan(initial, accumulator)
 
   final def scanWith[A](initial: () => A, accumulator: (A, T) => A): SFlux[A] = coreFlux.scanWith(initial, accumulator)
+
+  final def single(defaultValue: Option[T] = None): SMono[T] = {
+    defaultValue map { coreFlux.single(_) } getOrElse {coreFlux.single()}: publisher.Mono[T]
+  }
 
   final def subscribe(): Disposable = coreFlux.subscribe()
 
