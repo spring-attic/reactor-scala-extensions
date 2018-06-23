@@ -266,6 +266,12 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] {
 
   final def reduceWith[A](initial: () => A, accumulator: (A, T) => A): SMono[A] = coreFlux.reduceWith[A](initial, accumulator)
 
+  final def repeat(predicate: () => Boolean): SFlux[T] = coreFlux.repeat(predicate)
+
+  final def repeat(numRepeat: Long): SFlux[T] = coreFlux.repeat(numRepeat)
+
+  final def repeat(numRepeat: Long, predicate: () => Boolean): SFlux[T] = coreFlux.repeat(numRepeat, predicate)
+
   final def subscribe(): Disposable = coreFlux.subscribe()
 
   override def subscribe(s: Subscriber[_ >: T]): Unit = coreFlux.subscribe(s)

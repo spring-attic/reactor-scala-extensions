@@ -4,7 +4,7 @@ import java.io._
 import java.nio.file.Files
 import java.util
 import java.util.concurrent.Callable
-import java.util.concurrent.atomic.{AtomicBoolean, AtomicLong, AtomicReference}
+import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger, AtomicLong, AtomicReference}
 import java.util.function.{Consumer, Predicate}
 
 import org.mockito.ArgumentMatchers
@@ -1550,6 +1550,32 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
       StepVerifier.create(SFlux.just(1, 2, 3).reduceWith[String](() => "0", (agg, v) => s"$agg-${v.toString}"))
         .expectNext("0-1-2-3")
         .verifyComplete()
+    }
+
+    ".repeat" - {
+      "with predicate should repeat the subscription if the predicate returns true" in {
+        val counter = new AtomicInteger(0)
+        StepVerifier.create(SFlux.just(1, 2, 3).repeat(predicate = () => {
+          if (counter.getAndIncrement() == 0) true
+          else false
+        }))
+          .expectNext(1, 2, 3, 1, 2, 3)
+          .verifyComplete()
+      }
+      "with numRepeat should repeat as many as the provided parameter" in {
+        StepVerifier.create(SFlux.just(1, 2, 3).repeat(3))
+          .expectNext(1, 2, 3, 1, 2, 3, 1, 2, 3)
+          .verifyComplete()
+      }
+      "with numRepeat and predicate should repeat as many as provided parameter and as long as the predicate returns true" in {
+        val flux = SFlux.just(1, 2, 3).repeat(3, () => true)
+        StepVerifier.create(flux)
+          .expectNext(1, 2, 3)
+          .expectNext(1, 2, 3)
+          .expectNext(1, 2, 3)
+          .expectNext(1, 2, 3)
+          .verifyComplete()
+      }
     }
 
     ".sum should sum up all values at onComplete it emits the total, given the source that emit numeric values" in {
