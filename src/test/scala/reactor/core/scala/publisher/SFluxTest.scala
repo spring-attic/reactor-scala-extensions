@@ -1615,6 +1615,18 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
       }
     }
 
+    ".retryWhen should retry the companion publisher produces onNext signal" in {
+      val counter = new AtomicInteger(0)
+      val flux = SFlux.just(1, 2, 3).concatWith(SMono.raiseError(new RuntimeException("ex"))).retryWhen { _ =>
+        if (counter.getAndIncrement() > 0) SMono.raiseError[Int](new RuntimeException("another ex"))
+        else SMono.just(1)
+      }
+      StepVerifier.create(flux)
+        .expectNext(1, 2, 3)
+        .expectNext(1, 2, 3)
+        .verifyComplete()
+    }
+
     ".sum should sum up all values at onComplete it emits the total, given the source that emit numeric values" in {
       StepVerifier.create(SFlux.just(1, 2, 3, 4, 5).sum)
         .expectNext(15)
