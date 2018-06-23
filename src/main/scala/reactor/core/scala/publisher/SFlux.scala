@@ -281,6 +281,10 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] {
 
   final def sampleFirst(timespan: Duration): SFlux[T] = coreFlux.sampleFirst(timespan)
 
+  final def scan(accumulator: (T, T) => T): SFlux[T] = coreFlux.scan(accumulator)
+
+  final def scan[A](initial: A, accumulator: (A, T) => A): SFlux[A] = coreFlux.scan(initial, accumulator)
+
   final def subscribe(): Disposable = coreFlux.subscribe()
 
   override def subscribe(s: Subscriber[_ >: T]): Unit = coreFlux.subscribe(s)
