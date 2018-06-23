@@ -1578,6 +1578,42 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
       }
     }
 
+    ".retry" - {
+      "with numRetries will retry a number of times according to provided parameter" in {
+        StepVerifier.create(SFlux.just(1, 2, 3).concatWith(SMono.raiseError(new RuntimeException("ex"))).retry(2))
+          .expectNext(1, 2, 3)
+          .expectNext(1, 2, 3)
+          .expectNext(1, 2, 3)
+          .expectError(classOf[RuntimeException])
+          .verify()
+      }
+      "with predicate will retry until the predicate returns false" in {
+        val counter = new AtomicInteger(0)
+        StepVerifier.create(SFlux.just(1, 2, 3).concatWith(SMono.raiseError(new RuntimeException("ex"))).retry (retryMatcher = (_: Throwable) =>
+          if (counter.getAndIncrement() > 0) false
+          else true
+        ))
+          .expectNext(1, 2, 3)
+          .expectNext(1, 2, 3)
+          .expectError(classOf[RuntimeException])
+          .verify()
+      }
+      "with numRetries and predicate should retry as many as provided numRetries and predicate returns true" in {
+        val counter = new AtomicInteger(0)
+        val flux = SFlux.just(1, 2, 3).concatWith(SMono.raiseError(new RuntimeException("ex"))).retry(3, { _ =>
+          if (counter.getAndIncrement() > 5) false
+          else true
+        })
+        StepVerifier.create(flux)
+          .expectNext(1, 2, 3)
+          .expectNext(1, 2, 3)
+          .expectNext(1, 2, 3)
+          .expectNext(1, 2, 3)
+          .expectError(classOf[RuntimeException])
+          .verify()
+      }
+    }
+
     ".sum should sum up all values at onComplete it emits the total, given the source that emit numeric values" in {
       StepVerifier.create(SFlux.just(1, 2, 3, 4, 5).sum)
         .expectNext(15)

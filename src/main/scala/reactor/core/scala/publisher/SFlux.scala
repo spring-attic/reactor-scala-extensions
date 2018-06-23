@@ -272,6 +272,12 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] {
 
   final def repeat(numRepeat: Long, predicate: () => Boolean): SFlux[T] = coreFlux.repeat(numRepeat, predicate)
 
+//  final def retry(numRetries: Long): SFlux[T] = coreFlux.retry(numRetries)
+
+//  final def retry(retryMatcher: Throwable => Boolean): SFlux[T] = coreFlux.retry(retryMatcher)
+
+  final def retry(numRetries: Long = Long.MaxValue, retryMatcher: Throwable => Boolean = (_: Throwable) => true): SFlux[T] = coreFlux.retry(numRetries, retryMatcher)
+
   final def subscribe(): Disposable = coreFlux.subscribe()
 
   override def subscribe(s: Subscriber[_ >: T]): Unit = coreFlux.subscribe(s)
