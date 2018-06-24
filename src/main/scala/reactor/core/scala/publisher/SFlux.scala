@@ -331,6 +331,9 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] {
 
   final def takeUntil(predicate: T => Boolean): SFlux[T] = coreFlux.takeUntil(predicate)
 
+  final def takeWhile(continuePredicate: T => Boolean): SFlux[T] = coreFlux.takeWhile(continuePredicate)
+
+
 
 }
 

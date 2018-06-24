@@ -1823,5 +1823,11 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
         .expectNext(1, 2, 3, 4)
         .verifyComplete()
     }
+
+    ".takeWhile should emit values until the predicate returns false" in {
+      StepVerifier.create(SFlux.just(1, 2, 3, 4, 5).takeWhile(t => t < 4))
+        .expectNext(1, 2, 3)
+        .verifyComplete()
+    }
   }
 }
