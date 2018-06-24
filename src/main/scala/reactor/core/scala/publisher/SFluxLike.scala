@@ -24,6 +24,8 @@ trait SFluxLike[T, Self[U] <: SFluxLike[U, Self]] {
 
   final def foldLeft[R](initial: R)(binaryOps: (R, T) => R): SMono[R] = reduce[R](initial, binaryOps)
 
+  final def head: SMono[T] = take(1).as(SMono.from)
+
   final def max[R >: T](implicit ev: Ordering[R]): SMono[Option[R]] = foldLeft(None: Option[R]) { (acc: Option[R], el: T) => {
     acc map (a => ev.max(a, el)) orElse Option(el)
   }
@@ -55,8 +57,19 @@ trait SFluxLike[T, Self[U] <: SFluxLike[U, Self]] {
 
   final def reduce[A](initial: A, accumulator: (A, T) => A): SMono[A] = coreFlux.reduce[A](initial, accumulator)
 
+  final def skip(skipped: Long): SFlux[T] = coreFlux.skip(skipped)
+
   final def sum[R >: T](implicit R: Numeric[R]): SMono[R] = {
     import R._
     foldLeft(R.zero) { (acc: R, el: T) => acc + el }
   }
+
+  /**
+    * Alias for [[skip]](1)
+    * @return
+    */
+  final def tail: SFlux[T] = skip(1)
+
+  final def take(n: Long): SFlux[T] = new ReactiveSFlux[T](coreFlux.take(n))
+
 }

@@ -293,8 +293,6 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] {
 
   final def singleOrEmpty(): SMono[T] = coreFlux.singleOrEmpty()
 
-  final def skip(skipped: Long): SFlux[T] = coreFlux.skip(skipped)
-
   final def skip(timespan: Duration, timer: Scheduler = Schedulers.parallel): SFlux[T] = coreFlux.skip(timespan, timer)
 
   final def skipLast(n: Int): SFlux[T] = coreFlux.skipLast(n)
@@ -322,8 +320,6 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] {
   override def subscribe(s: Subscriber[_ >: T]): Unit = coreFlux.subscribe(s)
 
   final def tag(key: String, value: String): SFlux[T] = coreFlux.tag(key, value)
-
-  final def take(n: Long): SFlux[T] = new ReactiveSFlux[T](coreFlux.take(n))
 
   final def take(timespan: Duration, timer: Scheduler = Schedulers.parallel): SFlux[T] = coreFlux.take(timespan, timer)
 

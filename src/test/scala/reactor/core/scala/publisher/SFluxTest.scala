@@ -1308,6 +1308,12 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
         .verifyComplete()
     }
 
+    ".head should return Mono that emit the first value of Flux" in {
+      StepVerifier.create(SFlux.just(1, 2, 3).head)
+        .expectNext(1)
+        .verifyComplete()
+    }
+
     ".ignoreElements should ignore all elements and only reacts on termination" in {
       StepVerifier.create(SFlux.just(1, 2, 3).ignoreElements())
         .verifyComplete()
@@ -1784,9 +1790,15 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
       }
     }
 
-    ".tag should call the underlying Flux.tag method" in {
+    ".tag should tag the Flux and accessible from Scannable" in {
       val flux = SFlux.just(1, 2, 3).tag("integer", "one, two, three")
       Scannable.from(Option(flux)).tags shouldBe Stream("integer" -> "one, two, three")
+    }
+
+    ".tail should return flux that exclude the head" in {
+      StepVerifier.create(SFlux.just(1, 2, 3, 4, 5).tail)
+        .expectNext(2, 3, 4, 5)
+        .verifyComplete()
     }
 
     ".take" - {
