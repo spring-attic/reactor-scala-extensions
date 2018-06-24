@@ -1726,6 +1726,21 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
         .verifyComplete()
     }
 
+    ".sort" - {
+      "should sort the elements" in {
+        StepVerifier.create(SFlux.just(3, 4, 2, 5, 1, 6).sort())
+          .expectNext(1, 2, 3, 4, 5, 6)
+          .verifyComplete()
+      }
+      "with sort function should sort the elements based on the function" in {
+        StepVerifier.create(SFlux.just(3, 4, 2, 5, 1, 6).sort(new IntOrdering() {
+          override def compare(x: Int, y: Int): Int = super.compare(x, y)
+        }.reverse))
+          .expectNext(6, 5, 4, 3, 2, 1)
+          .verifyComplete()
+      }
+    }
+
     ".sum should sum up all values at onComplete it emits the total, given the source that emit numeric values" in {
       StepVerifier.create(SFlux.just(1, 2, 3, 4, 5).sum)
         .expectNext(15)

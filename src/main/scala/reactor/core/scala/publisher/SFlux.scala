@@ -303,6 +303,10 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] {
 
   final def skipWhile(skipPredicate: T => Boolean): SFlux[T] = coreFlux.skipWhile(skipPredicate)
 
+  final def sort(): SFlux[T] = coreFlux.sort()
+
+  final def sort(sortFunction: Ordering[T]): SFlux[T] = coreFlux.sort(sortFunction)
+
   final def subscribe(): Disposable = coreFlux.subscribe()
 
   override def subscribe(s: Subscriber[_ >: T]): Unit = coreFlux.subscribe(s)
