@@ -20,6 +20,8 @@ trait SFluxLike[T, Self[U] <: SFluxLike[U, Self]] {
 
   private def defaultToFluxError[U](t: Throwable): SFlux[U] = SFlux.raiseError(t)
 
+  final def drop(n: Long): SFlux[T] = skip(n)
+
   final def flatten[S](implicit ev: T <:< SFlux[S]): SFlux[S] = concatMap[S](x => ev(x), XS_BUFFER_SIZE)
 
   final def foldLeft[R](initial: R)(binaryOps: (R, T) => R): SMono[R] = reduce[R](initial, binaryOps)

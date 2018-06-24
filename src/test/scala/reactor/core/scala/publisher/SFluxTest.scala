@@ -1009,6 +1009,12 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
       atomicBoolean shouldBe 'get
     }
 
+    ".drop should return Flux that drop a number of elements" in {
+      StepVerifier.create(SFlux.just(1, 2, 3, 4).drop(2))
+        .expectNext(3, 4)
+        .verifyComplete()
+    }
+
     ".elapsed" - {
       "should provide the time elapse when this mono emit value" in {
         StepVerifier.withVirtualTime(() => SFlux.just(1, 2, 3).delaySubscription(1 second).delayElements(1 second).elapsed(), 3)
