@@ -1741,6 +1741,24 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
       }
     }
 
+    ".startWith" - {
+      "with iterable should prepend the flux with the provided iterable elements" in {
+        StepVerifier.create(SFlux.just(1, 2, 3).startWith(Iterable(10, 20, 30)))
+          .expectNext(10, 20, 30, 1, 2, 3)
+          .verifyComplete()
+      }
+      "with varargs should prepend the flux with the provided values" in {
+        StepVerifier.create(SFlux.just(1, 2, 3).startWith(10, 20, 30))
+          .expectNext(10, 20, 30, 1, 2, 3)
+          .verifyComplete()
+      }
+      "with publisher should prepend the flux with the provided publisher" in {
+        StepVerifier.create(SFlux.just(1, 2, 3).startWith(Flux.just(10, 20, 30)))
+          .expectNext(10, 20, 30, 1, 2, 3)
+          .verifyComplete()
+      }
+    }
+
     ".sum should sum up all values at onComplete it emits the total, given the source that emit numeric values" in {
       StepVerifier.create(SFlux.just(1, 2, 3, 4, 5).sum)
         .expectNext(15)
