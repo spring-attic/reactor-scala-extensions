@@ -1564,7 +1564,10 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
       }
       "with numRepeat should repeat as many as the provided parameter" in {
         StepVerifier.create(SFlux.just(1, 2, 3).repeat(3))
-          .expectNext(1, 2, 3, 1, 2, 3, 1, 2, 3)
+          .expectNext(1, 2, 3)
+          .expectNext(1, 2, 3)
+          .expectNext(1, 2, 3)
+          .expectNext(1, 2, 3)
           .verifyComplete()
       }
       "with numRepeat and predicate should repeat as many as provided parameter and as long as the predicate returns true" in {
