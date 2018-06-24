@@ -1765,6 +1765,25 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
         .verifyComplete()
     }
 
+    ".switchIfEmpty should switch if the current flux is empty" in {
+      StepVerifier.create(SFlux.empty[Int].switchIfEmpty(SFlux.just[Int](10, 20, 30)))
+        .expectNext(10, 20, 30)
+        .verifyComplete()
+    }
+
+    ".switchMap" - {
+      "with function should switch to the new publisher" in {
+        StepVerifier.create(SFlux.just(1, 2, 3).switchMap(i => Flux.just(i * 10, i * 20)))
+          .expectNext(10, 20, 20, 40, 30, 60)
+          .verifyComplete()
+      }
+      "with function and prefetch should switch to the new publisher" in {
+        StepVerifier.create(SFlux.just(1, 2, 3).switchMap(i => SFlux.just(i * 10, i * 20), 2))
+          .expectNext(10, 20, 20, 40, 30, 60)
+          .verifyComplete()
+      }
+    }
+
     ".take" - {
       "should emit only n values" in {
         StepVerifier.create(SFlux(1, 2, 3, 4, 5, 6, 7, 8, 9, 10).take(3))

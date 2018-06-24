@@ -315,6 +315,10 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] {
 
   final def subscribe(): Disposable = coreFlux.subscribe()
 
+  final def switchIfEmpty(alternate: Publisher[_ <: T]): SFlux[T] = coreFlux.switchIfEmpty(alternate)
+
+  final def switchMap[V](fn: T => Publisher[_ <: V], prefetch: Int = XS_BUFFER_SIZE): SFlux[V] = coreFlux.switchMap[V](fn, prefetch)
+
   override def subscribe(s: Subscriber[_ >: T]): Unit = coreFlux.subscribe(s)
 
   def take(n: Long): SFlux[T] = new ReactiveSFlux[T](coreFlux.take(n))
