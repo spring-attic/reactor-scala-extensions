@@ -323,7 +323,10 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] {
 
   final def tag(key: String, value: String): SFlux[T] = coreFlux.tag(key, value)
 
-  def take(n: Long): SFlux[T] = new ReactiveSFlux[T](coreFlux.take(n))
+  final def take(n: Long): SFlux[T] = new ReactiveSFlux[T](coreFlux.take(n))
+
+  final def take(timespan: Duration, timer: Scheduler = Schedulers.parallel): SFlux[T] = coreFlux.take(timespan, timer)
+
 }
 
 object SFlux {

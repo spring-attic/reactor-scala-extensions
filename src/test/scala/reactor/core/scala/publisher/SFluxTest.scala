@@ -1795,6 +1795,21 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
           .expectNext(1, 2, 3)
           .verifyComplete()
       }
+      "with duration should only emit values during the provided duration" in {
+        StepVerifier.withVirtualTime(() => SFlux.just(1, 2, 3, 4, 5).delayElements(1 seconds).take(3500 milliseconds))
+          .thenAwait(5 seconds)
+          .expectNext(1, 2, 3)
+          .verifyComplete()
+      }
+      "with timespan and timed scheduler should only emit values during the provided timespan with the provided TimedScheduler" in {
+        val vts = VirtualTimeScheduler.getOrSet()
+        StepVerifier.create(SFlux.just(1, 2, 3, 4, 5)
+          .delayElements(1 second, vts)
+          .take(3500 milliseconds, vts), 256)
+          .`then`(() => vts.advanceTimeBy(5 seconds))
+          .expectNext(1, 2, 3)
+          .verifyComplete()
+      }
     }
   }
 }
