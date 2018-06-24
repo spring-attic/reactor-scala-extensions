@@ -1784,6 +1784,13 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
       }
     }
 
+    ".tag should call the underlying Flux.tag method" in {
+      val jFlux = spy(JFlux.just(1, 2, 3))
+      val flux = new ReactiveSFlux[Int](jFlux)
+      flux.tag("integer", "one, two, three")
+      verify(jFlux).tag("integer", "one, two, three")
+    }
+
     ".take" - {
       "should emit only n values" in {
         StepVerifier.create(SFlux(1, 2, 3, 4, 5, 6, 7, 8, 9, 10).take(3))

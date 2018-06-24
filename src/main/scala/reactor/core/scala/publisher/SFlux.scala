@@ -321,6 +321,8 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] {
 
   override def subscribe(s: Subscriber[_ >: T]): Unit = coreFlux.subscribe(s)
 
+  final def tag(key: String, value: String): SFlux[T] = coreFlux.tag(key, value)
+
   def take(n: Long): SFlux[T] = new ReactiveSFlux[T](coreFlux.take(n))
 }
 
