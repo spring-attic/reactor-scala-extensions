@@ -1688,6 +1688,26 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
         .verifyComplete()
     }
 
+    ".skip" - {
+      "with the number to skip should skip some elements" in {
+        StepVerifier.create(SFlux.just(1, 2, 3, 4, 5).skip(2))
+          .expectNext(3, 4, 5)
+          .verifyComplete()
+      }
+      "with duration should skip all elements within that duration" in {
+        StepVerifier.withVirtualTime(() => SFlux.just(1, 2, 3, 4, 5).delayElements(1 second).skip(2 seconds))
+          .thenAwait(6 seconds)
+          .expectNext(2, 3, 4, 5)
+          .verifyComplete()
+      }
+      "with timer should skip all elements within the millis duration with the provided timer" in {
+        StepVerifier.withVirtualTime(() => SFlux.just(1, 2, 3, 4, 5).delayElements(1 second).skip(2 seconds, Schedulers.single()))
+          .thenAwait(6 seconds)
+          .expectNext(2, 3, 4, 5)
+          .verifyComplete()
+      }
+    }
+
     ".sum should sum up all values at onComplete it emits the total, given the source that emit numeric values" in {
       StepVerifier.create(SFlux.just(1, 2, 3, 4, 5).sum)
         .expectNext(15)
