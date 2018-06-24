@@ -327,6 +327,8 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] {
 
   final def take(timespan: Duration, timer: Scheduler = Schedulers.parallel): SFlux[T] = coreFlux.take(timespan, timer)
 
+  final def takeLast(n: Int): SFlux[T] = coreFlux.takeLast(n)
+
 }
 
 object SFlux {

@@ -1811,5 +1811,11 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
           .verifyComplete()
       }
     }
+
+    ".takeLast should take the last n values" in {
+      StepVerifier.create(SFlux.just(1, 2, 3, 4, 5).takeLast(3))
+        .expectNext(3, 4, 5)
+        .verifyComplete()
+    }
   }
 }
