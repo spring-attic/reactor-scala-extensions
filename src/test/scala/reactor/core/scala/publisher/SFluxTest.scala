@@ -1859,5 +1859,13 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
       StepVerifier.create(SFlux.just(1, 2, 3).thenEmpty(Mono.empty))
         .verifyComplete()
     }
+
+    ".thenMany" - {
+      "should emit the sequence of the supplied publisher" in {
+        StepVerifier.create(SFlux.just(1, 2, 3).thenMany(SFlux.just("1", "2", "3")))
+          .expectNext("1", "2", "3")
+          .verifyComplete()
+      }
+    }
   }
 }

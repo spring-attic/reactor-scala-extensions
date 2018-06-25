@@ -334,6 +334,9 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] {
   final def thenEmpty(other: Publisher[Unit]): SMono[Unit] = new ReactiveSMono[Unit](
     coreFlux.thenEmpty(publisherUnit2PublisherVoid(other)).map(_ => ())
   )
+
+  final def thenMany[V](other: Publisher[V]): SFlux[V] = coreFlux.thenMany[V](other)
+
 }
 
 object SFlux {
