@@ -1847,5 +1847,17 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
         .expectNext(1, 2, 3)
         .verifyComplete()
     }
+
+    ".then" - {
+      "without parameter should actively ignore the values" in {
+        StepVerifier.create(SFlux.just(1, 2, 3, 4, 5).`then`())
+          .verifyComplete()
+      }
+    }
+
+    ".thenEmpty should wait for this to complete and then for the supplied publisher to complete" in {
+      StepVerifier.create(SFlux.just(1, 2, 3).thenEmpty(Mono.empty))
+        .verifyComplete()
+    }
   }
 }
