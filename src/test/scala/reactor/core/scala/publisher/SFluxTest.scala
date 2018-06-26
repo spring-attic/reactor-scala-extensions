@@ -1982,8 +1982,7 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
     }
 
     ".asJava should convert to java" in {
-      val flux = SFlux.just(1, 2, 3).asJava()
-      flux shouldBe a[reactor.core.publisher.Flux[_]]
+      SFlux.just(1, 2, 3).asJava() shouldBe a[reactor.core.publisher.Flux[_]]
     }
   }
 }
