@@ -350,6 +350,9 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] {
 
   final def toIterable(batchSize: Int = SMALL_BUFFER_SIZE, queueProvider: Option[Supplier[util.Queue[T]]] = None): Iterable[T] = coreFlux.toIterable(batchSize, queueProvider.orNull).asScala
 
+  final def toStream(batchSize: Int = SMALL_BUFFER_SIZE): Stream[T] = coreFlux.toStream.iterator().asScala.toStream
+
+
 }
 
 object SFlux {

@@ -1915,5 +1915,14 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
         SFlux.just(1, 2, 3).toIterable(1, Option(Queues.get[Int](1))).toList shouldBe Iterable(1, 2, 3)
       }
     }
+
+    ".toStream" - {
+      "should transform this flux into stream" in {
+        SFlux.just(1, 2, 3).toStream() shouldBe Stream(1, 2, 3)
+      }
+      "with batchSize should transform this flux into stream" in {
+        SFlux.just(1, 2, 3).toStream(2) shouldBe Stream(1, 2, 3)
+      }
+    }
   }
 }
