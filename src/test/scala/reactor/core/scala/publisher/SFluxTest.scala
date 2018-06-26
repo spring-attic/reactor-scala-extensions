@@ -1980,5 +1980,10 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
         .expectNext((1, 1000l), (2, 2000l), (3, 3000l))
         .verifyComplete()
     }
+
+    ".asJava should convert to java" in {
+      val flux = SFlux.just(1, 2, 3).asJava()
+      flux shouldBe a[reactor.core.publisher.Flux[_]]
+    }
   }
 }

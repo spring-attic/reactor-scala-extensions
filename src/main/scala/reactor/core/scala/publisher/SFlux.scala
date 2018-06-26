@@ -6,7 +6,7 @@ import java.util.concurrent.Callable
 import java.util.function.{BiFunction, Function, Supplier}
 import java.util.{Collection => JCollection, List => JList, Map => JMap}
 
-import org.reactivestreams.{Publisher, Subscriber, Subscription}
+import org.reactivestreams.{Publisher, Subscriber}
 import reactor.core.publisher.FluxSink.OverflowStrategy
 import reactor.core.publisher.{BufferOverflowStrategy, FluxSink, Signal, SignalType, SynchronousSink, Flux => JFlux, GroupedFlux => JGroupedFlux}
 import reactor.core.scala.Scannable
@@ -35,6 +35,8 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] {
       override def apply(t: JFlux[T]): P = transformer(t)
     })
   }
+
+  final def asJava(): JFlux[T] = coreFlux
 
   final def blockFirst(timeout: Duration = Duration.Inf): Option[T] = timeout match {
     case _: Infinite => Option(coreFlux.blockFirst())
