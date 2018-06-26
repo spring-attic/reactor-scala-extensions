@@ -354,6 +354,8 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] {
 
   final def transform[V](transformer: Flux[T] => Publisher[V]): SFlux[V] = coreFlux.transform[V](transformer)
 
+  final def withLatestFrom[U, R](other: Publisher[_ <: U], resultSelector: (T, U) => _ <: R): SFlux[R] = coreFlux.withLatestFrom[U, R](other, resultSelector)
+
 }
 
 object SFlux {
