@@ -352,6 +352,7 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] {
 
   final def toStream(batchSize: Int = SMALL_BUFFER_SIZE): Stream[T] = coreFlux.toStream.iterator().asScala.toStream
 
+  final def transform[V](transformer: Flux[T] => Publisher[V]): SFlux[V] = coreFlux.transform[V](transformer)
 
 }
 

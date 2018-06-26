@@ -1924,5 +1924,11 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
         SFlux.just(1, 2, 3).toStream(2) shouldBe Stream(1, 2, 3)
       }
     }
+
+    ".transform should defer transformation of this flux to another publisher" in {
+      StepVerifier.create(SFlux.just(1, 2, 3).transform(Mono.from))
+        .expectNext(1)
+        .verifyComplete()
+    }
   }
 }
