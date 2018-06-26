@@ -1,10 +1,12 @@
 package reactor.core.scala.publisher
 
+import java.util.concurrent.TimeUnit
 import java.util.function.Function
 
-import org.reactivestreams.Publisher
+import org.reactivestreams.{Publisher, Subscription}
 import reactor.core.publisher.{Flux => JFlux}
 import reactor.core.scala.publisher.PimpMyPublisher._
+import reactor.core.scheduler.Schedulers
 import reactor.util.concurrent.Queues.XS_BUFFER_SIZE
 
 import scala.language.higherKinds
@@ -19,6 +21,8 @@ trait SFluxLike[T, Self[U] <: SFluxLike[U, Self]] {
   private[publisher] def coreFlux: JFlux[T]
 
   private def defaultToFluxError[U](t: Throwable): SFlux[U] = SFlux.raiseError(t)
+
+  final def doOnSubscribe(onSubscribe: Subscription => Unit): SFlux[T] = new ReactiveSFlux[T](coreFlux.doOnSubscribe(onSubscribe))
 
   final def drop(n: Long): SFlux[T] = skip(n)
 
@@ -74,4 +78,10 @@ trait SFluxLike[T, Self[U] <: SFluxLike[U, Self]] {
 
   final def take(n: Long): SFlux[T] = new ReactiveSFlux[T](coreFlux.take(n))
 
+  final def zipWithTimeSinceSubscribe(): SFlux[(T, Long)] = {
+    val scheduler = Schedulers.single()
+    var subscriptionTime: Long = 0
+    doOnSubscribe(_ => subscriptionTime = scheduler.now(TimeUnit.MILLISECONDS))
+      .map(t => (t, scheduler.now(TimeUnit.MILLISECONDS) - subscriptionTime))
+  }
 }

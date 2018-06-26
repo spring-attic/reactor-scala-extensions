@@ -1973,5 +1973,12 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
           .verifyComplete()
       }
     }
+
+    ".zipWithTimeSinceSubscribe should emit tuple2 with the second element as the time taken to emit since subscription in milliseconds" in {
+      StepVerifier.withVirtualTime(() => Flux.just(1, 2, 3).delayElements(1 second).zipWithTimeSinceSubscribe())
+        .thenAwait(3 seconds)
+        .expectNext((1, 1000l), (2, 2000l), (3, 3000l))
+        .verifyComplete()
+    }
   }
 }
