@@ -18,6 +18,7 @@ import reactor.core.scala.Scannable
 import reactor.core.scheduler.Schedulers
 import reactor.test.StepVerifier
 import reactor.test.scheduler.VirtualTimeScheduler
+import reactor.util.concurrent.Queues
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
@@ -1903,5 +1904,16 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
       }
     }
 
+    ".toIterable" - {
+      "should transform this flux into iterable" in {
+        SFlux.just(1, 2, 3).toIterable().toList shouldBe Iterable(1, 2, 3)
+      }
+      "with batchSize should transform this flux into iterable" in {
+        SFlux.just(1, 2, 3).toIterable(1).toList shouldBe Iterable(1, 2, 3)
+      }
+      "with batchSize and queue supplier should transform this flux into interable" in {
+        SFlux.just(1, 2, 3).toIterable(1, Option(Queues.get[Int](1))).toList shouldBe Iterable(1, 2, 3)
+      }
+    }
   }
 }
