@@ -1937,5 +1937,28 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
         .expectNext((2, "one"), (3, "two"), (4, "two"))
         .verifyComplete()
     }
+
+    ".zipWith" - {
+      "should zip both publishers" in {
+        StepVerifier.create(SFlux.just(1, 2, 3).zipWith(SFlux.just(10, 20, 30)))
+          .expectNext((1, 10), (2, 20), (3, 30))
+          .verifyComplete()
+      }
+      "with combinator should zip and apply the combinator" in {
+        StepVerifier.create(SFlux.just(1, 2, 3).zipWithCombinator[Int, Int](SFlux.just(10, 20, 30), (i1: Int, i2: Int) => i1 + i2))
+          .expectNext(11, 22, 33)
+          .verifyComplete()
+      }
+      "with combinator and prefetch should zip and apply the combinator" in {
+        StepVerifier.create(SFlux.just(1, 2, 3).zipWithCombinator[Int, Int](SFlux.just(10, 20, 30), (i1: Int, i2: Int) => i1 + i2, 1))
+          .expectNext(11, 22, 33)
+          .verifyComplete()
+      }
+      "with prefetch should zip both publishers" in {
+        StepVerifier.create(SFlux.just(1, 2, 3).zipWith(SFlux.just(10, 20, 30), 1))
+          .expectNext((1, 10), (2, 20), (3, 30))
+          .verifyComplete()
+      }
+    }
   }
 }

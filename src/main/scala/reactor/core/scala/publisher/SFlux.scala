@@ -356,6 +356,10 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] {
 
   final def withLatestFrom[U, R](other: Publisher[_ <: U], resultSelector: (T, U) => _ <: R): SFlux[R] = coreFlux.withLatestFrom[U, R](other, resultSelector)
 
+  final def zipWith[T2](source2: Publisher[_ <: T2], prefetch: Int = XS_BUFFER_SIZE): SFlux[(T, T2)] = zipWithCombinator(source2, (t: T, t2: T2) => (t, t2), prefetch)
+
+  final def zipWithCombinator[T2, V](source2: Publisher[_ <: T2], combinator: (T, T2) => V, prefetch: Int = XS_BUFFER_SIZE): SFlux[V] = coreFlux.zipWith[T2, V](source2, prefetch, combinator)
+
 }
 
 object SFlux {
