@@ -21,6 +21,7 @@ import reactor.test.scheduler.VirtualTimeScheduler
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
+import scala.concurrent.TimeoutException
 import scala.concurrent.duration.{Duration, _}
 import scala.io.Source
 import scala.language.postfixOps
@@ -1867,5 +1868,40 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
           .verifyComplete()
       }
     }
+
+    ".timeout" - {
+      "with timeout duration should throw exception if the item is not emitted within the provided duration after previous emited item" in {
+        StepVerifier.withVirtualTime(() => SFlux.just(1, 2, 3).delayElements(2 seconds).timeout(1 second))
+          .thenAwait(2 seconds)
+          .expectError(classOf[TimeoutException])
+          .verify()
+      }
+      "with timeout and optional fallback should fallback if the item is not emitted within the provided duration" in {
+        StepVerifier.withVirtualTime(() => SFlux.just(1, 2, 3).delayElements(2 seconds).timeout(1 second, Option(SFlux.just(10, 20, 30))))
+          .thenAwait(2 seconds)
+          .expectNext(10, 20, 30)
+          .verifyComplete()
+      }
+      "with firstTimeout should throw exception if the first item is not emitted before the given publisher emits" in {
+        StepVerifier.withVirtualTime(() => SFlux.just(1, 2, 3).delayElements(2 seconds).timeout(SMono.just(1)))
+          .thenAwait(2 seconds)
+          .expectError(classOf[TimeoutException])
+          .verify()
+      }
+      "with firstTimeout and next timeout factory should throw exception if any of the item from this flux does not emit before the timeout provided" in {
+        StepVerifier.withVirtualTime(() => SFlux.just(1, 2, 3).delayElements(2 seconds).timeout(SMono.just(1).delaySubscription(3 seconds), t => SMono.just(1).delaySubscription(t seconds)))
+          .thenAwait(5 seconds)
+          .expectNext(1)
+          .expectError(classOf[TimeoutException])
+          .verify()
+      }
+      "with firstTimeout, nextTimeoutFactory and fallback should fallback if any of the item is not emitted within the timeout period" in {
+        StepVerifier.withVirtualTime(() => SFlux.just(1, 2, 3).delayElements(2 seconds).timeout(SMono.just(1).delaySubscription(3 seconds), t => SMono.just(1).delaySubscription(t seconds), SFlux.just(10, 20, 30)))
+          .thenAwait(5 seconds)
+          .expectNext(1, 10, 20, 30)
+          .verifyComplete()
+      }
+    }
+
   }
 }

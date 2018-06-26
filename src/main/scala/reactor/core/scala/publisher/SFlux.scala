@@ -337,6 +337,16 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] {
 
   final def thenMany[V](other: Publisher[V]): SFlux[V] = coreFlux.thenMany[V](other)
 
+  final def timeout(timeout: Duration): SFlux[T] = coreFlux.timeout(timeout)
+
+  final def timeout(timeout: Duration, fallback: Option[Publisher[_ <: T]]): SFlux[T] = coreFlux.timeout(timeout, fallback.orNull)
+
+  final def timeout[U](firstTimeout: Publisher[U]): SFlux[T] = coreFlux.timeout[U](firstTimeout)
+
+  final def timeout[U, V](firstTimeout: Publisher[U], nextTimeoutFactory: T => Publisher[V]): SFlux[T] = coreFlux.timeout(firstTimeout, nextTimeoutFactory)
+
+  final def timeout[U, V](firstTimeout: Publisher[U], nextTimeoutFactory: T => Publisher[V], fallback: Publisher[_ <: T]): SFlux[T] =
+    coreFlux.timeout(firstTimeout, nextTimeoutFactory, fallback)
 }
 
 object SFlux {
