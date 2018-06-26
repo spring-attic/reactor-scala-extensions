@@ -1960,5 +1960,18 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
           .verifyComplete()
       }
     }
+
+    ".zipWithIterable" - {
+      "should zip with the provided iterable" in {
+        StepVerifier.create(SFlux.just(1, 2, 3).zipWithIterable(Iterable(10, 20, 30)))
+          .expectNext((1, 10), (2, 20), (3, 30))
+          .verifyComplete()
+      }
+      "with zipper should zip and apply the zipper" in {
+        StepVerifier.create(SFlux.just(1, 2, 3).zipWithIterable[Int, Int](Iterable(10, 20, 30), (i1: Int, i2: Int) => i1 + i2))
+          .expectNext(11, 22, 33)
+          .verifyComplete()
+      }
+    }
   }
 }
