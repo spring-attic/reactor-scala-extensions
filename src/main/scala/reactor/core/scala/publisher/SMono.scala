@@ -1,7 +1,6 @@
 package reactor.core.scala.publisher
 
 import java.util.concurrent.{Callable, CompletableFuture}
-import java.util.function.{Consumer, Supplier}
 
 import org.reactivestreams.{Publisher, Subscriber}
 import reactor.core.publisher.{MonoSink, Mono => JMono}
@@ -31,17 +30,9 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
 
 object SMono {
 
-  def create[T](callback: MonoSink[T] => Unit): SMono[T] = {
-      JMono.create(new Consumer[MonoSink[T]] {
-        override def accept(t: MonoSink[T]): Unit = callback(t)
-      })
-  }
+  def create[T](callback: MonoSink[T] => Unit): SMono[T] = JMono.create[T](callback)
 
-  def defer[T](supplier: () => SMono[T]): SMono[T] = {
-      JMono.defer(new Supplier[JMono[T]] {
-        override def get(): JMono[T] = supplier().asJava
-      })
-  }
+  def defer[T](supplier: () => SMono[T]): SMono[T] = JMono.defer[T](supplier)
 
   def delay(duration: Duration): SMono[Long] = new ReactiveSMono[Long](JMono.delay(duration).map(Long2long))
 

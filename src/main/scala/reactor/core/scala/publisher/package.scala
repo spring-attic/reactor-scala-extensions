@@ -114,6 +114,12 @@ package object publisher {
     }
   }
 
+  implicit def scalaSupplierSMonoR2JavaSupplierJMonoR[R](supplier: () => SMono[R]): Supplier[JMono[R]] = {
+    new Supplier[JMono[R]] {
+      override def get(): JMono[R] = supplier().asJava()
+    }
+  }
+
   implicit def scalaSupplierMonoR2JavaSupplierJMonoR[R](supplier: () => Mono[R]): Supplier[JMono[R]] = {
     new Supplier[JMono[R]] {
       override def get(): JMono[R] = supplier().asJava()
