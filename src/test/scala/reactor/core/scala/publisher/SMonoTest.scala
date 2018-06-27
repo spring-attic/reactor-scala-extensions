@@ -15,6 +15,14 @@ class SMonoTest extends FreeSpec with Matchers {
   private val randomValue = Random.nextLong()
 
   "SMono" - {
+    ".create should create a Mono" in {
+      val mono = SMono.create[Long](monoSink => monoSink.success(randomValue))
+
+      StepVerifier.create(mono)
+        .expectNext(randomValue)
+        .expectComplete()
+        .verify()
+    }
     ".just should emit the specified item" in {
       StepVerifier.create(SMono.just(randomValue))
         .expectNext(randomValue)

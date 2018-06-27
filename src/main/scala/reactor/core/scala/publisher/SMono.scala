@@ -1,9 +1,10 @@
 package reactor.core.scala.publisher
 
 import java.util.concurrent.{Callable, CompletableFuture}
+import java.util.function.Consumer
 
 import org.reactivestreams.{Publisher, Subscriber}
-import reactor.core.publisher.{Mono => JMono}
+import reactor.core.publisher.{MonoSink, Mono => JMono}
 import reactor.core.scala.publisher.PimpMyPublisher._
 import reactor.core.scheduler.{Scheduler, Schedulers}
 
@@ -27,8 +28,12 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
 }
 
 object SMono {
-  def just[T](data: T): SMono[T] = new ReactiveSMono[T](JMono.just(data))
 
+  def create[T](callback: MonoSink[T] => Unit): SMono[T] = {
+      JMono.create(new Consumer[MonoSink[T]] {
+        override def accept(t: MonoSink[T]): Unit = callback(t)
+      })
+  }
   def from[T](source: Publisher[_ <: T]): SMono[T] = JMono.from[T](source)
 
   def fromCallable[T](supplier: Callable[T]): SMono[T] = JMono.fromCallable[T](supplier)
@@ -43,6 +48,8 @@ object SMono {
     }
     JMono.fromFuture[T](completableFuture)
   }
+
+  def just[T](data: T): SMono[T] = new ReactiveSMono[T](JMono.just(data))
 
   def raiseError[T](error: Throwable): SMono[T] = JMono.error[T](error)
 }
