@@ -34,7 +34,7 @@ object SMono {
 
   def defer[T](supplier: () => SMono[T]): SMono[T] = JMono.defer[T](supplier)
 
-  def delay(duration: Duration): SMono[Long] = new ReactiveSMono[Long](JMono.delay(duration).map(Long2long))
+  def delay(duration: Duration, timer: Scheduler = Schedulers.parallel()): SMono[Long] = new ReactiveSMono[Long](JMono.delay(duration, timer).map(Long2long))
 
   def from[T](source: Publisher[_ <: T]): SMono[T] = JMono.from[T](source)
 

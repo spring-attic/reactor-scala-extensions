@@ -41,7 +41,7 @@ class SMonoTest extends FreeSpec with Matchers {
       }
       "duration in millis with given TimeScheduler" in {
         val vts = VirtualTimeScheduler.getOrSet()
-        StepVerifier.create(Mono.delay(50 seconds, vts))
+        StepVerifier.create(SMono.delay(50 seconds, vts))
           .`then`(() => vts.advanceTimeBy(50 seconds))
           .expectNextCount(1)
           .expectComplete()
