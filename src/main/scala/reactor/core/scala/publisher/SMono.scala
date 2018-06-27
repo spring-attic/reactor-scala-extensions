@@ -36,6 +36,8 @@ object SMono {
 
   def delay(duration: Duration, timer: Scheduler = Schedulers.parallel()): SMono[Long] = new ReactiveSMono[Long](JMono.delay(duration, timer).map(Long2long))
 
+  def empty[T]: SMono[T] = JMono.empty[T]()
+
   def from[T](source: Publisher[_ <: T]): SMono[T] = JMono.from[T](source)
 
   def fromCallable[T](supplier: Callable[T]): SMono[T] = JMono.fromCallable[T](supplier)

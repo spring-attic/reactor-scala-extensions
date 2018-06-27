@@ -49,6 +49,14 @@ class SMonoTest extends FreeSpec with Matchers {
 
       }
     }
+
+    ".empty " - {
+      "without source should create an empty Mono" in {
+        StepVerifier.create(Mono.empty)
+          .verifyComplete()
+      }
+    }
+
     ".just should emit the specified item" in {
       StepVerifier.create(SMono.just(randomValue))
         .expectNext(randomValue)
