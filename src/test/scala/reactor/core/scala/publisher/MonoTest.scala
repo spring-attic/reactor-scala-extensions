@@ -1232,8 +1232,7 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
     }
 
     ".asJava should convert to java" in {
-      val mono = Mono.just(randomValue).asJava()
-      mono shouldBe a[JMono[_]]
+      SMono.just(randomValue).asJava() shouldBe a[JMono[_]]
     }
 
     ".apply should convert to scala" in {

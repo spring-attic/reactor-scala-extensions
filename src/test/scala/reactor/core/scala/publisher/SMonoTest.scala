@@ -3,6 +3,7 @@ package reactor.core.scala.publisher
 import java.util.concurrent.Callable
 
 import org.scalatest.{FreeSpec, Matchers}
+import reactor.core.publisher.{Mono => JMono}
 import reactor.core.scheduler.Schedulers
 import reactor.test.StepVerifier
 
@@ -16,13 +17,19 @@ class SMonoTest extends FreeSpec with Matchers {
 
   "SMono" - {
     ".create should create a Mono" in {
-      val mono = SMono.create[Long](monoSink => monoSink.success(randomValue))
-
-      StepVerifier.create(mono)
+      StepVerifier.create(SMono.create[Long](monoSink => monoSink.success(randomValue)))
         .expectNext(randomValue)
         .expectComplete()
         .verify()
     }
+
+    ".defer should create a Mono with deferred Mono" in {
+      StepVerifier.create(SMono.defer(() => SMono.just(randomValue)))
+        .expectNext(randomValue)
+        .expectComplete()
+        .verify()
+    }
+
     ".just should emit the specified item" in {
       StepVerifier.create(SMono.just(randomValue))
         .expectNext(randomValue)
@@ -33,6 +40,10 @@ class SMonoTest extends FreeSpec with Matchers {
       StepVerifier.create(SMono.raiseError(new RuntimeException("runtime error")))
         .expectError(classOf[RuntimeException])
         .verify()
+    }
+
+    ".asJava should convert to java" in {
+      SMono.just(randomValue).asJava() shouldBe a[JMono[_]]
     }
 
     ".delaySubscription" - {
