@@ -8,8 +8,8 @@ import reactor.core.publisher.{MonoSink, Mono => JMono}
 import reactor.core.scala.publisher.PimpMyPublisher._
 import reactor.core.scheduler.{Scheduler, Schedulers}
 
-import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.Duration
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
 trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
@@ -42,6 +42,9 @@ object SMono {
         override def get(): JMono[T] = supplier().asJava
       })
   }
+
+  def delay(duration: Duration): SMono[Long] = new ReactiveSMono[Long](JMono.delay(duration).map(Long2long))
+
   def from[T](source: Publisher[_ <: T]): SMono[T] = JMono.from[T](source)
 
   def fromCallable[T](supplier: Callable[T]): SMono[T] = JMono.fromCallable[T](supplier)

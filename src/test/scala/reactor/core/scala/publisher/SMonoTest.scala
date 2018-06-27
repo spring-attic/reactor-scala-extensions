@@ -6,6 +6,7 @@ import org.scalatest.{FreeSpec, Matchers}
 import reactor.core.publisher.{Mono => JMono}
 import reactor.core.scheduler.Schedulers
 import reactor.test.StepVerifier
+import reactor.test.scheduler.VirtualTimeScheduler
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -30,6 +31,24 @@ class SMonoTest extends FreeSpec with Matchers {
         .verify()
     }
 
+    ".delay should create a Mono with the first element delayed according to the provided" - {
+      "duration" in {
+        StepVerifier.withVirtualTime(() => SMono.delay(5 days))
+          .thenAwait(5 days)
+          .expectNextCount(1)
+          .expectComplete()
+          .verify()
+      }
+      "duration in millis with given TimeScheduler" in {
+        val vts = VirtualTimeScheduler.getOrSet()
+        StepVerifier.create(Mono.delay(50 seconds, vts))
+          .`then`(() => vts.advanceTimeBy(50 seconds))
+          .expectNextCount(1)
+          .expectComplete()
+          .verify()
+
+      }
+    }
     ".just should emit the specified item" in {
       StepVerifier.create(SMono.just(randomValue))
         .expectNext(randomValue)
