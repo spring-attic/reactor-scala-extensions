@@ -1,7 +1,5 @@
 package reactor.core.scala.publisher
 
-import java.util.concurrent.Callable
-
 import org.scalatest.{FreeSpec, Matchers}
 import reactor.core.publisher.{Mono => JMono}
 import reactor.core.scheduler.Schedulers
@@ -75,9 +73,7 @@ class SMonoTest extends FreeSpec with Matchers {
       }
 
       "a callable should ensure that Mono will return a value from the Callable" in {
-        StepVerifier.create(SMono.fromCallable(new Callable[Long] {
-          override def call(): Long = randomValue
-        }))
+        StepVerifier.create(SMono.fromCallable(() => randomValue))
           .expectNext(randomValue)
           .expectComplete()
           .verify()
