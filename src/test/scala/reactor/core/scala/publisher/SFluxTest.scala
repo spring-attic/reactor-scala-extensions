@@ -429,7 +429,7 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
     }
 
     ".as should transform this flux to another publisher" in {
-      StepVerifier.create(SFlux.just(1, 2, 3).as(SMono.from))
+      StepVerifier.create(SFlux.just(1, 2, 3).as(SMono.fromPublisher))
         .expectNext(1)
         .verifyComplete()
     }

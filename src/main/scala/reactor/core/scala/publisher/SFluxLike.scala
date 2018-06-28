@@ -30,7 +30,7 @@ trait SFluxLike[T, Self[U] <: SFluxLike[U, Self]] {
 
   final def foldLeft[R](initial: R)(binaryOps: (R, T) => R): SMono[R] = reduce[R](initial, binaryOps)
 
-  final def head: SMono[T] = take(1).as(SMono.from)
+  final def head: SMono[T] = take(1).as(SMono.fromPublisher)
 
   final def max[R >: T](implicit ev: Ordering[R]): SMono[Option[R]] = foldLeft(None: Option[R]) { (acc: Option[R], el: T) => {
     acc map (a => ev.max(a, el)) orElse Option(el)
