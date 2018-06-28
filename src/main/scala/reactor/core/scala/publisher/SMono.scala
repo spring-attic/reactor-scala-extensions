@@ -38,6 +38,8 @@ object SMono {
 
   def empty[T]: SMono[T] = JMono.empty[T]()
 
+  def firstEmitter[T](monos: SMono[_ <: T]*): SMono[T] = JMono.first[T](monos.map(_.asJava()): _*)
+
   def from[T](source: Publisher[_ <: T]): SMono[T] = JMono.from[T](source)
 
   def fromCallable[T](supplier: Callable[T]): SMono[T] = JMono.fromCallable[T](supplier)

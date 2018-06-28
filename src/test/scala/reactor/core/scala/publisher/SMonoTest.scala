@@ -57,6 +57,15 @@ class SMonoTest extends FreeSpec with Matchers {
       }
     }
 
+    ".firstEmitter" - {
+      "with varargs should create mono that emit the first item" in {
+        StepVerifier.withVirtualTime(() => SMono.firstEmitter(SMono.just(1).delaySubscription(3 seconds), SMono.just(2).delaySubscription(2 seconds)))
+          .thenAwait(3 seconds)
+          .expectNext(2)
+          .verifyComplete()
+      }
+    }
+
     ".just should emit the specified item" in {
       StepVerifier.create(SMono.just(randomValue))
         .expectNext(randomValue)
