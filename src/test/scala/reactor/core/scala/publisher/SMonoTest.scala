@@ -95,6 +95,12 @@ class SMonoTest extends FreeSpec with Matchers {
       }
     }
 
+    ".ignoreElements should ignore all elements from a publisher and just react on completion signal" in {
+      StepVerifier.create(SMono.ignoreElements(SMono.just(randomValue)))
+        .expectComplete()
+        .verify()
+    }
+
     ".just should emit the specified item" in {
       StepVerifier.create(SMono.just(randomValue))
         .expectNext(randomValue)

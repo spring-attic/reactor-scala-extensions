@@ -55,6 +55,8 @@ object SMono {
     JMono.fromFuture[T](completableFuture)
   }
 
+  def ignoreElements[T](source: Publisher[T]): SMono[T] = JMono.ignoreElements(source)
+
   def just[T](data: T): SMono[T] = new ReactiveSMono[T](JMono.just(data))
 
   def raiseError[T](error: Throwable): SMono[T] = JMono.error[T](error)
