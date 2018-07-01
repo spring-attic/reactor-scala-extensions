@@ -59,6 +59,15 @@ object SMono {
 
   def just[T](data: T): SMono[T] = new ReactiveSMono[T](JMono.just(data))
 
+  def justOrEmpty[T](data: Option[_ <: T]): SMono[T] = JMono.justOrEmpty[T](data)
+
+  def justOrEmpty[T](data: Any): SMono[T] = {
+    data match {
+      case o: Option[T] => JMono.justOrEmpty[T](o)
+      case other: T => JMono.justOrEmpty[T](other)
+    }
+  }
+
   def raiseError[T](error: Throwable): SMono[T] = JMono.error[T](error)
 }
 

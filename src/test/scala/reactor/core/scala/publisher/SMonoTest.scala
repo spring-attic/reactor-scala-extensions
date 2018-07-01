@@ -107,6 +107,29 @@ class SMonoTest extends FreeSpec with Matchers {
         .verifyComplete()
     }
 
+    ".justOrEmpty" - {
+      "with Option should" - {
+        "emit the specified item if the option is not empty" in {
+          StepVerifier.create(SMono.justOrEmpty(Option(randomValue)))
+            .expectNext(randomValue)
+            .verifyComplete()
+        }
+        "just react on completion signal if the option is empty" in {
+          StepVerifier.create(SMono.justOrEmpty(Option.empty))
+            .expectComplete()
+            .verify()
+        }
+      }
+      "with data should" - {
+        "emit the specified item if it is not null" in {
+          val mono = SMono.justOrEmpty(randomValue)
+          StepVerifier.create(mono)
+            .expectNext(randomValue)
+            .verifyComplete()
+        }
+      }
+    }
+
     ".raiseError should create Mono that emit error" in {
       StepVerifier.create(SMono.raiseError(new RuntimeException("runtime error")))
         .expectError(classOf[RuntimeException])
