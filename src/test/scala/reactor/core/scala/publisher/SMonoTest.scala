@@ -2,6 +2,7 @@ package reactor.core.scala.publisher
 
 import org.scalatest.{FreeSpec, Matchers}
 import reactor.core.publisher.{Mono => JMono}
+import reactor.core.scala.Scannable
 import reactor.core.scheduler.Schedulers
 import reactor.test.StepVerifier
 import reactor.test.scheduler.VirtualTimeScheduler
@@ -128,6 +129,12 @@ class SMonoTest extends FreeSpec with Matchers {
             .verifyComplete()
         }
       }
+    }
+
+    ".name should call the underlying Mono.name method" in {
+      val name = "one two three four"
+      val scannable: Scannable = Scannable.from(Option(SMono.just(randomValue).name(name)))
+      scannable.name shouldBe name
     }
 
     ".raiseError should create Mono that emit error" in {

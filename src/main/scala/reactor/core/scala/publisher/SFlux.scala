@@ -479,7 +479,5 @@ object SFlux {
 private[publisher] class ReactiveSFlux[T](publisher: Publisher[T]) extends SFlux[T] with Scannable {
   override private[publisher] val coreFlux: JFlux[T] = JFlux.from(publisher)
 
-  override def scanUnsafe(key: JScannable.Attr[_]): Option[AnyRef] = Option(jScannable.scanUnsafe(key))
-
   override val jScannable: JScannable = JScannable.from(coreFlux)
 }

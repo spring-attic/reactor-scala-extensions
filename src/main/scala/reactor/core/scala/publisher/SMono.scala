@@ -4,8 +4,10 @@ import java.util.concurrent.{Callable, CompletableFuture}
 
 import org.reactivestreams.{Publisher, Subscriber}
 import reactor.core.publisher.{MonoSink, Mono => JMono}
+import reactor.core.scala.Scannable
 import reactor.core.scala.publisher.PimpMyPublisher._
 import reactor.core.scheduler.{Scheduler, Schedulers}
+import reactor.core.{Scannable => JScannable}
 
 import scala.concurrent.duration.Duration
 import scala.concurrent.{ExecutionContext, Future}
@@ -23,6 +25,8 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
   final def delaySubscription[U](subscriptionDelay: Publisher[U]): SMono[T] = new ReactiveSMono[T](coreMono.delaySubscription(subscriptionDelay))
 
   final def map[R](mapper: T => R): SMono[R] = coreMono.map[R](mapper)
+
+  final def name(name: String): SMono[T] = coreMono.name(name)
 
   override def subscribe(s: Subscriber[_ >: T]): Unit = coreMono.subscribe(s)
 
@@ -71,6 +75,8 @@ object SMono {
   def raiseError[T](error: Throwable): SMono[T] = JMono.error[T](error)
 }
 
-private[publisher] class ReactiveSMono[T](publisher: Publisher[T]) extends SMono[T] {
+private[publisher] class ReactiveSMono[T](publisher: Publisher[T]) extends SMono[T] with Scannable {
   override private[publisher] def coreMono: JMono[T] = JMono.from[T](publisher)
+
+  override private[scala] def jScannable: JScannable = JScannable.from(coreMono)
 }
