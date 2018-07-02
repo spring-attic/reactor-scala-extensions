@@ -131,6 +131,12 @@ class SMonoTest extends FreeSpec with Matchers {
       }
     }
 
+    ".never will never signal any data, error or completion signal" in {
+      StepVerifier.create(SMono.never)
+        .expectSubscription()
+        .expectNoEvent(1 second)
+    }
+
     ".name should call the underlying Mono.name method" in {
       val name = "one two three four"
       val scannable: Scannable = Scannable.from(Option(SMono.just(randomValue).name(name)))

@@ -72,6 +72,8 @@ object SMono {
     }
   }
 
+  def never[T]: SMono[T] = JMono.never[T]()
+
   def raiseError[T](error: Throwable): SMono[T] = JMono.error[T](error)
 }
 
