@@ -1,5 +1,6 @@
 package reactor.core.scala.publisher
 
+import java.lang.{Boolean => JBoolean}
 import java.util.concurrent.{Callable, CompletableFuture}
 
 import org.reactivestreams.{Publisher, Subscriber}
@@ -8,6 +9,7 @@ import reactor.core.scala.Scannable
 import reactor.core.scala.publisher.PimpMyPublisher._
 import reactor.core.scheduler.{Scheduler, Schedulers}
 import reactor.core.{Scannable => JScannable}
+import reactor.util.concurrent.Queues.SMALL_BUFFER_SIZE
 
 import scala.concurrent.duration.Duration
 import scala.concurrent.{ExecutionContext, Future}
@@ -73,6 +75,9 @@ object SMono {
   }
 
   def never[T]: SMono[T] = JMono.never[T]()
+
+  def sequenceEqual[T](source1: Publisher[_ <: T], source2: Publisher[_ <: T], isEqual: (T, T) => Boolean = (t1: T, t2: T) => t1 == t2, bufferSize: Int = SMALL_BUFFER_SIZE): SMono[Boolean] =
+    new ReactiveSMono[JBoolean](JMono.sequenceEqual[T](source1, source2, isEqual, bufferSize)).map(Boolean2boolean)
 
   def raiseError[T](error: Throwable): SMono[T] = JMono.error[T](error)
 }

@@ -3,6 +3,7 @@ package reactor.core.scala.publisher
 import org.scalatest.{FreeSpec, Matchers}
 import reactor.core.publisher.{Mono => JMono}
 import reactor.core.scala.Scannable
+import reactor.core.scala.publisher.Mono.just
 import reactor.core.scheduler.Schedulers
 import reactor.test.StepVerifier
 import reactor.test.scheduler.VirtualTimeScheduler
@@ -141,6 +142,27 @@ class SMonoTest extends FreeSpec with Matchers {
       val name = "one two three four"
       val scannable: Scannable = Scannable.from(Option(SMono.just(randomValue).name(name)))
       scannable.name shouldBe name
+    }
+
+    ".sequenceEqual should" - {
+      "emit Boolean.TRUE when both publisher emit the same value" in {
+        StepVerifier.create(SMono.sequenceEqual(just(1), just(1)))
+          .expectNext(true)
+          .verifyComplete()
+      }
+      "emit true when both publisher emit the same value according to the isEqual function" in {
+        val mono = SMono.sequenceEqual[Int](just(10), just(100), (t1: Int, t2: Int) => t1 % 10 == t2 % 10)
+        StepVerifier.create(mono)
+          .expectNext(true)
+          .verifyComplete()
+      }
+      "emit true when both publisher emit the same value according to the isEqual function with bufferSize" in {
+        val mono = SMono.sequenceEqual[Int](just(10), just(100), (t1: Int, t2: Int) => t1 % 10 == t2 % 10, 2)
+        StepVerifier.create(mono)
+          .expectNext(true)
+          .verifyComplete()
+
+      }
     }
 
     ".raiseError should create Mono that emit error" in {
