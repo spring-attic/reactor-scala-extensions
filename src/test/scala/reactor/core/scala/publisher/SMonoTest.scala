@@ -1,5 +1,7 @@
 package reactor.core.scala.publisher
 
+import java.util.concurrent.ConcurrentHashMap
+
 import org.scalatest.{FreeSpec, Matchers}
 import reactor.core.publisher.{Mono => JMono}
 import reactor.core.scala.Scannable
@@ -169,6 +171,41 @@ class SMonoTest extends FreeSpec with Matchers {
       StepVerifier.create(SMono.raiseError(new RuntimeException("runtime error")))
         .expectError(classOf[RuntimeException])
         .verify()
+    }
+
+    ".when" - {
+      "with iterable" - {
+        "of publisher of unit should return when all of the sources has fulfilled" in {
+          val completed = new ConcurrentHashMap[String, Boolean]()
+          val mono = SMono.when(Iterable(
+            SMono.just[Unit]({
+              completed.put("first", true)
+            }),
+            SMono.just[Unit]({
+              completed.put("second", true)
+            })
+          ))
+          StepVerifier.create(mono)
+            .expectComplete()
+          completed should contain key "first"
+          completed should contain key "second"
+        }
+      }
+
+      "with varargs of publisher should return when all of the resources has fulfilled" in {
+        val completed = new ConcurrentHashMap[String, Boolean]()
+        val sources = Seq(just[Unit]({
+          completed.put("first", true)
+        }),
+          just[Unit]({
+            completed.put("second", true)
+          })
+        )
+        StepVerifier.create(SMono.when(sources.toArray: _*))
+          .expectComplete()
+        completed should contain key "first"
+        completed should contain key "second"
+      }
     }
 
     ".asJava should convert to java" in {

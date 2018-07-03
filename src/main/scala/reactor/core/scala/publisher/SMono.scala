@@ -11,6 +11,7 @@ import reactor.core.scheduler.{Scheduler, Schedulers}
 import reactor.core.{Scannable => JScannable}
 import reactor.util.concurrent.Queues.SMALL_BUFFER_SIZE
 
+import scala.collection.JavaConverters._
 import scala.concurrent.duration.Duration
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
@@ -80,6 +81,16 @@ object SMono {
     new ReactiveSMono[JBoolean](JMono.sequenceEqual[T](source1, source2, isEqual, bufferSize)).map(Boolean2boolean)
 
   def raiseError[T](error: Throwable): SMono[T] = JMono.error[T](error)
+
+  def when(sources: Iterable[_ <: Publisher[Unit] with MapablePublisher[Unit]]): SMono[Unit] = {
+    new ReactiveSMono[Unit](
+      JMono.when(sources.map(s => s.map((t: Unit) => None.orNull: Void)).asJava).map((_: Void) => ())
+    )
+  }
+
+  def when(sources: (Publisher[Unit] with MapablePublisher[Unit])*): SMono[Unit] = new ReactiveSMono[Unit](
+    JMono.when(sources.map(s => s.map((_: Unit) => None.orNull: Void)).asJava).map((_: Void) => ())
+  )
 }
 
 private[publisher] class ReactiveSMono[T](publisher: Publisher[T]) extends SMono[T] with Scannable {
