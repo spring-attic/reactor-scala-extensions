@@ -49,8 +49,8 @@ buildscript {
         classpath 'net.researchgate:gradle-release:2.7.0'
         classpath 'io.codearte.gradle.nexus:gradle-nexus-staging-plugin:0.11.0'
         classpath 'org.owasp:dependency-check-gradle:3.2.1'
-        classpath 'com.github.ben-manes:gradle-versions-plugin:0.17.0'
-        classpath "com.jfrog.bintray.gradle:gradle-bintray-plugin:1.8.1"
+        classpath 'com.github.ben-manes:gradle-versions-plugin:0.20.0'
+        classpath "com.jfrog.bintray.gradle:gradle-bintray-plugin:1.8.3"
     }
 }
 
