@@ -208,6 +208,88 @@ class SMonoTest extends FreeSpec with Matchers {
       }
     }
 
+    ".zipDelayError" - {
+      "with p1 and p2 should merge when both Monos are fulfilled" in {
+        StepVerifier.create(SMono.zipDelayError(SMono.just(1), SMono.just("one")))
+          .expectNext((1, "one"))
+          .verifyComplete()
+      }
+
+      "with p1, p2 and p3 should merge when all Monos are fulfilled" in {
+        StepVerifier.create(SMono.zipDelayError(SMono.just(1), SMono.just("one"), SMono.just(1L)))
+          .expectNext((1, "one", 1L))
+          .verifyComplete()
+      }
+
+      "with p1, p2, p3 and p4 should merge when all Monos are fulfilled" in {
+        StepVerifier.create(SMono.zipDelayError(SMono.just(1), SMono.just(2), SMono.just(3), SMono.just(4)))
+          .expectNext((1, 2, 3, 4))
+          .verifyComplete()
+      }
+
+      "with p1, p2, p3, p4 and p5 should merge when all Monos are fulfilled" in {
+        StepVerifier.create(SMono.zipDelayError(SMono.just(1), SMono.just(2), SMono.just(3), SMono.just(4), SMono.just(5)))
+          .expectNext((1, 2, 3, 4, 5))
+          .verifyComplete()
+      }
+
+      "with p1, p2, p3, p4, p5 and p6 should merge when all Monos are fulfilled" in {
+        StepVerifier.create(SMono.zipDelayError(SMono.just(1), SMono.just(2), SMono.just(3), SMono.just(4), SMono.just(5), SMono.just(6)))
+          .expectNext((1, 2, 3, 4, 5, 6))
+          .verifyComplete()
+      }
+
+      "with iterable" - {
+        "of publisher of unit should return when all of the sources has fulfilled" in {
+          val completed = new ConcurrentHashMap[String, Boolean]()
+          val mono = SMono.whenDelayError(Iterable(
+            SMono.just[Unit]({
+              completed.put("first", true)
+            }),
+            SMono.just[Unit]({
+              completed.put("second", true)
+            })
+          ))
+          StepVerifier.create(mono)
+            .expectComplete()
+          completed should contain key "first"
+          completed should contain key "second"
+        }
+
+        "of Mono and combinator function should emit the value after combined by combinator function" in {
+          StepVerifier.create(SMono.zipDelayError(Iterable(SMono.just(1), SMono.just("one")), (values: Array[AnyRef]) => s"${values(0).toString}-${values(1).toString}"))
+            .expectNext("1-one")
+            .verifyComplete()
+        }
+      }
+
+      "with varargs of Publisher[Unit] should be fulfilled when all the underlying sources are fulfilled" in {
+        val completed = new ConcurrentHashMap[String, Boolean]()
+        val mono = SMono.whenDelayError(
+          Seq(
+            SMono.just[Unit](completed.put("first", true)),
+            SMono.just[Unit](completed.put("second", true))
+          ).toArray: _*
+        )
+        StepVerifier.create(mono)
+          .expectComplete()
+
+        completed should contain key "first"
+        completed should contain key "second"
+      }
+
+      "with function combinator and varargs of mono should return when all of the monos has fulfilled" in {
+        val combinator: Array[Any] => String = { values =>
+          values.map(_.toString).foldLeft("") { (acc, value) => if (acc.isEmpty) s"$value" else s"$acc-$value" }
+        }
+
+        StepVerifier.create(SMono.whenDelayError[String](combinator, SMono.just(1), SMono.just(2)))
+          .expectNext("1-2")
+          .expectComplete()
+          .verify()
+      }
+    }
+
     ".asJava should convert to java" in {
       SMono.just(randomValue).asJava() shouldBe a[JMono[_]]
     }

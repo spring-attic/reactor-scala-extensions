@@ -2,6 +2,7 @@ package reactor.core.scala.publisher
 
 import java.lang.{Boolean => JBoolean}
 import java.util.concurrent.{Callable, CompletableFuture}
+import java.util.function.Function
 
 import org.reactivestreams.{Publisher, Subscriber}
 import reactor.core.publisher.{MonoSink, Mono => JMono}
@@ -10,6 +11,7 @@ import reactor.core.scala.publisher.PimpMyPublisher._
 import reactor.core.scheduler.{Scheduler, Schedulers}
 import reactor.core.{Scannable => JScannable}
 import reactor.util.concurrent.Queues.SMALL_BUFFER_SIZE
+import reactor.util.function.{Tuple2, Tuple3, Tuple4, Tuple5, Tuple6}
 
 import scala.collection.JavaConverters._
 import scala.concurrent.duration.Duration
@@ -84,13 +86,65 @@ object SMono {
 
   def when(sources: Iterable[_ <: Publisher[Unit] with MapablePublisher[Unit]]): SMono[Unit] = {
     new ReactiveSMono[Unit](
-      JMono.when(sources.map(s => s.map((t: Unit) => None.orNull: Void)).asJava).map((_: Void) => ())
+      JMono.when(sources.map(s => s.map((_: Unit) => None.orNull: Void)).asJava).map((_: Void) => ())
     )
   }
 
-  def when(sources: (Publisher[Unit] with MapablePublisher[Unit])*): SMono[Unit] = new ReactiveSMono[Unit](
+  def when(sources: Publisher[Unit] with MapablePublisher[Unit]*): SMono[Unit] = new ReactiveSMono[Unit](
     JMono.when(sources.map(s => s.map((_: Unit) => None.orNull: Void)).asJava).map((_: Void) => ())
   )
+
+  def zipDelayError[T1, T2](p1: SMono[_ <: T1], p2: SMono[_ <: T2]): SMono[(T1, T2)] = {
+    new ReactiveSMono[(T1, T2)](JMono.zipDelayError[T1, T2](p1.coreMono, p2.coreMono).map((t: Tuple2[T1, T2]) => tupleTwo2ScalaTuple2(t)))
+  }
+
+  def zipDelayError[T1, T2, T3](p1: SMono[_ <: T1], p2: SMono[_ <: T2], p3: SMono[_ <: T3]): SMono[(T1, T2, T3)] = {
+    new ReactiveSMono[(T1, T2, T3)](JMono.zipDelayError[T1, T2, T3](p1.coreMono, p2.coreMono, p3.coreMono).map((t: Tuple3[T1, T2, T3]) => tupleThree2ScalaTuple3(t)))
+  }
+
+  def zipDelayError[T1, T2, T3, T4](p1: SMono[_ <: T1], p2: SMono[_ <: T2], p3: SMono[_ <: T3], p4: SMono[_ <: T4]): SMono[(T1, T2, T3, T4)] = {
+    new ReactiveSMono[(T1, T2, T3, T4)](
+      JMono.zipDelayError[T1, T2, T3, T4](p1.coreMono, p2.coreMono, p3.coreMono, p4.coreMono).map((t: Tuple4[T1, T2, T3, T4]) => tupleFour2ScalaTuple4(t))
+    )
+  }
+
+  def zipDelayError[T1, T2, T3, T4, T5](p1: SMono[_ <: T1], p2: SMono[_ <: T2], p3: SMono[_ <: T3], p4: SMono[_ <: T4], p5: SMono[_ <: T5]): SMono[(T1, T2, T3, T4, T5)] = {
+    new ReactiveSMono[(T1, T2, T3, T4, T5)](
+      JMono.zipDelayError[T1, T2, T3, T4, T5](p1.coreMono, p2.coreMono, p3.coreMono, p4.coreMono, p5.coreMono).map((t: Tuple5[T1, T2, T3, T4, T5]) => tupleFive2ScalaTuple5(t))
+    )
+  }
+
+  def zipDelayError[T1, T2, T3, T4, T5, T6](p1: SMono[_ <: T1], p2: SMono[_ <: T2], p3: SMono[_ <: T3], p4: SMono[_ <: T4], p5: SMono[_ <: T5], p6: SMono[_ <: T6]): SMono[(T1, T2, T3, T4, T5, T6)] = new ReactiveSMono[(T1, T2, T3, T4, T5, T6)](
+    JMono.zipDelayError[T1, T2, T3, T4, T5, T6](p1.coreMono, p2.coreMono, p3.coreMono, p4.coreMono, p5.coreMono, p6.coreMono).map((t: Tuple6[T1, T2, T3, T4, T5, T6]) => tupleSix2ScalaTuple6(t))
+  )
+
+  def whenDelayError(sources: Iterable[_ <: Publisher[_] with MapablePublisher[_]]): SMono[Unit] = new ReactiveSMono[Unit](
+    JMono.whenDelayError(sources.map(s => s.map((_: Any) => None.orNull: Void)).asJava).map((_: Void) => ())
+  )
+
+  def zipDelayError[R](monos: Iterable[_ <: SMono[_]], combinator: Array[AnyRef] => _ <: R): SMono[R] = {
+    new ReactiveSMono[R](JMono.zipDelayError[R](monos.map(_.asJava()).asJava, new Function[Array[AnyRef], R] {
+      override def apply(t: Array[AnyRef]): R = {
+        val v = t.map { v => v: AnyRef }
+        combinator(v)
+      }
+    }))
+  }
+
+  def whenDelayError(sources: Publisher[_] with MapablePublisher[_]*): SMono[Unit] = new ReactiveSMono[Unit](
+    JMono.whenDelayError(sources.toArray: _*)
+      .map((_: Void) => ())
+  )
+
+  def whenDelayError[R](combinator: Array[Any] => R, monos: SMono[Any]*): SMono[R] = {
+    val combinatorFunction = new Function[Array[AnyRef], R] {
+      override def apply(t: Array[AnyRef]): R = {
+        val v = t.map { v => v: Any }
+        combinator(v)
+      }
+    }
+    new ReactiveSMono[R](JMono.zipDelayError(monos.map(_.asJava().map((t: Any) => t.asInstanceOf[AnyRef])).asJava, combinatorFunction))
+  }
 }
 
 private[publisher] class ReactiveSMono[T](publisher: Publisher[T]) extends SMono[T] with Scannable {
