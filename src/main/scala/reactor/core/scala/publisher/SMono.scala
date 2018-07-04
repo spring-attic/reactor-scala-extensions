@@ -131,19 +131,14 @@ object SMono {
     }))
   }
 
-  def whenDelayError(sources: Publisher[_] with MapablePublisher[_]*): SMono[Unit] = new ReactiveSMono[Unit](
-    JMono.whenDelayError(sources.toArray: _*)
-      .map((_: Void) => ())
-  )
-
-  def whenDelayError[R](combinator: Array[Any] => R, monos: SMono[Any]*): SMono[R] = {
+  def zipDelayError[R](combinator: Array[Any] => R, monos: SMono[_]*): SMono[R] = {
     val combinatorFunction = new Function[Array[AnyRef], R] {
       override def apply(t: Array[AnyRef]): R = {
         val v = t.map { v => v: Any }
         combinator(v)
       }
     }
-    new ReactiveSMono[R](JMono.zipDelayError(monos.map(_.asJava().map((t: Any) => t.asInstanceOf[AnyRef])).asJava, combinatorFunction))
+    new ReactiveSMono[R](JMono.zipDelayError[R](combinatorFunction, monos.map(_.asJava()): _*))
   }
 }
 
