@@ -264,6 +264,22 @@ class SMonoTest extends FreeSpec with Matchers {
       }
     }
 
+    ".zip" - {
+      val combinator: Array[AnyRef] => String = { datas => datas.map(_.toString).foldLeft("") { (acc, v) => if (acc.isEmpty) v else s"$acc-$v" } }
+      "with combinator function and varargs of mono should fullfill when all Monos are fulfilled" in {
+        val mono = SMono.zip(combinator, SMono.just(1), SMono.just(2))
+        StepVerifier.create(mono)
+          .expectNext("1-2")
+          .verifyComplete()
+      }
+      "with combinator function and Iterable of mono should fulfill when all Monos are fulfilled" in {
+        val mono = SMono.zip(Iterable(SMono.just(1), SMono.just("2")), combinator)
+        StepVerifier.create(mono)
+          .expectNext("1-2")
+          .verifyComplete()
+      }
+    }
+
     ".asJava should convert to java" in {
       SMono.just(randomValue).asJava() shouldBe a[JMono[_]]
     }
