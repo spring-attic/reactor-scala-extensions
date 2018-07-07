@@ -300,6 +300,28 @@ class SMonoTest extends FreeSpec with Matchers {
       }
     }
 
+    ".blockOption" - {
+      "without duration" - {
+        "should block the mono to get value" in {
+          SMono.just(randomValue).blockOption() shouldBe Some(randomValue)
+        }
+        "should retun None if mono is empty" in {
+          SMono.empty.blockOption() shouldBe None
+        }
+      }
+      "with duration" - {
+        "should block the mono up to the duration" in {
+          SMono.just(randomValue).blockOption(10 seconds) shouldBe Some(randomValue)
+        }
+        "shouldBlock the mono up to the duration and return None" in {
+          StepVerifier.withVirtualTime(() => SMono.just(SMono.empty.blockOption(10 seconds)))
+            .thenAwait(10 seconds)
+            .expectNext(None)
+            .verifyComplete()
+        }
+      }
+    }
+
     ".delaySubscription" - {
       "with delay duration should delay subscription as long as the provided duration" in {
         StepVerifier.withVirtualTime(() => SMono.just(1).delaySubscription(1 hour))
