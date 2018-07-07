@@ -280,14 +280,23 @@ class SMonoTest extends FreeSpec with Matchers {
       }
     }
 
-    ".asJava should convert to java" in {
-      SMono.just(randomValue).asJava() shouldBe a[JMono[_]]
-    }
-
     ".and" - {
       "should combine this mono and the other" in {
         StepVerifier.create(SMono.just(1) and SMono.just(2))
           .verifyComplete()
+      }
+    }
+
+    ".asJava should convert to java" in {
+      SMono.just(randomValue).asJava() shouldBe a[JMono[_]]
+    }
+
+    ".block" - {
+      "should block the mono to get the value" in {
+        SMono.just(randomValue).block() shouldBe randomValue
+      }
+      "with duration should block the mono up to the duration" in {
+        SMono.just(randomValue).block(10 seconds) shouldBe randomValue
       }
     }
 

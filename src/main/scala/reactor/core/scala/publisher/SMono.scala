@@ -30,6 +30,10 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
 
   final def asJava(): JMono[T] = coreMono
 
+  final def block(): T = coreMono.block()
+
+  final def block(timeout: Duration): T = coreMono.block(timeout)
+
   private[publisher] def coreMono: JMono[T]
 
   final def delaySubscription(delay: Duration, timer: Scheduler = Schedulers.parallel()): SMono[T] = new ReactiveSMono[T](coreMono.delaySubscription(delay, timer))
