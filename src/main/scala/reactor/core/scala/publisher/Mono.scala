@@ -1674,7 +1674,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @return a new [[Mono]] completing when both publishers have completed in
     *                       sequence
     */
-  final def thenEmpty(other: Publisher[Unit]): Mono[Unit] = Mono[Unit]((jMono: JMono[T]).thenEmpty(other))
+  final def thenEmpty(other: MapablePublisher[Unit]): Mono[Unit] = Mono[Unit]((jMono: JMono[T]).thenEmpty(other))
 
   /**
     * Ignore element from this mono and transform the completion signal into a
