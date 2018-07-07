@@ -83,7 +83,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * void mono
     *
     * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/and.png" alt="">
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/and.png" alt="">
     * <p>
     *
     * @param other the [[Publisher]] to wait for

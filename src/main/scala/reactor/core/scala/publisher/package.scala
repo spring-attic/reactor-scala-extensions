@@ -126,11 +126,8 @@ package object publisher {
     }
   }
 
-  implicit def publisherUnit2PublisherVoid(publisher: Publisher[Unit]): Publisher[Void] = {
-    publisher match {
-      case m: Mono[Unit] => m.map[Void](_ => null: Void)
-      case f: Flux[Unit] => f.map[Void](_ => null: Void)
-    }
+  implicit def publisherUnit2PublisherVoid(publisher: MapablePublisher[Unit]): Publisher[Void] = {
+    publisher.map[Void](_ => null: Void)
   }
 
   implicit def scalaBiFunction2JavaBiFunction[T, U, V](biFunction: (T, U) => V): BiFunction[T, U, V] = {

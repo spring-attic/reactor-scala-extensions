@@ -331,9 +331,8 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] {
 
   final def `then`(): SMono[Unit] = new ReactiveSMono(coreFlux.`then`()).map(_ => ())
 
-  final def thenEmpty(other: Publisher[Unit]): SMono[Unit] = new ReactiveSMono(
-    coreFlux.thenEmpty(publisherUnit2PublisherVoid(other))).map(_ => ()
-  )
+  final def thenEmpty(other: MapablePublisher[Unit]): SMono[Unit] = new ReactiveSMono(
+    coreFlux.thenEmpty(publisherUnit2PublisherVoid(other))).map(_ => ())
 
   final def thenMany[V](other: Publisher[V]): SFlux[V] = coreFlux.thenMany[V](other)
 

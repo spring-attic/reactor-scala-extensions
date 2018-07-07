@@ -21,6 +21,13 @@ import scala.util.{Failure, Success}
 trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
   self =>
 
+  final def and(other: Publisher[_]): SMono[Unit] = {
+    new ReactiveSMono(coreMono.and(other match {
+      case f: SFlux[_] => f.coreFlux
+      case m: SMono[_] => m.coreMono
+    })) map[Unit](_ => ())
+  }
+
   final def asJava(): JMono[T] = coreMono
 
   private[publisher] def coreMono: JMono[T]

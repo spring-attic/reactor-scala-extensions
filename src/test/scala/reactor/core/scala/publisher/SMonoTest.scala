@@ -284,6 +284,13 @@ class SMonoTest extends FreeSpec with Matchers {
       SMono.just(randomValue).asJava() shouldBe a[JMono[_]]
     }
 
+    ".and" - {
+      "should combine this mono and the other" in {
+        StepVerifier.create(SMono.just(1) and SMono.just(2))
+          .verifyComplete()
+      }
+    }
+
     ".delaySubscription" - {
       "with delay duration should delay subscription as long as the provided duration" in {
         StepVerifier.withVirtualTime(() => SMono.just(1).delaySubscription(1 hour))
