@@ -13,6 +13,7 @@ import reactor.test.scheduler.VirtualTimeScheduler
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.language.postfixOps
+import scala.math.ScalaNumber
 import scala.util.Random
 
 class SMonoTest extends FreeSpec with Matchers {
@@ -305,7 +306,7 @@ class SMonoTest extends FreeSpec with Matchers {
         "should block the mono to get value" in {
           SMono.just(randomValue).blockOption() shouldBe Some(randomValue)
         }
-        "should retun None if mono is empty" in {
+        "should return None if mono is empty" in {
           SMono.empty.blockOption() shouldBe None
         }
       }
@@ -320,6 +321,11 @@ class SMonoTest extends FreeSpec with Matchers {
             .verifyComplete()
         }
       }
+    }
+
+    ".cast should cast the underlying value" in {
+      val number = SMono.just(BigDecimal("123")).cast(classOf[ScalaNumber]).block()
+      number shouldBe a[ScalaNumber]
     }
 
     ".delaySubscription" - {

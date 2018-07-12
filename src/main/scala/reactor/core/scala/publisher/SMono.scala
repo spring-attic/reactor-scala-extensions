@@ -38,6 +38,8 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
 
   final def blockOption(timeout: Duration): Option[T] = coreMono.blockOptional(timeout)
 
+  final def cast[E](clazz: Class[E]): SMono[E] = coreMono.cast(clazz)
+
   private[publisher] def coreMono: JMono[T]
 
   final def delaySubscription(delay: Duration, timer: Scheduler = Schedulers.parallel()): SMono[T] = new ReactiveSMono[T](coreMono.delaySubscription(delay, timer))
