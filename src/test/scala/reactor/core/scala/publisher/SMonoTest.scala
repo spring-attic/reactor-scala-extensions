@@ -1,6 +1,6 @@
 package reactor.core.scala.publisher
 
-import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.{ArrayBlockingQueue, ConcurrentHashMap}
 
 import org.scalatest.{FreeSpec, Matchers}
 import reactor.core.publisher.{Mono => JMono}
@@ -326,6 +326,41 @@ class SMonoTest extends FreeSpec with Matchers {
     ".cast should cast the underlying value" in {
       val number = SMono.just(BigDecimal("123")).cast(classOf[ScalaNumber]).block()
       number shouldBe a[ScalaNumber]
+    }
+
+    ".cache" - {
+      "should cache the value" in {
+        val queue = new ArrayBlockingQueue[Int](1)
+        queue.put(1)
+        val mono = SMono.create[Int](sink => {
+          sink.success(queue.poll())
+        }).cache()
+        StepVerifier.create(mono)
+          .expectNext(1)
+          .verifyComplete()
+        StepVerifier.create(mono)
+          .expectNext(1)
+          .verifyComplete()
+      }
+      "with ttl cache the value up to specific time" in {
+        import reactor.test.scheduler.VirtualTimeScheduler
+        val timeScheduler = VirtualTimeScheduler.getOrSet
+        val queue = new ArrayBlockingQueue[Int](1)
+        queue.put(1)
+        val mono = SMono.create[Int](sink => {
+          sink.success(queue.poll())
+        }).cache(1 minute)
+        StepVerifier.create(mono)
+          .expectNext(1)
+          .verifyComplete()
+        timeScheduler.advanceTimeBy(59 second)
+        StepVerifier.create(mono)
+          .expectNext(1)
+          .verifyComplete()
+        timeScheduler.advanceTimeBy(2 minute)
+        StepVerifier.create(mono)
+          .verifyComplete()
+      }
     }
 
     ".delaySubscription" - {
