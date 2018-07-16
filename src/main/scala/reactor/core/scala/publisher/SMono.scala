@@ -25,7 +25,7 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
     new ReactiveSMono(coreMono.and(other match {
       case f: SFlux[_] => f.coreFlux
       case m: SMono[_] => m.coreMono
-    })) map[Unit](_ => ())
+    })) map[Unit] (_ => ())
   }
 
   final def asJava(): JMono[T] = coreMono
@@ -45,6 +45,13 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
   final def cache(ttl: Duration): SMono[T] = coreMono.cache(ttl)
 
   final def cancelOn(scheduler: Scheduler): SMono[T] = coreMono.cancelOn(scheduler)
+
+  final def compose[V](transformer: SMono[T] => Publisher[V]): SMono[V] = {
+    val transformerFunction = new Function[JMono[T], Publisher[V]] {
+      override def apply(t: JMono[T]): Publisher[V] = transformer(SMono.this)
+    }
+    coreMono.compose(transformerFunction)
+  }
 
   private[publisher] def coreMono: JMono[T]
 
