@@ -44,6 +44,8 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
 
   final def cache(ttl: Duration): SMono[T] = coreMono.cache(ttl)
 
+  final def cancelOn(scheduler: Scheduler): SMono[T] = coreMono.cancelOn(scheduler)
+
   private[publisher] def coreMono: JMono[T]
 
   final def delaySubscription(delay: Duration, timer: Scheduler = Schedulers.parallel()): SMono[T] = new ReactiveSMono[T](coreMono.delaySubscription(delay, timer))

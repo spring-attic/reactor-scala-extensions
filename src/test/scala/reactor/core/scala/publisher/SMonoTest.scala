@@ -2,11 +2,13 @@ package reactor.core.scala.publisher
 
 import java.util.concurrent.{ArrayBlockingQueue, ConcurrentHashMap}
 
+import org.mockito.{ArgumentMatchers, Mockito}
+import org.mockito.Mockito.spy
 import org.scalatest.{FreeSpec, Matchers}
 import reactor.core.publisher.{Mono => JMono}
 import reactor.core.scala.Scannable
 import reactor.core.scala.publisher.Mono.just
-import reactor.core.scheduler.Schedulers
+import reactor.core.scheduler.{Scheduler, Schedulers}
 import reactor.test.StepVerifier
 import reactor.test.scheduler.VirtualTimeScheduler
 
@@ -361,6 +363,12 @@ class SMonoTest extends FreeSpec with Matchers {
         StepVerifier.create(mono)
           .verifyComplete()
       }
+    }
+
+    ".cancelOn should cancel the subscriber on a particular scheduler" in {
+      val jMono = spy(JMono.just(1))
+      new ReactiveSMono[Int](jMono).cancelOn(Schedulers.immediate())
+      Mockito.verify(jMono).cancelOn(ArgumentMatchers.any[Scheduler]())
     }
 
     ".delaySubscription" - {
