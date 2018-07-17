@@ -397,6 +397,21 @@ class SMonoTest extends FreeSpec with Matchers {
         .verifyComplete()
     }
 
+    ".delayElement" - {
+      "should delay the element" in {
+        StepVerifier.withVirtualTime(() => SMono.just(randomValue).delayElement(5 seconds))
+          .thenAwait(5 seconds)
+          .expectNext(randomValue)
+          .verifyComplete()
+      }
+      "with timer should delay using timer" in {
+        StepVerifier.withVirtualTime(() => SMono.just(randomValue).delayElement(5 seconds, Schedulers.immediate()))
+          .thenAwait(5 seconds)
+          .expectNext(randomValue)
+          .verifyComplete()
+      }
+    }
+
     ".delaySubscription" - {
       "with delay duration should delay subscription as long as the provided duration" in {
         StepVerifier.withVirtualTime(() => SMono.just(1).delaySubscription(1 hour))
