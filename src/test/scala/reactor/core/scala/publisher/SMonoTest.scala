@@ -377,6 +377,20 @@ class SMonoTest extends FreeSpec with Matchers {
         .verifyComplete()
     }
 
+    ".concatWith should concatenate mono with another source" in {
+      StepVerifier.create(SMono.just(1).concatWith(SMono.just(2)))
+        .expectNext(1)
+        .expectNext(2)
+        .verifyComplete()
+    }
+
+    "++ should concatenate mono with another source" in {
+      StepVerifier.create(SMono.just(1) ++ SMono.just(2))
+        .expectNext(1)
+        .expectNext(2)
+        .verifyComplete()
+    }
+
     ".delaySubscription" - {
       "with delay duration should delay subscription as long as the provided duration" in {
         StepVerifier.withVirtualTime(() => SMono.just(1).delaySubscription(1 hour))

@@ -53,6 +53,10 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
     coreMono.compose(transformerFunction)
   }
 
+  final def concatWith(other: Publisher[T]): SFlux[T] = coreMono.concatWith(other)
+
+  final def ++(other: Publisher[T]): SFlux[T] = concatWith(other)
+
   private[publisher] def coreMono: JMono[T]
 
   final def delaySubscription(delay: Duration, timer: Scheduler = Schedulers.parallel()): SMono[T] = new ReactiveSMono[T](coreMono.delaySubscription(delay, timer))
