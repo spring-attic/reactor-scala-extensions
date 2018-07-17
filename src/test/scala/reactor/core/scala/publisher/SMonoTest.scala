@@ -391,6 +391,12 @@ class SMonoTest extends FreeSpec with Matchers {
         .verifyComplete()
     }
 
+    ".defaultIfEmpty should use the provided default value if the mono is empty" in {
+      StepVerifier.create(SMono.empty[Int].defaultIfEmpty(-1))
+        .expectNext(-1)
+        .verifyComplete()
+    }
+
     ".delaySubscription" - {
       "with delay duration should delay subscription as long as the provided duration" in {
         StepVerifier.withVirtualTime(() => SMono.just(1).delaySubscription(1 hour))

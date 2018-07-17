@@ -59,6 +59,8 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
 
   private[publisher] def coreMono: JMono[T]
 
+  final def defaultIfEmpty(defaultV: T): SMono[T] = coreMono.defaultIfEmpty(defaultV)
+
   final def delaySubscription(delay: Duration, timer: Scheduler = Schedulers.parallel()): SMono[T] = new ReactiveSMono[T](coreMono.delaySubscription(delay, timer))
 
   final def delaySubscription[U](subscriptionDelay: Publisher[U]): SMono[T] = new ReactiveSMono[T](coreMono.delaySubscription(subscriptionDelay))
