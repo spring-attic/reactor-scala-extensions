@@ -5,7 +5,7 @@ import java.util.concurrent.{ArrayBlockingQueue, ConcurrentHashMap}
 import org.mockito.{ArgumentMatchers, Mockito}
 import org.mockito.Mockito.spy
 import org.scalatest.{FreeSpec, Matchers}
-import reactor.core.publisher.{Mono => JMono}
+import reactor.core.publisher.{Signal, Mono => JMono}
 import reactor.core.scala.Scannable
 import reactor.core.scala.publisher.Mono.just
 import reactor.core.scheduler.{Scheduler, Schedulers}
@@ -437,6 +437,12 @@ class SMonoTest extends FreeSpec with Matchers {
     ".delayUntil should delay until the other provider terminate" in {
       StepVerifier.withVirtualTime(() => SMono.just(randomValue).delayUntil(_ => SFlux.just(1, 2).delayElements(2 seconds)))
         .thenAwait(4 seconds)
+        .expectNext(randomValue)
+        .verifyComplete()
+    }
+
+    ".dematerialize should dematerialize the underlying mono" in {
+      StepVerifier.create(SMono.just(Signal.next(randomValue)).dematerialize())
         .expectNext(randomValue)
         .verifyComplete()
     }
