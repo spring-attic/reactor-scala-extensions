@@ -434,6 +434,13 @@ class SMonoTest extends FreeSpec with Matchers {
       }
     }
 
+    ".delayUntil should delay until the other provider terminate" in {
+      StepVerifier.withVirtualTime(() => SMono.just(randomValue).delayUntil(_ => SFlux.just(1, 2).delayElements(2 seconds)))
+        .thenAwait(4 seconds)
+        .expectNext(randomValue)
+        .verifyComplete()
+    }
+
     ".map should map the type of Mono from T to R" in {
       StepVerifier.create(SMono.just(randomValue).map(_.toString))
         .expectNext(randomValue.toString)
