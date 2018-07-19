@@ -17,7 +17,7 @@ import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.language.postfixOps
 import scala.math.ScalaNumber
-import scala.util.Random
+import scala.util.{Failure, Random, Success}
 
 class SMonoTest extends FreeSpec with Matchers {
   private val randomValue = Random.nextLong()
@@ -451,17 +451,18 @@ class SMonoTest extends FreeSpec with Matchers {
     ".doAfterSuccessOrError should call the callback function after the mono is terminated" in {
       val atomicBoolean = new AtomicBoolean(false)
       StepVerifier.create(SMono.just(randomValue)
-        .doAfterSuccessOrError { (_: Long, _: Throwable) =>
+        .doAfterSuccessOrError { t =>
           atomicBoolean.compareAndSet(false, true) shouldBe true
-          ()
+          t shouldBe Success(randomValue)
         })
         .expectNext(randomValue)
         .verifyComplete()
       atomicBoolean shouldBe 'get
-      StepVerifier.create(SMono.raiseError(new RuntimeException)
-        .doAfterSuccessOrError { (_: Long, _: Throwable) =>
+      val exception = new RuntimeException
+      StepVerifier.create(SMono.raiseError[Long](exception)
+        .doAfterSuccessOrError { t =>
           atomicBoolean.compareAndSet(true, false) shouldBe true
-          ()
+          t shouldBe Failure(exception)
         })
         .expectError()
         .verify()

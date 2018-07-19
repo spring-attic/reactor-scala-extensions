@@ -16,7 +16,7 @@ import reactor.util.function.{Tuple2, Tuple3, Tuple4, Tuple5, Tuple6}
 import scala.collection.JavaConverters._
 import scala.concurrent.duration.Duration
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
   self =>
@@ -71,7 +71,15 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
 
   final def dematerialize[X](): SMono[X] = coreMono.dematerialize[X]()
 
-  final def doAfterSuccessOrError(afterTerminate: (_ >: T, Throwable) => Unit): SMono[T] = coreMono.doAfterSuccessOrError(afterTerminate)
+  final def doAfterSuccessOrError(afterTerminate: Try[_ <: T] => Unit): SMono[T] = {
+    val biConsumer = new JBiConsumer[T, Throwable]{
+      override def accept(t: T, u: Throwable): Unit = Option(t) match {
+        case Some(s) => afterTerminate(Success(s))
+        case Some(null)|None => afterTerminate(Failure(u))
+      }
+    }
+    coreMono.doAfterSuccessOrError(biConsumer)
+  }
 
   final def map[R](mapper: T => R): SMono[R] = coreMono.map[R](mapper)
 
