@@ -1,9 +1,10 @@
 package reactor.core.scala.publisher
 
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.{ArrayBlockingQueue, ConcurrentHashMap}
 
-import org.mockito.{ArgumentMatchers, Mockito}
 import org.mockito.Mockito.spy
+import org.mockito.{ArgumentMatchers, Mockito}
 import org.scalatest.{FreeSpec, Matchers}
 import reactor.core.publisher.{Signal, Mono => JMono}
 import reactor.core.scala.Scannable
@@ -445,6 +446,26 @@ class SMonoTest extends FreeSpec with Matchers {
       StepVerifier.create(SMono.just(Signal.next(randomValue)).dematerialize())
         .expectNext(randomValue)
         .verifyComplete()
+    }
+
+    ".doAfterSuccessOrError should call the callback function after the mono is terminated" in {
+      val atomicBoolean = new AtomicBoolean(false)
+      StepVerifier.create(SMono.just(randomValue)
+        .doAfterSuccessOrError { (_: Long, _: Throwable) =>
+          atomicBoolean.compareAndSet(false, true) shouldBe true
+          ()
+        })
+        .expectNext(randomValue)
+        .verifyComplete()
+      atomicBoolean shouldBe 'get
+      StepVerifier.create(SMono.raiseError(new RuntimeException)
+        .doAfterSuccessOrError { (_: Long, _: Throwable) =>
+          atomicBoolean.compareAndSet(true, false) shouldBe true
+          ()
+        })
+        .expectError()
+        .verify()
+      atomicBoolean.get() shouldBe false
     }
 
     ".map should map the type of Mono from T to R" in {

@@ -71,6 +71,8 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
 
   final def dematerialize[X](): SMono[X] = coreMono.dematerialize[X]()
 
+  final def doAfterSuccessOrError(afterTerminate: (_ >: T, Throwable) => Unit): SMono[T] = coreMono.doAfterSuccessOrError(afterTerminate)
+
   final def map[R](mapper: T => R): SMono[R] = coreMono.map[R](mapper)
 
   final def name(name: String): SMono[T] = coreMono.name(name)
