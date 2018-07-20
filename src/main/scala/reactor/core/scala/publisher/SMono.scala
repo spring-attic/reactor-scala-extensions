@@ -5,7 +5,7 @@ import java.util.concurrent.{Callable, CompletableFuture}
 import java.util.function.Function
 
 import org.reactivestreams.{Publisher, Subscriber}
-import reactor.core.publisher.{MonoSink, Mono => JMono}
+import reactor.core.publisher.{MonoSink, SignalType, Mono => JMono}
 import reactor.core.scala.Scannable
 import reactor.core.scala.publisher.PimpMyPublisher._
 import reactor.core.scheduler.{Scheduler, Schedulers}
@@ -80,6 +80,8 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
   }
 
   final def doAfterTerminate(afterTerminate: () => Unit): SMono[T] = coreMono.doAfterTerminate(afterTerminate)
+
+  final def doFinally(onFinally: SignalType => Unit): SMono[T] = coreMono.doFinally(onFinally)
 
   final def map[R](mapper: T => R): SMono[R] = coreMono.map[R](mapper)
 
