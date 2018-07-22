@@ -1,6 +1,6 @@
 package reactor.core.scala.publisher
 
-import java.util.concurrent.atomic.{AtomicBoolean, AtomicReference}
+import java.util.concurrent.atomic.{AtomicBoolean, AtomicLong, AtomicReference}
 import java.util.concurrent.{ArrayBlockingQueue, ConcurrentHashMap}
 
 import org.mockito.Mockito.spy
@@ -505,6 +505,16 @@ class SMonoTest extends FreeSpec with Matchers {
       })
       subscriptionReference.get().cancel()
       atomicBoolean shouldBe 'get
+    }
+
+    ".doOnNext should call the callback function when the mono emit data successfully" in {
+      val atomicLong = new AtomicLong()
+      val mono = SMono.just(randomValue)
+        .doOnNext(t => atomicLong.compareAndSet(0, t))
+      StepVerifier.create(mono)
+        .expectNext(randomValue)
+        .verifyComplete()
+      atomicLong.get() shouldBe randomValue
     }
 
     ".map should map the type of Mono from T to R" in {

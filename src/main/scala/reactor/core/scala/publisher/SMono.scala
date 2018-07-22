@@ -85,6 +85,8 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
 
   final def doOnCancel(onCancel: () => Unit): SMono[T] = coreMono.doOnCancel(onCancel)
 
+  final def doOnNext(onNext: T => Unit): SMono[T] = coreMono.doOnNext(onNext)
+
   final def map[R](mapper: T => R): SMono[R] = coreMono.map[R](mapper)
 
   final def name(name: String): SMono[T] = coreMono.name(name)
