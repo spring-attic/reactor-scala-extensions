@@ -73,15 +73,17 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
 
   final def doAfterSuccessOrError(afterTerminate: Try[_ <: T] => Unit): SMono[T] = {
     val biConsumer = (t: T, u: Throwable) => Option(t) match {
-        case Some(s) => afterTerminate(Success(s))
-        case Some(null)|None => afterTerminate(Failure(u))
-      }
+      case Some(s) => afterTerminate(Success(s))
+      case Some(null) | None => afterTerminate(Failure(u))
+    }
     coreMono.doAfterSuccessOrError(biConsumer)
   }
 
   final def doAfterTerminate(afterTerminate: () => Unit): SMono[T] = coreMono.doAfterTerminate(afterTerminate)
 
   final def doFinally(onFinally: SignalType => Unit): SMono[T] = coreMono.doFinally(onFinally)
+
+  final def doOnCancel(onCancel: () => Unit): SMono[T] = coreMono.doOnCancel(onCancel)
 
   final def map[R](mapper: T => R): SMono[R] = coreMono.map[R](mapper)
 

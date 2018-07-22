@@ -1,12 +1,13 @@
 package reactor.core.scala.publisher
 
-import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.{AtomicBoolean, AtomicReference}
 import java.util.concurrent.{ArrayBlockingQueue, ConcurrentHashMap}
 
 import org.mockito.Mockito.spy
 import org.mockito.{ArgumentMatchers, Mockito}
+import org.reactivestreams.Subscription
 import org.scalatest.{FreeSpec, Matchers}
-import reactor.core.publisher.{Signal, Mono => JMono}
+import reactor.core.publisher.{BaseSubscriber, Signal, Mono => JMono}
 import reactor.core.scala.Scannable
 import reactor.core.scala.publisher.Mono.just
 import reactor.core.scheduler.{Scheduler, Schedulers}
@@ -483,6 +484,26 @@ class SMonoTest extends FreeSpec with Matchers {
         .doFinally(_ => atomicBoolean.compareAndSet(false, true) shouldBe true))
         .expectNext(randomValue)
         .verifyComplete()
+      atomicBoolean shouldBe 'get
+    }
+
+    ".doOnCancel should call the callback function when the subscription is cancelled" in {
+      val atomicBoolean = new AtomicBoolean(false)
+      val mono = SMono.delay(1 minute)
+        .doOnCancel(() => {
+          atomicBoolean.compareAndSet(false, true) shouldBe true
+        })
+
+      val subscriptionReference = new AtomicReference[Subscription]()
+      mono.subscribe(new BaseSubscriber[Long] {
+        override def hookOnSubscribe(subscription: Subscription): Unit = {
+          subscriptionReference.set(subscription)
+          subscription.request(1)
+        }
+
+        override def hookOnNext(value: Long): Unit = ()
+      })
+      subscriptionReference.get().cancel()
       atomicBoolean shouldBe 'get
     }
 
