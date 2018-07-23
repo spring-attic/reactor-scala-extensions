@@ -517,6 +517,15 @@ class SMonoTest extends FreeSpec with Matchers {
       atomicLong.get() shouldBe randomValue
     }
 
+    ".doOnSuccess should call the callback function when the mono completes successfully" in {
+      val atomicBoolean = new AtomicBoolean(false)
+      val mono = SMono.empty[Int]
+        .doOnSuccess(_ => atomicBoolean.compareAndSet(false, true) shouldBe true)
+      StepVerifier.create(mono)
+        .verifyComplete()
+      atomicBoolean shouldBe 'get
+    }
+
     ".map should map the type of Mono from T to R" in {
       StepVerifier.create(SMono.just(randomValue).map(_.toString))
         .expectNext(randomValue.toString)
