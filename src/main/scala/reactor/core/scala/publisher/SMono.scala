@@ -4,7 +4,7 @@ import java.lang.{Boolean => JBoolean}
 import java.util.concurrent.{Callable, CompletableFuture}
 import java.util.function.Function
 
-import org.reactivestreams.{Publisher, Subscriber}
+import org.reactivestreams.{Publisher, Subscriber, Subscription}
 import reactor.core.publisher.{MonoSink, SignalType, Mono => JMono}
 import reactor.core.scala.Scannable
 import reactor.core.scala.publisher.PimpMyPublisher._
@@ -92,6 +92,8 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
   final def doOnError(onError: Throwable => Unit): SMono[T] = coreMono.doOnError(onError)
 
   final def doOnRequest(consumer: Long => Unit): SMono[T] = coreMono.doOnRequest(consumer)
+
+  final def doOnSubscribe(onSubscribe: Subscription => Unit): SMono[T] = coreMono.doOnSubscribe(onSubscribe)
 
   final def map[R](mapper: T => R): SMono[R] = coreMono.map[R](mapper)
 
