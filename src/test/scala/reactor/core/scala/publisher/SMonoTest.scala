@@ -593,6 +593,21 @@ class SMonoTest extends FreeSpec with Matchers {
       }
     }
 
+    ".expandDeep" - {
+      "should expand the mono" in {
+        val flux = SMono.just("a").expandDeep(s => SMono.just(s"$s$s")).take(3)
+        StepVerifier.create(flux)
+          .expectNext("a", "aa", "aaaa")
+          .verifyComplete()
+      }
+      "with capacity hint should expand the mono" in {
+        val flux = SMono.just("a").expandDeep(s => SMono.just(s"$s$s"), 10).take(3)
+        StepVerifier.create(flux)
+          .expectNext("a", "aa", "aaaa")
+          .verifyComplete()
+      }
+    }
+
     ".map should map the type of Mono from T to R" in {
       StepVerifier.create(SMono.just(randomValue).map(_.toString))
         .expectNext(randomValue.toString)
