@@ -46,6 +46,8 @@ package object publisher {
     (javaTuple6.getT1, javaTuple6.getT2, javaTuple6.getT3, javaTuple6.getT4, javaTuple6.getT5, javaTuple6.getT6)
   }
 
+  implicit def javaTupleLongAndT2ScalaTupleLongAndT[T](tuple2: Tuple2[JLong, T]): (Long, T) = (tuple2.getT1, tuple2.getT2)
+
   type SConsumer[T] = T => Unit
   type SPredicate[T] = T => Boolean
   type SBiConsumer[T, U] = (T, U) => Unit

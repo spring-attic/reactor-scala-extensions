@@ -1,6 +1,6 @@
 package reactor.core.scala.publisher
 
-import java.lang.{Boolean => JBoolean}
+import java.lang.{Boolean => JBoolean, Long => JLong}
 import java.util.concurrent.{Callable, CompletableFuture}
 import java.util.function.Function
 
@@ -96,6 +96,8 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
   final def doOnSubscribe(onSubscribe: Subscription => Unit): SMono[T] = coreMono.doOnSubscribe(onSubscribe)
 
   final def doOnTerminate(onTerminate:() => Unit): SMono[T] = coreMono.doOnTerminate(onTerminate)
+
+  final def elapsed(scheduler: Scheduler = Schedulers.parallel()): SMono[(Long, T)] = new ReactiveSMono[(Long, T)](coreMono.elapsed().map((t: Tuple2[JLong, T]) => javaTupleLongAndT2ScalaTupleLongAndT[T](t)))
 
   final def map[R](mapper: T => R): SMono[R] = coreMono.map[R](mapper)
 

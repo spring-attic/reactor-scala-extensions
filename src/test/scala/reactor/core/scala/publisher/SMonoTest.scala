@@ -571,6 +571,28 @@ class SMonoTest extends FreeSpec with Matchers {
       atomicLong.get() shouldBe randomValue
     }
 
+    ".elapsed" - {
+      "should provide the time elapse when this mono emit value" in {
+        StepVerifier.withVirtualTime(() => SMono.just(randomValue).delaySubscription(1 second).elapsed(), 1)
+          .thenAwait(1 second)
+          .expectNextMatches((t: (Long, Long)) => t match {
+            case (time, data) => time >= 1000 && data == randomValue
+          })
+          .verifyComplete()
+      }
+      "with TimedScheduler should provide the time elapsed using the provided scheduler when this mono emit value" in {
+        val virtualTimeScheduler = VirtualTimeScheduler.getOrSet()
+        StepVerifier.create(SMono.just(randomValue)
+          .delaySubscription(1 second, virtualTimeScheduler)
+          .elapsed(virtualTimeScheduler), 1)
+          .`then`(() => virtualTimeScheduler.advanceTimeBy(1 second))
+          .expectNextMatches((t: (Long, Long)) => t match {
+            case (time, data) => time >= 1000 && data == randomValue
+          })
+          .verifyComplete()
+      }
+    }
+
     ".map should map the type of Mono from T to R" in {
       StepVerifier.create(SMono.just(randomValue).map(_.toString))
         .expectNext(randomValue.toString)
