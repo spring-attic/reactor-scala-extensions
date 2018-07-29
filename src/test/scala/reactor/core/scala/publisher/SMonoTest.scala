@@ -623,6 +623,12 @@ class SMonoTest extends FreeSpec with Matchers {
       }
     }
 
+    ".filter should filter the value of mono where it pass the provided predicate" in {
+      StepVerifier.create(SMono.just(10)
+        .filter(i => i < 10))
+        .verifyComplete()
+    }
+
     ".map should map the type of Mono from T to R" in {
       StepVerifier.create(SMono.just(randomValue).map(_.toString))
         .expectNext(randomValue.toString)

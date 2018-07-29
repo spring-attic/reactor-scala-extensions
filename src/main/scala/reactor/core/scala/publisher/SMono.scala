@@ -103,6 +103,8 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
 
   final def expand(expander: T => Publisher[_ <: T], capacityHint: Int = SMALL_BUFFER_SIZE): SFlux[T] = coreMono.expand(expander, capacityHint)
 
+  final def filter(tester: T => Boolean): SMono[T] = coreMono.filter(tester)
+
   final def map[R](mapper: T => R): SMono[R] = coreMono.map[R](mapper)
 
   final def name(name: String): SMono[T] = coreMono.name(name)
