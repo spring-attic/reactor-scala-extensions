@@ -657,6 +657,14 @@ class SMonoTest extends FreeSpec with Matchers {
         .verifyComplete()
     }
 
+    ".flux should convert this mono into a flux" in {
+      val flux = SMono.just(randomValue).flux()
+      StepVerifier.create(flux)
+        .expectNext(randomValue)
+        .verifyComplete()
+      flux shouldBe an[SFlux[Long]]
+    }
+
     ".map should map the type of Mono from T to R" in {
       StepVerifier.create(SMono.just(randomValue).map(_.toString))
         .expectNext(randomValue.toString)
