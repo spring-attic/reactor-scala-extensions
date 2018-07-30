@@ -665,6 +665,19 @@ class SMonoTest extends FreeSpec with Matchers {
       flux shouldBe an[SFlux[Long]]
     }
 
+    ".hasElement should convert to another Mono that emit" - {
+      "true if it has element" in {
+        StepVerifier.create(SMono.just(1).hasElement)
+          .expectNext(true)
+          .verifyComplete()
+      }
+      "false if it is empty" in {
+        StepVerifier.create(SMono.empty.hasElement)
+          .expectNext(false)
+          .verifyComplete()
+      }
+    }
+
     ".map should map the type of Mono from T to R" in {
       StepVerifier.create(SMono.just(randomValue).map(_.toString))
         .expectNext(randomValue.toString)
