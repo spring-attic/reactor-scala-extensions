@@ -622,9 +622,14 @@ class SMonoTest extends FreeSpec with Matchers {
     }
 
     ".filterWhen should replay the value of mono if the first item emitted by the test is true" in {
-      val mono = SMono.just(10).filterWhen((i: Int) => SMono.just(i % 2 == 0))
-      StepVerifier.create(mono)
+      StepVerifier.create(SMono.just(10).filterWhen((i: Int) => SMono.just(i % 2 == 0)))
         .expectNext(10)
+        .verifyComplete()
+    }
+
+    ".flatMap should flatmap the provided mono" in {
+      StepVerifier.create(Mono.just(randomValue).flatMap(l => Mono.just(l.toString)))
+        .expectNext(randomValue.toString)
         .verifyComplete()
     }
 

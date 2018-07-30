@@ -112,6 +112,8 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
     coreMono.filterWhen(asyncPredicateFunction)
   }
 
+  final def flatMap[R](transformer: T => SMono[R]): SMono[R] = coreMono.flatMap[R]((t: T) => transformer(t).coreMono)
+
   final def map[R](mapper: T => R): SMono[R] = coreMono.map[R](mapper)
 
   final def name(name: String): SMono[T] = coreMono.name(name)
