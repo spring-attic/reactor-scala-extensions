@@ -7,7 +7,7 @@ import org.mockito.Mockito.spy
 import org.mockito.{ArgumentMatchers, Mockito}
 import org.reactivestreams.Subscription
 import org.scalatest.{FreeSpec, Matchers}
-import reactor.core.publisher.{BaseSubscriber, Signal, Mono => JMono}
+import reactor.core.publisher.{BaseSubscriber, Signal, SynchronousSink, Mono => JMono}
 import reactor.core.scala.Scannable
 import reactor.core.scala.publisher.Mono.just
 import reactor.core.scheduler.{Scheduler, Schedulers}
@@ -676,6 +676,16 @@ class SMonoTest extends FreeSpec with Matchers {
           .expectNext(false)
           .verifyComplete()
       }
+    }
+
+    ".handle should handle onNext, onError and onComplete" in {
+      StepVerifier.create(SMono.just(randomValue)
+        .handle((_: Long, s: SynchronousSink[String]) => {
+          s.next("One")
+          s.complete()
+        }))
+        .expectNext("One")
+        .verifyComplete()
     }
 
     ".map should map the type of Mono from T to R" in {

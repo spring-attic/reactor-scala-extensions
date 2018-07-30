@@ -5,7 +5,7 @@ import java.util.concurrent.{Callable, CompletableFuture}
 import java.util.function.Function
 
 import org.reactivestreams.{Publisher, Subscriber, Subscription}
-import reactor.core.publisher.{MonoSink, SignalType, Mono => JMono}
+import reactor.core.publisher.{MonoSink, SignalType, SynchronousSink, Mono => JMono}
 import reactor.core.scala.Scannable
 import reactor.core.scala.publisher.PimpMyPublisher._
 import reactor.core.scheduler.{Scheduler, Schedulers}
@@ -126,6 +126,8 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
   final def flux(): SFlux[T] = coreMono.flux()
 
   final def hasElement: SMono[Boolean] = coreMono.hasElement.map[Boolean](scalaFunction2JavaFunction((jb: JBoolean) => boolean2Boolean(jb.booleanValue())))
+
+  final def handle[R](handler: (T, SynchronousSink[R]) => Unit): SMono[R] = coreMono.handle[R](handler)
 
   final def map[R](mapper: T => R): SMono[R] = coreMono.map[R](mapper)
 

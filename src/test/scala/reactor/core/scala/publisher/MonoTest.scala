@@ -3,7 +3,6 @@ package reactor.core.scala.publisher
 import java.time.{Duration => JDuration}
 import java.util.concurrent._
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicLong, AtomicReference}
-import java.util.function.Supplier
 
 import org.mockito.Mockito.{spy, verify}
 import org.mockito.{ArgumentMatchers, Mockito}
@@ -791,12 +790,11 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
     }
 
     ".handle should handle onNext, onError and onComplete" in {
-      val mono = Mono.just(randomValue)
+      StepVerifier.create(Mono.just(randomValue)
         .handle((_: Long, s: SynchronousSink[String]) => {
           s.next("One")
           s.complete()
-        })
-      StepVerifier.create(mono)
+        }))
         .expectNext("One")
         .verifyComplete()
     }
