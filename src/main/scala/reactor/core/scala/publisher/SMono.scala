@@ -121,6 +121,8 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
                            mapperOnComplete: () => Publisher[R]): SFlux[R] =
     coreMono.flatMapMany(mapperOnNext, mapperOnError, mapperOnComplete)
 
+  final def flatMapIterable[R](mapper: T => Iterable[R]): SFlux[R] = coreMono.flatMapIterable(mapper.andThen(it => it.asJava))
+
   final def map[R](mapper: T => R): SMono[R] = coreMono.map[R](mapper)
 
   final def name(name: String): SMono[T] = coreMono.name(name)

@@ -651,6 +651,12 @@ class SMonoTest extends FreeSpec with Matchers {
       }
     }
 
+    ".flatMapIterable should flatmap the value mapped by the provided mapper" in {
+      StepVerifier.create(SMono.just("one").flatMapIterable(str => str.toCharArray))
+        .expectNext('o', 'n', 'e')
+        .verifyComplete()
+    }
+
     ".map should map the type of Mono from T to R" in {
       StepVerifier.create(SMono.just(randomValue).map(_.toString))
         .expectNext(randomValue.toString)
