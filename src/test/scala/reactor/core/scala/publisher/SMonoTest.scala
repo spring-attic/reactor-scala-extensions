@@ -688,6 +688,11 @@ class SMonoTest extends FreeSpec with Matchers {
         .verifyComplete()
     }
 
+    ".ignoreElement should only emit termination event" in {
+      StepVerifier.create(SMono.just(randomValue).ignoreElement)
+        .verifyComplete()
+    }
+
     ".map should map the type of Mono from T to R" in {
       StepVerifier.create(SMono.just(randomValue).map(_.toString))
         .expectNext(randomValue.toString)
