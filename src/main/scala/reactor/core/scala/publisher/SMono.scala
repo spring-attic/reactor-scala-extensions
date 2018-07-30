@@ -105,6 +105,13 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
 
   final def filter(tester: T => Boolean): SMono[T] = coreMono.filter(tester)
 
+  final def filterWhen(asyncPredicate: T => _ <: MapablePublisher[Boolean]): SMono[T] = {
+    val asyncPredicateFunction = new Function[T, Publisher[JBoolean]] {
+      override def apply(t: T): Publisher[JBoolean] = asyncPredicate(t).map(Boolean2boolean(_))
+    }
+    coreMono.filterWhen(asyncPredicateFunction)
+  }
+
   final def map[R](mapper: T => R): SMono[R] = coreMono.map[R](mapper)
 
   final def name(name: String): SMono[T] = coreMono.name(name)

@@ -509,9 +509,8 @@ class SMonoTest extends FreeSpec with Matchers {
 
     ".doOnNext should call the callback function when the mono emit data successfully" in {
       val atomicLong = new AtomicLong()
-      val mono = SMono.just(randomValue)
-        .doOnNext(t => atomicLong.compareAndSet(0, t))
-      StepVerifier.create(mono)
+      StepVerifier.create(SMono.just(randomValue)
+        .doOnNext(t => atomicLong.compareAndSet(0, t)))
         .expectNext(randomValue)
         .verifyComplete()
       atomicLong.get() shouldBe randomValue
@@ -519,9 +518,8 @@ class SMonoTest extends FreeSpec with Matchers {
 
     ".doOnSuccess should call the callback function when the mono completes successfully" in {
       val atomicBoolean = new AtomicBoolean(false)
-      val mono = SMono.empty[Int]
-        .doOnSuccess(_ => atomicBoolean.compareAndSet(false, true) shouldBe true)
-      StepVerifier.create(mono)
+      StepVerifier.create(SMono.empty[Int]
+        .doOnSuccess(_ => atomicBoolean.compareAndSet(false, true) shouldBe true))
         .verifyComplete()
       atomicBoolean shouldBe 'get
     }
@@ -539,9 +537,8 @@ class SMonoTest extends FreeSpec with Matchers {
 
     ".doOnRequest should call the callback function when subscriber request data" in {
       val atomicLong = new AtomicLong(0)
-      val mono = SMono.just(randomValue)
-        .doOnRequest(l => atomicLong.compareAndSet(0, l))
-      mono.subscribe(new BaseSubscriber[Long] {
+      SMono.just(randomValue)
+        .doOnRequest(l => atomicLong.compareAndSet(0, l)).subscribe(new BaseSubscriber[Long] {
         override def hookOnSubscribe(subscription: Subscription): Unit = {
           subscription.request(1)
           ()
@@ -554,9 +551,8 @@ class SMonoTest extends FreeSpec with Matchers {
 
     ".doOnSubscribe should call the callback function when the mono is subscribed" in {
       val atomicBoolean = new AtomicBoolean(false)
-      val mono = SMono.just(randomValue)
-        .doOnSubscribe(_ => atomicBoolean.compareAndSet(false, true))
-      StepVerifier.create(mono)
+      StepVerifier.create(SMono.just(randomValue)
+        .doOnSubscribe(_ => atomicBoolean.compareAndSet(false, true)))
         .expectNextCount(1)
         .verifyComplete()
       atomicBoolean shouldBe 'get
@@ -595,14 +591,12 @@ class SMonoTest extends FreeSpec with Matchers {
 
     ".expandDeep" - {
       "should expand the mono" in {
-        val flux = SMono.just("a").expandDeep(s => SMono.just(s"$s$s")).take(3)
-        StepVerifier.create(flux)
+        StepVerifier.create(SMono.just("a").expandDeep(s => SMono.just(s"$s$s")).take(3))
           .expectNext("a", "aa", "aaaa")
           .verifyComplete()
       }
       "with capacity hint should expand the mono" in {
-        val flux = SMono.just("a").expandDeep(s => SMono.just(s"$s$s"), 10).take(3)
-        StepVerifier.create(flux)
+        StepVerifier.create(SMono.just("a").expandDeep(s => SMono.just(s"$s$s"), 10).take(3))
           .expectNext("a", "aa", "aaaa")
           .verifyComplete()
       }
@@ -610,14 +604,12 @@ class SMonoTest extends FreeSpec with Matchers {
 
     ".expand" - {
       "should expand the mono" in {
-        val flux = SMono.just("a").expand(s => SMono.just(s"$s$s")).take(3)
-        StepVerifier.create(flux)
+        StepVerifier.create(SMono.just("a").expand(s => SMono.just(s"$s$s")).take(3))
           .expectNext("a", "aa", "aaaa")
           .verifyComplete()
       }
       "with capacity hint should expand the mono" in {
-        val flux = SMono.just("a").expand(s => SMono.just(s"$s$s"), 10).take(3)
-        StepVerifier.create(flux)
+        StepVerifier.create(SMono.just("a").expand(s => SMono.just(s"$s$s"), 10).take(3))
           .expectNext("a", "aa", "aaaa")
           .verifyComplete()
       }
@@ -626,6 +618,13 @@ class SMonoTest extends FreeSpec with Matchers {
     ".filter should filter the value of mono where it pass the provided predicate" in {
       StepVerifier.create(SMono.just(10)
         .filter(i => i < 10))
+        .verifyComplete()
+    }
+
+    ".filterWhen should replay the value of mono if the first item emitted by the test is true" in {
+      val mono = SMono.just(10).filterWhen((i: Int) => SMono.just(i % 2 == 0))
+      StepVerifier.create(mono)
+        .expectNext(10)
         .verifyComplete()
     }
 
