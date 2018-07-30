@@ -633,6 +633,24 @@ class SMonoTest extends FreeSpec with Matchers {
         .verifyComplete()
     }
 
+    ".flatMapMany" - {
+      "with a single mapper should flatmap the value mapped by the provided mapper" in {
+        StepVerifier.create(SMono.just(1).flatMapMany(i => SFlux.just(i, i * 2)))
+          .expectNext(1, 2)
+          .verifyComplete()
+      }
+      "with mapperOnNext, mapperOnError and mapperOnComplete should mapped each individual event into values emitted by flux" in {
+        StepVerifier.create(SMono.just(1)
+          .flatMapMany(
+            _ => SMono.just("one"),
+            _ => SMono.just("error"),
+            () => SMono.just("complete")
+          ))
+          .expectNext("one", "complete")
+          .verifyComplete()
+      }
+    }
+
     ".map should map the type of Mono from T to R" in {
       StepVerifier.create(SMono.just(randomValue).map(_.toString))
         .expectNext(randomValue.toString)
