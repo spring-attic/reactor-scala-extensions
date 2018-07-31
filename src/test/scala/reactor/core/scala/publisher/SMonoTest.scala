@@ -755,5 +755,10 @@ class SMonoTest extends FreeSpec with Matchers {
       }
     }
 
+    ".materialize should convert the mono into a mono that emit its signal" in {
+      StepVerifier.create(SMono.just(randomValue).materialize())
+        .expectNext(Signal.next(randomValue))
+        .verifyComplete()
+    }
   }
 }

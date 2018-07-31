@@ -5,7 +5,7 @@ import java.util.concurrent.{Callable, CompletableFuture}
 import java.util.function.Function
 
 import org.reactivestreams.{Publisher, Subscriber, Subscription}
-import reactor.core.publisher.{MonoSink, SignalType, SynchronousSink, Mono => JMono}
+import reactor.core.publisher.{MonoSink, Signal, SignalType, SynchronousSink, Mono => JMono}
 import reactor.core.scala.Scannable
 import reactor.core.scala.publisher.PimpMyPublisher._
 import reactor.core.scheduler.{Scheduler, Schedulers}
@@ -133,10 +133,12 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
 
   final def map[R](mapper: T => R): SMono[R] = coreMono.map[R](mapper)
 
-  final def onErrorMap(mapper: PartialFunction[Throwable, Throwable]): SMono[T] =
-    coreMono.onErrorMap((t: Throwable) => if(mapper.isDefinedAt(t)) mapper(t) else t)
+  final def materialize(): SMono[Signal[T]] = coreMono.materialize()
 
   final def name(name: String): SMono[T] = coreMono.name(name)
+
+  final def onErrorMap(mapper: PartialFunction[Throwable, Throwable]): SMono[T] =
+    coreMono.onErrorMap((t: Throwable) => if(mapper.isDefinedAt(t)) mapper(t) else t)
 
   override def subscribe(s: Subscriber[_ >: T]): Unit = coreMono.subscribe(s)
 
