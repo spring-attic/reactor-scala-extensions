@@ -699,5 +699,61 @@ class SMonoTest extends FreeSpec with Matchers {
         .expectComplete()
         .verify()
     }
+
+    ".mapError" - {
+      class MyCustomException(val message: String) extends Exception(message)
+      "with mapper should map the error to another error" in {
+        StepVerifier.create(SMono.raiseError[Int](new RuntimeException("runtimeException"))
+          .onErrorMap{case t: Throwable => new MyCustomException(t.getMessage)})
+          .expectErrorMatches((t: Throwable) => {
+            t.getMessage shouldBe "runtimeException"
+            t should not be a[RuntimeException]
+            t shouldBe a[MyCustomException]
+            true
+          })
+          .verify()
+      }
+      "with an error type and mapper should" - {
+        "map the error to another type if the exception is according to the provided type" in {
+          StepVerifier.create(SMono.raiseError[Int](new RuntimeException("runtimeException"))
+            .onErrorMap { case t: RuntimeException => new MyCustomException(t.getMessage) })
+            .expectErrorMatches((t: Throwable) => {
+              t.getMessage shouldBe "runtimeException"
+              t should not be a[RuntimeException]
+              t shouldBe a[MyCustomException]
+              true
+            })
+            .verify()
+        }
+        "not map the error if the exception is not the type of provided exception class" in {
+          StepVerifier.create(SMono.raiseError[Int](new Exception("runtimeException"))
+            .onErrorMap {
+              case t: RuntimeException => new MyCustomException(t.getMessage)
+            })
+            .expectErrorMatches((t: Throwable) => {
+              t.getMessage shouldBe "runtimeException"
+              t should not be a[MyCustomException]
+              t shouldBe a[Exception]
+              true
+            })
+            .verify()
+        }
+      }
+      "with a predicate and mapper should" - {
+        "map the error to another type if the predicate returns true" in {
+          StepVerifier.create(SMono.raiseError[Int](new RuntimeException("should map"))
+            .onErrorMap { case t: Throwable if t.getMessage == "should map" => new MyCustomException(t.getMessage) })
+            .expectError(classOf[MyCustomException])
+            .verify()
+        }
+        "not map the error to another type if the predicate returns false" in {
+          StepVerifier.create(SMono.raiseError[Int](new RuntimeException("should not map"))
+            .onErrorMap { case t: Throwable if t.getMessage == "should map" => new MyCustomException(t.getMessage) })
+            .expectError(classOf[RuntimeException])
+            .verify()
+        }
+      }
+    }
+
   }
 }

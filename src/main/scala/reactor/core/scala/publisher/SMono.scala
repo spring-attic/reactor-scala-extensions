@@ -133,6 +133,10 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
 
   final def map[R](mapper: T => R): SMono[R] = coreMono.map[R](mapper)
 
+  final def onErrorMap(mapper: PartialFunction[Throwable, Throwable]): SMono[T] = {
+    coreMono.onErrorMap((t: Throwable) => if(mapper.isDefinedAt(t)) mapper(t) else t)
+  }
+
   final def name(name: String): SMono[T] = coreMono.name(name)
 
   override def subscribe(s: Subscriber[_ >: T]): Unit = coreMono.subscribe(s)
