@@ -135,6 +135,8 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
 
   final def materialize(): SMono[Signal[T]] = coreMono.materialize()
 
+  final def mergeWith(other: Publisher[_ <: T]): SFlux[T] = coreMono.mergeWith(other)
+
   final def name(name: String): SMono[T] = coreMono.name(name)
 
   final def onErrorMap(mapper: PartialFunction[Throwable, Throwable]): SMono[T] =

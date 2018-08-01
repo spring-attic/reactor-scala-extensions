@@ -760,5 +760,11 @@ class SMonoTest extends FreeSpec with Matchers {
         .expectNext(Signal.next(randomValue))
         .verifyComplete()
     }
+
+    ".mergeWith should convert this mono to flux with value emitted from this mono followed by the other" in {
+      StepVerifier.create(SMono.just(1).mergeWith(SMono.just(2)))
+        .expectNext(1, 2)
+        .verifyComplete()
+    }
   }
 }
