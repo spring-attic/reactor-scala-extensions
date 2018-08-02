@@ -20,7 +20,7 @@ import scala.language.postfixOps
 import scala.math.ScalaNumber
 import scala.util.{Failure, Random, Success}
 
-class SMonoTest extends FreeSpec with Matchers {
+class SMonoTest extends FreeSpec with Matchers with TestSupport{
   private val randomValue = Random.nextLong()
 
   "SMono" - {
@@ -775,6 +775,43 @@ class SMonoTest extends FreeSpec with Matchers {
       }
       "ignore the Mono value if it can't be casted" in {
         StepVerifier.create(SMono.just(1).ofType(classOf[String]))
+          .verifyComplete()
+      }
+    }
+
+    ".onErrorRecover" - {
+      "should recover with a Mono of element that has been recovered" in {
+        StepVerifier.create(SMono.raiseError(new RuntimeException("oops"))
+          .onErrorRecover { case _ => Truck(5) })
+          .expectNext(Truck(5))
+          .verifyComplete()
+      }
+    }
+
+    ".onErrorResume" - {
+      "will fallback to the provided value when error happens" in {
+        StepVerifier.create(SMono.raiseError(new RuntimeException()).onErrorResume(_ => SMono.just(-1)))
+          .expectNext(-1)
+          .verifyComplete()
+      }
+      "with class type and fallback function will fallback to the provided value when the exception is of provided type" in {
+        StepVerifier.create(SMono.raiseError(new RuntimeException()).onErrorResume {
+          case _: Exception => SMono.just(-1)
+        })
+          .expectNext(-1)
+          .verifyComplete()
+
+        StepVerifier.create(SMono.raiseError(new Exception()).onErrorResume {
+          case _: RuntimeException => SMono.just(-1)
+        })
+          .expectError(classOf[Exception])
+          .verify()
+      }
+      "with predicate and fallback function will fallback to the provided value when the predicate returns true" in {
+        StepVerifier.create(SMono.raiseError(new RuntimeException("fallback")).onErrorResume {
+          case t if t.getMessage == "fallback" => SMono.just(-1)
+        })
+          .expectNext(-1)
           .verifyComplete()
       }
     }

@@ -144,6 +144,20 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
   final def onErrorMap(mapper: PartialFunction[Throwable, Throwable]): SMono[T] =
     coreMono.onErrorMap((t: Throwable) => if(mapper.isDefinedAt(t)) mapper(t) else t)
 
+  private def defaultToMonoError[U](t: Throwable): SMono[U] = SMono.raiseError[U](t)
+
+  final def onErrorRecover[U <: T](pf: PartialFunction[Throwable, U]): SMono[T] = {
+    def recover(t: Throwable): SMono[U] = pf.andThen(u => SMono.just(u)).applyOrElse(t, defaultToMonoError)
+    onErrorResume(recover)
+  }
+
+  final def onErrorResume(fallback: Throwable => SMono[_ <: T]): SMono[T] = {
+    val fallbackFunction = new Function[Throwable, JMono[_ <: T]] {
+      override def apply(t: Throwable): JMono[_ <: T] = fallback(t).coreMono
+    }
+    coreMono.onErrorResume(fallbackFunction)
+  }
+
   final def or(other: SMono[_ <: T]): SMono[T] = coreMono.or(other.coreMono)
 
   override def subscribe(s: Subscriber[_ >: T]): Unit = coreMono.subscribe(s)
