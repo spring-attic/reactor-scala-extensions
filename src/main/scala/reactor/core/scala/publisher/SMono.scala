@@ -139,6 +139,8 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
 
   final def name(name: String): SMono[T] = coreMono.name(name)
 
+  final def ofType[U](clazz: Class[U]): SMono[U] = coreMono.ofType[U](clazz)
+
   final def onErrorMap(mapper: PartialFunction[Throwable, Throwable]): SMono[T] =
     coreMono.onErrorMap((t: Throwable) => if(mapper.isDefinedAt(t)) mapper(t) else t)
 

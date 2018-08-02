@@ -767,6 +767,18 @@ class SMonoTest extends FreeSpec with Matchers {
         .verifyComplete()
     }
 
+    ".ofType should" - {
+      "convert the Mono value type to the provided type if it can be casted" in {
+        StepVerifier.create(SMono.just(BigDecimal("1")).ofType(classOf[ScalaNumber]))
+          .expectNextCount(1)
+          .verifyComplete()
+      }
+      "ignore the Mono value if it can't be casted" in {
+        StepVerifier.create(SMono.just(1).ofType(classOf[String]))
+          .verifyComplete()
+      }
+    }
+
     ".or should return Mono that emit the value between the two Monos that is emited first" in {
       StepVerifier.create(SMono.delay(5 seconds).or(SMono.just(2)))
         .expectNext(2)
