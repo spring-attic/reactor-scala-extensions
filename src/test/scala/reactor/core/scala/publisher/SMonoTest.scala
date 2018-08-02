@@ -766,5 +766,11 @@ class SMonoTest extends FreeSpec with Matchers {
         .expectNext(1, 2)
         .verifyComplete()
     }
+
+    ".or should return Mono that emit the value between the two Monos that is emited first" in {
+      StepVerifier.create(SMono.delay(5 seconds).or(SMono.just(2)))
+        .expectNext(2)
+        .verifyComplete()
+    }
   }
 }
