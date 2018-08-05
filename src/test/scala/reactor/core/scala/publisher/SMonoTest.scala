@@ -822,6 +822,25 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport{
         .verifyComplete()
     }
 
+    ".publish should share and may transform it and consume it as many times as necessary without causing" +
+      "multiple subscription" in {
+      val mono = SMono.just(randomValue).publish[String](ml => ml.map(l => l.toString))
+
+      val counter = new AtomicLong()
+
+      val subscriber = new BaseSubscriber[String] {
+        override def hookOnSubscribe(subscription: Subscription): Unit = {
+          subscription.request(1)
+          counter.incrementAndGet()
+        }
+
+        override def hookOnNext(value: String): Unit = ()
+      }
+      mono.subscribe(subscriber)
+      mono.subscribe(subscriber)
+      counter.get() shouldBe 1
+    }
+
     ".switchIfEmpty with alternative will emit the value from alternative Mono when this mono is empty" in {
       StepVerifier.create(SMono.empty.switchIfEmpty(SMono.just(-1)))
         .expectNext(-1)

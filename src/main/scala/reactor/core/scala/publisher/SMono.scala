@@ -160,6 +160,13 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
 
   final def or(other: SMono[_ <: T]): SMono[T] = coreMono.or(other.coreMono)
 
+  final def publish[R](transform: SMono[T] => SMono[R]): SMono[R] = {
+    val transformFunction = new Function[JMono[T], JMono[R]] {
+      override def apply(t: JMono[T]): JMono[R] = transform(SMono.this).coreMono
+    }
+    coreMono.publish[R](transformFunction)
+  }
+
   override def subscribe(s: Subscriber[_ >: T]): Unit = coreMono.subscribe(s)
 
   final def switchIfEmpty(alternate: SMono[_ <: T]): SMono[T] = coreMono.switchIfEmpty(alternate.coreMono)
