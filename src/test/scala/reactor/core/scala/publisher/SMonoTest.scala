@@ -821,5 +821,11 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport{
         .expectNext(2)
         .verifyComplete()
     }
+
+    ".switchIfEmpty with alternative will emit the value from alternative Mono when this mono is empty" in {
+      StepVerifier.create(SMono.empty.switchIfEmpty(SMono.just(-1)))
+        .expectNext(-1)
+        .verifyComplete()
+    }
   }
 }
