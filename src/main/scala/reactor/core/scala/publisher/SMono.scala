@@ -5,7 +5,7 @@ import java.util.concurrent.{Callable, CompletableFuture}
 import java.util.function.Function
 
 import org.reactivestreams.{Publisher, Subscriber, Subscription}
-import reactor.core.publisher.{MonoSink, Signal, SignalType, SynchronousSink, Mono => JMono}
+import reactor.core.publisher.{MonoSink, Signal, SignalType, SynchronousSink, Flux => JFlux, Mono => JMono}
 import reactor.core.scala.Scannable
 import reactor.core.scala.publisher.PimpMyPublisher._
 import reactor.core.scheduler.{Scheduler, Schedulers}
@@ -168,6 +168,13 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
   }
 
   final def repeat(numRepeat: Long = Long.MaxValue, predicate: () => Boolean = () => true): SFlux[T] = coreMono.repeat(numRepeat, predicate)
+
+  final def repeatWhen(whenFactory: SFlux[Long] => _ <: Publisher[_]): SFlux[T] = {
+    val when: Function[JFlux[JLong], Publisher[_]] = new Function[JFlux[JLong], Publisher[_]] {
+      override def apply(t: JFlux[JLong]): Publisher[_] = whenFactory(new ReactiveSFlux[Long](t))
+    }
+    coreMono.repeatWhen(when)
+  }
 
   override def subscribe(s: Subscriber[_ >: T]): Unit = coreMono.subscribe(s)
 

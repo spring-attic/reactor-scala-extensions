@@ -898,6 +898,12 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport{
       }
     }
 
+    ".repeatWhen should emit the value of this mono accompanied by the publisher" in {
+      StepVerifier.create(SMono.just(randomValue).repeatWhen((_: SFlux[Long]) => SFlux.just[Long](10, 20)))
+        .expectNext(randomValue, randomValue, randomValue)
+        .verifyComplete()
+    }
+
     ".switchIfEmpty with alternative will emit the value from alternative Mono when this mono is empty" in {
       StepVerifier.create(SMono.empty.switchIfEmpty(SMono.just(-1)))
         .expectNext(-1)
