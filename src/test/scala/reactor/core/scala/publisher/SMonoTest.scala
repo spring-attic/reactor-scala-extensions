@@ -1,7 +1,7 @@
 package reactor.core.scala.publisher
 
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicLong, AtomicReference}
-import java.util.concurrent.{ArrayBlockingQueue, ConcurrentHashMap}
+import java.util.concurrent._
 
 import org.mockito.Mockito.spy
 import org.mockito.{ArgumentMatchers, Mockito}
@@ -839,6 +839,63 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport{
       mono.subscribe(subscriber)
       mono.subscribe(subscriber)
       counter.get() shouldBe 1
+    }
+
+    ".repeat" - {
+      "should return flux that repeat the value from this mono" in {
+        StepVerifier.create(SMono.just(randomValue).repeat().take(3))
+          .expectNext(randomValue, randomValue, randomValue)
+          .verifyComplete()
+      }
+      "with boolean predicate should repeat the value from this mono as long as the predicate returns true" in {
+        val counter = new AtomicLong()
+        val flux = SMono.just(randomValue)
+          .repeat(predicate = () => counter.get() < 3)
+        val buffer = new LinkedBlockingQueue[Long]()
+        val latch = new CountDownLatch(1)
+        flux.subscribe(new BaseSubscriber[Long] {
+          override def hookOnSubscribe(subscription: Subscription): Unit = subscription.request(Long.MaxValue)
+
+          override def hookOnNext(value: Long): Unit = {
+            counter.incrementAndGet()
+            buffer.put(value)
+          }
+
+          override def hookOnComplete(): Unit = latch.countDown()
+        })
+        if (latch.await(1, TimeUnit.SECONDS))
+          buffer should have size 3
+        else
+          fail("no completion signal is detected")
+
+      }
+      "with number of repeat should repeat value from this value as many as the provided parameter" in {
+        StepVerifier.create(SMono.just(randomValue).repeat(5))
+//          this is a bug in https://github.com/reactor/reactor-core/issues/1252. It should only be 5 in total
+          .expectNext(randomValue, randomValue, randomValue, randomValue, randomValue, randomValue)
+          .verifyComplete()
+      }
+      "with number of repeat and predicate should repeat value from this value as many as provided parameter and as" +
+        "long as the predicate returns true" in {
+        val counter = new AtomicLong()
+        val flux = SMono.just(randomValue).repeat(5, () => counter.get() < 3)
+        val buffer = new LinkedBlockingQueue[Long]()
+        val latch = new CountDownLatch(1)
+        flux.subscribe(new BaseSubscriber[Long] {
+          override def hookOnSubscribe(subscription: Subscription): Unit = subscription.request(Long.MaxValue)
+
+          override def hookOnNext(value: Long): Unit = {
+            counter.incrementAndGet()
+            buffer.put(value)
+          }
+
+          override def hookOnComplete(): Unit = latch.countDown()
+        })
+        if (latch.await(1, TimeUnit.SECONDS))
+          buffer should have size 3
+        else
+          fail("no completion signal is detected")
+      }
     }
 
     ".switchIfEmpty with alternative will emit the value from alternative Mono when this mono is empty" in {
