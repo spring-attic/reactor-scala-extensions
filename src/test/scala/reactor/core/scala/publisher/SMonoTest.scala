@@ -1,6 +1,6 @@
 package reactor.core.scala.publisher
 
-import java.util.concurrent.atomic.{AtomicBoolean, AtomicLong, AtomicReference}
+import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger, AtomicLong, AtomicReference}
 import java.util.concurrent._
 
 import org.mockito.Mockito.spy
@@ -902,6 +902,13 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport{
       StepVerifier.create(SMono.just(randomValue).repeatWhen((_: SFlux[Long]) => SFlux.just[Long](10, 20)))
         .expectNext(randomValue, randomValue, randomValue)
         .verifyComplete()
+    }
+
+    ".repeatWhenEmpty should emit resubscribe to this mono when the companion is empty" in {
+      val counter = new AtomicInteger(0)
+      StepVerifier.create(SMono.empty.doOnSubscribe(_ => counter.incrementAndGet()).repeatWhenEmpty((_: SFlux[Long]) => SFlux.just(-1, -2, -3)))
+        .verifyComplete()
+      counter.get() shouldBe 4
     }
 
     ".switchIfEmpty with alternative will emit the value from alternative Mono when this mono is empty" in {
