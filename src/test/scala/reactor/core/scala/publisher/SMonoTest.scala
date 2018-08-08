@@ -911,6 +911,19 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport{
       counter.get() shouldBe 4
     }
 
+    ".single" - {
+      "should enforce the existence of element" in {
+        StepVerifier.create(SMono.just(randomValue).single())
+          .expectNext(randomValue)
+          .verifyComplete()
+      }
+      "should throw exception if it is empty" in {
+        StepVerifier.create(SMono.empty.single())
+          .expectError(classOf[NoSuchElementException])
+          .verify()
+      }
+    }
+
     ".switchIfEmpty with alternative will emit the value from alternative Mono when this mono is empty" in {
       StepVerifier.create(SMono.empty.switchIfEmpty(SMono.just(-1)))
         .expectNext(-1)

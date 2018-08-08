@@ -183,6 +183,8 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
     coreMono.repeatWhenEmpty(when)
   }
 
+  final def single(): SMono[T] = coreMono.single()
+
   override def subscribe(s: Subscriber[_ >: T]): Unit = coreMono.subscribe(s)
 
   final def switchIfEmpty(alternate: SMono[_ <: T]): SMono[T] = coreMono.switchIfEmpty(alternate.coreMono)
