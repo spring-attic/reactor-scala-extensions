@@ -199,6 +199,8 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
 
   final def switchIfEmpty(alternate: SMono[_ <: T]): SMono[T] = coreMono.switchIfEmpty(alternate.coreMono)
 
+  final def tag(key: String, value: String): SMono[T] = coreMono.tag(key, value)
+
 }
 
 object SMono {

@@ -1,7 +1,7 @@
 package reactor.core.scala.publisher
 
-import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger, AtomicLong, AtomicReference}
 import java.util.concurrent._
+import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger, AtomicLong, AtomicReference}
 
 import org.mockito.Mockito.spy
 import org.mockito.{ArgumentMatchers, Mockito}
@@ -963,6 +963,11 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport{
       StepVerifier.create(SMono.empty.switchIfEmpty(SMono.just(-1)))
         .expectNext(-1)
         .verifyComplete()
+    }
+
+    ".tag should tag the Mono and accessible from Scannable" in {
+      val mono = SMono.just(randomValue).tag("integer", "one, two, three")
+      Scannable.from(Option(mono)).tags shouldBe Stream("integer" -> "one, two, three")
     }
   }
 }
