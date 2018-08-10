@@ -9,7 +9,7 @@ import reactor.core.publisher.{MonoSink, Signal, SignalType, SynchronousSink, Fl
 import reactor.core.scala.Scannable
 import reactor.core.scala.publisher.PimpMyPublisher._
 import reactor.core.scheduler.{Scheduler, Schedulers}
-import reactor.core.{Scannable => JScannable}
+import reactor.core.{Disposable, Scannable => JScannable}
 import reactor.util.concurrent.Queues.SMALL_BUFFER_SIZE
 import reactor.util.function.{Tuple2, Tuple3, Tuple4, Tuple5, Tuple6}
 
@@ -184,6 +184,16 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
   }
 
   final def single(): SMono[T] = coreMono.single()
+
+  final def subscribe(): Disposable = coreMono.subscribe()
+
+  final def subscribe(consumer: T => Unit): Disposable = coreMono.subscribe(consumer)
+
+  final def subscribe(consumer: T => Unit, errorConsumer: Throwable => Unit): Disposable = coreMono.subscribe(consumer, errorConsumer)
+
+  final def subscribe(consumer: T => Unit, errorConsumer: Throwable => Unit, completeConsumer: => Unit): Disposable = coreMono.subscribe(consumer, errorConsumer, completeConsumer)
+
+  final def subscribe(consumer: T => Unit, errorConsumer: Throwable => Unit, completeConsumer: => Unit, subscriptionConsumer: Subscription => Unit): Disposable = coreMono.subscribe(consumer, errorConsumer, completeConsumer, subscriptionConsumer)
 
   override def subscribe(s: Subscriber[_ >: T]): Unit = coreMono.subscribe(s)
 

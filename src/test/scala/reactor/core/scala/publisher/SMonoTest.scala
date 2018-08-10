@@ -7,6 +7,7 @@ import org.mockito.Mockito.spy
 import org.mockito.{ArgumentMatchers, Mockito}
 import org.reactivestreams.Subscription
 import org.scalatest.{FreeSpec, Matchers}
+import reactor.core.Disposable
 import reactor.core.publisher.{BaseSubscriber, Signal, SynchronousSink, Mono => JMono}
 import reactor.core.scala.Scannable
 import reactor.core.scala.publisher.Mono.just
@@ -921,6 +922,40 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport{
         StepVerifier.create(SMono.empty.single())
           .expectError(classOf[NoSuchElementException])
           .verify()
+      }
+    }
+
+    ".subscribe" - {
+      "without parameter should return Disposable" in {
+        val x = SMono.just(randomValue).subscribe()
+        x shouldBe a[Disposable]
+      }
+      "with consumer should invoke the consumer" in {
+        val counter = new CountDownLatch(1)
+        val disposable = SMono.just(randomValue).subscribe(_ => counter.countDown())
+        disposable shouldBe a[Disposable]
+        counter.await(1, TimeUnit.SECONDS) shouldBe true
+      }
+      "with consumer and error consumer should invoke the error consumer when error happen" in {
+        val counter = new CountDownLatch(1)
+        val disposable = SMono.raiseError[Any](new RuntimeException()).subscribe(_ => (), _ => counter.countDown())
+        disposable shouldBe a[Disposable]
+        counter.await(1, TimeUnit.SECONDS) shouldBe true
+      }
+      "with consumer, error consumer and completeConsumer should invoke the completeConsumer when it's complete" in {
+        val counter = new CountDownLatch(2)
+        val disposable = SMono.just(randomValue).subscribe(_ => counter.countDown(), _ => (), counter.countDown())
+        disposable shouldBe a[Disposable]
+        counter.await(1, TimeUnit.SECONDS) shouldBe true
+      }
+      "with consumer, error consumer, completeConsumer and subscriptionConsumer should invoke the subscriptionConsumer when there is subscription" in {
+        val counter = new CountDownLatch(3)
+        val disposable = SMono.just(randomValue).subscribe(_ => counter.countDown(), _ => (), counter.countDown(), s => {
+          s.request(1)
+          counter.countDown()
+        })
+        disposable shouldBe a[Disposable]
+        counter.await(1, TimeUnit.SECONDS) shouldBe true
       }
     }
 
