@@ -1010,5 +1010,14 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport{
         .verifyComplete()
       latch.await(1, TimeUnit.SECONDS) shouldBe true
     }
+
+    ".thenMany should ignore the element from this mono and transform the completion signal into a Flux that will emit " +
+      "from the provided publisher when the publisher is provided " - {
+      "directly" in {
+        StepVerifier.create(SMono.just(randomValue).thenMany(SFlux.just(1, 2, 3)))
+          .expectNext(1, 2, 3)
+          .verifyComplete()
+      }
+    }
   }
 }

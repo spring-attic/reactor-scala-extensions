@@ -211,6 +211,8 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
 
   final def thenEmpty(other: MapablePublisher[Unit]): SMono[Unit] = new ReactiveSMono[Unit]((coreMono: JMono[T]).thenEmpty(other).map((_: Void) => ()))
 
+  final def thenMany[V](other: Publisher[V]): SFlux[V] = coreMono.thenMany(other)
+
 }
 
 object SMono {
