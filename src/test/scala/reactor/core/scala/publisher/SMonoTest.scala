@@ -987,5 +987,18 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport{
       StepVerifier.withVirtualTime(() => SMono.delay(10 seconds).takeUntilOther(SMono.just("a")))
         .verifyComplete()
     }
+
+    ".then" - {
+      "without parameter should only replays complete and error signals from this mono" in {
+        StepVerifier.create(SMono.just(randomValue).`then`())
+          .verifyComplete()
+      }
+      "with other mono should ignore element from this mono and transform its completion signal into emission and " +
+        "completion signal of the provided mono" in {
+        StepVerifier.create(SMono.just(randomValue).`then`(SMono.just("1")))
+          .expectNext("1")
+          .verifyComplete()
+      }
+    }
   }
 }
