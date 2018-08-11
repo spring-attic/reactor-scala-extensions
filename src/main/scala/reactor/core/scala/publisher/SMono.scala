@@ -201,6 +201,8 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
 
   final def tag(key: String, value: String): SMono[T] = coreMono.tag(key, value)
 
+  final def take(duration: Duration, timer: Scheduler = Schedulers.parallel()): SMono[T] = coreMono.take(duration, timer)
+
 }
 
 object SMono {

@@ -969,5 +969,18 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport{
       val mono = SMono.just(randomValue).tag("integer", "one, two, three")
       Scannable.from(Option(mono)).tags shouldBe Stream("integer" -> "one, two, three")
     }
+
+    ".take" - {
+      "should complete after duration elapse" in {
+        StepVerifier.withVirtualTime(() => SMono.delay(10 seconds).take(5 seconds))
+          .thenAwait(5 seconds)
+          .verifyComplete()
+      }
+      "with duration and scheduler should complete after duration elapse" in {
+        StepVerifier.withVirtualTime(() => SMono.delay(10 seconds).take(5 seconds, Schedulers.parallel()))
+          .thenAwait(5 seconds)
+          .verifyComplete()
+      }
+    }
   }
 }
