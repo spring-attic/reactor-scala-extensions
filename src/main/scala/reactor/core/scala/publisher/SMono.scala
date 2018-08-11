@@ -203,6 +203,8 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
 
   final def take(duration: Duration, timer: Scheduler = Schedulers.parallel()): SMono[T] = coreMono.take(duration, timer)
 
+  final def takeUntilOther(other: Publisher[_]): SMono[T] = coreMono.takeUntilOther(other)
+
 }
 
 object SMono {

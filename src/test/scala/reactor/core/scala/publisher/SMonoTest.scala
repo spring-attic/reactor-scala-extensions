@@ -982,5 +982,10 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport{
           .verifyComplete()
       }
     }
+
+    ".takeUntilOther should complete if the companion publisher emit any signal first" in {
+      StepVerifier.withVirtualTime(() => SMono.delay(10 seconds).takeUntilOther(SMono.just("a")))
+        .verifyComplete()
+    }
   }
 }
