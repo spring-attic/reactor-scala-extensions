@@ -1000,5 +1000,15 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport{
           .verifyComplete()
       }
     }
+
+    ".thenEmpty should complete this mono then for a supplied publisher to also complete" in {
+      val latch = new CountDownLatch(1)
+      val mono = SMono.just(randomValue)
+        .doOnSuccess(_ => latch.countDown())
+        .thenEmpty(SMono.empty)
+      StepVerifier.create(mono)
+        .verifyComplete()
+      latch.await(1, TimeUnit.SECONDS) shouldBe true
+    }
   }
 }
