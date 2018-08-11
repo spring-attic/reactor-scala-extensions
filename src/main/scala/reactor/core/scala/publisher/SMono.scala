@@ -205,7 +205,7 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
 
   final def takeUntilOther(other: Publisher[_]): SMono[T] = coreMono.takeUntilOther(other)
 
-  final def `then`(): SMono[Unit] = new ReactiveSMono[Unit](coreMono.`then`().map(_ => ()))
+  final def `then`(): SMono[Unit] = new ReactiveSMono[Unit](coreMono.`then`().map((_: Void) => ()))
 
   final def `then`[V](other: SMono[V]): SMono[V] = coreMono.`then`(other.coreMono)
 
