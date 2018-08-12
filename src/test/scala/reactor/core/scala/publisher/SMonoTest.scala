@@ -1062,5 +1062,11 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport{
       }
     }
 
+    ".transform should transform this mono in order to generate a target mono" in {
+      StepVerifier.create(SMono.just(randomValue).transform(ml => SMono.just(ml.block().toString)))
+        .expectNext(randomValue.toString)
+        .verifyComplete()
+    }
+
   }
 }

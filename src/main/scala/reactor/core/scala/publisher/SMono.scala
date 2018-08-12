@@ -223,6 +223,8 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
     new ReactiveSMono[T](x)
   }
 
+  final def transform[V](transformer: SMono[T] => Publisher[V]): SMono[V] = coreMono.transform[V]((_: JMono[T]) => transformer(SMono.this))
+
 }
 
 object SMono {
