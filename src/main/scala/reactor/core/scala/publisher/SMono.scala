@@ -223,6 +223,9 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
     new ReactiveSMono[T](x)
   }
 
+//  How to test this?
+  final def timestamp(scheduler: Scheduler = Schedulers.parallel()): SMono[(Long, T)] = new ReactiveSMono[(Long, T)](coreMono.timestamp(scheduler).map((t2: Tuple2[JLong, T]) => (Long2long(t2.getT1), t2.getT2)))
+
   final def toFuture: Future[T] = {
     val promise = Promise[T]()
     coreMono.toFuture.handle[Unit]((value: T, throwable: Throwable) => {
