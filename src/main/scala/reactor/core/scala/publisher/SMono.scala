@@ -95,7 +95,7 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
 
   final def doOnSubscribe(onSubscribe: Subscription => Unit): SMono[T] = coreMono.doOnSubscribe(onSubscribe)
 
-  final def doOnTerminate(onTerminate:() => Unit): SMono[T] = coreMono.doOnTerminate(onTerminate)
+  final def doOnTerminate(onTerminate: () => Unit): SMono[T] = coreMono.doOnTerminate(onTerminate)
 
   final def elapsed(scheduler: Scheduler = Schedulers.parallel()): SMono[(Long, T)] = new ReactiveSMono[(Long, T)](coreMono.elapsed().map((t: Tuple2[JLong, T]) => javaTupleLongAndT2ScalaTupleLongAndT[T](t)))
 
@@ -142,12 +142,13 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
   final def ofType[U](clazz: Class[U]): SMono[U] = coreMono.ofType[U](clazz)
 
   final def onErrorMap(mapper: PartialFunction[Throwable, Throwable]): SMono[T] =
-    coreMono.onErrorMap((t: Throwable) => if(mapper.isDefinedAt(t)) mapper(t) else t)
+    coreMono.onErrorMap((t: Throwable) => if (mapper.isDefinedAt(t)) mapper(t) else t)
 
   private def defaultToMonoError[U](t: Throwable): SMono[U] = SMono.raiseError[U](t)
 
   final def onErrorRecover[U <: T](pf: PartialFunction[Throwable, U]): SMono[T] = {
     def recover(t: Throwable): SMono[U] = pf.andThen(u => SMono.just(u)).applyOrElse(t, defaultToMonoError)
+
     onErrorResume(recover)
   }
 
@@ -212,6 +213,15 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
   final def thenEmpty(other: MapablePublisher[Unit]): SMono[Unit] = new ReactiveSMono[Unit]((coreMono: JMono[T]).thenEmpty(other).map((_: Void) => ()))
 
   final def thenMany[V](other: Publisher[V]): SFlux[V] = coreMono.thenMany(other)
+
+  final def timeout(timeout: Duration, fallback: Option[SMono[_ <: T]] = None, timer: Scheduler = Schedulers.parallel()): SMono[T] =
+    coreMono.timeout(timeout, fallback.map(_.coreMono).orNull[JMono[_ <: T]], timer)
+
+  final def timeoutWhen[U](firstTimeout: Publisher[U], fallback: Option[SMono[_ <: T]] = None, timer: Scheduler = Schedulers.parallel()): SMono[T] = {
+    val x: JMono[T] = fallback.map((sm: SMono[_ <: T]) => coreMono.timeout[U](firstTimeout, sm.coreMono))
+      .getOrElse(coreMono.timeout[U](firstTimeout))
+    new ReactiveSMono[T](x)
+  }
 
 }
 

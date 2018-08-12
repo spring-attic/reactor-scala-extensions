@@ -1019,5 +1019,48 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport{
           .verifyComplete()
       }
     }
+
+    ".timeout" - {
+      "should raise TimeoutException after duration elapse" in {
+        StepVerifier.withVirtualTime(() => SMono.delay(10 seconds).timeout(5 seconds))
+          .thenAwait(5 seconds)
+          .expectError(classOf[TimeoutException])
+          .verify()
+      }
+      "should fallback to the provided mono if the value doesn't arrive in given duration" in {
+        StepVerifier.withVirtualTime(() => SMono.delay(10 seconds).timeout(5 seconds, Option(SMono.just(1L))))
+          .thenAwait(5 seconds)
+          .expectNext(1)
+          .verifyComplete()
+      }
+      "with timeout and timer should signal TimeoutException if the item does not arrive before a given period" in {
+        val timer = VirtualTimeScheduler.getOrSet()
+        StepVerifier.withVirtualTime(() => SMono.delay(10 seconds).timeout(5 seconds, timer = timer), () => timer, 1)
+          .thenAwait(5 seconds)
+          .expectError(classOf[TimeoutException])
+          .verify()
+      }
+      "should raise TimeoutException if this mono has not emit value when the provided publisher has emit value" in {
+        val mono = SMono.delay(10 seconds).timeoutWhen(SMono.just("whatever"))
+        StepVerifier.create(mono)
+          .expectError(classOf[TimeoutException])
+          .verify()
+      }
+      "should fallback to the provided fallback mono if this mono does not emit value when the provided publisher emits value" in {
+        val mono = SMono.delay(10 seconds).timeoutWhen(SMono.just("whatever"), Option(SMono.just(-1L)))
+        StepVerifier.create(mono)
+          .expectNext(-1)
+          .verifyComplete()
+      }
+      "with timeout, fallback and timer should fallback to the given mono if the item does not arrive before a given period" in {
+        val timer = VirtualTimeScheduler.getOrSet()
+        StepVerifier.create(SMono.delay(10 seconds, timer)
+          .timeout(5 seconds, Option(SMono.just(-1)), timer), 1)
+          .`then`(() => timer.advanceTimeBy(5 seconds))
+          .expectNext(-1)
+          .verifyComplete()
+      }
+    }
+
   }
 }
