@@ -29,6 +29,7 @@ import scala.language.postfixOps
 import scala.math.Ordering.IntOrdering
 import scala.math.ScalaNumber
 import scala.util.{Failure, Try}
+import ScalaConverters._
 
 class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks with TestSupport {
   "SFlux" - {
@@ -36,6 +37,10 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
       StepVerifier.create(SFlux(1, 2, 3))
         .expectNext(1, 2, 3)
         .verifyComplete()
+    }
+
+    ".asScala should transform Flux into SFlux" in {
+      JFlux.just(1, 2, 3).asScala shouldBe an[SFlux[_]]
     }
 
     ".combineLatest" - {
