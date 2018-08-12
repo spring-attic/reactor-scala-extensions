@@ -21,6 +21,8 @@ import scala.language.postfixOps
 import scala.math.ScalaNumber
 import scala.util.{Failure, Random, Success}
 
+import ScalaConverters._
+
 class SMonoTest extends FreeSpec with Matchers with TestSupport{
   private val randomValue = Random.nextLong()
 
@@ -1068,5 +1070,8 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport{
         .verifyComplete()
     }
 
+    "asScala should transform Mono to SMono" in {
+      JMono.just(randomValue).asScala shouldBe an[SMono[_]]
+    }
   }
 }
