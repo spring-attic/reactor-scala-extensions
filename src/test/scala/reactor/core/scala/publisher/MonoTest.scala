@@ -1255,5 +1255,4 @@ class MonoAsyncTest extends AsyncFreeSpec {
       }
     }
   }
-
 }

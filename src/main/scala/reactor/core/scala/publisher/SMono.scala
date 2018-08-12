@@ -15,7 +15,7 @@ import reactor.util.function.{Tuple2, Tuple3, Tuple4, Tuple5, Tuple6}
 
 import scala.collection.JavaConverters._
 import scala.concurrent.duration.Duration
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.{Failure, Success, Try}
 
 trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
@@ -221,6 +221,16 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
     val x: JMono[T] = fallback.map((sm: SMono[_ <: T]) => coreMono.timeout[U](firstTimeout, sm.coreMono))
       .getOrElse(coreMono.timeout[U](firstTimeout))
     new ReactiveSMono[T](x)
+  }
+
+  final def toFuture: Future[T] = {
+    val promise = Promise[T]()
+    coreMono.toFuture.handle[Unit]((value: T, throwable: Throwable) => {
+      Option(value).foreach(v => promise.complete(Try(v)))
+      Option(throwable).foreach(t => promise.failure(t))
+      ()
+    })
+    promise.future
   }
 
   final def transform[V](transformer: SMono[T] => Publisher[V]): SMono[V] = coreMono.transform[V]((_: JMono[T]) => transformer(SMono.this))

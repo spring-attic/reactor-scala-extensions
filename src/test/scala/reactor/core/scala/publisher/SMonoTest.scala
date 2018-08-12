@@ -6,11 +6,12 @@ import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger, AtomicLong, At
 import org.mockito.Mockito.spy
 import org.mockito.{ArgumentMatchers, Mockito}
 import org.reactivestreams.Subscription
-import org.scalatest.{FreeSpec, Matchers}
+import org.scalatest.{AsyncFreeSpec, FreeSpec, Matchers}
 import reactor.core.Disposable
 import reactor.core.publisher.{BaseSubscriber, Signal, SynchronousSink, Mono => JMono}
 import reactor.core.scala.Scannable
 import reactor.core.scala.publisher.Mono.just
+import reactor.core.scala.publisher.ScalaConverters._
 import reactor.core.scheduler.{Scheduler, Schedulers}
 import reactor.test.StepVerifier
 import reactor.test.scheduler.VirtualTimeScheduler
@@ -21,9 +22,7 @@ import scala.language.postfixOps
 import scala.math.ScalaNumber
 import scala.util.{Failure, Random, Success}
 
-import ScalaConverters._
-
-class SMonoTest extends FreeSpec with Matchers with TestSupport{
+class SMonoTest extends FreeSpec with Matchers with TestSupport {
   private val randomValue = Random.nextLong()
 
   "SMono" - {
@@ -297,6 +296,10 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport{
 
     ".asJava should convert to java" in {
       SMono.just(randomValue).asJava() shouldBe a[JMono[_]]
+    }
+
+    "asScala should transform Mono to SMono" in {
+      JMono.just(randomValue).asScala shouldBe an[SMono[_]]
     }
 
     ".block" - {
@@ -707,7 +710,7 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport{
       class MyCustomException(val message: String) extends Exception(message)
       "with mapper should map the error to another error" in {
         StepVerifier.create(SMono.raiseError[Int](new RuntimeException("runtimeException"))
-          .onErrorMap{case t: Throwable => new MyCustomException(t.getMessage)})
+          .onErrorMap { case t: Throwable => new MyCustomException(t.getMessage) })
           .expectErrorMatches((t: Throwable) => {
             t.getMessage shouldBe "runtimeException"
             t should not be a[RuntimeException]
@@ -874,7 +877,7 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport{
       }
       "with number of repeat should repeat value from this value as many as the provided parameter" in {
         StepVerifier.create(SMono.just(randomValue).repeat(5))
-//          this is a bug in https://github.com/reactor/reactor-core/issues/1252. It should only be 5 in total
+          //          this is a bug in https://github.com/reactor/reactor-core/issues/1252. It should only be 5 in total
           .expectNext(randomValue, randomValue, randomValue, randomValue, randomValue, randomValue)
           .verifyComplete()
       }
@@ -1069,9 +1072,17 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport{
         .expectNext(randomValue.toString)
         .verifyComplete()
     }
+  }
+}
 
-    "asScala should transform Mono to SMono" in {
-      JMono.just(randomValue).asScala shouldBe an[SMono[_]]
+class SMonoAsyncTest extends AsyncFreeSpec {
+  "SMono" - {
+    ".toFuture should convert this mono to future" in {
+      val future: Future[Int] = SMono.just(1).toFuture
+      future map { v => {
+        assert(v == 1)
+      }
+      }
     }
   }
 }
