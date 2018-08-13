@@ -21,12 +21,27 @@ import scala.util.{Failure, Success, Try}
 trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
   self =>
 
+  /**
+    * Join the termination signals from this mono and another source into the returned
+    * void mono
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/and.png" alt="">
+    * <p>
+    *
+    * @param other the [[Publisher]] to wait for
+    *                          complete
+    * @return a new combined [[Mono]]
+    * @see [[Mono.when]]
+    */
   final def and(other: Publisher[_]): SMono[Unit] = {
     new ReactiveSMono(coreMono.and(other match {
       case f: SFlux[_] => f.coreFlux
       case m: SMono[_] => m.coreMono
     })) map[Unit] (_ => ())
   }
+
+  final def as[P](transformer: SMono[T] => P): P = transformer(this)
 
   final def asJava(): JMono[T] = coreMono
 

@@ -294,11 +294,19 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport {
       }
     }
 
+    ".as should transform the Mono to whatever the transformer function is provided" in {
+      val mono = SMono.just(randomValue)
+
+      StepVerifier.create(mono.as(m => SFlux.fromPublisher(m)))
+        .expectNext(randomValue)
+        .verifyComplete()
+    }
+
     ".asJava should convert to java" in {
       SMono.just(randomValue).asJava() shouldBe a[JMono[_]]
     }
 
-    "asScala should transform Mono to SMono" in {
+    ".asScala should transform Mono to SMono" in {
       JMono.just(randomValue).asScala shouldBe an[SMono[_]]
     }
 
