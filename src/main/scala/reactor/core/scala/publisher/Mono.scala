@@ -19,16 +19,16 @@
 package reactor.core.scala.publisher
 
 import java.lang.{Boolean => JBoolean, Iterable => JIterable, Long => JLong}
-import java.time.{Duration => JDuration}
 import java.util.concurrent.{Callable, CompletableFuture}
-import java.util.function.{BiConsumer, BiFunction, BiPredicate, Consumer, Function, Predicate, Supplier}
+import java.util.function.{BiPredicate, Consumer, Function, Predicate, Supplier}
 import java.util.logging.Level
 
 import org.reactivestreams.{Publisher, Subscriber, Subscription}
-import reactor.core.Disposable
-import reactor.core.publisher.{MonoProcessor, MonoSink, Signal, SignalType, SynchronousSink, Flux => JFlux, Mono => JMono}
+import reactor.core.publisher.{MonoSink, Signal, SignalType, SynchronousSink, Flux => JFlux, Mono => JMono}
+import reactor.core.scala.Scannable
 import reactor.core.scala.publisher.PimpMyPublisher._
 import reactor.core.scheduler.Scheduler
+import reactor.core.{Disposable, Scannable => JScannable}
 import reactor.util.context.Context
 import reactor.util.function._
 
@@ -63,8 +63,10 @@ import scala.util.{Failure, Success, Try}
   * @see Flux
   */
 class Mono[T] private(private val jMono: JMono[T])
-  extends Publisher[T] with MapablePublisher[T] with OnErrorReturn[T] with MonoLike[T] with Filter[T] {
+  extends Publisher[T] with MapablePublisher[T] with OnErrorReturn[T] with MonoLike[T] with Filter[T] with Scannable {
   override def subscribe(s: Subscriber[_ >: T]): Unit = jMono.subscribe(s)
+
+  override def jScannable: JScannable = JScannable.from(jMono)
 
   /**
     * Transform this [[Mono]] into a target type.
