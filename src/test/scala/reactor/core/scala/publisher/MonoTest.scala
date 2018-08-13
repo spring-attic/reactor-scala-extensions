@@ -3,7 +3,6 @@ package reactor.core.scala.publisher
 import java.time.{Duration => JDuration}
 import java.util.concurrent._
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicLong, AtomicReference}
-import java.util.function.Supplier
 
 import org.mockito.Mockito.{spy, verify}
 import org.mockito.{ArgumentMatchers, Mockito}
@@ -442,17 +441,40 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
     }
 
     ".cache" - {
-      "should call the underlying cache method" in {
-        val jMono = spy(JMono.just(1))
-        Mono(jMono).cache()
-        Mockito.verify(jMono).cache()
+      "should cache the value" in {
+        val queue = new ArrayBlockingQueue[Int](1)
+        queue.put(1)
+        val mono = Mono.create[Int](sink => {
+          sink.success(queue.poll())
+        }).cache()
+        StepVerifier.create(mono)
+          .expectNext(1)
+          .verifyComplete()
+        StepVerifier.create(mono)
+          .expectNext(1)
+          .verifyComplete()
       }
-      "with ttl should call the underlying cache method" in {
-        val jMono = spy(JMono.just(1))
-        Mono(jMono).cache(10 seconds)
-        Mockito.verify(jMono).cache(10 seconds)
+      "with ttl cache the value up to specific time" in {
+        import reactor.test.scheduler.VirtualTimeScheduler
+        val timeScheduler = VirtualTimeScheduler.getOrSet
+        val queue = new ArrayBlockingQueue[Int](1)
+        queue.put(1)
+        val mono = Mono.create[Int](sink => {
+          sink.success(queue.poll())
+        }).cache(1 minute)
+        StepVerifier.create(mono)
+          .expectNext(1)
+          .verifyComplete()
+        timeScheduler.advanceTimeBy(59 second)
+        StepVerifier.create(mono)
+          .expectNext(1)
+          .verifyComplete()
+        timeScheduler.advanceTimeBy(2 minute)
+        StepVerifier.create(mono)
+          .verifyComplete()
       }
     }
+
 
     ".cancelOn should cancel the subscriber on a particular scheduler" in {
       val jMono = spy(JMono.just(1))
