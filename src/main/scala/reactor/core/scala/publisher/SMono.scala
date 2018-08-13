@@ -18,6 +18,30 @@ import scala.concurrent.duration.Duration
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.{Failure, Success, Try}
 
+/**
+  * A Reactive Streams [[Publisher]] with basic rx operators that completes successfully by emitting an element, or
+  * with an error.
+  *
+  * <p>
+  * <img src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/mono.png" alt="">
+  * <p>
+  *
+  * <p>The rx operators will offer aliases for input [[Mono]] type to preserve the "at most one"
+  * property of the resulting [[Mono]]. For instance [[Mono.flatMap flatMap]] returns a [[Flux]] with
+  * possibly
+  * more than 1 emission. Its alternative enforcing [[Mono]] input is [[Mono.`then` then]].
+  *
+  * <p>`SMono[Unit]` should be used for [[Publisher]] that just completes without any value.
+  *
+  * <p>It is intended to be used in implementations and return types, input parameters should keep using raw
+  * [[Publisher]] as much as possible.
+  *
+  * <p>Note that using state in the `scala.Function` / lambdas used within Mono operators
+  * should be avoided, as these may be shared between several [[Subscriber Subscribers]].
+  *
+  * @tparam T the type of the single value of this class
+  * @see [[SFlux]]
+  */
 trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
   self =>
 
@@ -31,8 +55,8 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
     *
     * @param other the [[Publisher]] to wait for
     *                          complete
-    * @return a new combined [[Mono]]
-    * @see [[Mono.when]]
+    * @return a new combined [[SMono]]
+    * @see [[SMono.when]]
     */
   final def and(other: Publisher[_]): SMono[Unit] = {
     new ReactiveSMono(coreMono.and(other match {
@@ -41,6 +65,16 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
     })) map[Unit] (_ => ())
   }
 
+  /**
+    * Transform this [[Mono]] into a target type.
+    *
+    * `mono.as(Flux::from).subscribe()`
+    *
+    * @param transformer the { @link Function} applying this { @link Mono}
+    * @tparam P the returned instance type
+    * @return the transformed { @link Mono} to instance P
+    * @see [[Mono.compose]] for a bounded conversion to [[org.reactivestreams.Publisher]]
+    */
   final def as[P](transformer: SMono[T] => P): P = transformer(this)
 
   final def asJava(): JMono[T] = coreMono
@@ -302,12 +336,35 @@ object SMono {
 
   def raiseError[T](error: Throwable): SMono[T] = JMono.error[T](error)
 
+  /**
+    * Aggregate given void publishers into a new a `Mono` that will be
+    * fulfilled when all of the given `Monos` have been fulfilled. If any Mono terminates without value,
+    * the returned sequence will be terminated immediately and pending results cancelled.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/whent.png" alt="">
+    * <p>
+    *
+    * @param sources The sources to use.
+    * @return a [[SMono]].
+    */
   def when(sources: Iterable[_ <: Publisher[Unit] with MapablePublisher[Unit]]): SMono[Unit] = {
     new ReactiveSMono[Unit](
       JMono.when(sources.map(s => s.map((_: Unit) => None.orNull: Void)).asJava).map((_: Void) => ())
     )
   }
 
+  /**
+    * Aggregate given publishers into a new `Mono` that will be fulfilled
+    * when all of the given `sources` have been fulfilled. An error will cause
+    * pending results to be cancelled and immediate error emission to the returned [[SMono]].
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/whent.png" alt="">
+    * <p>
+    *
+    * @param sources The sources to use.
+    * @return a [[SMono]].
+    */
   def when(sources: Publisher[Unit] with MapablePublisher[Unit]*): SMono[Unit] = new ReactiveSMono[Unit](
     JMono.when(sources.map(s => s.map((_: Unit) => None.orNull: Void)).asJava).map((_: Void) => ())
   )

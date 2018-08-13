@@ -19,14 +19,13 @@
 package reactor.core.scala.publisher
 
 import java.lang.{Boolean => JBoolean, Iterable => JIterable, Long => JLong}
-import java.time.{Duration => JDuration}
 import java.util.concurrent.{Callable, CompletableFuture}
-import java.util.function.{BiConsumer, BiFunction, BiPredicate, Consumer, Function, Predicate, Supplier}
+import java.util.function.{BiPredicate, Consumer, Function, Predicate, Supplier}
 import java.util.logging.Level
 
 import org.reactivestreams.{Publisher, Subscriber, Subscription}
 import reactor.core.Disposable
-import reactor.core.publisher.{MonoProcessor, MonoSink, Signal, SignalType, SynchronousSink, Flux => JFlux, Mono => JMono}
+import reactor.core.publisher.{MonoSink, Signal, SignalType, SynchronousSink, Flux => JFlux, Mono => JMono}
 import reactor.core.scala.publisher.PimpMyPublisher._
 import reactor.core.scheduler.Scheduler
 import reactor.util.context.Context
