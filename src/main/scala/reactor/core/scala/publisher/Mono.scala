@@ -98,22 +98,6 @@ class Mono[T] private(private val jMono: JMono[T])
   }
 
   /**
-    * Intercepts the onSubscribe call and makes sure calls to Subscription methods
-    * only happen after the child Subscriber has returned from its onSubscribe method.
-    *
-    * <p>This helps with child Subscribers that don't expect a recursive call from
-    * onSubscribe into their onNext because, for example, they request immediately from
-    * their onSubscribe but don't finish their preparation before that and onNext
-    * runs into a half-prepared state. This can happen with non Reactor based
-    * Subscribers.
-    *
-    * @return non reentrant onSubscribe [[Mono]]
-    */
-  final def awaitOnSubscribe(): Mono[T] = new Mono[T](
-    jMono.awaitOnSubscribe()
-  )
-
-  /**
     * Block until a next signal is received, will return null if onComplete, T if onNext, throw a
     * `Exceptions.DownstreamException` if checked error or origin RuntimeException if unchecked.
     *
