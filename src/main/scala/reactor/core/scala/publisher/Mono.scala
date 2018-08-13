@@ -24,8 +24,9 @@ import java.util.function.{BiPredicate, Consumer, Function, Predicate, Supplier}
 import java.util.logging.Level
 
 import org.reactivestreams.{Publisher, Subscriber, Subscription}
-import reactor.core.Disposable
+import reactor.core.{Disposable, Scannable => JScannable}
 import reactor.core.publisher.{MonoSink, Signal, SignalType, SynchronousSink, Flux => JFlux, Mono => JMono}
+import reactor.core.scala.Scannable
 import reactor.core.scala.publisher.PimpMyPublisher._
 import reactor.core.scheduler.Scheduler
 import reactor.util.context.Context
@@ -62,8 +63,11 @@ import scala.util.{Failure, Success, Try}
   * @see Flux
   */
 class Mono[T] private(private val jMono: JMono[T])
-  extends Publisher[T] with MapablePublisher[T] with OnErrorReturn[T] with MonoLike[T] with Filter[T] {
+  extends Publisher[T] with MapablePublisher[T] with OnErrorReturn[T] with MonoLike[T] with Filter[T] with Scannable{
   override def subscribe(s: Subscriber[_ >: T]): Unit = jMono.subscribe(s)
+
+
+  override def jScannable: JScannable = JScannable.from(jMono)
 
   /**
     * Transform this [[Mono]] into a target type.
@@ -107,7 +111,7 @@ class Mono[T] private(private val jMono: JMono[T])
     *
     * @return T the result
     */
-  final def block(): T = jMono.block()
+  final def block(): T = new ReactiveSMono[T](jMono).block()
 
   /**
     * Block until a next signal is received, will return null if onComplete, T if onNext, throw a
@@ -124,7 +128,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @param timeout maximum time period to wait for before raising a [[RuntimeException]]
     * @return T the result
     */
-  final def block(timeout: Duration): T = jMono.block(timeout)
+  final def block(timeout: Duration): T = new ReactiveSMono[T](jMono).block(timeout)
 
   /**
     * Subscribe to this {[[Mono]] Mono} and <strong>block indefinitely</strong> until a next signal is
@@ -141,7 +145,7 @@ class Mono[T] private(private val jMono: JMono[T])
     *
     * @return T the result
     */
-  final def blockOption(): Option[T] = jMono.blockOptional()
+  final def blockOption(): Option[T] = new ReactiveSMono[T](jMono).blockOption()
 
   /**
     * Subscribe to this [[Mono]] and <strong>block</strong> until a next signal is
@@ -161,7 +165,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @param timeout maximum time period to wait for before raising a [[RuntimeException]]
     * @return T the result
     */
-  final def blockOption(timeout: Duration): Option[T] = jMono.blockOptional(timeout)
+  final def blockOption(timeout: Duration): Option[T] = new ReactiveSMono(jMono).blockOption(timeout)
 
   /**
     * Cast the current [[Mono]] produced type into a target produced type.
@@ -173,9 +177,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @param clazz the target type to cast to
     * @return a casted [[Mono]]
     */
-  final def cast[E](clazz: Class[E]) = new Mono[E](
-    jMono.cast(clazz)
-  )
+  final def cast[E](clazz: Class[E]): Mono[E] = Mono.from(new ReactiveSMono[T](jMono).cast[E](clazz))
 
   /**
     * Turn this [[Mono]] into a hot source and cache last emitted signals for further [[Subscriber]].
@@ -186,9 +188,9 @@ class Mono[T] private(private val jMono: JMono[T])
     *
     * @return a replaying [[Mono]]
     */
-  final def cache(): Mono[T] = Mono[T](jMono.cache())
+  final def cache(): Mono[T] = Mono.from(new ReactiveSMono[T](jMono).cache())
 
-  final def cache(ttl: Duration) = Mono(jMono.cache(ttl))
+  final def cache(ttl: Duration): Mono[T] = Mono.from(new ReactiveSMono[T](jMono).cache(ttl))
 
   /**
     * Prepare this [[Mono]] so that subscribers will cancel from it on a

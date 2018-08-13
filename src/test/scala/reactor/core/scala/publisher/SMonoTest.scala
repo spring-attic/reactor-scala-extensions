@@ -147,7 +147,7 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport {
         .expectNoEvent(1 second)
     }
 
-    ".name should call the underlying Mono.name method" in {
+    ".name should give name to this sequence" in {
       val name = "one two three four"
       val scannable: Scannable = Scannable.from(Option(SMono.just(randomValue).name(name)))
       scannable.name shouldBe name

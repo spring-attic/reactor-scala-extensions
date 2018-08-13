@@ -54,7 +54,7 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
     * <p>
     *
     * @param other the [[Publisher]] to wait for
-    *                          complete
+    *              complete
     * @return a new combined [[SMono]]
     * @see [[SMono.when]]
     */
@@ -79,6 +79,7 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
 
   /**
     * Get the underlying [[reactor.core.publisher.Mono]]
+    *
     * @return [[reactor.core.publisher.Mono]]
     */
   final def asJava(): JMono[T] = coreMono
@@ -99,7 +100,7 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
     * @return T the result
     */
   final def block(timeout: Duration = Duration.Inf): T =
-    if(timeout == Duration.Inf) coreMono.block()
+    if (timeout == Duration.Inf) coreMono.block()
     else coreMono.block(timeout)
 
   /**
@@ -121,7 +122,7 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
     * @return T the result
     */
   final def blockOption(timeout: Duration = Duration.Inf): Option[T] =
-    if(timeout == Duration.Inf) coreMono.blockOptional()
+    if (timeout == Duration.Inf) coreMono.blockOptional()
     else coreMono.blockOptional(timeout)
 
   /**
@@ -136,9 +137,21 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
     */
   final def cast[E](clazz: Class[E]): SMono[E] = coreMono.cast(clazz)
 
-  final def cache(): SMono[T] = coreMono.cache()
-
-  final def cache(ttl: Duration): SMono[T] = coreMono.cache(ttl)
+  /**
+    * Turn this [[SMono]] into a hot source and cache last emitted signals for further
+    * [[Subscriber]], with an expiry timeout.
+    * <p>
+    * Completion and Error will also be replayed until `ttl` triggers in which case
+    * the next [[Subscriber]] will start over a new subscription.
+    * <p>
+    * <img width="500" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/cache1.png"
+    * alt="">
+    *
+    * @return a replaying [[SMono]]
+    */
+  final def cache(ttl: Duration = Duration.Inf): SMono[T] =
+    if (ttl == Duration.Inf) coreMono.cache()
+    else coreMono.cache(ttl)
 
   final def cancelOn(scheduler: Scheduler): SMono[T] = coreMono.cancelOn(scheduler)
 
@@ -233,6 +246,13 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
 
   final def mergeWith(other: Publisher[_ <: T]): SFlux[T] = coreMono.mergeWith(other)
 
+  /**
+    * Give a name to this sequence, which can be retrieved using [[Scannable.name()]]
+    * as long as this is the first reachable [[Scannable.parents()]].
+    *
+    * @param name a name for the sequence
+    * @return the same sequence, but bearing a name
+    */
   final def name(name: String): SMono[T] = coreMono.name(name)
 
   final def ofType[U](clazz: Class[U]): SMono[U] = coreMono.ofType[U](clazz)
@@ -319,7 +339,7 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
     new ReactiveSMono[T](x)
   }
 
-//  How to test this?
+  //  How to test this?
   final def timestamp(scheduler: Scheduler = Schedulers.parallel()): SMono[(Long, T)] = new ReactiveSMono[(Long, T)](coreMono.timestamp(scheduler).map((t2: Tuple2[JLong, T]) => (Long2long(t2.getT1), t2.getT2)))
 
   final def toFuture: Future[T] = {

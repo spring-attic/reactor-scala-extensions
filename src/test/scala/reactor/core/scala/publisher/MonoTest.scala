@@ -12,6 +12,7 @@ import org.scalatest.prop.TableDrivenPropertyChecks
 import org.scalatest.{AsyncFreeSpec, FreeSpec, Matchers}
 import reactor.core.Disposable
 import reactor.core.publisher.{BaseSubscriber, Signal, SynchronousSink, Flux => JFlux, Mono => JMono}
+import reactor.core.scala.Scannable
 import reactor.core.scala.publisher.Mono.just
 import reactor.core.scheduler.{Scheduler, Schedulers}
 import reactor.test.StepVerifier
@@ -206,11 +207,10 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
       }
     }
 
-    ".name should call the underlying Mono.name method" in {
-      val jMono = spy(JMono.just(1))
-      val mono = Mono(jMono)
-      mono.name("mono-integer")
-      verify(jMono).name("mono-integer")
+    ".name should give name to this sequence" in {
+      val name = "one two three four"
+      val scannable: Scannable = Scannable.from(Option(Mono.just(randomValue).name(name)))
+      scannable.name shouldBe name
     }
 
     ".never will never signal any data, error or completion signal" in {
