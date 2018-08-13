@@ -1573,7 +1573,7 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
         .verifyComplete()
     }
 
-    ".name should call the underlying Flux.name method" in {
+    ".name should name the sequence" in {
       val name = "flux integer"
       val flux = Flux.just(1, 2, 3, 4).name(name)
       val scannable: Scannable = Scannable.from(Option(flux))
