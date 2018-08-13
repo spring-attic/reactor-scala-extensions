@@ -124,6 +124,16 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
     if(timeout == Duration.Inf) coreMono.blockOptional()
     else coreMono.blockOptional(timeout)
 
+  /**
+    * Cast the current [[SMono]] produced type into a target produced type.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/cast1.png" alt="">
+    *
+    * @tparam E the [[SMono]] output type
+    * @param clazz the target type to cast to
+    * @return a casted [[SMono]]
+    */
   final def cast[E](clazz: Class[E]): SMono[E] = coreMono.cast(clazz)
 
   final def cache(): SMono[T] = coreMono.cache()
