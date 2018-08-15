@@ -199,9 +199,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @param scheduler the [[reactor.core.scheduler.Scheduler]] to signal cancel  on
     * @return a scheduled cancel [[Mono]]
     */
-  final def cancelOn(scheduler: Scheduler): Mono[T] = Mono[T](
-    jMono.cancelOn(scheduler)
-  )
+  final def cancelOn(scheduler: Scheduler): Mono[T] = Mono.from(new ReactiveSMono[T](jMono).cancelOn(scheduler))
 
   /**
     * Defer the given transformation to this [[Mono]] in order to generate a
@@ -216,7 +214,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @return a new [[Mono]]
     * @see [[Mono.as]] for a loose conversion to an arbitrary type
     */
-  final def compose[V](transformer: (Mono[T] => Publisher[V])): Mono[V] = {
+  final def compose[V](transformer: Mono[T] => Publisher[V]): Mono[V] = {
     val transformerFunction = new Function[JMono[T], Publisher[V]] {
       override def apply(t: JMono[T]): Publisher[V] = transformer(Mono.this)
     }
