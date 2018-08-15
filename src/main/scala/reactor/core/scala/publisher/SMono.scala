@@ -66,14 +66,14 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
   }
 
   /**
-    * Transform this [[Mono]] into a target type.
+    * Transform this [[SMono]] into a target type.
     *
     * `mono.as(Flux::from).subscribe()`
     *
     * @param transformer the { @link Function} applying this { @link Mono}
     * @tparam P the returned instance type
-    * @return the transformed { @link Mono} to instance P
-    * @see [[Mono.compose]] for a bounded conversion to [[org.reactivestreams.Publisher]]
+    * @return the transformed [[SMono]] to instance P
+    * @see [[SMono.compose]] for a bounded conversion to [[org.reactivestreams.Publisher]]
     */
   final def as[P](transformer: SMono[T] => P): P = transformer(this)
 
@@ -153,8 +153,29 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
     if (ttl == Duration.Inf) coreMono.cache()
     else coreMono.cache(ttl)
 
+  /**
+    * Prepare this [[SMono]] so that subscribers will cancel from it on a
+    * specified
+    * [[reactor.core.scheduler.Scheduler]].
+    *
+    * @param scheduler the [[reactor.core.scheduler.Scheduler]] to signal cancel  on
+    * @return a scheduled cancel [[SMono]]
+    */
   final def cancelOn(scheduler: Scheduler): SMono[T] = coreMono.cancelOn(scheduler)
 
+  /**
+    * Defer the given transformation to this [[Mono]] in order to generate a
+    * target [[SMono]] type. A transformation will occur for each
+    * [[org.reactivestreams.Subscriber]].
+    *
+    * `flux.compose(SMono::fromPublisher).subscribe()`
+    *
+    * @param transformer the function to immediately map this [[Mono]] into a target [[Mono]]
+    *                    instance.
+    * @tparam V the item type in the returned [[org.reactivestreams.Publisher]]
+    * @return a new [[SMono]]
+    * @see [[SMono.as]] for a loose conversion to an arbitrary type
+    */
   final def compose[V](transformer: SMono[T] => Publisher[V]): SMono[V] = {
     val transformerFunction = new Function[JMono[T], Publisher[V]] {
       override def apply(t: JMono[T]): Publisher[V] = transformer(SMono.this)
@@ -162,6 +183,15 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
     coreMono.compose(transformerFunction)
   }
 
+  /**
+    * Concatenate emissions of this [[SMono]] with the provided [[Publisher]]
+    * (no interleave).
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/concat1.png" alt="">
+    *
+    * @param other the [[Publisher]] sequence to concat after this [[SFlux]]
+    * @return a concatenated [[SFlux]]
+    */
   final def concatWith(other: Publisher[T]): SFlux[T] = coreMono.concatWith(other)
 
   final def ++(other: Publisher[T]): SFlux[T] = concatWith(other)

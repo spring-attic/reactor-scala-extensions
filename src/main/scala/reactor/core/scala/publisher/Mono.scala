@@ -218,9 +218,7 @@ class Mono[T] private(private val jMono: JMono[T])
     val transformerFunction = new Function[JMono[T], Publisher[V]] {
       override def apply(t: JMono[T]): Publisher[V] = transformer(Mono.this)
     }
-    Mono[V](
-      jMono.compose(transformerFunction)
-    )
+    Mono.from(new ReactiveSMono[V](jMono.compose(transformerFunction)))
   }
 
   /**
@@ -232,7 +230,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @param other the [[Publisher]] sequence to concat after this [[Flux]]
     * @return a concatenated [[Flux]]
     */
-  final def concatWith(other: Publisher[T]): Flux[T] = Flux(jMono.concatWith(other))
+  final def concatWith(other: Publisher[T]): Flux[T] = Flux.from(new ReactiveSMono[T](jMono.concatWith(other)))
 
   /**
     * Provide a default unique value if this mono is completed without any data
