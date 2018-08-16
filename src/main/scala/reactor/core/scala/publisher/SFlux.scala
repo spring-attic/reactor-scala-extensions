@@ -126,6 +126,17 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] {
 
   final def count(): SMono[Long] = new ReactiveSMono[Long](coreFlux.count())
 
+  /**
+    * Provide a default unique value if this sequence is completed without any data
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/defaultifempty.png" alt="">
+    * <p>
+    *
+    * @param defaultV the alternate value if this sequence is empty
+    * @return a new [[SFlux]]
+    */
+  final def defaultIfEmpty(defaultV: T): SFlux[T] = new ReactiveSFlux[T](coreFlux.defaultIfEmpty(defaultV))
+
   final def delayElements(delay: Duration, timer: Scheduler = Schedulers.parallel()): SFlux[T] = new ReactiveSFlux[T](coreFlux.delayElements(delay, timer))
 
   final def delaySequence(delay: Duration, timer: Scheduler = Schedulers.parallel()): SFlux[T] = new ReactiveSFlux[T](coreFlux.delaySequence(delay, timer))

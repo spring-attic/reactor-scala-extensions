@@ -230,7 +230,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @param other the [[Publisher]] sequence to concat after this [[Flux]]
     * @return a concatenated [[Flux]]
     */
-  final def concatWith(other: Publisher[T]): Flux[T] = Flux.from(new ReactiveSMono[T](jMono.concatWith(other)))
+  final def concatWith(other: Publisher[T]): Flux[T] = Flux.from(new ReactiveSFlux[T](jMono.concatWith(other)))
 
   /**
     * Provide a default unique value if this mono is completed without any data
@@ -243,7 +243,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @return a new [[Mono]]
     * @see [[Flux.defaultIfEmpty]]
     */
-  final def defaultIfEmpty(defaultV: T): Mono[T] = Mono[T](jMono.defaultIfEmpty(defaultV))
+  final def defaultIfEmpty(defaultV: T): Mono[T] = Mono.from[T](new ReactiveSMono[T](jMono.defaultIfEmpty(defaultV)))
 
   /**
     * Delay this [[Mono]] element ([[Subscriber.onNext]] signal) by a given

@@ -818,6 +818,12 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
         .verifyComplete()
     }
 
+    ".defaultIfEmpty should use the provided default value if the SFlux is empty" in {
+      StepVerifier.create(SFlux.empty[Int].defaultIfEmpty(-1))
+        .expectNext(-1)
+        .verifyComplete()
+    }
+
     ".delayElement should delay every elements by provided delay in Duration" in {
       try {
         StepVerifier.withVirtualTime(() => SFlux.just(1, 2, 3).delayElements(1 second).elapsed())

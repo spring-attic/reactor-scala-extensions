@@ -198,6 +198,17 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
 
   private[publisher] def coreMono: JMono[T]
 
+  /**
+    * Provide a default unique value if this mono is completed without any data
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/defaultifempty.png" alt="">
+    * <p>
+    *
+    * @param defaultV the alternate value if this sequence is empty
+    * @return a new [[SMono]]
+    * @see [[SFlux.defaultIfEmpty]]
+    */
   final def defaultIfEmpty(defaultV: T): SMono[T] = coreMono.defaultIfEmpty(defaultV)
 
   final def delayElement(delay: Duration, timer: Scheduler = Schedulers.parallel()): SMono[T] = coreMono.delayElement(delay)
