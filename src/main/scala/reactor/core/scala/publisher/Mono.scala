@@ -260,7 +260,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @param delay duration by which to delay the [[Subscriber.onNext]] signal
     * @return a delayed [[Mono]]
     */
-  final def delayElement(delay: Duration) = Mono(jMono.delayElement(delay))
+  final def delayElement(delay: Duration): Mono[T] = Mono.from(new ReactiveSMono(jMono).delayElement(delay))
 
   /**
     * Delay this [[Mono]] element ([[Subscriber.onNext]] signal) by a given
@@ -278,7 +278,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @param timer a time-capable [[Scheduler]] instance to delay the value signal on
     * @return a delayed [[Mono]]
     */
-  final def delayElement(delay: Duration, timer: Scheduler) = Mono(jMono.delayElement(delay, timer))
+  final def delayElement(delay: Duration, timer: Scheduler): Mono[T] = Mono.from(new ReactiveSMono(jMono).delayElement(delay, timer))
 
   /**
     * Subscribe to this [[Mono Mono]] and another [[Publisher]] that is generated from
@@ -299,7 +299,7 @@ class Mono[T] private(private val jMono: JMono[T])
     *                                  [[Publisher]] whose termination will trigger relaying the value.
     * @return this Mono, but delayed until the derived publisher terminates.
     */
-  final def delayUntil(triggerProvider: T => Publisher[_]) = Mono(jMono.delayUntil(triggerProvider))
+  final def delayUntil(triggerProvider: T => Publisher[_]): Mono[T] = Mono.from(new ReactiveSMono(jMono).delayUntil(triggerProvider))
 
   /**
     * Delay the [[Mono.subscribe subscription]] to this [[Mono]] source until the given
@@ -312,7 +312,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @return a delayed [[Mono]]
     *
     */
-  final def delaySubscription(delay: Duration): Mono[T] = Mono(jMono.delaySubscription(delay))
+  final def delaySubscription(delay: Duration): Mono[T] = Mono.from(new ReactiveSMono(jMono).delaySubscription(delay))
 
   /**
     * Delay the [[Mono.subscribe subscription]] to this [[Mono]] source until the given
@@ -326,7 +326,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @return a delayed [[Mono]]
     *
     */
-  final def delaySubscription(delay: Duration, timer: Scheduler) = Mono(jMono.delaySubscription(delay, timer))
+  final def delaySubscription(delay: Duration, timer: Scheduler) = Mono.from(new ReactiveSMono(jMono).delaySubscription(delay, timer))
 
   /**
     * Delay the subscription to this [[Mono]] until another [[Publisher]]
@@ -341,9 +341,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @return a delayed [[Mono]]
     *
     */
-  final def delaySubscription[U](subscriptionDelay: Publisher[U]): Mono[T] = new Mono[T](
-    jMono.delaySubscription(subscriptionDelay)
-  )
+  final def delaySubscription[U](subscriptionDelay: Publisher[U]): Mono[T] = Mono.from(new ReactiveSMono(jMono).delaySubscription(subscriptionDelay))
 
   /**
     * A "phantom-operator" working only if this
@@ -357,9 +355,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @tparam X the dematerialized type
     * @return a dematerialized [[Mono]]
     */
-  final def dematerialize[X](): Mono[X] = new Mono[X](
-    jMono.dematerialize[X]()
-  )
+  final def dematerialize[X](): Mono[X] = Mono.from(new ReactiveSMono(jMono).dematerialize[X]())
 
   /**
     * Triggered after the [[Mono]] terminates, either by completing downstream successfully or with an error.

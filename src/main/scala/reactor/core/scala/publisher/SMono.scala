@@ -211,14 +211,86 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
     */
   final def defaultIfEmpty(defaultV: T): SMono[T] = coreMono.defaultIfEmpty(defaultV)
 
+  /**
+    * Delay this [[SMono]] element ([[Subscriber.onNext]] signal) by a given
+    * [[Duration]], on a particular [[Scheduler]]. Empty monos or error signals are not delayed.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/delayonnext.png" alt="">
+    *
+    * <p>
+    * Note that the scheduler on which the mono chain continues execution will be the
+    * scheduler provided if the mono is valued, or the current scheduler if the mono
+    * completes empty or errors.
+    *
+    * @param delay [[Duration]] by which to delay the [[Subscriber.onNext]] signal
+    * @param timer a time-capable [[Scheduler]] instance to delay the value signal on
+    * @return a delayed [[SMono]]
+    */
   final def delayElement(delay: Duration, timer: Scheduler = Schedulers.parallel()): SMono[T] = coreMono.delayElement(delay)
 
+  /**
+    * Delay the [[SMono.subscribe subscription]] to this [[SMono]] source until the given
+    * [[Duration]] elapses.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/delaysubscription1.png" alt="">
+    *
+    * @param delay [[Duration]] before subscribing this [[SMono]]
+    * @param timer a time-capable [[Scheduler]] instance to run on
+    * @return a delayed [[SMono]]
+    *
+    */
   final def delaySubscription(delay: Duration, timer: Scheduler = Schedulers.parallel()): SMono[T] = new ReactiveSMono[T](coreMono.delaySubscription(delay, timer))
 
+  /**
+    * Delay the subscription to this [[SMono]] until another [[Publisher]]
+    * signals a value or completes.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/delaysubscriptionp1.png" alt="">
+    *
+    * @param subscriptionDelay a
+    *                          [[Publisher]] to signal by next or complete this [[SMono.subscribe]]
+    * @tparam U the other source type
+    * @return a delayed [[SMono]]
+    *
+    */
   final def delaySubscription[U](subscriptionDelay: Publisher[U]): SMono[T] = new ReactiveSMono[T](coreMono.delaySubscription(subscriptionDelay))
 
+  /**
+    * Subscribe to this [[SMono]] and another [[Publisher]] that is generated from
+    * this Mono's element and which will be used as a trigger for relaying said element.
+    * <p>
+    * That is to say, the resulting [[SMono]] delays until this Mono's element is
+    * emitted, generates a trigger Publisher and then delays again until the trigger
+    * Publisher terminates.
+    * <p>
+    * Note that contiguous calls to all delayUntil are fused together.
+    * The triggers are generated and subscribed to in sequence, once the previous trigger
+    * completes. Error is propagated immediately
+    * downstream. In both cases, an error in the source is immediately propagated.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/delayUntil.png" alt="">
+    *
+    * @param triggerProvider a [[Function1]] that maps this Mono's value into a
+    *                                  [[Publisher]] whose termination will trigger relaying the value.
+    * @return this [[SMono]], but delayed until the derived publisher terminates.
+    */
   final def delayUntil(triggerProvider: T => Publisher[_]): SMono[T] = coreMono.delayUntil(triggerProvider)
 
+  /**
+    * A "phantom-operator" working only if this
+    * [[SMono]] is a emits onNext, onError or onComplete [[reactor.core.publisher.Signal]]. The relative [[org.reactivestreams.Subscriber]]
+    * callback will be invoked, error [[reactor.core.publisher.Signal]] will trigger onError and complete [[reactor.core.publisher.Signal]] will trigger
+    * onComplete.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/dematerialize1.png" alt="">
+    *
+    * @tparam X the dematerialized type
+    * @return a dematerialized [[SMono]]
+    */
   final def dematerialize[X](): SMono[X] = coreMono.dematerialize[X]()
 
   final def doAfterSuccessOrError(afterTerminate: Try[_ <: T] => Unit): SMono[T] = {
