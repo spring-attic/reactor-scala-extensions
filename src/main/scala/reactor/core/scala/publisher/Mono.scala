@@ -373,9 +373,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @param afterTerminate the callback to call after [[org.reactivestreams.Subscriber.onNext]], [[org.reactivestreams.Subscriber.onComplete]] without preceding [[org.reactivestreams.Subscriber.onNext]] or [[org.reactivestreams.Subscriber.onError]]
     * @return a new [[Mono]]
     */
-  final def doAfterSuccessOrError(afterTerminate: (_ >: T, Throwable) => Unit): Mono[T] = Mono[T](
-    jMono.doAfterSuccessOrError(afterTerminate)
-  )
+  final def doAfterSuccessOrError(afterTerminate: (_ >: T, Throwable) => Unit): Mono[T] = Mono.from(new ReactiveSMono[T](jMono.doAfterSuccessOrError(afterTerminate)))
 
   /**
     * Add behavior (side-effect) triggered after the [[Mono]] terminates, either by

@@ -293,6 +293,22 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
     */
   final def dematerialize[X](): SMono[X] = coreMono.dematerialize[X]()
 
+  /**
+    * Triggered after the [[SMono]] terminates, either by completing downstream successfully or with an error.
+    * The arguments will be null depending on success, success with data and error:
+    * <ul>
+    * <li>null, null : completed without data</li>
+    * <li>T, null : completed with data</li>
+    * <li>null, Throwable : failed with/without data</li>
+    * </ul>
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/doafterterminate1.png" alt="">
+    * <p>
+    *
+    * @param afterTerminate the callback to call after [[org.reactivestreams.Subscriber.onNext]], [[org.reactivestreams.Subscriber.onComplete]] without preceding [[org.reactivestreams.Subscriber.onNext]] or [[org.reactivestreams.Subscriber.onError]]
+    * @return a new [[SMono]]
+    */
   final def doAfterSuccessOrError(afterTerminate: Try[_ <: T] => Unit): SMono[T] = {
     val biConsumer = (t: T, u: Throwable) => Option(t) match {
       case Some(s) => afterTerminate(Success(s))
