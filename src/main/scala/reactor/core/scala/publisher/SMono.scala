@@ -317,6 +317,16 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
     coreMono.doAfterSuccessOrError(biConsumer)
   }
 
+  /**
+    * Add behavior (side-effect) triggered after the [[SMono]] terminates, either by
+    * completing downstream successfully or with an error.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/doafterterminate1.png" alt="">
+    * <p>
+    *
+    * @param afterTerminate the callback to call after [[Subscriber.onComplete]] or [[Subscriber.onError]]
+    * @return an observed  [[SMono]]
+    */
   final def doAfterTerminate(afterTerminate: () => Unit): SMono[T] = coreMono.doAfterTerminate(afterTerminate)
 
   final def doFinally(onFinally: SignalType => Unit): SMono[T] = coreMono.doFinally(onFinally)

@@ -385,7 +385,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @param afterTerminate the callback to call after [[Subscriber.onComplete]] or [[Subscriber.onError]]
     * @return an observed  [[Flux]]
     */
-  final def doAfterTerminate(afterTerminate: () => Unit): Mono[T] = Mono(jMono.doAfterTerminate(afterTerminate))
+  final def doAfterTerminate(afterTerminate: () => Unit): Mono[T] = Mono.from(new ReactiveSMono[T](jMono).doAfterTerminate(afterTerminate))
 
   final def doFinally(onFinally: (SignalType => Unit)): Mono[T] = {
     val onFinallyFunction = new Consumer[SignalType] {
