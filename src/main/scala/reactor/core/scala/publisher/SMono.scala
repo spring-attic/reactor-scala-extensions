@@ -329,6 +329,22 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
     */
   final def doAfterTerminate(afterTerminate: () => Unit): SMono[T] = coreMono.doAfterTerminate(afterTerminate)
 
+  /**
+    * Add behavior triggering <strong>after</strong> the [[SMono]] terminates for any reason,
+    * including cancellation. The terminating event [[SignalType.ON_COMPLETE]],
+    * [[SignalType#ON_ERROR]] and [[SignalType#CANCEL]]) is passed to the consumer,
+    * which is executed after the signal has been passed downstream.
+    * <p>
+    * Note that the fact that the signal is propagated downstream before the callback is
+    * executed means that several doFinally in a row will be executed in
+    * <strong>reverse order</strong>. If you want to assert the execution of the callback
+    * please keep in mind that the Mono will complete before it is executed, so its
+    * effect might not be visible immediately after eg. a [[SMono.block()]].
+    *
+    * @param onFinally the callback to execute after a terminal signal (complete, error
+    *                  or cancel)
+    * @return an observed [[SMono]]
+    */
   final def doFinally(onFinally: SignalType => Unit): SMono[T] = coreMono.doFinally(onFinally)
 
   final def doOnCancel(onCancel: () => Unit): SMono[T] = coreMono.doOnCancel(onCancel)

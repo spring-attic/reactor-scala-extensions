@@ -387,14 +387,7 @@ class Mono[T] private(private val jMono: JMono[T])
     */
   final def doAfterTerminate(afterTerminate: () => Unit): Mono[T] = Mono.from(new ReactiveSMono[T](jMono).doAfterTerminate(afterTerminate))
 
-  final def doFinally(onFinally: (SignalType => Unit)): Mono[T] = {
-    val onFinallyFunction = new Consumer[SignalType] {
-      override def accept(t: SignalType): Unit = onFinally(t)
-    }
-    new Mono[T](
-      jMono.doFinally(onFinallyFunction)
-    )
-  }
+  final def doFinally(onFinally: SignalType => Unit): Mono[T] = Mono.from(new ReactiveSMono[T](jMono).doFinally(onFinally))
 
   /**
     * Triggered when the [[Mono]] is cancelled.
