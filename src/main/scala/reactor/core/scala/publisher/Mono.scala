@@ -412,14 +412,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @param onNext the callback to call on [[Subscriber.onNext]]
     * @return a new [[Mono]]
     */
-  final def doOnNext(onNext: (T => Unit)): Mono[T] = {
-    val onNextFunction = new Consumer[T] {
-      override def accept(t: T): Unit = onNext(t)
-    }
-    new Mono[T](
-      jMono.doOnNext(onNextFunction)
-    )
-  }
+  final def doOnNext(onNext: T => Unit): Mono[T] = Mono.from(new ReactiveSMono[T](jMono).doOnNext(onNext))
 
   /**
     * Triggered when the [[Mono]] completes successfully.

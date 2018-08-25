@@ -359,6 +359,16 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
     */
   final def doOnCancel(onCancel: () => Unit): SMono[T] = coreMono.doOnCancel(onCancel)
 
+  /**
+    * Add behavior triggered when the [[SMono]] emits a data successfully.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/doonnext.png" alt="">
+    * <p>
+    *
+    * @param onNext the callback to call on [[Subscriber.onNext]]
+    * @return a new [[SMono]]
+    */
   final def doOnNext(onNext: T => Unit): SMono[T] = coreMono.doOnNext(onNext)
 
   final def doOnSuccess(onSuccess: T => Unit): SMono[T] = coreMono.doOnSuccess(onSuccess)
