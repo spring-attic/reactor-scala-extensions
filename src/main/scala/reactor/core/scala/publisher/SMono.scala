@@ -347,6 +347,16 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
     */
   final def doFinally(onFinally: SignalType => Unit): SMono[T] = coreMono.doFinally(onFinally)
 
+  /**
+    * Triggered when the [[SMono]] is cancelled.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/dooncancel.png" alt="">
+    * <p>
+    *
+    * @param onCancel the callback to call on [[org.reactivestreams.Subscriber.cancel]]
+    * @return a new [[SMono]]
+    */
   final def doOnCancel(onCancel: () => Unit): SMono[T] = coreMono.doOnCancel(onCancel)
 
   final def doOnNext(onNext: T => Unit): SMono[T] = coreMono.doOnNext(onNext)

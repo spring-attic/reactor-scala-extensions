@@ -400,14 +400,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @param onCancel the callback to call on [[org.reactivestreams.Subscriber.cancel]]
     * @return a new [[Mono]]
     */
-  final def doOnCancel(onCancel: () => Unit): Mono[T] = {
-    val onCancelFunction = new Runnable {
-      override def run(): Unit = onCancel()
-    }
-    new Mono[T](
-      jMono.doOnCancel(onCancelFunction)
-    )
-  }
+  final def doOnCancel(onCancel: () => Unit): Mono[T] = Mono.from(new ReactiveSMono[T](jMono).doOnCancel(onCancel))
 
   /**
     * Add behavior triggered when the [[Mono]] emits a data successfully.
