@@ -371,6 +371,23 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
     */
   final def doOnNext(onNext: T => Unit): SMono[T] = coreMono.doOnNext(onNext)
 
+  /**
+    * Triggered when the [[SMono]] completes successfully.
+    *
+    * <ul>
+    * <li>null : completed without data</li>
+    * <li>T: completed with data</li>
+    * </ul>
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/doonsuccess.png" alt="">
+    * <p>
+    *
+    * @param onSuccess the callback to call on, argument is null if the [[SMono]]
+    *                  completes without data
+    *                  [[org.reactivestreams.Subscriber.onNext]] or [[org.reactivestreams.Subscriber.onComplete]] without preceding [[org.reactivestreams.Subscriber.onNext]]
+    * @return a new [[SMono]]
+    */
   final def doOnSuccess(onSuccess: T => Unit): SMono[T] = coreMono.doOnSuccess(onSuccess)
 
   final def doOnError(onError: Throwable => Unit): SMono[T] = coreMono.doOnError(onError)

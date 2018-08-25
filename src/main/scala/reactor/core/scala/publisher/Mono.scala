@@ -431,14 +431,7 @@ class Mono[T] private(private val jMono: JMono[T])
     *                  [[org.reactivestreams.Subscriber.onNext]] or [[org.reactivestreams.Subscriber.onComplete]] without preceding [[org.reactivestreams.Subscriber.onNext]]
     * @return a new [[Mono]]
     */
-  final def doOnSuccess(onSuccess: (T => Unit)): Mono[T] = {
-    val onSuccessFunction = new Consumer[T] {
-      override def accept(t: T): Unit = onSuccess(t)
-    }
-    new Mono[T](
-      jMono.doOnSuccess(onSuccessFunction)
-    )
-  }
+  final def doOnSuccess(onSuccess: T => Unit): Mono[T] = Mono.from(new ReactiveSMono[T](jMono).doOnSuccess(onSuccess))
 
   /**
     * Triggered when the [[Mono]] completes with an error.
