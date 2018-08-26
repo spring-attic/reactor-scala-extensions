@@ -644,6 +644,8 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
             ((_: RuntimeException) => atomicBoolean.compareAndSet(false, true) shouldBe true): SConsumer[RuntimeException])
         StepVerifier.create(mono)
           .expectError(classOf[RuntimeException])
+          .verify()
+        atomicBoolean shouldBe 'get
       }
       "with predicate and callback fnction should call the callback function when the predicate returns true" in {
         val atomicBoolean = new AtomicBoolean(false)

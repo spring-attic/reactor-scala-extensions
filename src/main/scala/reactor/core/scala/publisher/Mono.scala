@@ -456,10 +456,11 @@ class Mono[T] private(private val jMono: JMono[T])
     * @return an observed  [[Mono]]
     *
     */
-  final def doOnError[E <: Throwable](exceptionType: Class[E], onError: (E => Unit)): Mono[T] = new Mono[T](
-    jMono.doOnError(exceptionType, onError: Consumer[E])
-  )
-
+  final def doOnError[E <: Throwable](exceptionType: Class[E], onError: E => Unit): Mono[T] =
+    doOnError {
+      case e: E => onError(e)
+      case _: Throwable => ()
+    }
   /**
     * Triggered when the [[Mono]] completes with an error matching the given exception.
     * <p>
