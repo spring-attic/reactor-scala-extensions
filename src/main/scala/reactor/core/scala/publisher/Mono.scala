@@ -443,9 +443,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @param onError the error callback to call on [[org.reactivestreams.Subscriber.onError]]
     * @return a new [[Mono]]
     */
-  final def doOnError(onError: (Throwable => Unit)): Mono[T] = new Mono[T](
-    jMono.doOnError(onError)
-  )
+  final def doOnError(onError: Throwable => Unit): Mono[T] = Mono.from(new ReactiveSMono[T](jMono).doOnError(onError))
 
   /**
     * Triggered when the [[Mono]] completes with an error matching the given exception type.

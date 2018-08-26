@@ -390,6 +390,16 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
     */
   final def doOnSuccess(onSuccess: T => Unit): SMono[T] = coreMono.doOnSuccess(onSuccess)
 
+  /**
+    * Triggered when the [[SMono]] completes with an error.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/doonerror1.png" alt="">
+    * <p>
+    *
+    * @param onError the error callback to call on [[org.reactivestreams.Subscriber.onError]]
+    * @return a new [[SMono]]
+    */
   final def doOnError(onError: Throwable => Unit): SMono[T] = coreMono.doOnError(onError)
 
   final def doOnRequest(consumer: Long => Unit): SMono[T] = coreMono.doOnRequest(consumer)
