@@ -485,9 +485,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @param consumer the consumer to invoke on each request
     * @return an observed  [[Mono]]
     */
-  final def doOnRequest(consumer: Long => Unit) = new Mono[T](
-    jMono.doOnRequest(consumer)
-  )
+  final def doOnRequest(consumer: Long => Unit): Mono[T] = Mono.from(new ReactiveSMono[T](jMono).doOnRequest(consumer))
 
   /**
     * Triggered when the [[Mono]] is subscribed.

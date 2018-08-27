@@ -402,6 +402,15 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
     */
   final def doOnError(onError: Throwable => Unit): SMono[T] = coreMono.doOnError(onError)
 
+  /**
+    * Attach a `Long consumer` to this [[SMono]] that will observe any request to this [[SMono]].
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/doonrequest1.png" alt="">
+    *
+    * @param consumer the consumer to invoke on each request
+    * @return an observed  [[SMono]]
+    */
   final def doOnRequest(consumer: Long => Unit): SMono[T] = coreMono.doOnRequest(consumer)
 
   final def doOnSubscribe(onSubscribe: Subscription => Unit): SMono[T] = coreMono.doOnSubscribe(onSubscribe)
