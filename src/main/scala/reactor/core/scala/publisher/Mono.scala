@@ -471,9 +471,10 @@ class Mono[T] private(private val jMono: JMono[T])
     * @return an observed  [[Mono]]
     *
     */
-  final def doOnError(predicate: (Throwable => Boolean), onError: (Throwable => Unit)): Mono[T] = new Mono[T](
-    jMono.doOnError(predicate: Predicate[Throwable], onError: Consumer[Throwable])
-  )
+  final def doOnError(predicate: Throwable => Boolean, onError: Throwable => Unit): Mono[T] = doOnError {
+    case e: Throwable if predicate(e) => onError(e)
+    case _: Throwable => ()
+  }
 
   /**
     * Attach a `Long consumer` to this [[Mono]] that will observe any request to this [[Mono]].
