@@ -64,7 +64,7 @@ import scala.util.{Failure, Success, Try}
   */
 class Mono[T] private(private val jMono: JMono[T])
   extends Publisher[T] with MapablePublisher[T] with OnErrorReturn[T] with MonoLike[T] with Filter[T] with Scannable {
-  override def subscribe(s: Subscriber[_ >: T]): Unit = jMono.subscribe(s)
+  override def subscribe(s: Subscriber[_ >: T]): Unit = new ReactiveSMono[T](jMono).subscribe(s)
 
   override def jScannable: JScannable = JScannable.from(jMono)
 
@@ -485,7 +485,9 @@ class Mono[T] private(private val jMono: JMono[T])
     * @param consumer the consumer to invoke on each request
     * @return an observed  [[Mono]]
     */
-  final def doOnRequest(consumer: Long => Unit): Mono[T] = Mono.from(new ReactiveSMono[T](jMono).doOnRequest(consumer))
+  final def doOnRequest(consumer: Long => Unit): Mono[T] = new Mono[T](
+    jMono.doOnRequest(consumer)
+  )
 
   /**
     * Triggered when the [[Mono]] is subscribed.
@@ -509,7 +511,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @param onTerminate the callback to call [[Subscriber.onNext]], [[Subscriber.onComplete]] without preceding [[Subscriber.onNext]] or [[Subscriber.onError]]
     * @return a new [[Mono]]
     */
-  final def doOnTerminate(onTerminate:() => Unit) = Mono(jMono.doOnTerminate(onTerminate))
+  final def doOnTerminate(onTerminate:() => Unit): Mono[T] = Mono.from(new ReactiveSMono(jMono).doOnTerminate(onTerminate))
 
   private val javaTupleLongAndT2ScalaTupleLongAndT = new Function[Tuple2[JLong, T], (Long, T)] {
     override def apply(t: Tuple2[JLong, T]): (Long, T) = (Long2long(t.getT1), t.getT2)

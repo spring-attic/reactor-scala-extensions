@@ -661,7 +661,12 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
     ".doOnRequest should call the callback function when subscriber request data" in {
       val atomicLong = new AtomicLong(0)
       val mono = Mono.just(randomValue)
-        .doOnRequest(l => atomicLong.compareAndSet(0, l))
+        .doOnRequest{
+          l => {
+            Console.out.println(s"l: $l")
+            atomicLong.compareAndSet(0, l)
+          }
+        }
       mono.subscribe(new BaseSubscriber[Long] {
         override def hookOnSubscribe(subscription: Subscription): Unit = {
           subscription.request(1)
