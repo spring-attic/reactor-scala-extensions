@@ -413,6 +413,16 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
     */
   final def doOnRequest(consumer: Long => Unit): SMono[T] = coreMono.doOnRequest(consumer)
 
+  /**
+    * Triggered when the [[SMono]] is subscribed.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/doonsubscribe.png" alt="">
+    * <p>
+    *
+    * @param onSubscribe the callback to call on [[Subscriber.onSubscribe]]
+    * @return a new [[SMono]]
+    */
   final def doOnSubscribe(onSubscribe: Subscription => Unit): SMono[T] = coreMono.doOnSubscribe(onSubscribe)
 
   final def doOnTerminate(onTerminate: () => Unit): SMono[T] = coreMono.doOnTerminate(onTerminate)

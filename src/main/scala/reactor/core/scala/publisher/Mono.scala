@@ -497,9 +497,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @param onSubscribe the callback to call on [[Subscriber#onSubscribe]]
     * @return a new [[Mono]]
     */
-  final def doOnSubscribe(onSubscribe: Subscription => Unit) = new Mono[T](
-    jMono.doOnSubscribe(onSubscribe)
-  )
+  final def doOnSubscribe(onSubscribe: Subscription => Unit): Mono[T] = Mono.from(new ReactiveSMono[T](jMono).doOnSubscribe(onSubscribe))
 
   /**
     * Add behavior triggered when the [[Mono]] terminates, either by completing successfully or with an error.
