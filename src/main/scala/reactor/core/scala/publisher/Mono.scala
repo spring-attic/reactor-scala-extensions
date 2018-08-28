@@ -527,7 +527,7 @@ class Mono[T] private(private val jMono: JMono[T])
     *
     * @return a transforming [[Mono]]that emits a tuple of time elapsed in milliseconds and matching data
     */
-  final def elapsed() = Mono[(Long, T)](jMono.elapsed().map(javaTupleLongAndT2ScalaTupleLongAndT))
+  final def elapsed(): Mono[(Long, T)] = Mono.from(new ReactiveSMono[T](jMono).elapsed())
 
   /**
     * Map this [[Mono]] sequence into [[scala.Tuple2]] of T1 [[Long]] timemillis and T2

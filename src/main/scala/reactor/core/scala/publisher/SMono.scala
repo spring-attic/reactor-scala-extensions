@@ -437,6 +437,17 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
     */
   final def doOnTerminate(onTerminate: () => Unit): SMono[T] = coreMono.doOnTerminate(onTerminate)
 
+  /**
+    * Map this [[Mono]] sequence into [[scala.Tuple2]] of T1 [[Long]] timemillis and T2
+    * `T` associated data. The timemillis corresponds to the elapsed time between the subscribe and the first
+    * next signal.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/elapsed1.png" alt="">
+    *
+    * @param scheduler the [[Scheduler]] to read time from. Defaulted to [[Schedulers.parallel()]]
+    * @return a transforming [[SMono]] that emits a tuple of time elapsed in milliseconds and matching data
+    */
   final def elapsed(scheduler: Scheduler = Schedulers.parallel()): SMono[(Long, T)] = new ReactiveSMono[(Long, T)](coreMono.elapsed().map((t: Tuple2[JLong, T]) => javaTupleLongAndT2ScalaTupleLongAndT[T](t)))
 
   final def expandDeep(expander: T => Publisher[_ <: T], capacityHint: Int = SMALL_BUFFER_SIZE): SFlux[T] = coreMono.expandDeep(expander, capacityHint)
