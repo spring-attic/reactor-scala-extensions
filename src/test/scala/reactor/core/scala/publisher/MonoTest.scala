@@ -663,7 +663,6 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
       val mono = Mono.just(randomValue)
         .doOnRequest{
           l => {
-            Console.out.println(s"l: $l")
             atomicLong.compareAndSet(0, l)
           }
         }
