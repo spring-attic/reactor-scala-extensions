@@ -693,7 +693,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @param tester the predicate to evaluate
     * @return a filtered [[Mono]]
     */
-  final def filter(tester: T => Boolean) = Mono[T](jMono.filter(tester))
+  final def filter(tester: T => Boolean): Mono[T] = Mono.from(new ReactiveSMono[T](jMono).filter(tester))
 
   /**
     * If this [[Mono]] is valued, test the value asynchronously using a generated

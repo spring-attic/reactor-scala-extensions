@@ -518,10 +518,21 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
     *                             values into a [[Publisher]], producing a graph.
     * @param capacityHint a capacity hint to prepare the inner queues to accommodate n
     *                     elements per level of recursion.
-    * @return this Mono expanded breadth-first to a [[Flux]]
+    * @return this Mono expanded breadth-first to a [[SFlux]]
     */
   final def expand(expander: T => Publisher[_ <: T], capacityHint: Int = SMALL_BUFFER_SIZE): SFlux[T] = coreMono.expand(expander, capacityHint)
 
+  /**
+    * Test the result if any of this [[SMono]] and replay it if predicate returns true.
+    * Otherwise complete without value.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/filter1.png" alt="">
+    * <p>
+    *
+    * @param tester the predicate to evaluate
+    * @return a filtered [[SMono]]
+    */
   final def filter(tester: T => Boolean): SMono[T] = coreMono.filter(tester)
 
   final def filterWhen(asyncPredicate: T => _ <: MapablePublisher[Boolean]): SMono[T] = {
