@@ -646,7 +646,7 @@ class Mono[T] private(private val jMono: JMono[T])
     *                     elements per level of recursion.
     * @return this Mono expanded breadth-first to a [[Flux]]
     */
-  final def expand(expander: T => Publisher[_ <: T], capacityHint: Int) = Flux(jMono.expand(expander, capacityHint))
+  final def expand(expander: T => Publisher[_ <: T], capacityHint: Int): Flux[T] = Flux.from(new ReactiveSMono[T](jMono).expand(expander, capacityHint))
 
   /**
     * Recursively expand elements into a graph and emit all the resulting element using
@@ -680,7 +680,7 @@ class Mono[T] private(private val jMono: JMono[T])
     *                             values into a [[Publisher]], producing a graph.
     * @return this Mono expanded breadth-first to a [[Flux]]
     */
-  final def expand(expander: T => Publisher[_ <: T]) = Flux(jMono.expand(expander))
+  final def expand(expander: T => Publisher[_ <: T]): Flux[T] = Flux.from(new ReactiveSMono[T](jMono).expand(expander))
 
   /**
     * Test the result if any of this [[Mono]] and replay it if predicate returns true.
