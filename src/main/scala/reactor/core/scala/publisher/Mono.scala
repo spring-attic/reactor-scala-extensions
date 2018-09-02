@@ -610,7 +610,7 @@ class Mono[T] private(private val jMono: JMono[T])
     *                             values into a [[Publisher]], producing a graph.
     * @return this Mono expanded depth-first to a [[Flux]]
     */
-  final def expandDeep(expander: T => Publisher[_ <: T]) = Flux(jMono.expandDeep(expander))
+  final def expandDeep(expander: T => Publisher[_ <: T]): Flux[T] = Flux.from(new ReactiveSMono[T](jMono).expandDeep(expander))
 
   /**
     * Recursively expand elements into a graph and emit all the resulting element using
