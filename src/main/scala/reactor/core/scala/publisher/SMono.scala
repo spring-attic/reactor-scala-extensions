@@ -535,6 +535,19 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
     */
   final def filter(tester: T => Boolean): SMono[T] = coreMono.filter(tester)
 
+  /**
+    * If this [[SMono]] is valued, test the value asynchronously using a generated
+    * [[Publisher[Boolean]]] test. The value from the Mono is replayed if the
+    * first item emitted by the test is `true`. It is dropped if the test is
+    * either empty or its first emitted value is false``.
+    * <p>
+    * Note that only the first value of the test publisher is considered, and unless it
+    * is a [[Mono]], test will be cancelled after receiving that first value.
+    *
+    * @param asyncPredicate the function generating a [[Publisher]] of [[Boolean]]
+    *                                                         to filter the Mono with
+    * @return a filtered [[SMono]]
+    */
   final def filterWhen(asyncPredicate: T => _ <: MapablePublisher[Boolean]): SMono[T] = {
     val asyncPredicateFunction = new Function[T, Publisher[JBoolean]] {
       override def apply(t: T): Publisher[JBoolean] = asyncPredicate(t).map(Boolean2boolean(_))

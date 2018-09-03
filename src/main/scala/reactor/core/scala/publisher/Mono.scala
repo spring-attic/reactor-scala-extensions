@@ -709,10 +709,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @return a filtered [[Mono]]
     */
   final def filterWhen(asyncPredicate: T => _ <: Publisher[Boolean] with MapablePublisher[Boolean]): Mono[T] = {
-    val asyncPredicateFunction = new Function[T, Publisher[JBoolean]] {
-      override def apply(t: T): Publisher[JBoolean] = asyncPredicate(t).map(Boolean2boolean(_))
-    }
-    Mono(jMono.filterWhen(asyncPredicateFunction))
+    Mono.from(new ReactiveSMono[T](jMono).filterWhen(asyncPredicate))
   }
 
   /**
