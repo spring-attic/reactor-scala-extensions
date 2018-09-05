@@ -555,6 +555,18 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
     coreMono.filterWhen(asyncPredicateFunction)
   }
 
+  /**
+    * Transform the item emitted by this [[SMono]] asynchronously, returning the
+    * value emitted by another [[SMono]] (possibly changing the value type).
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/then.png" alt="">
+    * <p>
+    *
+    * @param transformer the function to dynamically bind a new [[SMono]]
+    * @tparam R the result type bound
+    * @return a new [[SMono]] with an asynchronously mapped value.
+    */
   final def flatMap[R](transformer: T => SMono[R]): SMono[R] = coreMono.flatMap[R]((t: T) => transformer(t).coreMono)
 
   final def flatMapMany[R](mapper: T => Publisher[R]): SFlux[R] = coreMono.flatMapMany(mapper)

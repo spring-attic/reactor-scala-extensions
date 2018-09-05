@@ -724,9 +724,12 @@ class Mono[T] private(private val jMono: JMono[T])
     * @tparam R the result type bound
     * @return a new [[Mono]] with an asynchronously mapped value.
     */
-  final def flatMap[R](transformer: T => Mono[R]): Mono[R] = Mono[R](jMono.flatMap(new Function[T, JMono[R]] {
-    override def apply(t: T): JMono[R] = transformer(t).jMono
-  }))
+  final def flatMap[R](transformer: T => Mono[R]): Mono[R] = {
+    def transformerFunction(t: T): SMono[R] = {
+      new ReactiveSMono[R](transformer(t))
+    }
+    Mono.from[R](new ReactiveSMono[T](jMono).flatMap(transformerFunction))
+  }
 
   /**
     * Transform the item emitted by this [[Mono]] into a Publisher, then forward
