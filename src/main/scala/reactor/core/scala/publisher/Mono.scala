@@ -744,7 +744,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @tparam R the merged sequence type
     * @return a new [[Flux]] as the sequence is not guaranteed to be single at most
     */
-  final def flatMapMany[R](mapper: T => Publisher[R]): Flux[R] = Flux(jMono.flatMapMany(mapper))
+  final def flatMapMany[R](mapper: T => Publisher[R]): Flux[R] = Flux.from(new ReactiveSMono(jMono).flatMapMany(mapper))
 
   /**
     * Transform the signals emitted by this [[Mono]] into a Publisher, then forward
