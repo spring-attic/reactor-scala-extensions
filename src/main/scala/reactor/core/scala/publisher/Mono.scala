@@ -764,7 +764,7 @@ class Mono[T] private(private val jMono: JMono[T])
   final def flatMapMany[R](mapperOnNext: T => Publisher[R],
                            mapperOnError: Throwable => Publisher[R],
                            mapperOnComplete: () => Publisher[R]) =
-    Flux(jMono.flatMapMany(mapperOnNext, mapperOnError, mapperOnComplete))
+    Flux.from(new ReactiveSMono[T](jMono).flatMapMany(mapperOnNext, mapperOnError, mapperOnComplete))
 
   /**
     * Transform the item emitted by this [[Mono]] into [[Iterable]], , then forward

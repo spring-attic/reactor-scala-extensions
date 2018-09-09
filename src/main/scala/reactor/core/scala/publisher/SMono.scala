@@ -584,6 +584,21 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
     */
   final def flatMapMany[R](mapper: T => Publisher[R]): SFlux[R] = coreMono.flatMapMany(mapper)
 
+  /**
+    * Transform the signals emitted by this [[SMono]] into a Publisher, then forward
+    * its emissions into the returned [[SFlux]].
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/flatmaps1.png" alt="">
+    * <p>
+    *
+    * @param mapperOnNext     the [[Function1]] to call on next data and returning a sequence to merge
+    * @param mapperOnError    the[[Function1]] to call on error signal and returning a sequence to merge
+    * @param mapperOnComplete the [[Function1]] to call on complete signal and returning a sequence to merge
+    * @tparam R the type of the produced inner sequence
+    * @return a new [[SFlux]] as the sequence is not guaranteed to be single at most
+    * @see [[SFlux.flatMap]]
+    */
   final def flatMapMany[R](mapperOnNext: T => Publisher[R],
                            mapperOnError: Throwable => Publisher[R],
                            mapperOnComplete: () => Publisher[R]): SFlux[R] =
