@@ -763,7 +763,7 @@ class Mono[T] private(private val jMono: JMono[T])
     */
   final def flatMapMany[R](mapperOnNext: T => Publisher[R],
                            mapperOnError: Throwable => Publisher[R],
-                           mapperOnComplete: () => Publisher[R]) =
+                           mapperOnComplete: () => Publisher[R]): Flux[R] =
     Flux.from(new ReactiveSMono[T](jMono).flatMapMany(mapperOnNext, mapperOnError, mapperOnComplete))
 
   /**
@@ -780,8 +780,8 @@ class Mono[T] private(private val jMono: JMono[T])
     * @return a merged [[Flux]]
     *
     */
-  final def flatMapIterable[R](mapper: T => Iterable[R]): Flux[R] = Flux(
-    jMono.flatMapIterable(mapper.andThen(it => it.asJava))
+  final def flatMapIterable[R](mapper: T => Iterable[R]): Flux[R] = Flux.from(new ReactiveSMono[T](
+    jMono).flatMapIterable(mapper)
   )
 
   /**
@@ -789,7 +789,7 @@ class Mono[T] private(private val jMono: JMono[T])
     *
     * @return a [[Flux]] variant of this [[Mono]]
     */
-  final def flux(): Flux[T] = Flux(jMono.flux())
+  final def flux(): Flux[T] = Flux.from(new ReactiveSMono[T](jMono).flux())
 
   /**
     * Emit a single boolean true if this [[Mono]] has an element.
@@ -800,9 +800,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @return a new [[Mono]] with <code>true</code> if a value is emitted and <code>false</code>
     *                       otherwise
     */
-  final def hasElement = Mono[Boolean](
-    jMono.hasElement.map[Boolean](scalaFunction2JavaFunction((jb: JBoolean) => boolean2Boolean(jb.booleanValue())))
-  )
+  final def hasElement: Mono[Boolean] = Mono.from(new ReactiveSMono[T](jMono).hasElement)
 
   /**
     * Handle the items emitted by this [[Mono]] by calling a biconsumer with the
@@ -814,7 +812,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @tparam R the transformed type
     * @return a transformed [[Mono]]
     */
-  final def handle[R](handler: (T, SynchronousSink[R]) => Unit): Mono[R] = Mono[R](jMono.handle(handler))
+  final def handle[R](handler: (T, SynchronousSink[R]) => Unit): Mono[R] = Mono.from(new ReactiveSMono[T](jMono).handle(handler))
 
   /**
     * Hides the identity of this [[Mono]] instance.

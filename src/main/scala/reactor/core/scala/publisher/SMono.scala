@@ -604,12 +604,50 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
                            mapperOnComplete: () => Publisher[R]): SFlux[R] =
     coreMono.flatMapMany(mapperOnNext, mapperOnError, mapperOnComplete)
 
+  /**
+    * Transform the item emitted by this [[SMono]] into [[Iterable]], , then forward
+    * its elements into the returned [[Flux]]. The prefetch argument allows to
+    * give an
+    * arbitrary prefetch size to the inner [[Iterable]].
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/flatmap.png" alt="">
+    *
+    * @param mapper the [[Function1]] to transform input item into a sequence [[Iterable]]
+    * @tparam R the merged output sequence type
+    * @return a merged [[SFlux]]
+    *
+    */
   final def flatMapIterable[R](mapper: T => Iterable[R]): SFlux[R] = coreMono.flatMapIterable(mapper.andThen(it => it.asJava))
 
+  /**
+    * Convert this [[SMono]] to a [[SFlux]]
+    *
+    * @return a [[SFlux]] variant of this [[SMono]]
+    */
   final def flux(): SFlux[T] = coreMono.flux()
 
+  /**
+    * Emit a single boolean true if this [[SMono]] has an element.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/haselement.png" alt="">
+    *
+    * @return a new [[SMono]] with <code>true</code> if a value is emitted and <code>false</code>
+    *                       otherwise
+    */
   final def hasElement: SMono[Boolean] = coreMono.hasElement.map[Boolean](scalaFunction2JavaFunction((jb: JBoolean) => boolean2Boolean(jb.booleanValue())))
 
+  /**
+    * Handle the items emitted by this [[SMono]] by calling a biconsumer with the
+    * output sink for each onNext. At most one [[SynchronousSink.next]]
+    * call must be performed and/or 0 or 1 [[SynchronousSink.error]] or
+    * [[SynchronousSink.complete]].
+    *
+    * @param handler the handling `BiConsumer`
+    * @tparam R the transformed type
+    * @return a transformed [[SMono]]
+    */
   final def handle[R](handler: (T, SynchronousSink[R]) => Unit): SMono[R] = coreMono.handle[R](handler)
 
   final def ignoreElement: SMono[T] = coreMono.ignoreElement()
