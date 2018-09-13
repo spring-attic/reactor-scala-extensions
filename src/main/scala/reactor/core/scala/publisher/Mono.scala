@@ -823,7 +823,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @return a new [[Mono]] instance
     */
   //TODO: How to test this?
-  final def hide: Mono[T] = Mono[T](jMono.hide())
+  final def hide: Mono[T] = Mono.from(new ReactiveSMono[T](jMono).hide())
 
   /**
     * Ignores onNext signal (dropping it) and only reacts on termination.

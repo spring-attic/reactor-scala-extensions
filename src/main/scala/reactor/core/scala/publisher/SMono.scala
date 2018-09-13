@@ -650,6 +650,16 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
     */
   final def handle[R](handler: (T, SynchronousSink[R]) => Unit): SMono[R] = coreMono.handle[R](handler)
 
+  /**
+    * Hides the identity of this [[SMono]] instance.
+    *
+    * <p>The main purpose of this operator is to prevent certain identity-based
+    * optimizations from happening, mostly for diagnostic purposes.
+    *
+    * @return a new [[SMono]] instance
+    */
+  final def hide(): SMono[T] = coreMono.hide()
+
   final def ignoreElement: SMono[T] = coreMono.ignoreElement()
 
   final def map[R](mapper: T => R): SMono[R] = coreMono.map[R](mapper)
