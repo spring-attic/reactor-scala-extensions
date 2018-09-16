@@ -660,6 +660,15 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
     */
   final def hide(): SMono[T] = coreMono.hide()
 
+  /**
+    * Ignores onNext signal (dropping it) and only reacts on termination.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/ignoreelement.png" alt="">
+    * <p>
+    *
+    * @return a new completable [[SMono]].
+    */
   final def ignoreElement: SMono[T] = coreMono.ignoreElement()
 
   final def map[R](mapper: T => R): SMono[R] = coreMono.map[R](mapper)

@@ -834,7 +834,7 @@ class Mono[T] private(private val jMono: JMono[T])
     *
     * @return a new completable [[Mono]].
     */
-  final def ignoreElement: Mono[T] = Mono[T](jMono.ignoreElement())
+  final def ignoreElement: Mono[T] = Mono.from(new ReactiveSMono[T](jMono).ignoreElement)
 
   /**
     * Observe all Reactive Streams signals and trace them using [[reactor.util.Logger]] support.
