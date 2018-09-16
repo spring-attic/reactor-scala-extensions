@@ -1949,7 +1949,7 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T])
     * @return a new unaltered [[Flux]]
     */
   //  TODO: How to test?
-  final def log() = Flux(jFlux.log())
+  final def log(): Flux[T] = Flux.from(new ReactiveSFlux[T](jFlux).log())
 
   /**
     * Observe all Reactive Streams signals and use [[Logger]] support to handle trace implementation. Default will

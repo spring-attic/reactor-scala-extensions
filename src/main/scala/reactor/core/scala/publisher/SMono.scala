@@ -3,6 +3,7 @@ package reactor.core.scala.publisher
 import java.lang.{Boolean => JBoolean, Long => JLong}
 import java.util.concurrent.{Callable, CompletableFuture}
 import java.util.function.Function
+import java.util.logging.Level
 
 import org.reactivestreams.{Publisher, Subscriber, Subscription}
 import reactor.core.publisher.{MonoSink, Signal, SignalType, SynchronousSink, Flux => JFlux, Mono => JMono}
@@ -670,6 +671,22 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
     * @return a new completable [[SMono]].
     */
   final def ignoreElement: SMono[T] = coreMono.ignoreElement()
+
+  /**
+    * Observe all Reactive Streams signals and trace them using [[reactor.util.Logger]] support.
+    * Default will use [[Level.INFO]] and `java.util.logging`.
+    * If SLF4J is available, it will be used instead.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/log1.png" alt="">
+    * <p>
+    * The default log category will be "reactor.Mono", followed by a suffix generated from
+    * the source operator, e.g. "reactor.Mono.Map".
+    *
+    * @return a new [[SMono]] that logs signals
+    * @see [[SFlux.log()]]
+    */
+  final def log(): SMono[T] = coreMono.log()
 
   final def map[R](mapper: T => R): SMono[R] = coreMono.map[R](mapper)
 

@@ -851,7 +851,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @see [[Flux.log()]]
     */
   //  TODO: How to test all these .log(...) variants?
-  final def log: Mono[T] = Mono[T](jMono.log())
+  final def log: Mono[T] = Mono.from(new ReactiveSMono[T](jMono).log())
 
   /**
     * Observe all Reactive Streams signals and use [[reactor.util.Logger]] support to handle trace implementation. Default will

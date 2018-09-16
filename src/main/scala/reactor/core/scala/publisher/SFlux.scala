@@ -4,6 +4,7 @@ import java.lang.{Boolean => JBoolean, Iterable => JIterable, Long => JLong}
 import java.util
 import java.util.concurrent.Callable
 import java.util.function.{BiFunction, Function, Supplier}
+import java.util.logging.Level
 import java.util.{Collection => JCollection, List => JList, Map => JMap}
 
 import org.reactivestreams.{Publisher, Subscriber}
@@ -13,6 +14,7 @@ import reactor.core.scala.Scannable
 import reactor.core.scala.publisher.PimpMyPublisher._
 import reactor.core.scheduler.{Scheduler, Schedulers}
 import reactor.core.{Disposable, publisher, Scannable => JScannable}
+import reactor.util.Logger
 import reactor.util.concurrent.Queues.{SMALL_BUFFER_SIZE, XS_BUFFER_SIZE}
 import reactor.util.function.{Tuple2, Tuple3, Tuple4, Tuple5, Tuple6}
 
@@ -232,6 +234,19 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] {
   final def last(defaultValue: Option[T] = None): SMono[T] = new ReactiveSMono[T](
     defaultValue map (coreFlux.last(_)) getOrElse coreFlux.last()
   )
+
+  /**
+    * Observe all Reactive Streams signals and use [[Logger]] support to handle trace implementation. Default will
+    * use [[Level.INFO]] and java.util.logging. If SLF4J is available, it will be used instead.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/log.png" alt="">
+    * <p>
+    * The default log category will be "reactor.*", a generated operator suffix will
+    * complete, e.g. "reactor.Flux.Map".
+    *
+    * @return a new unaltered [[SFlux]]
+    */
+  final def log(): SFlux[T] = coreFlux.log()
 
   override final def map[V](mapper: T => V): SFlux[V] = coreFlux.map[V](mapper)
 
