@@ -683,10 +683,13 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
     * The default log category will be "reactor.Mono", followed by a suffix generated from
     * the source operator, e.g. "reactor.Mono.Map".
     *
+    * @param category to be mapped into logger configuration (e.g. org.springframework
+    *                 .reactor). If category ends with "." like "reactor.", a generated operator
+    *                 suffix will complete, e.g. "reactor.Flux.Map".
     * @return a new [[SMono]] that logs signals
     * @see [[SFlux.log()]]
     */
-  final def log(): SMono[T] = coreMono.log()
+  final def log(category: Option[String] = None): SMono[T] = coreMono.log(category.orNull)
 
   final def map[R](mapper: T => R): SMono[R] = coreMono.map[R](mapper)
 

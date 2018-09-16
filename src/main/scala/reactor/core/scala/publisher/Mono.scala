@@ -866,7 +866,7 @@ class Mono[T] private(private val jMono: JMono[T])
     *                 suffix will complete, e.g. "reactor.Flux.Map".
     * @return a new [[Mono]]
     */
-  final def log(category: Option[String]): Mono[T] = Mono[T](jMono.log(category.orNull))
+  final def log(category: Option[String]): Mono[T] = Mono.from(new ReactiveSMono[T](jMono).log(category))
 
   /**
     * Observe Reactive Streams signals matching the passed flags `options` and use

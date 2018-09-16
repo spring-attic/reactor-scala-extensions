@@ -246,7 +246,7 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] {
     *
     * @return a new unaltered [[SFlux]]
     */
-  final def log(): SFlux[T] = coreFlux.log()
+  final def log(category: String = None.orNull[String]): SFlux[T] = coreFlux.log(category)
 
   override final def map[V](mapper: T => V): SFlux[V] = coreFlux.map[V](mapper)
 
