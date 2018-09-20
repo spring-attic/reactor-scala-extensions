@@ -673,23 +673,27 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
   final def ignoreElement: SMono[T] = coreMono.ignoreElement()
 
   /**
-    * Observe all Reactive Streams signals and trace them using [[reactor.util.Logger]] support.
-    * Default will use [[Level.INFO]] and `java.util.logging`.
-    * If SLF4J is available, it will be used instead.
+    * Observe Reactive Streams signals matching the passed flags `options` and use
+    * [[reactor.util.Logger]] support to handle trace implementation. Default will use the passed
+    * [[Level]] and java.util.logging. If SLF4J is available, it will be used instead.
     *
+    * Options allow fine grained filtering of the traced signal, for instance to only capture onNext and onError:
+    * <pre>
+    *     mono.log("category", SignalType.ON_NEXT, SignalType.ON_ERROR)
     * <p>
     * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/log1.png" alt="">
     * <p>
-    * The default log category will be "reactor.Mono", followed by a suffix generated from
-    * the source operator, e.g. "reactor.Mono.Map".
     *
     * @param category to be mapped into logger configuration (e.g. org.springframework
     *                 .reactor). If category ends with "." like "reactor.", a generated operator
     *                 suffix will complete, e.g. "reactor.Flux.Map".
-    * @return a new [[SMono]] that logs signals
-    * @see [[SFlux.log()]]
+    * @param level    the { @link Level} to enforce for this tracing Mono (only FINEST, FINE,
+    *                             INFO, WARNING and SEVERE are taken into account)
+    * @param options a [[Seq]] of [[SignalType]] option to filter log messages
+    * @return a new [[SMono]]
+    *
     */
-  final def log(category: Option[String] = None): SMono[T] = coreMono.log(category.orNull)
+  final def log(category: Option[String] = None, level: Level = Level.INFO, showOperator: Boolean = false, options: Seq[SignalType] = Nil): SMono[T] = coreMono.log(category.orNull, level, showOperator, options: _*)
 
   final def map[R](mapper: T => R): SMono[R] = coreMono.map[R](mapper)
 
