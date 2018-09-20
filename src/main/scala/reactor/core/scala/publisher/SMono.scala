@@ -695,6 +695,17 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
     */
   final def log(category: Option[String] = None, level: Level = Level.INFO, showOperator: Boolean = false, options: Seq[SignalType] = Nil): SMono[T] = coreMono.log(category.orNull, level, showOperator, options: _*)
 
+  /**
+    * Transform the item emitted by this [[SMono]] by applying a synchronous function to it.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/map1.png" alt="">
+    * <p>
+    *
+    * @param mapper the synchronous transforming [[Function1]]
+    * @tparam R the transformed type
+    * @return a new [[SMono]]
+    */
   final def map[R](mapper: T => R): SMono[R] = coreMono.map[R](mapper)
 
   final def materialize(): SMono[Signal[T]] = coreMono.materialize()

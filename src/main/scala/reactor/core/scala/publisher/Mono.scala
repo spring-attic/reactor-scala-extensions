@@ -928,7 +928,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @tparam R the transformed type
     * @return a new [[Mono]]
     */
-  final def map[R](mapper: T => R) = Mono(jMono.map(mapper))
+  final def map[R](mapper: T => R): Mono[R] = Mono.from(new ReactiveSMono[T](jMono).map(mapper))
 
   /**
     * Transform the incoming onNext, onError and onComplete signals into [[Signal]].
