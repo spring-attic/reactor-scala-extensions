@@ -889,7 +889,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @return a new [[Mono]]
     *
     */
-  final def log(category: Option[String], level: Level, options: SignalType*): Mono[T] = Mono.from(new ReactiveSMono(jMono).log(category, level, options = options))
+  final def log(category: Option[String], level: Level, options: SignalType*): Mono[T] = Mono.from(new ReactiveSMono[T](jMono).log(category, level, options = options))
 
   /**
     * Observe Reactive Streams signals matching the passed filter `options` and
@@ -915,7 +915,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @param options          a vararg [[SignalType]] option to filter log messages
     * @return a new unaltered [[Mono]]
     */
-  final def log(category: Option[String], level: Level, showOperatorLine: Boolean, options: SignalType*): Mono[T] = Mono[T](jMono.log(category.orNull, level, showOperatorLine, options: _*))
+  final def log(category: Option[String], level: Level, showOperatorLine: Boolean, options: SignalType*): Mono[T] = Mono.from(new ReactiveSMono[T](jMono).log(category, level, showOperatorLine, options))
 
   /**
     * Transform the item emitted by this [[Mono]] by applying a synchronous function to it.
