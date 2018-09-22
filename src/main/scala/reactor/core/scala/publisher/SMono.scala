@@ -708,8 +708,30 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
     */
   final def map[R](mapper: T => R): SMono[R] = coreMono.map[R](mapper)
 
+  /**
+    * Transform incoming onNext, onError and onComplete signals into [[Signal]] instances,
+    * materializing these signals.
+    * Since the error is materialized as a [[Signal]], the propagation will be stopped and onComplete will be
+    * emitted. Complete signal will first emit a [[Signal.complete()]] and then effectively complete the flux.
+    * All these [[Signal]] have a [[reactor.util.context.Context]] associated to them.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/materialize1.png" alt="">
+    *
+    * @return a [[SMono]] of materialized [[Signal]]
+    * @see [[SMono.dematerialize()]]
+    */
   final def materialize(): SMono[Signal[T]] = coreMono.materialize()
 
+  /**
+    * Merge emissions of this [[SMono]] with the provided [[Publisher]].
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/merge1.png" alt="">
+    * <p>
+    *
+    * @param other the other [[Publisher]] to merge with
+    * @return a new [[SFlux]] as the sequence is not guaranteed to be at most 1
+    */
   final def mergeWith(other: Publisher[_ <: T]): SFlux[T] = coreMono.mergeWith(other)
 
   /**
@@ -741,6 +763,17 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
     coreMono.onErrorResume(fallbackFunction)
   }
 
+  /**
+    * Emit the any of the result from this mono or from the given mono
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/or.png" alt="">
+    * <p>
+    *
+    * @param other the racing other [[SFlux]] to compete with for the result
+    * @return a new [[SFlux]]
+    * @see [[SMono.firstEmitter()]]
+    */
   final def or(other: SMono[_ <: T]): SMono[T] = coreMono.or(other.coreMono)
 
   final def publish[R](transform: SMono[T] => SMono[R]): SMono[R] = {

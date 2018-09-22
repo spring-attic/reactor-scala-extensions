@@ -940,7 +940,7 @@ class Mono[T] private(private val jMono: JMono[T])
     *
     * @return a [[Mono]] of materialized [[Signal]]
     */
-  final def materialize() = new Mono[Signal[T]](jMono.materialize())
+  final def materialize(): Mono[Signal[T]] = Mono.from(new ReactiveSMono[T](jMono).materialize())
 
   /**
     * Merge emissions of this [[Mono]] with the provided [[Publisher]].
@@ -952,7 +952,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @param other the other [[Publisher]] to merge with
     * @return a new [[Flux]] as the sequence is not guaranteed to be at most 1
     */
-  final def mergeWith(other: Publisher[_ <: T]) = Flux(jMono.mergeWith(other))
+  final def mergeWith(other: Publisher[_ <: T]) = Flux.from(new ReactiveSMono[T](jMono).mergeWith(other))
 
   /**
     * Give a name to this sequence, which can be retrieved using [[reactor.core.scala.Scannable.name()]]
@@ -974,7 +974,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @return a new [[Mono]]
     * @see [[Mono.first]]
     */
-  final def or(other: Mono[_ <: T]) = Mono[T](jMono.or(other.jMono))
+  final def or(other: Mono[_ <: T]): Mono[T] = Mono.from(new ReactiveSMono[T](jMono).or(other.jMono))
 
   /**
     * Evaluate the accepted value against the given [[Class]] type. If the
@@ -1884,7 +1884,10 @@ object Mono {
     * @tparam T The type of the function result.
     * @return a [[Mono]].
     */
-  def first[T](monos: Iterable[_ <: Mono[_ <: T]]): Mono[T] = Mono[T](JMono.first[T](monos.map(_.asJava()).asJava))
+  def first[T](monos: Iterable[_ <: Mono[_ <: T]]): Mono[T] = {
+    val sMonos: Seq[SMono[T]] = monos.map((m: Mono[_]) => new ReactiveSMono[T](m.asJava().asInstanceOf[Publisher[T]])).toSeq
+    Mono.from(SMono.firstEmitter[T](sMonos: _*))
+  }
 
   /**
     * Expose the specified [[Publisher]] with the [[Mono]] API, and ensure it will emit 0 or 1 item.
