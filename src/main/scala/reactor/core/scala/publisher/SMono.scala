@@ -865,6 +865,17 @@ object SMono {
 
   def empty[T]: SMono[T] = JMono.empty[T]()
 
+  /**
+    * Pick the first result coming from any of the given monos and populate a new `Mono`.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/first.png" alt="">
+    * <p>
+    *
+    * @param monos The deferred monos to use.
+    * @tparam T The type of the function result.
+    * @return a [[SMono]].
+    */
   def firstEmitter[T](monos: SMono[_ <: T]*): SMono[T] = JMono.first[T](monos.map(_.asJava()): _*)
 
   def fromPublisher[T](source: Publisher[_ <: T]): SMono[T] = JMono.from[T](source)

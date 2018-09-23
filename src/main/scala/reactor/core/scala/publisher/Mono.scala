@@ -1871,7 +1871,10 @@ object Mono {
     * @tparam T The type of the function result.
     * @return a [[Mono]].
     */
-  def first[T](monos: Mono[_ <: T]*): Mono[T] = Mono[T](JMono.first[T](monos.map(_.jMono): _*))
+  def first[T](monos: Mono[_ <: T]*): Mono[T] = {
+    val sMonos: Seq[SMono[T]] = monos.map((m: Mono[_]) => new ReactiveSMono[T](m.asJava().asInstanceOf[Publisher[T]]))
+    Mono.from(SMono.firstEmitter[T](sMonos: _*))
+  }
 
   /**
     * Pick the first result coming from any of the given monos and populate a new `Mono`.
