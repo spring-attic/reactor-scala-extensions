@@ -988,7 +988,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @param clazz the [[Class]] type to test values against
     * @return a new [[Mono]] reduced to items converted to the matched type
     */
-  final def ofType[U](clazz: Class[U]) = Mono[U](jMono.ofType(clazz))
+  final def ofType[U](clazz: Class[U]): Mono[U] = Mono.from(new ReactiveSMono[T](jMono).ofType(clazz))
 
   /**
     * Transform the error emitted by this [[Mono]] by applying a function.

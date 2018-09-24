@@ -743,6 +743,18 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
     */
   final def name(name: String): SMono[T] = coreMono.name(name)
 
+  /**
+    * Evaluate the accepted value against the given [[Class]] type. If the
+    * predicate test succeeds, the value is
+    * passed into the new [[SMono]]. If the predicate test fails, the value is
+    * ignored.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/filter.png" alt="">
+    *
+    * @param clazz the [[Class]] type to test values against
+    * @return a new [[SMono]] reduced to items converted to the matched type
+    */
   final def ofType[U](clazz: Class[U]): SMono[U] = coreMono.ofType[U](clazz)
 
   final def onErrorMap(mapper: PartialFunction[Throwable, Throwable]): SMono[T] =
