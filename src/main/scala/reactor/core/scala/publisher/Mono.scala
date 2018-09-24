@@ -999,7 +999,9 @@ class Mono[T] private(private val jMono: JMono[T])
     * @param mapper the error transforming [[Function1]]
     * @return a transformed [[Mono]]
     */
-  final def onErrorMap(mapper: Throwable => Throwable): Mono[T] = Mono[T](jMono.onErrorMap(mapper))
+  final def onErrorMap(mapper: Throwable => Throwable): Mono[T] = Mono.from(new ReactiveSMono[T](jMono).onErrorMap {
+    case throwable: Throwable => mapper(throwable)
+  })
 
   /**
     * Transform the error emitted by this [[Mono]] by applying a function if the

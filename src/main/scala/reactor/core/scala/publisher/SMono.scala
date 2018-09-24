@@ -757,6 +757,15 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
     */
   final def ofType[U](clazz: Class[U]): SMono[U] = coreMono.ofType[U](clazz)
 
+  /**
+    * Transform the error emitted by this [[SMono]] by applying a function.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/maperror.png"
+    * <p>
+    *
+    * @param mapper the error transforming [[PartialFunction]]
+    * @return a transformed [[SMono]]
+    */
   final def onErrorMap(mapper: PartialFunction[Throwable, Throwable]): SMono[T] =
     coreMono.onErrorMap((t: Throwable) => if (mapper.isDefinedAt(t)) mapper(t) else t)
 
