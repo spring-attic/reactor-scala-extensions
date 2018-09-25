@@ -1016,7 +1016,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @return a transformed [[Mono]]
     */
   final def onErrorMap[E <: Throwable](`type`: Class[E], mapper: E => Throwable): Mono[T] = Mono.from(new ReactiveSMono[T](jMono).onErrorMap {
-    case throwable: E => mapper(throwable)
+    case t:E if t.getClass == `type` => mapper(t)
   })
 
   /**
