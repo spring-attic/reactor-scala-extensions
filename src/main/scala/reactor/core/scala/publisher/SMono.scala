@@ -777,6 +777,17 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
     onErrorResume(recover)
   }
 
+  /**
+    * Subscribe to a returned fallback publisher when any error occurs.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/otherwise.png" alt="">
+    * <p>
+    *
+    * @param fallback the function to map an alternative [[SMono]]
+    * @return an alternating [[SMono]] on source onError
+    * @see [[SFlux.onErrorResume]]
+    */
   final def onErrorResume(fallback: Throwable => SMono[_ <: T]): SMono[T] = {
     val fallbackFunction = new Function[Throwable, JMono[_ <: T]] {
       override def apply(t: Throwable): JMono[_ <: T] = fallback(t).coreMono
