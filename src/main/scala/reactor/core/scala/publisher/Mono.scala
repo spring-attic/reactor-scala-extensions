@@ -1065,10 +1065,9 @@ class Mono[T] private(private val jMono: JMono[T])
     * @see [[Flux.onErrorResume]]
     */
   final def onErrorResume[E <: Throwable](`type`: Class[E], fallback: E => Mono[_ <: T]): Mono[T] = {
-    val fallbackFunction = new Function[E, JMono[_ <: T]] {
-      override def apply(t: E): JMono[_ <: T] = fallback(t).jMono
-    }
-    Mono[T](jMono.onErrorResume(`type`, fallbackFunction))
+    Mono.from(new ReactiveSMono[T](jMono).onErrorResume((t: Throwable) => t match {
+      case e: E => fallback(e).jMono
+    }))
   }
 
   /**
