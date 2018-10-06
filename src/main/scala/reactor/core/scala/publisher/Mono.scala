@@ -1083,12 +1083,10 @@ class Mono[T] private(private val jMono: JMono[T])
     * @return a new [[Mono]]
     * @see Flux#onErrorResume
     */
-  final def onErrorResume(predicate: Throwable => Boolean, fallback: Throwable => Mono[_ <: T]): Mono[T] = {
-    val fallbackFunction = new Function[Throwable, JMono[_ <: T]] {
-      override def apply(t: Throwable): JMono[_ <: T] = fallback(t).jMono
-    }
-    Mono[T](jMono.onErrorResume(predicate, fallbackFunction))
-  }
+  final def onErrorResume(predicate: Throwable => Boolean, fallback: Throwable => Mono[_ <: T]): Mono[T] =
+    Mono.from(new ReactiveSMono[T](jMono).onErrorResume((t: Throwable) => t match {
+    case e: Throwable if predicate(e) => fallback(e).jMono
+  }))
 
   /**
     * Simply emit a captured fallback value when any error is observed on this [[Mono]].
@@ -1100,7 +1098,8 @@ class Mono[T] private(private val jMono: JMono[T])
     * @param fallback the value to emit if an error occurs
     * @return a new falling back [[Mono]]
     */
-  final def onErrorReturn(fallback: T): Mono[T] = Mono[T](jMono.onErrorReturn(fallback))
+  final def onErrorReturn(fallback: T): Mono[T] = Mono.from(new ReactiveSMono[T](jMono)
+    .onErrorResume(_ => SMono.just(fallback)))
 
   /**
     * Simply emit a captured fallback value when an error of the specified type is
