@@ -1112,7 +1112,10 @@ class Mono[T] private(private val jMono: JMono[T])
     * @tparam E the error type
     * @return a new falling back [[Mono]]
     */
-  final def onErrorReturn[E <: Throwable](`type`: Class[E], fallbackValue: T) = Mono[T](jMono.onErrorReturn(`type`, fallbackValue))
+  final def onErrorReturn[E <: Throwable](`type`: Class[E], fallbackValue: T): Mono[T] = Mono.from(new ReactiveSMono[T](jMono)
+    .onErrorResume((t: Throwable) => t match {
+      case _: E => SMono.just(fallbackValue)
+    }))
 
   /**
     * Simply emit a captured fallback value when an error matching the given predicate is
@@ -1124,7 +1127,10 @@ class Mono[T] private(private val jMono: JMono[T])
     * @param fallbackValue the value to emit if a matching error occurs
     * @return a new [[Mono]]
     */
-  final def onErrorReturn(predicate: Throwable => Boolean, fallbackValue: T) = Mono[T](jMono.onErrorReturn(predicate, fallbackValue))
+  final def onErrorReturn(predicate: Throwable => Boolean, fallbackValue: T): Mono[T] = Mono.from(new ReactiveSMono[T](jMono)
+    .onErrorResume((t: Throwable) => t match {
+      case e: Throwable if predicate(e) => SMono.just(fallbackValue)
+    }))
 
   /**
     * Detaches the both the child [[Subscriber]] and the [[Subscription]] on
