@@ -796,6 +796,16 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
   }
 
   /**
+    * Detaches the both the child [[Subscriber]] and the [[Subscription]] on
+    * termination or cancellation.
+    * <p>This should help with odd retention scenarios when running
+    * with non-reactor [[Subscriber]].
+    *
+    * @return a detachable [[SMono]]
+    */
+  final def onTerminateDetach(): SMono[T] = coreMono.onTerminateDetach()
+
+  /**
     * Emit the any of the result from this mono or from the given mono
     *
     * <p>

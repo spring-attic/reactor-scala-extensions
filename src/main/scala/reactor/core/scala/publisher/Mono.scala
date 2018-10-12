@@ -1141,7 +1141,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @return a detachable [[Mono]]
     */
   //  TODO: How to test this?
-  final def onTerminateDetach() = Mono[T](jMono.onTerminateDetach())
+  final def onTerminateDetach(): Mono[T] = Mono.from(new ReactiveSMono[T](jMono).onTerminateDetach())
 
   /**
     * Shares a [[Mono]] for the duration of a function that may transform it and
