@@ -1833,7 +1833,7 @@ object Mono {
     * @tparam T The value type that will be emitted by this mono
     * @return Wrapper of Java Mono
     */
-  private[publisher] def apply[T](javaMono: JMono[T]) = new Mono[T](javaMono)
+  def apply[T](javaMono: JMono[T]): Mono[T] = new Mono[T](javaMono)
 
   def create[T](callback: MonoSink[T] => Unit): Mono[T] = {
     new Mono[T](
