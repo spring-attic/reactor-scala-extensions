@@ -859,6 +859,22 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
     */
   final def repeat(numRepeat: Long = Long.MaxValue, predicate: () => Boolean = () => true): SFlux[T] = coreMono.repeat(numRepeat, predicate)
 
+  /**
+    * Repeatedly subscribe to this [[SMono]] when a companion sequence signals a number of emitted elements in
+    * response to the flux completion signal.
+    * <p>If the companion sequence signals when this [[Mono]] is active, the repeat
+    * attempt is suppressed and any terminal signal will terminate this [[SFlux]] with
+    * the same signal immediately.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/repeatwhen.png" alt="">
+    *
+    * @param whenFactory the [[Function1]] providing a [[SFlux]] signalling an exclusive number of
+    *                                emitted elements on onComplete and returning a [[Publisher]] companion.
+    * @return an eventually repeated [[SFlux]] on onComplete when the companion [[Publisher]] produces an
+    *                                        onNext signal
+    *
+    */
   final def repeatWhen(whenFactory: SFlux[Long] => _ <: Publisher[_]): SFlux[T] = {
     val when = new Function[JFlux[JLong], Publisher[_]] {
       override def apply(t: JFlux[JLong]): Publisher[_] = whenFactory(new ReactiveSFlux[Long](t))

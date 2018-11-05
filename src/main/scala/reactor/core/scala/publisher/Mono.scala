@@ -1221,7 +1221,7 @@ class Mono[T] private(private val jMono: JMono[T])
     *                                        predicate
     *
     */
-  final def repeat(numRepeat: Long, predicate: () => Boolean) = Flux(jMono.repeat(numRepeat, predicate))
+  final def repeat(numRepeat: Long, predicate: () => Boolean): Flux[T] = Flux.from(new ReactiveSMono[T](jMono).repeat(numRepeat, predicate))
 
   private implicit def fluxLong2PublisherAnyToJFluxJLong2PublisherAny(mapper: (Flux[Long] => Publisher[_])): Function[JFlux[JLong], Publisher[_]] = {
     new Function[JFlux[JLong], Publisher[_]] {
@@ -1245,8 +1245,10 @@ class Mono[T] private(private val jMono: JMono[T])
     *                                        onNext signal
     *
     */
-  //  TODO: How to test this?
-  final def repeatWhen(whenFactory: Flux[Long] => _ <: Publisher[_]) = Flux(jMono.repeatWhen(whenFactory))
+  final def repeatWhen(whenFactory: Flux[Long] => _ <: Publisher[_]): Flux[T] = {
+    def whenF(sFlux: SFlux[Long]): Publisher[_] = whenFactory(Flux.from[Long](sFlux))
+    Flux.from(new ReactiveSMono[T](jMono).repeatWhen(whenF))
+  }
 
   /**
     * Repeatedly subscribe to this [[Mono]] until there is an onNext signal when a companion sequence signals a
