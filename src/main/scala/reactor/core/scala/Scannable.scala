@@ -27,12 +27,10 @@ trait Scannable {
   def name: String = jScannable.name()
 
   /**
-    * Check this [[Scannable]] and its [[Scannable.parents()]] for a name an return the
-    * first one that is reachable.
-    *
-    * @return the name of the first parent that has one defined (including this scannable)
+    * Return a meaningful [[String]] representation of this [[Scannable]] in
+    * its chain of [[Scannable.parents]] and [[Scannable.actuals]].
     */
-  def operatorName: String = jScannable.operatorName()
+  def stepName: String = jScannable.stepName()
 
   /**
     * Return a [[Stream]] navigating the [[org.reactivestreams.Subscription]]

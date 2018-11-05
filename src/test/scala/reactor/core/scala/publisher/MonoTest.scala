@@ -1059,7 +1059,7 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
       "with number of repeat should repeat value from this value as many as the provided parameter" in {
         val flux = Mono.just(randomValue).repeat(5)
         StepVerifier.create(flux)
-          .expectNext(randomValue, randomValue, randomValue, randomValue, randomValue)
+          .expectNext(randomValue, randomValue, randomValue, randomValue, randomValue, randomValue)
           .verifyComplete()
       }
       "with number of repeat and predicate should repeat value from this value as many as provided parameter and as" +

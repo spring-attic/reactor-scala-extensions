@@ -1194,7 +1194,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @return an eventually repeated [[Flux]] on onComplete
     *
     */
-  final def repeat(predicate: () => Boolean) = Flux(jMono.repeat(predicate))
+  final def repeat(predicate: () => Boolean): Flux[T] = Flux.from(new ReactiveSMono[T](jMono).repeat(predicate = predicate))
 
   /**
     * Repeatedly subscribe to the source if the predicate returns true after completion of the previous subscription.
@@ -1206,7 +1206,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @return an eventually repeated [[Flux]] on onComplete up to number of repeat specified
     *
     */
-  final def repeat(numRepeat: Long) = Flux(jMono.repeat(numRepeat))
+  final def repeat(numRepeat: Long): Flux[T] = Flux.from(new ReactiveSMono[T](jMono).repeat(numRepeat))
 
   /**
     * Repeatedly subscribe to the source if the predicate returns true after completion of the previous
