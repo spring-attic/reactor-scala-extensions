@@ -1172,7 +1172,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @return an asynchronously producing [[Mono]]
     */
   //TODO: How to test this?
-  final def publishOn(scheduler: Scheduler) = new Mono[T](jMono.publishOn(scheduler))
+  final def publishOn(scheduler: Scheduler): Mono[T] = Mono.from(new ReactiveSMono[T](jMono).publishOn(scheduler))
 
   /**
     * Repeatedly subscribe to the source completion of the previous subscription.

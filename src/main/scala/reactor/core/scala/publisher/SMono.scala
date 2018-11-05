@@ -825,7 +825,7 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
     *
     * @param transform the transformation function
     * @tparam R the output value type
-    * @return a new [[Mono]]
+    * @return a new [[SMono]]
     */
   final def publish[R](transform: SMono[T] => SMono[R]): SMono[R] = {
     val transformFunction = new Function[JMono[T], JMono[R]] {
@@ -833,6 +833,21 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
     }
     coreMono.publish[R](transformFunction)
   }
+
+  /**
+    * Run onNext, onComplete and onError on a supplied [[Scheduler]]
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/publishon1.png" alt="">
+    * <p> <p>
+    * Typically used for fast publisher, slow consumer(s) scenarios.
+    *
+    * `mono.publishOn(Schedulers.single()).subscribe()`
+    *
+    * @param scheduler a checked { @link reactor.core.scheduler.Scheduler.Worker} factory
+    * @return an asynchronously producing [[SMono]]
+    */
+  //TODO: How to test this?
+  final def publishOn(scheduler: Scheduler): SMono[T] = coreMono.publishOn(scheduler)
 
   final def repeat(numRepeat: Long = Long.MaxValue, predicate: () => Boolean = () => true): SFlux[T] = coreMono.repeat(numRepeat, predicate)
 
