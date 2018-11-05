@@ -818,6 +818,15 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
     */
   final def or(other: SMono[_ <: T]): SMono[T] = coreMono.or(other.coreMono)
 
+  /**
+    * Shares a [[SMono]] for the duration of a function that may transform it and
+    * consume it as many times as necessary without causing multiple subscriptions
+    * to the upstream.
+    *
+    * @param transform the transformation function
+    * @tparam R the output value type
+    * @return a new [[Mono]]
+    */
   final def publish[R](transform: SMono[T] => SMono[R]): SMono[R] = {
     val transformFunction = new Function[JMono[T], JMono[R]] {
       override def apply(t: JMono[T]): JMono[R] = transform(SMono.this).coreMono
@@ -898,6 +907,14 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
 }
 
 object SMono {
+
+  /**
+    * An alias of [[SMono.fromPublisher]]
+    * @param source The underlying [[Publisher]]. This can be used to convert [[JMono]] into [[SMono]]
+    * @tparam T a value type parameter of this [[SMono]]
+    * @return [[SMono]]
+    */
+  def apply[T](source: Publisher[_ <: T]): SMono[T] = SMono.fromPublisher[T](source)
 
   def create[T](callback: MonoSink[T] => Unit): SMono[T] = JMono.create[T](callback)
 

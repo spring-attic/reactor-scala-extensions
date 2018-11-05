@@ -1148,15 +1148,15 @@ class Mono[T] private(private val jMono: JMono[T])
     * consume it as many times as necessary without causing multiple subscriptions
     * to the upstream.
     *
-    * @param transform the tranformation function
+    * @param transform the transformation function
     * @tparam R the output value type
     * @return a new [[Mono]]
     */
   final def publish[R](transform: Mono[T] => Mono[R]): Mono[R] = {
-    val transformFunction = new Function[JMono[T], JMono[R]] {
-      override def apply(t: JMono[T]): JMono[R] = transform(Mono.this).jMono
+    def transformF(t: SMono[T]): SMono[R] = {
+      new ReactiveSMono[R](transform(Mono.from[T](t)))
     }
-    Mono[R](jMono.publish(transformFunction))
+    Mono.from[R](new ReactiveSMono[T](jMono).publish[R](transformF))
   }
 
   /**
@@ -1795,6 +1795,7 @@ object Mono {
     * @param javaMono The underlying Java Mono
     * @tparam T The value type that will be emitted by this mono
     * @return Wrapper of Java Mono
+    * @deprecated
     */
   def apply[T](javaMono: JMono[T]): Mono[T] = new Mono[T](javaMono)
 

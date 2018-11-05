@@ -1080,6 +1080,11 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport {
         .expectNext(randomValue.toString)
         .verifyComplete()
     }
+
+    ".apply should convert to scala" in {
+      val mono = SMono(JMono.just(randomValue))
+      mono shouldBe a[SMono[_]]
+    }
   }
 }
 
