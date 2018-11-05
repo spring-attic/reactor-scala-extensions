@@ -1182,7 +1182,7 @@ class Mono[T] private(private val jMono: JMono[T])
     *
     * @return an indefinitively repeated [[Flux]] on onComplete
     */
-  final def repeat() = Flux(jMono.repeat())
+  final def repeat(): Flux[T] = Flux.from(new ReactiveSMono[T](jMono).repeat())
 
   /**
     * Repeatedly subscribe to the source if the predicate returns true after completion of the previous subscription.

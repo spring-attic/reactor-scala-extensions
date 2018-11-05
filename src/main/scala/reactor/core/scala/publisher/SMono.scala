@@ -849,6 +849,14 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
   //TODO: How to test this?
   final def publishOn(scheduler: Scheduler): SMono[T] = coreMono.publishOn(scheduler)
 
+  /**
+    * Repeatedly subscribe to the source completion of the previous subscription.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/repeatnb.png" alt="">
+    *
+    * @return an indefinitively repeated [[SFlux]] on onComplete
+    */
   final def repeat(numRepeat: Long = Long.MaxValue, predicate: () => Boolean = () => true): SFlux[T] = coreMono.repeat(numRepeat, predicate)
 
   final def repeatWhen(whenFactory: SFlux[Long] => _ <: Publisher[_]): SFlux[T] = {
