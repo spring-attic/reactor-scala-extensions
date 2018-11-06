@@ -897,12 +897,27 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
     *                                        onNext signal
     *
     */
-  final def repeatWhenEmpty(repeatFactory: SFlux[Long] => Publisher[_]): SMono[T] = {
+  final def repeatWhenEmpty(repeatFactory: SFlux[Long] => Publisher[_], maxRepeat: Int = Int.MaxValue): SMono[T] = {
     val when = new Function[JFlux[JLong], Publisher[_]] {
       override def apply(t: JFlux[JLong]): Publisher[_] = repeatFactory(new ReactiveSFlux[Long](t))
     }
     coreMono.repeatWhenEmpty(when)
   }
+
+  /**
+    * Re-subscribes to this [[SMono]] sequence if it signals any error
+    * either indefinitely or a fixed number of times.
+    * <p>
+    * The times == Long.MAX_VALUE is treated as infinite retry.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/retryn1.png" alt="">
+    *
+    * @param numRetries the number of times to tolerate an error
+    * @return a re-subscribing [[SMono]] on onError up to the specified number of retries.
+    *
+    */
+  final def retry(numRetries: Long = Long.MaxValue, retryMatcher: Throwable => Boolean = (_: Throwable) => true): SMono[T] = coreMono.retry(numRetries, retryMatcher)
 
   final def single(): SMono[T] = coreMono.single()
 

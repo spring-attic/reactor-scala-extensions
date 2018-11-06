@@ -1288,7 +1288,10 @@ class Mono[T] private(private val jMono: JMono[T])
     *
     */
   //  TODO: How to test this?
-  final def repeatWhenEmpty(maxRepeat: Int, repeatFactory: Flux[Long] => Publisher[_]): Mono[T] = Mono[T](jMono.repeatWhenEmpty(maxRepeat, repeatFactory))
+  final def repeatWhenEmpty(maxRepeat: Int, repeatFactory: Flux[Long] => Publisher[_]): Mono[T] = {
+    def repeatF(f: SFlux[Long]): Publisher[_] = repeatFactory(Flux.from(f))
+    Mono.from(new ReactiveSMono[T](jMono).repeatWhenEmpty(repeatF, maxRepeat))
+  }
 
   /**
     * Re-subscribes to this [[Mono]] sequence if it signals any error
@@ -1302,7 +1305,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @return a re-subscribing [[Mono]] on onError
     */
   //  TODO: How to test these retry(...)
-  final def retry(): Mono[T] = Mono[T](jMono.retry())
+  final def retry(): Mono[T] = Mono.from(new ReactiveSMono[T](jMono).retry())
 
   /**
     * Re-subscribes to this [[Mono]] sequence if it signals any error
@@ -1317,7 +1320,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @return a re-subscribing [[Mono]] on onError up to the specified number of retries.
     *
     */
-  final def retry(numRetries: Long): Mono[T] = Mono[T](jMono.retry(numRetries))
+  final def retry(numRetries: Long): Mono[T] = Mono.from(new ReactiveSMono[T](jMono).retry(numRetries))
 
   /**
     * Re-subscribes to this [[Mono]] sequence if it signals any error
@@ -1329,7 +1332,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @param retryMatcher the predicate to evaluate if retry should occur based on a given error signal
     * @return a re-subscribing [[Mono]] on onError if the predicates matches.
     */
-  final def retry(retryMatcher: Throwable => Boolean): Mono[T] = Mono[T](jMono.retry(retryMatcher))
+  final def retry(retryMatcher: Throwable => Boolean): Mono[T] = Mono.from(new ReactiveSMono[T](jMono).retry(retryMatcher = retryMatcher))
 
   /**
     * Re-subscribes to this [[Mono]] sequence up to the specified number of retries if it signals any
@@ -1344,7 +1347,7 @@ class Mono[T] private(private val jMono: JMono[T])
     *                                  matches.
     *
     */
-  final def retry(numRetries: Long, retryMatcher: Throwable => Boolean): Mono[T] = Mono[T](jMono.retry(numRetries, retryMatcher))
+  final def retry(numRetries: Long, retryMatcher: Throwable => Boolean): Mono[T] = Mono.from(new ReactiveSMono[T](jMono).retry(numRetries, retryMatcher))
 
   /**
     * Retries this [[Mono]] when a companion sequence signals
