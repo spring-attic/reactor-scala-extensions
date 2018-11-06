@@ -1265,8 +1265,10 @@ class Mono[T] private(private val jMono: JMono[T])
     *                                        onNext signal
     *
     */
-  //  TODO: How to test this?
-  final def repeatWhenEmpty(repeatFactory: Flux[Long] => Publisher[_]): Mono[T] = Mono[T](jMono.repeatWhenEmpty(repeatFactory))
+  final def repeatWhenEmpty(repeatFactory: Flux[Long] => Publisher[_]): Mono[T] = {
+    def repeatF(f: SFlux[Long]): Publisher[_] = repeatFactory(Flux.from(f))
+    Mono.from(new ReactiveSMono[T](jMono).repeatWhenEmpty(repeatF))
+  }
 
   /**
     * Repeatedly subscribe to this [[Mono]] until there is an onNext signal when a companion sequence signals a

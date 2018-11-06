@@ -882,6 +882,21 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
     coreMono.repeatWhen(when)
   }
 
+  /**
+    * Repeatedly subscribe to this [[SMono]] until there is an onNext signal when a companion sequence signals a
+    * number of emitted elements.
+    * <p>If the companion sequence signals when this [[SMono]] is active, the repeat
+    * attempt is suppressed and any terminal signal will terminate this [[SMono]] with the same signal immediately.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/repeatwhenempty.png" alt="">
+    *
+    * @param repeatFactory the
+    *                      [[Function1]] providing a [[SFlux]] signalling the current number of repeat on onComplete and returning a [[Publisher]] companion.
+    * @return an eventually repeated [[SMono]] on onComplete when the companion [[Publisher]] produces an
+    *                                        onNext signal
+    *
+    */
   final def repeatWhenEmpty(repeatFactory: SFlux[Long] => Publisher[_]): SMono[T] = {
     val when = new Function[JFlux[JLong], Publisher[_]] {
       override def apply(t: JFlux[JLong]): Publisher[_] = repeatFactory(new ReactiveSFlux[Long](t))
