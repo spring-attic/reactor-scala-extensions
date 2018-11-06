@@ -692,7 +692,7 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
         val data = Table(
           ("scenario", "timespan", "timeshift", "expected"),
           ("timeshift > timespan", 1500 milliseconds, 2 seconds, Seq(Seq(0l), Seq(1l, 2l), Seq(3l, 4l))),
-          ("timeshift < timespan", 1500 milliseconds, 1 second, Seq(Seq(0l), Seq(1l), Seq(2l), Seq(3l), Seq(4l))),
+          ("timeshift < timespan", 1500 milliseconds, 1 second, Seq(Seq(0l), Seq(0l, 1l), Seq(1l, 2l), Seq(2l, 3l), Seq(3l, 4l), Seq(4l))),
           ("timeshift = timespan", 1500 milliseconds, 1500 milliseconds, Seq(Seq(0l), Seq(1l), Seq(2l, 3l), Seq(4l)))
         )
         forAll(data) { (scenario, timespan, timeshift, expected) => {
@@ -1725,7 +1725,7 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
       "with numRepeat should repeat as many as the provided parameter" in {
         val flux = Flux.just(1, 2, 3).repeat(3)
         StepVerifier.create(flux)
-          .expectNext(1, 2, 3, 1, 2, 3, 1, 2, 3)
+          .expectNext(1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3)
           .verifyComplete()
       }
       "with numRepeat and predicate should repeat as many as provided parameter and as long as the predicate returns true" in {

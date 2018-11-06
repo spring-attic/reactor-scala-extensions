@@ -557,7 +557,7 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
       val data = Table(
         ("scenario", "timespan", "timeshift", "expected"),
         ("timeshift > timespan", 1500 milliseconds, 2 seconds, Seq(Seq(0l), Seq(1l, 2l), Seq(3l, 4l))),
-        ("timeshift < timespan", 1500 milliseconds, 1 second, Seq(Seq(0l), Seq(1l), Seq(2l), Seq(3l), Seq(4l))),
+        ("timeshift < timespan", 1500 milliseconds, 1 second, Seq(Seq(0l), Seq(0l, 1l), Seq(1l, 2l), Seq(2l, 3l), Seq(3l, 4l), Seq(4l))),
         ("timeshift = timespan", 1500 milliseconds, 1500 milliseconds, Seq(Seq(0l), Seq(1l), Seq(2l, 3l), Seq(4l)))
       )
       "with duration and timeshift duration should split the values every timespan" in {
