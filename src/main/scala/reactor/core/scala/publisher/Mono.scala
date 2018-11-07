@@ -1363,7 +1363,10 @@ class Mono[T] private(private val jMono: JMono[T])
     * @return a re-subscribing [[Mono]] on onError when the companion [[Publisher]] produces an
     *                                  onNext signal
     */
-  final def retryWhen(whenFactory: Flux[Throwable] => Publisher[_]): Mono[T] = Mono[T](jMono.retryWhen(whenFactory))
+  final def retryWhen(whenFactory: Flux[Throwable] => Publisher[_]): Mono[T] = {
+    def whenF(f: SFlux[Throwable]): Publisher[_] = whenFactory(Flux.from(f))
+    Mono.from(new ReactiveSMono[T](jMono).retryWhen(whenF))
+  }
 
   /**
     * Expect exactly one item from this [[Mono]] source or signal

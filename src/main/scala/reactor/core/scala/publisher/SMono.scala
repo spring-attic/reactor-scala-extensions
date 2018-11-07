@@ -919,6 +919,27 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
     */
   final def retry(numRetries: Long = Long.MaxValue, retryMatcher: Throwable => Boolean = (_: Throwable) => true): SMono[T] = coreMono.retry(numRetries, retryMatcher)
 
+  /**
+    * Retries this [[SMono]] when a companion sequence signals
+    * an item in response to this [[SMono]] error signal
+    * <p>If the companion sequence signals when the [[SMono]] is active, the retry
+    * attempt is suppressed and any terminal signal will terminate the [[SMono]] source with the same signal
+    * immediately.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/retrywhen1.png" alt="">
+    *
+    * @param whenFactory the [[Function1]] providing a [[SFlux]] signalling any error from the source sequence and returning a [[Publisher]] companion.
+    * @return a re-subscribing [[SMono]] on onError when the companion [[Publisher]] produces an
+    *                                  onNext signal
+    */
+  final def retryWhen(whenFactory: SFlux[Throwable] => Publisher[_]): SMono[T] = {
+    val when = new Function[JFlux[Throwable], Publisher[_]] {
+      override def apply(t: JFlux[Throwable]): Publisher[_] = whenFactory(new ReactiveSFlux[Throwable](t))
+    }
+    coreMono.retryWhen(when)
+  }
+
   final def single(): SMono[T] = coreMono.single()
 
   final def subscribe(): Disposable = coreMono.subscribe()
