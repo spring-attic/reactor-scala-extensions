@@ -1379,7 +1379,7 @@ class Mono[T] private(private val jMono: JMono[T])
     *
     * @return a [[Mono]] with the single item or an error signal
     */
-  final def single() = Mono(jMono.single())
+  final def single(): Mono[T] = Mono.from(new ReactiveSMono[T](jMono).single())
 
   /**
     * Subscribe to this [[Mono]] and request unbounded demand.

@@ -940,6 +940,17 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
     coreMono.retryWhen(when)
   }
 
+  /**
+    * Expect exactly one item from this [[SMono]] source or signal
+    * [[java.util.NoSuchElementException]] for an empty source.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/single.png" alt="">
+    * <p>
+    * Note Mono doesn't need [[Flux.single(AnyRef)]], since it is equivalent to
+    * [[SMono.defaultIfEmpty(AnyRef)]] in a [[SMono]].
+    *
+    * @return a [[SMono]] with the single item or an error signal
+    */
   final def single(): SMono[T] = coreMono.single()
 
   final def subscribe(): Disposable = coreMono.subscribe()
