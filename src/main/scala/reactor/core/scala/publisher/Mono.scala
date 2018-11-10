@@ -1393,7 +1393,7 @@ class Mono[T] private(private val jMono: JMono[T])
     *
     * @return a new [[Disposable]] that can be used to cancel the underlying [[Subscription]]
     */
-  final def subscribe(): Disposable = jMono.subscribe()
+  final def subscribe(): Disposable = new ReactiveSMono[T](jMono).subscribe()
 
   /**
     * Subscribe a [[Consumer]] to this [[Mono]] that will consume all the
@@ -1408,7 +1408,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @param consumer the consumer to invoke on each value
     * @return a new [[Runnable]] to dispose the [[Subscription]]
     */
-  final def subscribe(consumer: T => Unit): Disposable = jMono.subscribe(consumer)
+  final def subscribe(consumer: T => Unit): Disposable = new ReactiveSMono[T](jMono).subscribe(consumer)
 
   /**
     * Subscribe [[scala.Function1[T,Unit] Consumer]] to this [[Mono]] that will consume all the
@@ -1424,7 +1424,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @param errorConsumer the consumer to invoke on error signal
     * @return a new [[Runnable]] to dispose the [[org.reactivestreams.Subscription]]
     */
-  final def subscribe(consumer: T => Unit, errorConsumer: Throwable => Unit): Disposable = jMono.subscribe(consumer, errorConsumer)
+  final def subscribe(consumer: T => Unit, errorConsumer: Throwable => Unit): Disposable = new ReactiveSMono[T](jMono).subscribe(consumer, errorConsumer)
 
   /**
     * Subscribe `consumer` to this [[Mono]] that will consume all the
@@ -1441,7 +1441,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @param completeConsumer the consumer to invoke on complete signal
     * @return a new [[Disposable]] to dispose the [[Subscription]]
     */
-  final def subscribe(consumer: T => Unit, errorConsumer: Throwable => Unit, completeConsumer: => Unit): Disposable = jMono.subscribe(consumer, errorConsumer, completeConsumer)
+  final def subscribe(consumer: T => Unit, errorConsumer: Throwable => Unit, completeConsumer: => Unit): Disposable = new ReactiveSMono[T](jMono).subscribe(consumer, errorConsumer, completeConsumer)
 
   /**
     * Subscribe [[Consumer]] to this [[Mono]] that will consume all the
@@ -1460,7 +1460,7 @@ class Mono[T] private(private val jMono: JMono[T])
     *                             for the initial [[Subscription.request request]], or null for max request
     * @return a new [[Disposable]] to dispose the [[Subscription]]
     */
-  final def subscribe(consumer: T => Unit, errorConsumer: Throwable => Unit, completeConsumer: => Unit, subscriptionConsumer: Subscription => Unit): Disposable = jMono.subscribe(consumer, errorConsumer, completeConsumer, subscriptionConsumer)
+  final def subscribe(consumer: T => Unit, errorConsumer: Throwable => Unit, completeConsumer: => Unit, subscriptionConsumer: Subscription => Unit): Disposable = new ReactiveSMono[T](jMono).subscribe(consumer, errorConsumer, completeConsumer, subscriptionConsumer)
 
   /**
     * Enrich a potentially empty downstream [[Context]] by adding all values

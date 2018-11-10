@@ -2,7 +2,7 @@ package reactor.core.scala.publisher
 
 import java.lang.{Boolean => JBoolean, Long => JLong}
 import java.util.concurrent.{Callable, CompletableFuture}
-import java.util.function.Function
+import java.util.function.{Consumer, Function}
 import java.util.logging.Level
 
 import org.reactivestreams.{Publisher, Subscriber, Subscription}
@@ -953,14 +953,85 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
     */
   final def single(): SMono[T] = coreMono.single()
 
+  /**
+    * Subscribe to this [[SMono]] and request unbounded demand.
+    * <p>
+    * This version doesn't specify any consumption behavior for the events from the
+    * chain, especially no error handling, so other variants should usually be preferred.
+    *
+    * <p>
+    * <img width="500" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/unbounded1.png" alt="">
+    * <p>
+    *
+    * @return a new [[Disposable]] that can be used to cancel the underlying [[Subscription]]
+    */
   final def subscribe(): Disposable = coreMono.subscribe()
 
+  /**
+    * Subscribe a [[scala.Function1[T,Unit] Consumer]] to this [[SMono]] that will consume all the
+    * sequence.
+    * <p>
+    * For a passive version that observe and forward incoming data see [[SMono.doOnSuccess]] and
+    * [[SMono.doOnError]].
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/subscribe1.png" alt="">
+    *
+    * @param consumer the consumer to invoke on each value
+    * @return a new [[Runnable]] to dispose the [[Subscription]]
+    */
   final def subscribe(consumer: T => Unit): Disposable = coreMono.subscribe(consumer)
 
+  /**
+    * Subscribe [[scala.Function1[T,Unit] Consumer]] to this [[SMono]] that will consume all the
+    * sequence.
+    * <p>
+    * For a passive version that observe and forward incoming data see [[SMono.doOnSuccess]] and
+    * [[SMono.doOnError]].
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/subscribeerror1.png" alt="">
+    *
+    * @param consumer      the consumer to invoke on each next signal
+    * @param errorConsumer the consumer to invoke on error signal
+    * @return a new [[Runnable]] to dispose the [[org.reactivestreams.Subscription]]
+    */
   final def subscribe(consumer: T => Unit, errorConsumer: Throwable => Unit): Disposable = coreMono.subscribe(consumer, errorConsumer)
 
+  /**
+    * Subscribe `consumer` to this [[SMono]] that will consume all the
+    * sequence.
+    * <p>
+    * For a passive version that observe and forward incoming data see [[SMono.doOnSuccess]] and
+    * [[SMono.doOnError]].
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/subscribecomplete1.png" alt="">
+    *
+    * @param consumer         the consumer to invoke on each value
+    * @param errorConsumer    the consumer to invoke on error signal
+    * @param completeConsumer the consumer to invoke on complete signal
+    * @return a new [[Disposable]] to dispose the [[Subscription]]
+    */
   final def subscribe(consumer: T => Unit, errorConsumer: Throwable => Unit, completeConsumer: => Unit): Disposable = coreMono.subscribe(consumer, errorConsumer, completeConsumer)
 
+  /**
+    * Subscribe `consumer` to this [[SMono]] that will consume all the
+    * sequence.
+    * <p>
+    * For a passive version that observe and forward incoming data see [[SMono.doOnSuccess]] and
+    * [[SMono.doOnError]].
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/subscribecomplete1.png" alt="">
+    *
+    * @param consumer             the consumer to invoke on each value
+    * @param errorConsumer        the consumer to invoke on error signal
+    * @param completeConsumer     the consumer to invoke on complete signal
+    * @param subscriptionConsumer the consumer to invoke on subscribe signal, to be used
+    *                             for the initial [[Subscription.request request]], or null for max request
+    * @return a new [[Disposable]] to dispose the [[Subscription]]
+    */
   final def subscribe(consumer: T => Unit, errorConsumer: Throwable => Unit, completeConsumer: => Unit, subscriptionConsumer: Subscription => Unit): Disposable = coreMono.subscribe(consumer, errorConsumer, completeConsumer, subscriptionConsumer)
 
   override def subscribe(s: Subscriber[_ >: T]): Unit = coreMono.subscribe(s)
