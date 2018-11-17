@@ -12,6 +12,7 @@ import reactor.core.scala.publisher.PimpMyPublisher._
 import reactor.core.scheduler.{Scheduler, Schedulers}
 import reactor.core.{Disposable, Scannable => JScannable}
 import reactor.util.concurrent.Queues.SMALL_BUFFER_SIZE
+import reactor.util.context.Context
 import reactor.util.function.{Tuple2, Tuple3, Tuple4, Tuple5, Tuple6}
 
 import scala.collection.JavaConverters._
@@ -1035,6 +1036,47 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
   final def subscribe(consumer: T => Unit, errorConsumer: Throwable => Unit, completeConsumer: => Unit, subscriptionConsumer: Subscription => Unit): Disposable = coreMono.subscribe(consumer, errorConsumer, completeConsumer, subscriptionConsumer)
 
   override def subscribe(s: Subscriber[_ >: T]): Unit = coreMono.subscribe(s)
+
+  /**
+    * Enrich a potentially empty downstream [[Context]] by adding all values
+    * from the given [[Context]], producing a new [[Context]] that is propagated
+    * upstream.
+    * <p>
+    * The [[Context]] propagation happens once per subscription (not on each onNext):
+    * it is done during the `subscribe(Subscriber)` phase, which runs from
+    * the last operator of a chain towards the first.
+    * <p>
+    * So this operator enriches a [[Context]] coming from under it in the chain
+    * (downstream, by default an empty one) and passes the new enriched [[Context]]
+    * to operators above it in the chain (upstream, by way of them using
+    * [[Flux.subscribe(Subscriber,Context)]]).
+    *
+    * @param mergeContext the [[Context]] to merge with a previous [[Context]]
+    *                                 state, returning a new one.
+    * @return a contextualized [[SMono]]
+    * @see [[Context]]
+    */
+  final def subscriberContext(mergeContext: Context): SMono[T] = coreMono.subscriberContext(mergeContext)
+
+  /**
+    * Enrich a potentially empty downstream [[Context]] by applying a [[Function1]]
+    * to it, producing a new [[Context]] that is propagated upstream.
+    * <p>
+    * The [[Context]] propagation happens once per subscription (not on each onNext):
+    * it is done during the `subscribe(Subscriber)` phase, which runs from
+    * the last operator of a chain towards the first.
+    * <p>
+    * So this operator enriches a [[Context]] coming from under it in the chain
+    * (downstream, by default an empty one) and passes the new enriched [[Context]]
+    * to operators above it in the chain (upstream, by way of them using
+    * `Flux#subscribe(Subscriber,Context)`).
+    *
+    * @param doOnContext the function taking a previous [[Context]] state
+    *                                                           and returning a new one.
+    * @return a contextualized [[SMono]]
+    * @see [[Context]]
+    */
+  final def subscriberContext(doOnContext: Context => Context): Mono[T] = coreMono.subscriberContext(doOnContext)
 
   final def switchIfEmpty(alternate: SMono[_ <: T]): SMono[T] = coreMono.switchIfEmpty(alternate.coreMono)
 

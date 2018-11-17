@@ -1481,7 +1481,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @return a contextualized [[Mono]]
     * @see [[Context]]
     */
-  final def subscriberContext(mergeContext: Context): Mono[T] = Mono[T](jMono.subscriberContext(mergeContext))
+  final def subscriberContext(mergeContext: Context): Mono[T] = Mono.from(new ReactiveSMono[T](jMono).subscriberContext(mergeContext))
 
   /**
     * Enrich a potentially empty downstream [[Context]] by applying a [[Function1]]
