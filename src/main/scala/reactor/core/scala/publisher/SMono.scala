@@ -1076,7 +1076,7 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
     * @return a contextualized [[SMono]]
     * @see [[Context]]
     */
-  final def subscriberContext(doOnContext: Context => Context): Mono[T] = coreMono.subscriberContext(doOnContext)
+  final def subscriberContext(doOnContext: Context => Context): SMono[T] = coreMono.subscriberContext(doOnContext)
 
   final def switchIfEmpty(alternate: SMono[_ <: T]): SMono[T] = coreMono.switchIfEmpty(alternate.coreMono)
 
@@ -1183,6 +1183,20 @@ object SMono {
 
   def sequenceEqual[T](source1: Publisher[_ <: T], source2: Publisher[_ <: T], isEqual: (T, T) => Boolean = (t1: T, t2: T) => t1 == t2, bufferSize: Int = SMALL_BUFFER_SIZE): SMono[Boolean] =
     new ReactiveSMono[JBoolean](JMono.sequenceEqual[T](source1, source2, isEqual, bufferSize)).map(Boolean2boolean)
+
+  /**
+    * Create a [[Mono]] emitting the [[Context]] available on subscribe.
+    * If no Context is available, the mono will simply emit the
+    * [[Context.empty() empty Context].
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/justorempty.png" alt="">
+    * <p>
+    *
+    * @return a new [[Mono]] emitting current context
+    * @see [[Mono.subscribe(CoreSubscriber)]]
+    */
+  def subscribeContext(): SMono[Context] = JMono.subscriberContext()
 
   def raiseError[T](error: Throwable): SMono[T] = JMono.error[T](error)
 

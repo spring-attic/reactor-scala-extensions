@@ -13,8 +13,9 @@ import reactor.core.scala.Scannable
 import reactor.core.scala.publisher.Mono.just
 import reactor.core.scala.publisher.ScalaConverters._
 import reactor.core.scheduler.{Scheduler, Schedulers}
-import reactor.test.StepVerifier
+import reactor.test.{StepVerifier, StepVerifierOptions}
 import reactor.test.scheduler.VirtualTimeScheduler
+import reactor.util.context.Context
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -970,6 +971,26 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport {
         disposable shouldBe a[Disposable]
         counter.await(1, TimeUnit.SECONDS) shouldBe true
       }
+    }
+
+    ".subscribeContext should pass context properly" in {
+      val key = "message"
+      val r: SMono[String] = SMono.just("Hello")
+          .flatMap(s => SMono.subscribeContext()
+          .map(ctx => s"$s ${ctx.get(key)}"))
+          .subscriberContext(ctx => ctx.put(key, "World"))
+
+      StepVerifier.create(r)
+          .expectNext("Hello World")
+          .verifyComplete()
+
+      StepVerifier.create(SMono.just(1).map(i => i + 10),
+        StepVerifierOptions.create().withInitialContext(Context.of("foo", "bar")))
+        .expectAccessibleContext()
+        .contains("foo", "bar")
+        .`then`()
+        .expectNext(11)
+        .verifyComplete()
     }
 
     ".switchIfEmpty with alternative will emit the value from alternative Mono when this mono is empty" in {
