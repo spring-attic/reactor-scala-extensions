@@ -3309,7 +3309,7 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T])
     * @param alternate the alternate publisher if this sequence is empty
     * @return an alternating [[Flux]] on source onComplete without elements
     */
-  final def switchIfEmpty(alternate: Publisher[_ <: T]) = Flux(jFlux.switchIfEmpty(alternate))
+  final def switchIfEmpty(alternate: Publisher[_ <: T]): Flux[T] = Flux.from(new ReactiveSFlux[T](jFlux).switchIfEmpty(alternate))
 
   /**
     * Switch to a new [[Publisher]] generated via a `Function` whenever this [[Flux]] produces an item.

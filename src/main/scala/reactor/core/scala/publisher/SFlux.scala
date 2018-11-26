@@ -339,6 +339,15 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] {
 
   final def subscribe(): Disposable = coreFlux.subscribe()
 
+  /**
+    * Provide an alternative if this sequence is completed without any data
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/switchifempty.png" alt="">
+    * <p>
+    *
+    * @param alternate the alternate publisher if this sequence is empty
+    * @return an alternating [[SFlux]] on source onComplete without elements
+    */
   final def switchIfEmpty(alternate: Publisher[_ <: T]): SFlux[T] = coreFlux.switchIfEmpty(alternate)
 
   final def switchMap[V](fn: T => Publisher[_ <: V], prefetch: Int = XS_BUFFER_SIZE): SFlux[V] = coreFlux.switchMap[V](fn, prefetch)

@@ -1539,7 +1539,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @return an alternating [[Mono]] on source onComplete without elements
     * @see [[Flux.switchIfEmpty]]
     */
-  final def switchIfEmpty(alternate: Mono[_ <: T]): Mono[T] = Mono[T](jMono.switchIfEmpty(alternate.jMono))
+  final def switchIfEmpty(alternate: Mono[_ <: T]): Mono[T] = Mono.from(new ReactiveSMono[T](jMono).switchIfEmpty(alternate.jMono))
 
   /**
     * Tag this mono with a key/value pair. These can be retrieved as a [[Stream]] of

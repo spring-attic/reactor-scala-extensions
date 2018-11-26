@@ -1102,6 +1102,17 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
     */
   final def subscribeWith[E <: Subscriber[_ >: T]](subscriber: E): E = coreMono.subscribeWith(subscriber)
 
+  /**
+    * Provide an alternative [[SMono]] if this mono is completed without data
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/otherwiseempty.png" alt="">
+    * <p>
+    *
+    * @param alternate the alternate mono if this mono is empty
+    * @return an alternating [[SMono]] on source onComplete without elements
+    * @see [[SFlux.switchIfEmpty]]
+    */
   final def switchIfEmpty(alternate: SMono[_ <: T]): SMono[T] = coreMono.switchIfEmpty(alternate.coreMono)
 
   final def tag(key: String, value: String): SMono[T] = coreMono.tag(key, value)
