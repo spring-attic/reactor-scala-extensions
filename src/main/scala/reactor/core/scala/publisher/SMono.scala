@@ -1115,6 +1115,16 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
     */
   final def switchIfEmpty(alternate: SMono[_ <: T]): SMono[T] = coreMono.switchIfEmpty(alternate.coreMono)
 
+  /**
+    * Tag this mono with a key/value pair. These can be retrieved as a [[Stream]] of
+    * all tags throughout the publisher chain by using [[reactor.core.scala.Scannable.tags()]] (as
+    * traversed
+    * by [[reactor.core.scala.Scannable.parents()]]).
+    *
+    * @param key   a tag key
+    * @param value a tag value
+    * @return the same sequence, but bearing tags
+    */
   final def tag(key: String, value: String): SMono[T] = coreMono.tag(key, value)
 
   final def take(duration: Duration, timer: Scheduler = Schedulers.parallel()): SMono[T] = coreMono.take(duration, timer)

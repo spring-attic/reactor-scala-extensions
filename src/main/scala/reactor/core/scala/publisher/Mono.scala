@@ -1515,7 +1515,6 @@ class Mono[T] private(private val jMono: JMono[T])
     * @param scheduler a checked [[reactor.core.scheduler.Scheduler.Worker]] factory
     * @return an asynchronously requesting [[Mono]]
     */
-  //  TODO: How to test this?
   final def subscribeOn(scheduler: Scheduler): Mono[T] = Mono.from(new ReactiveSMono[T](jMono).subscribeOn(scheduler))
 
   /**
@@ -1551,7 +1550,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @param value a tag value
     * @return the same sequence, but bearing tags
     */
-  final def tag(key: String, value: String) = Mono(jMono.tag(key, value))
+  final def tag(key: String, value: String): Mono[T] = Mono.from(new ReactiveSMono[T](jMono).tag(key, value))
 
   /**
     * Give this Mono a chance to resolve within a specified time frame but complete if it
