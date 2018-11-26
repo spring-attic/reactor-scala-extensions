@@ -1501,7 +1501,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @return a contextualized [[Mono]]
     * @see [[Context]]
     */
-  final def subscriberContext(doOnContext: Context => Context): Mono[T] = Mono[T](jMono.subscriberContext(doOnContext))
+  final def subscriberContext(doOnContext: Context => Context): Mono[T] = Mono.from(new ReactiveSMono[T](jMono).subscriberContext(doOnContext))
 
   /**
     * Run the requests to this Publisher [[Mono]] on a given worker assigned by the supplied [[Scheduler]].

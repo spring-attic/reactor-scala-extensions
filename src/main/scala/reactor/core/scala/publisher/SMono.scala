@@ -1078,6 +1078,20 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
     */
   final def subscriberContext(doOnContext: Context => Context): SMono[T] = coreMono.subscriberContext(doOnContext)
 
+  /**
+    * Run the requests to this Publisher [[SMono]] on a given worker assigned by the supplied [[Scheduler]].
+    * <p>
+    * `mono.subscribeOn(Schedulers.parallel()).subscribe())`
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/subscribeon1.png" alt="">
+    * <p>
+    *
+    * @param scheduler a checked [[reactor.core.scheduler.Scheduler.Worker]] factory
+    * @return an asynchronously requesting [[SMono]]
+    */
+  final def subscribeOn(scheduler: Scheduler): SMono[T] = coreMono.subscribeOn(scheduler)
+
   final def switchIfEmpty(alternate: SMono[_ <: T]): SMono[T] = coreMono.switchIfEmpty(alternate.coreMono)
 
   final def tag(key: String, value: String): SMono[T] = coreMono.tag(key, value)
