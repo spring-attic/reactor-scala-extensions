@@ -1516,7 +1516,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @return an asynchronously requesting [[Mono]]
     */
   //  TODO: How to test this?
-  final def subscribeOn(scheduler: Scheduler): Mono[T] = Mono[T](jMono.subscribeOn(scheduler))
+  final def subscribeOn(scheduler: Scheduler): Mono[T] = Mono.from(new ReactiveSMono[T](jMono).subscribeOn(scheduler))
 
   /**
     * Subscribe the [[Mono]] with the givne [[Subscriber]] and return it.
@@ -1526,7 +1526,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @return the passed [[Subscriber]] after subscribing it to this { @link Mono}
     */
   //  TODO: How to test this?
-  final def subscribeWith[E <: Subscriber[_ >: T]](subscriber: E): E = jMono.subscribeWith(subscriber)
+  final def subscribeWith[E <: Subscriber[_ >: T]](subscriber: E): E = new ReactiveSMono[T](jMono).subscribeWith(subscriber)
 
   /**
     * Provide an alternative [[Mono]] if this mono is completed without data

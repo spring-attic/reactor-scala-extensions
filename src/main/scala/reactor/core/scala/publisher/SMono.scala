@@ -1092,6 +1092,16 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
     */
   final def subscribeOn(scheduler: Scheduler): SMono[T] = coreMono.subscribeOn(scheduler)
 
+  /**
+    * Subscribe the given [[Subscriber]] to this [[SMono]] and return said
+    * [[Subscriber]] (eg. a [[reactor.core.publisher.MonoProcessor]].
+    *
+    * @param subscriber the [[Subscriber]] to subscribe with
+    * @param < E> the reified type of the [[Subscriber]] for chaining
+    * @return the passed [[Subscriber]] after subscribing it to this [[SMono]]
+    */
+  final def subscribeWith[E <: Subscriber[_ >: T]](subscriber: E): E = coreMono.subscribeWith(subscriber)
+
   final def switchIfEmpty(alternate: SMono[_ <: T]): SMono[T] = coreMono.switchIfEmpty(alternate.coreMono)
 
   final def tag(key: String, value: String): SMono[T] = coreMono.tag(key, value)
