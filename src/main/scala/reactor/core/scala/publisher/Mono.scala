@@ -1563,7 +1563,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @return a new [[Mono]] that will propagate the signals from the source unless
     *                       no signal is received for `duration`, in which case it completes.
     */
-  final def take(duration: Duration) = Mono(jMono.take(duration))
+  final def take(duration: Duration): Mono[T] = Mono.from(new ReactiveSMono[T](jMono).take(duration))
 
   /**
     * Give this Mono a chance to resolve within a specified time frame but complete if it
@@ -1577,7 +1577,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @return a new [[Mono]] that will propagate the signals from the source unless
     *                       no signal is received for `duration`, in which case it completes.
     */
-  final def take(duration: Duration, timer: Scheduler) = Mono(jMono.take(duration, timer))
+  final def take(duration: Duration, timer: Scheduler): Mono[T] = Mono.from(new ReactiveSMono[T](jMono).take(duration, timer))
 
   /**
     * Give this Mono a chance to resolve before a companion [[Publisher]] emits. If
@@ -1590,7 +1590,7 @@ class Mono[T] private(private val jMono: JMono[T])
     *                       a signal is first received from the companion [[Publisher]], in which case it
     *                       completes.
     */
-  final def takeUntilOther(other: Publisher[_]) = Mono(jMono.takeUntilOther(other))
+  final def takeUntilOther(other: Publisher[_]): Mono[T] = Mono.from(new ReactiveSMono[T](jMono).takeUntilOther(other))
 
   implicit def jMonoVoid2jMonoUnit(jMonoVoid: JMono[Void]): JMono[Unit] = jMonoVoid.map((_: Void) => ())
 
@@ -1604,7 +1604,7 @@ class Mono[T] private(private val jMono: JMono[T])
     *
     * @return a [[Mono]] igoring its payload (actively dropping)
     */
-  final def `then`(): Mono[Unit] = Mono[Unit](jMono.`then`())
+  final def `then`(): Mono[Unit] = Mono.from(new ReactiveSMono[T](jMono).`then`())
 
   /**
     * Ignore element from this [[Mono]] and transform its completion signal into the

@@ -1127,10 +1127,43 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
     */
   final def tag(key: String, value: String): SMono[T] = coreMono.tag(key, value)
 
+  /**
+    * Give this Mono a chance to resolve within a specified time frame but complete if it
+    * doesn't. This works a bit like [[SMono.timeout(Duration)]] except that the resulting
+    * [[Mono]] completes rather than errors when the timer expires.
+    * <p>
+    * The timeframe is evaluated using the provided [[Scheduler]].
+    *
+    * @param duration the maximum duration to wait for the source Mono to resolve.
+    * @param timer    the [[Scheduler]] on which to measure the duration.
+    * @return a new [[SMono]] that will propagate the signals from the source unless
+    *                       no signal is received for `duration`, in which case it completes.
+    */
   final def take(duration: Duration, timer: Scheduler = Schedulers.parallel()): SMono[T] = coreMono.take(duration, timer)
 
+  /**
+    * Give this Mono a chance to resolve before a companion [[Publisher]] emits. If
+    * the companion emits before any signal from the source, the resulting SMono will
+    * complete. Otherwise, it will relay signals from the source.
+    *
+    * @param other a companion [[Publisher]] that short-circuits the source with an
+    *                                  onComplete signal if it emits before the source emits.
+    * @return a new [[SMono]] that will propagate the signals from the source unless
+    *                       a signal is first received from the companion [[Publisher]], in which case it
+    *                       completes.
+    */
   final def takeUntilOther(other: Publisher[_]): SMono[T] = coreMono.takeUntilOther(other)
 
+  /**
+    * Return an `SMono[Unit]` which only replays complete and error signals
+    * from this [[SMono]].
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/ignorethen.png" alt="">
+    * <p>
+    *
+    * @return a [[SMono]] ignoring its payload (actively dropping)
+    */
   final def `then`(): SMono[Unit] = new ReactiveSMono[Unit](coreMono.`then`().map((_: Void) => ()))
 
   final def `then`[V](other: SMono[V]): SMono[V] = coreMono.`then`(other.coreMono)
