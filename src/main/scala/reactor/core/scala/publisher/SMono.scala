@@ -1216,8 +1216,9 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
     * <p>
     * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/timeouttimefallback1.png" alt="">
     *
-    * @param timeout the timeout before the onNext signal from this [[SMono]]
+    * @param timeout  the timeout before the onNext signal from this [[SMono]]
     * @param fallback the fallback [[SMono]] to subscribe when a timeout occurs
+    * @param timer a time-capable [[Scheduler]] instance to run on
     * @return an expirable [[SMono]] with a fallback [[SMono]]
     */
   final def timeout(timeout: Duration, fallback: Option[SMono[_ <: T]] = None, timer: Scheduler = Schedulers.parallel()): SMono[T] =
