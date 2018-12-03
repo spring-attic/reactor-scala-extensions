@@ -1671,7 +1671,15 @@ class Mono[T] private(private val jMono: JMono[T])
     * @param fallback the fallback [[Mono]] to subscribe when a timeout occurs
     * @return an expirable [[Mono]] with a fallback [[Mono]]
     */
-  final def timeout(timeout: Duration, fallback: Option[Mono[_ <: T]]) = Mono[T](jMono.timeout(timeout, fallback.orNull))
+  final def timeout(timeout: Duration, fallback: Option[Mono[_ <: T]]): Mono[T] = {
+
+    val sFallback: Option[SMono[T]] = fallback map {m: Mono[_ <: T] => {
+      val mt: JMono[T] = m.as(Mono.from[T]).jMono
+      new ReactiveSMono[T](mt)
+    }}
+
+    Mono.from(new ReactiveSMono[T](jMono).timeout(timeout, sFallback))
+  }
 
   /**
     * Signal a [[java.util.concurrent.TimeoutException]] error in case an item doesn't arrive before the given period.

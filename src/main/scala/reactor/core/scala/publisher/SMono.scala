@@ -1203,19 +1203,22 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
     *
     * @param other a [[Publisher]] to emit from after termination
     * @tparam V the element type of the supplied Publisher
-    * @return a new [[SFlux]] that emits from the supplied [[Publisher]] after
+    * @return a new [[SMono]] that emits from the supplied [[Publisher]] after
     *                       this SMono completes.
     */
   final def thenMany[V](other: Publisher[V]): SFlux[V] = coreMono.thenMany(other)
 
   /**
-    * Signal a [[java.util.concurrent.TimeoutException]] in case an item doesn't arrive before the given period.
+    * Switch to a fallback [[SMono]] in case an item doesn't arrive before the given period.
+    *
+    * <p> If the given [[Publisher]] is null, signal a [[java.util.concurrent.TimeoutException]].
     *
     * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/timeouttime1.png" alt="">
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/timeouttimefallback1.png" alt="">
     *
     * @param timeout the timeout before the onNext signal from this [[SMono]]
-    * @return an expirable [[SMono]]}
+    * @param fallback the fallback [[SMono]] to subscribe when a timeout occurs
+    * @return an expirable [[SMono]] with a fallback [[SMono]]
     */
   final def timeout(timeout: Duration, fallback: Option[SMono[_ <: T]] = None, timer: Scheduler = Schedulers.parallel()): SMono[T] =
     coreMono.timeout(timeout, fallback.map(_.coreMono).orNull[JMono[_ <: T]], timer)
