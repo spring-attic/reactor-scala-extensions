@@ -1659,6 +1659,11 @@ class Mono[T] private(private val jMono: JMono[T])
     */
   final def timeout(timeout: Duration): Mono[T] = Mono.from(new ReactiveSMono[T](jMono).timeout(timeout))
 
+  private def optionMonoExtendT2OptionSMonoT[T](f: Option[Mono[_ <: T]]): Option[SMono[T]] = f map {m: Mono[_ <: T] => {
+    val mt: JMono[T] = m.as(Mono.from[T]).jMono
+    new ReactiveSMono[T](mt)
+  }}
+
   /**
     * Switch to a fallback [[Mono]] in case an item doesn't arrive before the given period.
     *
@@ -1672,13 +1677,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @return an expirable [[Mono]] with a fallback [[Mono]]
     */
   final def timeout(timeout: Duration, fallback: Option[Mono[_ <: T]]): Mono[T] = {
-
-    val sFallback: Option[SMono[T]] = fallback map {m: Mono[_ <: T] => {
-      val mt: JMono[T] = m.as(Mono.from[T]).jMono
-      new ReactiveSMono[T](mt)
-    }}
-
-    Mono.from(new ReactiveSMono[T](jMono).timeout(timeout, sFallback))
+    Mono.from(new ReactiveSMono[T](jMono).timeout(timeout, optionMonoExtendT2OptionSMonoT[T](fallback)))
   }
 
   /**
@@ -1707,11 +1706,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @return an expirable [[Mono]] with a fallback [[Mono]]
     */
   final def timeout(timeout: Duration, fallback: Option[Mono[_ <: T]], timer: Scheduler): Mono[T] = {
-    val sFallback: Option[SMono[T]] = fallback map {m: Mono[_ <: T] => {
-      val mt: JMono[T] = m.as(Mono.from[T]).jMono
-      new ReactiveSMono[T](mt)
-    }}
-    Mono.from(new ReactiveSMono[T](jMono).timeout(timeout, sFallback, timer))
+    Mono.from(new ReactiveSMono[T](jMono).timeout(timeout, optionMonoExtendT2OptionSMonoT[T](fallback), timer))
   }
 
 
@@ -1725,9 +1720,9 @@ class Mono[T] private(private val jMono: JMono[T])
     * @param firstTimeout the timeout [[Publisher]] that must not emit before the first signal from this [[Mono]]
     * @tparam U the element type of the timeout Publisher
     * @return an expirable [[Mono]] if the first item does not come before a [[Publisher]] signal
-    *
+    * @see [[SMono.timeoutWhen]]
     */
-  final def timeout[U](firstTimeout: Publisher[U]) = Mono[T](jMono.timeout(firstTimeout))
+  final def timeout[U](firstTimeout: Publisher[U]): Mono[T] = Mono.from(new ReactiveSMono[T](jMono).timeoutWhen(firstTimeout))
 
   /**
     * Switch to a fallback [[Publisher]] in case the  item from this [[Mono]] has
@@ -1744,7 +1739,9 @@ class Mono[T] private(private val jMono: JMono[T])
     * @return a first then per-item expirable [[Mono]] with a fallback [[Publisher]]
     *
     */
-  final def timeout[U](firstTimeout: Publisher[U], fallback: Mono[_ <: T]) = Mono[T](jMono.timeout(firstTimeout, fallback))
+  final def timeout[U](firstTimeout: Publisher[U], fallback: Mono[_ <: T]): Mono[T] = {
+    Mono.from(new ReactiveSMono[T](jMono).timeoutWhen(firstTimeout, optionMonoExtendT2OptionSMonoT[T](Option(fallback))))
+  }
 
   /**
     * Emit a [[Tuple2]] pair of T1 [[Long]] current system time in
@@ -1756,7 +1753,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @return a timestamped [[Mono]]
     */
   //  TODO: How to test timestamp(...) with the actual timestamp?
-  final def timestamp() = new Mono[(Long, T)](jMono.timestamp().map((t2: Tuple2[JLong, T]) => (Long2long(t2.getT1), t2.getT2)))
+  final def timestamp(): Mono[(Long, T)] = new Mono[(Long, T)](jMono.timestamp().map((t2: Tuple2[JLong, T]) => (Long2long(t2.getT1), t2.getT2)))
 
   /**
     * Emit a [[Tuple2]] pair of T1 [[Long]] current system time in

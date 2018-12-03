@@ -1224,8 +1224,23 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
   final def timeout(timeout: Duration, fallback: Option[SMono[_ <: T]] = None, timer: Scheduler = Schedulers.parallel()): SMono[T] =
     coreMono.timeout(timeout, fallback.map(_.coreMono).orNull[JMono[_ <: T]], timer)
 
+  /**
+    * Switch to a fallback [[Publisher]] in case the  item from this {@link Mono} has
+    * not been emitted before the given [[Publisher]] emits.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/timeoutfallbackp1.png" alt="">
+    *
+    * @param firstTimeout the timeout
+    *                     [[Publisher]] that must not emit before the first signal from this [[SMono]]
+    * @param fallback the fallback [[Publisher]] to subscribe when a timeout occurs
+    * @tparam U the element type of the timeout Publisher
+    * @return an expirable [[SMono]] with a fallback [[SMono]] if the item doesn't
+    *                              come before a [[Publisher]] signals
+    *
+    */
   final def timeoutWhen[U](firstTimeout: Publisher[U], fallback: Option[SMono[_ <: T]] = None, timer: Scheduler = Schedulers.parallel()): SMono[T] = {
-    val x: JMono[T] = fallback.map((sm: SMono[_ <: T]) => coreMono.timeout[U](firstTimeout, sm.coreMono))
+    val x = fallback.map((sm: SMono[_ <: T]) => coreMono.timeout[U](firstTimeout, sm.coreMono))
       .getOrElse(coreMono.timeout[U](firstTimeout))
     new ReactiveSMono[T](x)
   }
