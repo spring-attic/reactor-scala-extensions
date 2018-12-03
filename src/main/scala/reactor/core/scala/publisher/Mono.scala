@@ -1794,9 +1794,14 @@ class Mono[T] private(private val jMono: JMono[T])
     * @see [[Mono.compose]] for deferred composition of [[Mono]] for each [[Subscriber]]
     * @see [[Mono.as]] for a loose conversion to an arbitrary type
     */
-  final def transform[V](transformer: Mono[T] => Publisher[V]): Mono[V] = Mono[V](jMono.transform[V]((_: JMono[T]) => transformer(Mono.this)))
+  final def transform[V](transformer: Mono[T] => Publisher[V]): Mono[V] = {
 
-  final def asJava(): JMono[T] = jMono
+    def transformFunction(sMono: SMono[T]): Publisher[V] = transformer(Mono.from[T](sMono))
+
+    Mono.from(new ReactiveSMono[T](jMono).transform[V](transformFunction))
+  }
+
+  final def asJava(): JMono[T] = new ReactiveSMono[T](jMono).asJava()
 }
 
 object Mono {

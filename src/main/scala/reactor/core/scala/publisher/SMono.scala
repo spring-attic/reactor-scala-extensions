@@ -1278,6 +1278,21 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
     promise.future
   }
 
+  /**
+    * Transform this [[SMono]] in order to generate a target [[SMono]]. Unlike [[SMono.compose]], the
+    * provided function is executed as part of assembly.
+    *
+    * @example {{{
+    *    val applySchedulers = mono => mono.subscribeOn(Schedulers.elastic()).publishOn(Schedulers.parallel());
+    *    mono.transform(applySchedulers).map(v => v * v).subscribe()
+    *          }}}
+    * @param transformer the [[Function1]] to immediately map this [[SMono]] into a target [[SMono]]
+    *                                instance.
+    * @tparam V the item type in the returned [[SMono]]
+    * @return a new [[SMono]]
+    * @see [[SMono.compose]] for deferred composition of [[SMono]] for each [[Subscriber]]
+    * @see [[SMono.as]] for a loose conversion to an arbitrary type
+    */
   final def transform[V](transformer: SMono[T] => Publisher[V]): SMono[V] = coreMono.transform[V]((_: JMono[T]) => transformer(SMono.this))
 
 }
