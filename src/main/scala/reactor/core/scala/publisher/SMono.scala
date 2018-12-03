@@ -1245,9 +1245,29 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
     new ReactiveSMono[T](x)
   }
 
+  /**
+    * Emit a [[Tuple2]] pair of T1 [[Long]] current system time in
+    * millis and T2 `T` associated data for the eventual item from this [[SMono]]
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/timestamp1.png" alt="">
+    *
+    * @param scheduler a [[Scheduler]] instance to read time from
+    * @return a timestamped [[SMono]]
+    */
   //  How to test this?
   final def timestamp(scheduler: Scheduler = Schedulers.parallel()): SMono[(Long, T)] = new ReactiveSMono[(Long, T)](coreMono.timestamp(scheduler).map((t2: Tuple2[JLong, T]) => (Long2long(t2.getT1), t2.getT2)))
 
+  /**
+    * Transform this [[SMono]] into a [[Future]] completing on onNext or onComplete and failing on
+    * onError.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/tofuture.png" alt="">
+    * <p>
+    *
+    * @return a [[Future]]
+    */
   final def toFuture: Future[T] = {
     val promise = Promise[T]()
     coreMono.toFuture.handle[Unit]((value: T, throwable: Throwable) => {

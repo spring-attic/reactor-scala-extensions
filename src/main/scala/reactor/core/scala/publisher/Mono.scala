@@ -1753,7 +1753,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @return a timestamped [[Mono]]
     */
   //  TODO: How to test timestamp(...) with the actual timestamp?
-  final def timestamp(): Mono[(Long, T)] = new Mono[(Long, T)](jMono.timestamp().map((t2: Tuple2[JLong, T]) => (Long2long(t2.getT1), t2.getT2)))
+  final def timestamp(): Mono[(Long, T)] = Mono.from(new ReactiveSMono[T](jMono).timestamp())
 
   /**
     * Emit a [[Tuple2]] pair of T1 [[Long]] current system time in
@@ -1765,7 +1765,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @param scheduler a [[Scheduler]] instance to read time from
     * @return a timestamped [[Mono]]
     */
-  final def timestamp(scheduler: Scheduler): Mono[(Long, T)] = Mono[(Long, T)](jMono.timestamp(scheduler).map((t2: Tuple2[JLong, T]) => (Long2long(t2.getT1), t2.getT2)))
+  final def timestamp(scheduler: Scheduler): Mono[(Long, T)] = Mono.from(new ReactiveSMono[T](jMono).timestamp(scheduler))
 
   /**
     * Transform this [[Mono]] into a [[Future]] completing on onNext or onComplete and failing on
@@ -1777,15 +1777,7 @@ class Mono[T] private(private val jMono: JMono[T])
     *
     * @return a [[Future]]
     */
-  final def toFuture: Future[T] = {
-    val promise = Promise[T]()
-    jMono.toFuture.handle[Unit]((value: T, throwable: Throwable) => {
-      Option(value).foreach(v => promise.complete(Try(v)))
-      Option(throwable).foreach(t => promise.failure(t))
-      ()
-    })
-    promise.future
-  }
+  final def toFuture: Future[T] = new ReactiveSMono[T](jMono).toFuture
 
   /**
     * Transform this [[Mono]] in order to generate a target [[Mono]]. Unlike [[Mono.compose]], the
