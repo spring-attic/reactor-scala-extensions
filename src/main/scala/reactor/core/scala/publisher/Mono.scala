@@ -1618,7 +1618,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @tparam V the element type of the supplied Mono
     * @return a new [[Mono]] that emits from the supplied [[Mono]]
     */
-  final def `then`[V](other: Mono[V]): Mono[V] = Mono[V](jMono.`then`(other))
+  final def `then`[V](other: Mono[V]): Mono[V] = Mono.from(new ReactiveSMono[T](jMono).`then`(new ReactiveSMono[V](other.jMono)))
 
   /**
     * Return a `Mono[Unit]` that waits for this [[Mono]] to complete then
@@ -1632,7 +1632,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @return a new [[Mono]] completing when both publishers have completed in
     *                       sequence
     */
-  final def thenEmpty(other: MapablePublisher[Unit]): Mono[Unit] = Mono[Unit]((jMono: JMono[T]).thenEmpty(other))
+  final def thenEmpty(other: MapablePublisher[Unit]): Mono[Unit] = Mono.from(new ReactiveSMono[T](jMono).thenEmpty(other))
 
   /**
     * Ignore element from this mono and transform the completion signal into a
@@ -1646,7 +1646,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @return a new [[Flux]] that emits from the supplied [[Publisher]] after
     *                       this Mono completes.
     */
-  final def thenMany[V](other: Publisher[V]): Flux[V] = Flux(jMono.thenMany(other))
+  final def thenMany[V](other: Publisher[V]): Flux[V] = Flux.from(new ReactiveSMono[T](jMono).thenMany(other))
 
   /**
     * Signal a [[java.util.concurrent.TimeoutException]] in case an item doesn't arrive before the given period.
@@ -1657,7 +1657,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @param timeout the timeout before the onNext signal from this [[Mono]]
     * @return an expirable [[Mono]]}
     */
-  final def timeout(timeout: Duration) = Mono(jMono.timeout(timeout))
+  final def timeout(timeout: Duration): Mono[T] = Mono.from(new ReactiveSMono[T](jMono).timeout(timeout))
 
   /**
     * Switch to a fallback [[Mono]] in case an item doesn't arrive before the given period.

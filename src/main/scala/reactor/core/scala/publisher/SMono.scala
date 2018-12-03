@@ -1166,12 +1166,57 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] {
     */
   final def `then`(): SMono[Unit] = new ReactiveSMono[Unit](coreMono.`then`().map((_: Void) => ()))
 
+  /**
+    * Ignore element from this [[SMono]] and transform its completion signal into the
+    * emission and completion signal of a provided `Mono[V]`. Error signal is
+    * replayed in the resulting `SMono[V]`.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/ignorethen1.png" alt="">
+    *
+    * @param other a [[SMono]] to emit from after termination
+    * @tparam V the element type of the supplied Mono
+    * @return a new [[SMono]] that emits from the supplied [[SMono]]
+    */
   final def `then`[V](other: SMono[V]): SMono[V] = coreMono.`then`(other.coreMono)
 
+  /**
+    * Return a `SMono[Unit]` that waits for this [[SMono]] to complete then
+    * for a supplied [[Publisher Publisher[Unit]]] to also complete. The
+    * second completion signal is replayed, or any error signal that occurs instead.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/ignorethen.png"
+    * alt="">
+    *
+    * @param other a [[Publisher]] to wait for after this Mono's termination
+    * @return a new [[SMono]] completing when both publishers have completed in
+    *                       sequence
+    */
   final def thenEmpty(other: MapablePublisher[Unit]): SMono[Unit] = new ReactiveSMono[Unit]((coreMono: JMono[T]).thenEmpty(other).map((_: Void) => ()))
 
+  /**
+    * Ignore element from this mono and transform the completion signal into a
+    * `SFlux[V]` that will emit elements from the provided [[Publisher]].
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/ignorethens.png" alt="">
+    *
+    * @param other a [[Publisher]] to emit from after termination
+    * @tparam V the element type of the supplied Publisher
+    * @return a new [[SFlux]] that emits from the supplied [[Publisher]] after
+    *                       this SMono completes.
+    */
   final def thenMany[V](other: Publisher[V]): SFlux[V] = coreMono.thenMany(other)
 
+  /**
+    * Signal a [[java.util.concurrent.TimeoutException]] in case an item doesn't arrive before the given period.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/timeouttime1.png" alt="">
+    *
+    * @param timeout the timeout before the onNext signal from this [[SMono]]
+    * @return an expirable [[SMono]]}
+    */
   final def timeout(timeout: Duration, fallback: Option[SMono[_ <: T]] = None, timer: Scheduler = Schedulers.parallel()): SMono[T] =
     coreMono.timeout(timeout, fallback.map(_.coreMono).orNull[JMono[_ <: T]], timer)
 
