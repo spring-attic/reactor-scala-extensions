@@ -1343,6 +1343,21 @@ object SMono {
     JMono.fromFuture[T](completableFuture)
   }
 
+  /**
+    * Transform a [[Try]] into an [[SMono]]
+    * @param aTry a Try
+    * @tparam T The type of the [[Try]]
+    * @return an [[SMono]]
+    */
+  def fromTry[T](aTry: => Try[T]): SMono[T] = {
+    create[T](sink => {
+      aTry match {
+        case Success(t) => sink.success(t)
+        case Failure(ex) => sink.error(ex)
+      }
+    })
+  }
+
   def ignoreElements[T](source: Publisher[T]): SMono[T] = JMono.ignoreElements(source)
 
   def just[T](data: T): SMono[T] = new ReactiveSMono[T](JMono.just(data))

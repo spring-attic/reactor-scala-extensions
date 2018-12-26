@@ -21,7 +21,7 @@ import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.language.postfixOps
 import scala.math.ScalaNumber
-import scala.util.{Failure, Random, Success}
+import scala.util.{Failure, Random, Success, Try}
 
 class SMonoTest extends FreeSpec with Matchers with TestSupport {
   private val randomValue = Random.nextLong()
@@ -104,6 +104,21 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport {
         }))
           .expectNext(randomValue)
           .verifyComplete()
+      }
+
+      "a Try should result SMono that when it is a" - {
+        "Success will emit the value of the Try" in {
+          def aSuccess = Try(randomValue)
+          StepVerifier.create(SMono.fromTry(aSuccess))
+            .expectNext(randomValue)
+            .verifyComplete()
+        }
+        "Failure will emit onError with the exception" in {
+          def aFailure = Try(throw new RuntimeException("error message"))
+          StepVerifier.create(SMono.fromTry(aFailure))
+            .expectErrorMessage("error message")
+            .verify()
+        }
       }
     }
 
