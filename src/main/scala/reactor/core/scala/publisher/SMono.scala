@@ -1349,14 +1349,12 @@ object SMono {
     * @tparam T The type of the [[Try]]
     * @return an [[SMono]]
     */
-  def fromTry[T](aTry: => Try[T]): SMono[T] = {
-    create[T](sink => {
-      aTry match {
-        case Success(t) => sink.success(t)
-        case Failure(ex) => sink.error(ex)
-      }
-    })
-  }
+  def fromTry[T](aTry: => Try[T]): SMono[T] = create[T](sink => {
+    aTry match {
+      case Success(t) => sink.success(t)
+      case Failure(ex) => sink.error(ex)
+    }
+  })
 
   def ignoreElements[T](source: Publisher[T]): SMono[T] = JMono.ignoreElements(source)
 
