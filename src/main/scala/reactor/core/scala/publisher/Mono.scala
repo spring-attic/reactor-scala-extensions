@@ -1821,7 +1821,7 @@ object Mono {
   def defer[T](supplier: () => Mono[T]): Mono[T] = {
     def supplierF(): SMono[T] = new ReactiveSMono[T](supplier().jMono)
 
-    Mono.from(SMono.defer(supplierF))
+    Mono.from(SMono.defer[T](() => supplierF()))
   }
 
   /**
