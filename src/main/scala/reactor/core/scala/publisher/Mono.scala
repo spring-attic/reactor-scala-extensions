@@ -78,7 +78,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @return the transformed { @link Mono} to instance P
     * @see [[Mono.compose]] for a bounded conversion to [[org.reactivestreams.Publisher]]
     */
-  final def as[P](transformer: (Mono[T] => P)): P = transformer(this)
+  final def as[P](transformer: Mono[T] => P): P = transformer(this)
 
   /**
     * Join the termination signals from this mono and another source into the returned
@@ -1816,20 +1816,12 @@ object Mono {
     */
   def apply[T](javaMono: JMono[T]): Mono[T] = new Mono[T](javaMono)
 
-  def create[T](callback: MonoSink[T] => Unit): Mono[T] = {
-    new Mono[T](
-      JMono.create(new Consumer[MonoSink[T]] {
-        override def accept(t: MonoSink[T]): Unit = callback(t)
-      })
-    )
-  }
+  def create[T](callback: MonoSink[T] => Unit): Mono[T] = Mono.from(SMono.create(callback))
 
   def defer[T](supplier: () => Mono[T]): Mono[T] = {
-    new Mono[T](
-      JMono.defer(new Supplier[JMono[T]] {
-        override def get(): JMono[T] = supplier().jMono
-      })
-    )
+    def supplierF(): SMono[T] = new ReactiveSMono[T](supplier().jMono)
+
+    Mono.from(SMono.defer(supplierF))
   }
 
   /**
