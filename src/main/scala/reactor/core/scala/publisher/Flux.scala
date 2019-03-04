@@ -2393,9 +2393,9 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T])
     * <p>
     * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/parallel.png" alt="">
     *
-    * @return a new [[ParallelFlux]] instance
+    * @return a new [[SParallelFlux]] instance
     */
-  final def parallel() = ParallelFlux(jFlux.parallel())
+  final def parallel() = SParallelFlux(jFlux.parallel())
 
   /**
     * Prepare to consume this [[Flux]] on parallelism number of 'rails'
@@ -2405,9 +2405,9 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T])
     * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/parallel.png" alt="">
     *
     * @param parallelism the number of parallel rails
-    * @return a new [[ParallelFlux]] instance
+    * @return a new [[SParallelFlux]] instance
     */
-  final def parallel(parallelism: Int): ParallelFlux[T] = ParallelFlux(jFlux.parallel(parallelism))
+  final def parallel(parallelism: Int): SParallelFlux[T] = SParallelFlux(jFlux.parallel(parallelism))
 
   /**
     * Prepare to consume this [[Flux]] on parallelism number of 'rails'
@@ -2419,9 +2419,9 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T])
     *
     * @param parallelism the number of parallel rails
     * @param prefetch    the number of values to prefetch from the source
-    * @return a new [[ParallelFlux]] instance
+    * @return a new [[SParallelFlux]] instance
     */
-  final def parallel(parallelism: Int, prefetch: Int) = ParallelFlux(jFlux.parallel(parallelism, prefetch))
+  final def parallel(parallelism: Int, prefetch: Int) = SParallelFlux(jFlux.parallel(parallelism, prefetch))
 
   /**
     * Prepare a [[ConnectableFlux]] which shares this [[Flux]] sequence and dispatches values to
