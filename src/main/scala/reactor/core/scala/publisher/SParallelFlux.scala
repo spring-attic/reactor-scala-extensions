@@ -8,6 +8,17 @@ import reactor.core.publisher.{ParallelFlux => JParallelFlux}
 import reactor.util.concurrent.Queues
 
 class SParallelFlux[T] private(private val jParallelFlux: JParallelFlux[T]) {
+
+  /**
+    * Perform a fluent transformation to a value via a converter function which receives
+    * this ParallelFlux.
+    *
+    * @tparam U the output value type
+    * @param converter the converter function from [[SParallelFlux]] to some type
+    * @return the value returned by the converter function
+    */
+  final def as[U](converter: SParallelFlux[T] => U): U = jParallelFlux.as((t: JParallelFlux[T]) => converter(SParallelFlux(t)))
+
   def asJava: JParallelFlux[T] = jParallelFlux
 }
 
