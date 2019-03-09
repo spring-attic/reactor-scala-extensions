@@ -20,7 +20,7 @@ class SParallelFluxTest extends FreeSpec with Matchers {
     }
 
     ".filter should filter elements" in {
-      StepVerifier.create(fluxParallel.filter(i => i % 2 == 0))
+      StepVerifier.create(fluxParallel.filter((i:Int) => i % 2 == 0))
         .expectNext(2)
         .verifyComplete()
     }
@@ -37,9 +37,9 @@ class SParallelFluxTest extends FreeSpec with Matchers {
     ".runOn should run on different thread" in {
       val scheduler = spy(Schedulers.parallel())
       StepVerifier.create(flux.parallel(2).runOn(scheduler))
-        .expectNextMatches(i => data.contains(i))
-        .expectNextMatches(i => data.contains(i))
-        .expectNextMatches(i => data.contains(i))
+        .expectNextMatches((i: Int) => data.contains(i))
+        .expectNextMatches((i: Int) => data.contains(i))
+        .expectNextMatches((i: Int) => data.contains(i))
         .verifyComplete()
 
       verify(scheduler, times(2)).createWorker()
