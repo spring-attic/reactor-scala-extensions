@@ -22,6 +22,18 @@ class SParallelFlux[T] private(private val jParallelFlux: JParallelFlux[T]) exte
   final def as[U](converter: SParallelFlux[T] => U): U = jParallelFlux.as((t: JParallelFlux[T]) => converter(SParallelFlux(t)))
 
   /**
+    * Maps the source values on each 'rail' to another value.
+    * <p>
+    * Note that the same mapper function may be called from multiple threads
+    * concurrently.
+    *
+    * @tparam U the output value type
+    * @param mapper the mapper function turning Ts into Us.
+    * @return the new [[SParallelFlux]] instance
+    */
+  final def map[U](mapper: T => _ <: U) = SParallelFlux(jParallelFlux.map[U](mapper))
+
+  /**
     * Specifies where each 'rail' will observe its incoming values with possibly
     * work-stealing and a given prefetch amount.
     * <p>

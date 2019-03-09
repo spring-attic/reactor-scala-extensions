@@ -1,6 +1,6 @@
 package reactor.core.scala.publisher
 
-import org.mockito.Mockito
+import org.mockito.Mockito.{spy, times, verify}
 import org.scalatest.{FreeSpec, Matchers}
 import reactor.core.publisher.{Flux => JFlux, ParallelFlux => JParallelFlux}
 import reactor.core.scheduler.Schedulers
@@ -10,23 +10,33 @@ class SParallelFluxTest extends FreeSpec with Matchers {
   "SParallelFlux" - {
     val data = Seq(1, 2, 3)
     val flux = Flux.just(data.head,data.tail:_*)
+    val fluxParallel: SParallelFlux[Int] = flux.parallel()
     ".asJava should convert as Java ParallelFlux" in {
-      flux.parallel().asJava shouldBe a[JParallelFlux[Int]]
+      fluxParallel.asJava shouldBe a[JParallelFlux[Int]]
     }
 
     ".apply should convert Java ParallelFlux into SParallelFlux" in {
       SParallelFlux(JFlux.just(1, 2, 3).parallel()).asJava shouldBe a[JParallelFlux[Int]]
     }
 
+    ".map should map from T to U" in {
+      val expected = data.map(_.toString)
+      StepVerifier.create(fluxParallel.map(i => i.toString))
+        .expectNextMatches(i => expected.contains(i))
+        .expectNextMatches(i => expected.contains(i))
+        .expectNextMatches(i => expected.contains(i))
+        .verifyComplete()
+    }
+
     ".runOn should run on different thread" in {
-      val scheduler = Mockito.spy(Schedulers.parallel())
+      val scheduler = spy(Schedulers.parallel())
       StepVerifier.create(flux.parallel(2).runOn(scheduler))
         .expectNextMatches(i => data.contains(i))
         .expectNextMatches(i => data.contains(i))
         .expectNextMatches(i => data.contains(i))
         .verifyComplete()
 
-      Mockito.verify(scheduler, Mockito.times(2)).createWorker()
+      verify(scheduler, times(2)).createWorker()
     }
   }
 }
