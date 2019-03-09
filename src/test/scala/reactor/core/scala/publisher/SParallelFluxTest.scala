@@ -19,6 +19,12 @@ class SParallelFluxTest extends FreeSpec with Matchers {
       SParallelFlux(JFlux.just(1, 2, 3).parallel()).asJava shouldBe a[JParallelFlux[Int]]
     }
 
+    ".filter should filter elements" in {
+      StepVerifier.create(fluxParallel.filter(i => i % 2 == 0))
+        .expectNext(2)
+        .verifyComplete()
+    }
+
     ".map should map from T to U" in {
       val expected = data.map(_.toString)
       StepVerifier.create(fluxParallel.map(i => i.toString))

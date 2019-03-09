@@ -22,6 +22,17 @@ class SParallelFlux[T] private(private val jParallelFlux: JParallelFlux[T]) exte
   final def as[U](converter: SParallelFlux[T] => U): U = jParallelFlux.as((t: JParallelFlux[T]) => converter(SParallelFlux(t)))
 
   /**
+    * Filters the source values on each 'rail'.
+    * <p>
+    * Note that the same predicate may be called from multiple threads concurrently.
+    *
+    * @param predicate the function returning true to keep a value or false to drop a
+    *                  value
+    * @return the new [[SParallelFlux]] instance
+    */
+  final def filter(predicate: SPredicate[T]) = SParallelFlux(jParallelFlux.filter(predicate))
+
+  /**
     * Maps the source values on each 'rail' to another value.
     * <p>
     * Note that the same mapper function may be called from multiple threads
