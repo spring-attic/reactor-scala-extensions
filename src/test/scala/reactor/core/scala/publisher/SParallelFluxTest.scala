@@ -28,9 +28,9 @@ class SParallelFluxTest extends FreeSpec with Matchers {
     ".map should map from T to U" in {
       val expected = data.map(_.toString)
       StepVerifier.create(fluxParallel.map(i => i.toString))
-        .expectNextMatches(i => expected.contains(i))
-        .expectNextMatches(i => expected.contains(i))
-        .expectNextMatches(i => expected.contains(i))
+        .expectNextMatches((i: String) => expected.contains(i))
+        .expectNextMatches((i: String) => expected.contains(i))
+        .expectNextMatches((i: String) => expected.contains(i))
         .verifyComplete()
     }
 
