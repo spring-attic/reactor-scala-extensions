@@ -66,6 +66,17 @@ class SParallelFlux[T] private(private val jParallelFlux: JParallelFlux[T]) exte
     */
   final def runOn(scheduler: Scheduler, prefetch: Int = Queues.SMALL_BUFFER_SIZE) = SParallelFlux(jParallelFlux.runOn(scheduler, prefetch))
 
+
+  /**
+    * Merges the values from each 'rail' in a round-robin or same-order fashion and
+    * exposes it as a regular Publisher sequence, running with a give prefetch value for
+    * the rails.
+    *
+    * @param prefetch the prefetch amount to use for each rail
+    * @return the new Flux instance
+    */
+  final def sequential(prefetch: Int = Queues.SMALL_BUFFER_SIZE) = Flux(jParallelFlux.sequential(prefetch))
+
   /**
     * Subscribes to this [[SParallelFlux]] by providing an onNext, onError,
     * onComplete and onSubscribe callback and triggers the execution chain for all

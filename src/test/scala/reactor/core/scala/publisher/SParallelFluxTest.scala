@@ -34,6 +34,15 @@ class SParallelFluxTest extends FreeSpec with Matchers {
         .verifyComplete()
     }
 
+    ".sequential should merge the rails" in {
+      val expected = data.map(_.toString)
+      StepVerifier.create(fluxParallel.map(i => i.toString).sequential())
+        .expectNextMatches((i: String) => expected.contains(i))
+        .expectNextMatches((i: String) => expected.contains(i))
+        .expectNextMatches((i: String) => expected.contains(i))
+        .verifyComplete()
+    }
+
     ".runOn should run on different thread" in {
       val scheduler = spy(Schedulers.parallel())
       StepVerifier.create(flux.parallel(2).runOn(scheduler))
