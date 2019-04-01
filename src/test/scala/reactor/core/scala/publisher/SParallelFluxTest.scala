@@ -34,6 +34,13 @@ class SParallelFluxTest extends FreeSpec with Matchers {
         .verifyComplete()
     }
 
+    ".reduce should aggregate the values" in {
+      val mono = fluxParallel.reduce(_ + _)
+      StepVerifier.create(mono)
+        .expectNext(6)
+        .verifyComplete()
+    }
+
     ".sequential should merge the rails" in {
       val expected = data.map(_.toString)
       StepVerifier.create(fluxParallel.map(i => i.toString).sequential())
