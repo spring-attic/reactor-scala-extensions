@@ -9,7 +9,7 @@ import reactor.test.StepVerifier
 class SParallelFluxTest extends FreeSpec with Matchers {
   "SParallelFlux" - {
     val data = Seq(1, 2, 3)
-    val flux = Flux.just(data.head,data.tail:_*)
+    val flux = Flux.just(data.head, data.tail: _*)
     val fluxParallel: SParallelFlux[Int] = flux.parallel()
     ".asJava should convert as Java ParallelFlux" in {
       fluxParallel.asJava shouldBe a[JParallelFlux[Int]]
@@ -20,7 +20,7 @@ class SParallelFluxTest extends FreeSpec with Matchers {
     }
 
     ".filter should filter elements" in {
-      StepVerifier.create(fluxParallel.filter((i:Int) => i % 2 == 0))
+      StepVerifier.create(fluxParallel.filter((i: Int) => i % 2 == 0))
         .expectNext(2)
         .verifyComplete()
     }
@@ -34,11 +34,34 @@ class SParallelFluxTest extends FreeSpec with Matchers {
         .verifyComplete()
     }
 
-    ".reduce should aggregate the values" in {
-      val mono = fluxParallel.reduce(_ + _)
-      StepVerifier.create(mono)
-        .expectNext(6)
-        .verifyComplete()
+    ".reduce should aggregate the values" - {
+      "without initial supplier" in {
+        val mono = fluxParallel.reduce(_ + _)
+        StepVerifier.create(mono)
+          .expectNext(6)
+          .verifyComplete()
+      }
+      "with initial value should aggregate the values with initial one" ignore {
+        val parallelFlux = fluxParallel.reduce[String](() => "0", (agg, v) => s"$agg-${v.toString}")
+        StepVerifier.create(parallelFlux)
+          .expectNext("0-1")
+          .expectNext("0-2")
+          .expectNext("0-3")
+          .expectNext("0")
+          .expectNext("0")
+          .expectNext("0")
+          .expectNext("0")
+          .expectNext("0")
+          .expectNext("0")
+          .expectNext("0")
+          .expectNext("0")
+          .expectNext("0")
+          .expectNext("0")
+          .expectNext("0")
+          .expectNext("0")
+          .expectNext("0")
+          .verifyComplete()
+      }
     }
 
     ".sequential should merge the rails" in {

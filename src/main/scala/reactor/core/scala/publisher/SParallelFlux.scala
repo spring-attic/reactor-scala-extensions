@@ -58,6 +58,22 @@ class SParallelFlux[T] private(private val jParallelFlux: JParallelFlux[T]) exte
   final def reduce(reducer: (T, T) => T) = Mono(jParallelFlux.reduce(reducer))
 
   /**
+    * Reduces all values within a 'rail' to a single value (with a possibly different
+    * type) via a reducer function that is initialized on each rail from an
+    * initialSupplier value.
+    * <p>
+    * Note that the same mapper function may be called from multiple threads
+    * concurrently.
+    *
+    * @tparam R the reduced output type
+    * @param initialSupplier the supplier for the initial value
+    * @param reducer         the function to reduce a previous output of reduce (or the initial
+    *                        value supplied) with a current source value.
+    * @return the new [[SParallelFlux]] instance
+    */
+  final def reduce[R](initialSupplier: () => R, reducer: (R, T) => R) = SParallelFlux(jParallelFlux.reduce[R](initialSupplier, reducer))
+
+  /**
     * Specifies where each 'rail' will observe its incoming values with possibly
     * work-stealing and a given prefetch amount.
     * <p>
