@@ -61,7 +61,9 @@ import scala.util.{Failure, Success, Try}
   *
   * @tparam T the type of the single value of this class
   * @see Flux
+  * @deprecated Use [[SMono]]
   */
+@deprecated(message = "This class is deprecated, use SMono", since = "0.4.0")
 class Mono[T] private(private val jMono: JMono[T])
   extends Publisher[T] with MapablePublisher[T] with OnErrorReturn[T] with MonoLike[T] with Filter[T] with Scannable {
   override def subscribe(s: Subscriber[_ >: T]): Unit = new ReactiveSMono[T](jMono).subscribe(s)

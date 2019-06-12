@@ -42,7 +42,9 @@ import scala.concurrent.duration.Duration
   *
   * @tparam T the element type of this Reactive Streams [[Publisher]]
   * @see [[Mono]]
+  * @deprecated Use [[SFlux]]
   */
+@deprecated(message = "This class is deprecated. Use SFlux", since = "0.4.0")
 class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T])
   extends Publisher[T] with MapablePublisher[T] with OnErrorReturn[T] with FluxLike[T] with Filter [T] with Scannable {
 
