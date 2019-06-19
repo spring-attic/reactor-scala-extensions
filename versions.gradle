@@ -1,14 +1,17 @@
 ext.defaultScala_2_11_Version = '2.11.12'
 ext.defaultScala_2_12_Version = '2.12.8'
+ext.defaultScala_2_13_Version = '2.13.0'
 
 if (!hasProperty('scalaVersion')) {
-    ext.scalaVersion = ext.defaultScala_2_12_Version
+    ext.scalaVersion = ext.defaultScala_2_13_Version
 }
 
 if (scalaVersion.startsWith('2.11')) {
     ext.baseScalaVersion = '2.11'
 } else if (scalaVersion.startsWith('2.12')) {
     ext.baseScalaVersion = '2.12'
+} else if (scalaVersion.startsWith('2.13')) {
+    ext.baseScalaVersion = '2.13'
 } else {
     ext.baseScalaVersion = scalaVersion
 }
@@ -20,9 +23,9 @@ ext {
     mockitoVersion      = "2.21.0"
     pegdownVersion      = "1.6.0"
     reactorVersion      = "3.2.9.RELEASE"
-    scalaLoggingVersion = "3.9.0"
-    scalatestVersion    = "3.0.5-M1"
-    scoverageVersion    = "1.4.0-M3"
+    scalaLoggingVersion = "3.9.2"
+    scalatestVersion    = "3.0.8"
+    scoverageVersion    = "1.4.0"
 }
 
 ext.libraries = [

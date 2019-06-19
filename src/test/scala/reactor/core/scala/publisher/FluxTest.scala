@@ -143,7 +143,7 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
           .expectNext(1, 3)
           .expectError(classOf[RuntimeException])
           .verify()
-        flag shouldBe 'get
+        flag shouldBe Symbol("get")
       }
       "with varargs of publishers should concatenate all sources emitted from parents" in {
         val flux = Flux.concatDelayError[Int](Mono.just(1), Mono.just(2), Mono.just(3))
@@ -325,7 +325,7 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
       "should return tuple with the index" in {
         val flux = Flux.just("a", "b", "c").index()
         StepVerifier.create(flux)
-          .expectNext((0l, "a"), (1l, "b"), (2l, "c"))
+          .expectNext((0L, "a"), (1L, "b"), (2L, "c"))
           .verifyComplete()
       }
       "with index mapper should return the mapped value" in {
@@ -501,27 +501,27 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
           .verifyComplete()
       }
       "with source1, source2, source3 should emit flux with tuple3" in {
-        val flux = Flux.zip(Flux.just(1, 2, 3), Flux.just("one", "two", "three"), Flux.just(1l, 2l, 3l))
+        val flux = Flux.zip(Flux.just(1, 2, 3), Flux.just("one", "two", "three"), Flux.just(1L, 2L, 3L))
         StepVerifier.create(flux)
-          .expectNext((1, "one", 1l), (2, "two", 2l), (3, "three", 3l))
+          .expectNext((1, "one", 1L), (2, "two", 2L), (3, "three", 3L))
           .verifyComplete()
       }
       "with source1, source2, source3, source4 should emit flux with tuple4" in {
-        val flux = Flux.zip(Flux.just(1, 2, 3), Flux.just("one", "two", "three"), Flux.just(1l, 2l, 3l), Flux.just(BigDecimal("1"), BigDecimal("2"), BigDecimal("3")))
+        val flux = Flux.zip(Flux.just(1, 2, 3), Flux.just("one", "two", "three"), Flux.just(1L, 2L, 3L), Flux.just(BigDecimal("1"), BigDecimal("2"), BigDecimal("3")))
         StepVerifier.create(flux)
-          .expectNext((1, "one", 1l, BigDecimal("1")), (2, "two", 2l, BigDecimal("2")), (3, "three", 3l, BigDecimal("3")))
+          .expectNext((1, "one", 1L, BigDecimal("1")), (2, "two", 2L, BigDecimal("2")), (3, "three", 3L, BigDecimal("3")))
           .verifyComplete()
       }
       "with source1, source2, source3, source4, source5 should emit flux with tuple5" in {
-        val flux = Flux.zip(Flux.just(1, 2, 3), Flux.just("one", "two", "three"), Flux.just(1l, 2l, 3l), Flux.just(BigDecimal("1"), BigDecimal("2"), BigDecimal("3")), Flux.just("a", "i", "u"))
+        val flux = Flux.zip(Flux.just(1, 2, 3), Flux.just("one", "two", "three"), Flux.just(1L, 2L, 3L), Flux.just(BigDecimal("1"), BigDecimal("2"), BigDecimal("3")), Flux.just("a", "i", "u"))
         StepVerifier.create(flux)
-          .expectNext((1, "one", 1l, BigDecimal("1"), "a"), (2, "two", 2l, BigDecimal("2"), "i"), (3, "three", 3l, BigDecimal("3"), "u"))
+          .expectNext((1, "one", 1L, BigDecimal("1"), "a"), (2, "two", 2L, BigDecimal("2"), "i"), (3, "three", 3L, BigDecimal("3"), "u"))
           .verifyComplete()
       }
       "with source1, source2, source3, source4, source5, source6 should emit flux with tuple6" in {
-        val flux = Flux.zip(Flux.just(1, 2, 3), Flux.just("one", "two", "three"), Flux.just(1l, 2l, 3l), Flux.just(BigDecimal("1"), BigDecimal("2"), BigDecimal("3")), Flux.just("a", "i", "u"), Flux.just("a", "b", "c"))
+        val flux = Flux.zip(Flux.just(1, 2, 3), Flux.just("one", "two", "three"), Flux.just(1L, 2L, 3L), Flux.just(BigDecimal("1"), BigDecimal("2"), BigDecimal("3")), Flux.just("a", "i", "u"), Flux.just("a", "b", "c"))
         StepVerifier.create(flux)
-          .expectNext((1, "one", 1l, BigDecimal("1"), "a", "a"), (2, "two", 2l, BigDecimal("2"), "i", "b"), (3, "three", 3l, BigDecimal("3"), "u", "c"))
+          .expectNext((1, "one", 1L, BigDecimal("1"), "a", "a"), (2, "two", 2L, BigDecimal("2"), "i", "b"), (3, "three", 3L, BigDecimal("3"), "u", "c"))
           .verifyComplete()
       }
       "with iterable and combinator should emit flux of combined data" in {
@@ -691,9 +691,9 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
       "with timespan duration and timeshift duration should split the values every timespan" - {
         val data = Table(
           ("scenario", "timespan", "timeshift", "expected"),
-          ("timeshift > timespan", 1500 milliseconds, 2 seconds, Seq(Seq(0l), Seq(1l, 2l), Seq(3l, 4l))),
-          ("timeshift < timespan", 1500 milliseconds, 1 second, Seq(Seq(0l), Seq(0l, 1l), Seq(1l, 2l), Seq(2l, 3l), Seq(3l, 4l), Seq(4l))),
-          ("timeshift = timespan", 1500 milliseconds, 1500 milliseconds, Seq(Seq(0l), Seq(1l), Seq(2l, 3l), Seq(4l)))
+          ("timeshift > timespan", 1500 milliseconds, 2 seconds, Seq(Seq(0L), Seq(1L, 2L), Seq(3L, 4L))),
+          ("timeshift < timespan", 1500 milliseconds, 1 second, Seq(Seq(0L), Seq(0L, 1L), Seq(1L, 2L), Seq(2L, 3L), Seq(3L, 4L), Seq(4L))),
+          ("timeshift = timespan", 1500 milliseconds, 1500 milliseconds, Seq(Seq(0L), Seq(1L), Seq(2L, 3L), Seq(4L)))
         )
         forAll(data) { (scenario, timespan, timeshift, expected) => {
           s"when $scenario" in {
@@ -729,7 +729,7 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
       "with maxSize and duration should aplit values every duration or after maximum has been reached" in {
         StepVerifier.withVirtualTime(() => Flux.interval(1 second).take(5).bufferTimeout(1, 1500 milliseconds))
           .thenAwait(5 seconds)
-          .expectNext(Seq(0l), Seq(1l), Seq(2l), Seq(3l), Seq(4l))
+          .expectNext(Seq(0L), Seq(1L), Seq(2L), Seq(3L), Seq(4L))
           .verifyComplete()
       }
     }
@@ -738,7 +738,7 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
       "should buffer until predicate expression returns true" in {
         StepVerifier.withVirtualTime(() => Flux.interval(1 second).take(5).bufferUntil(l => l % 3 == 0))
           .thenAwait(5 seconds)
-          .expectNext(Seq(0l), Seq(1l, 2l, 3l), Seq(4l))
+          .expectNext(Seq(0L), Seq(1L, 2L, 3L), Seq(4L))
           .verifyComplete()
       }
       "with cutBefore should control if the value that trigger the predicate be included in the previous or after sequence" in {
@@ -979,13 +979,13 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
       "should delay the element but not subscription" in {
         StepVerifier.withVirtualTime[(Long, (Long, Int))](() => Flux.from(Flux.just[Int](1, 2, 3).delayElements(100 milliseconds).elapsed()).delaySequence(1 seconds).elapsed())
           .thenAwait(1300 milliseconds)
-          .expectNext((1100l, (100l, 1)), (100l, (100l, 2)), (100l, (100l, 3)))
+          .expectNext((1100L, (100L, 1)), (100L, (100L, 2)), (100L, (100L, 3)))
           .verifyComplete()
       }
       "with scheduler should use the scheduler" in {
         StepVerifier.withVirtualTime[(Long, (Long, Int))](() => Flux.from(Flux.just[Int](1, 2, 3).delayElements(100 milliseconds).elapsed()).delaySequence(1 seconds, VirtualTimeScheduler.getOrSet()).elapsed())
           .thenAwait(1300 milliseconds)
-          .expectNext((1100l, (100l, 1)), (100l, (100l, 2)), (100l, (100l, 3)))
+          .expectNext((1100L, (100L, 1)), (100L, (100L, 2)), (100L, (100L, 3)))
           .verifyComplete()
       }
     }
@@ -1065,7 +1065,7 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
       StepVerifier.create(flux)
         .expectNext(1, 2, 3)
         .verifyComplete()
-      flag shouldBe 'get
+      flag shouldBe Symbol("get")
     }
 
     ".doOnCancel should perform an action after it is cancelled" in {
@@ -1086,7 +1086,7 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
         override def hookOnNext(value: Int): Unit = ()
       })
       subscriptionReference.get().cancel()
-      atomicBoolean shouldBe 'get
+      atomicBoolean shouldBe Symbol("get")
     }
 
     ".doOnComplete should perform action after the flux is completed" in {
@@ -1098,7 +1098,7 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
       StepVerifier.create(flux)
         .expectNext(1, 2, 3)
         .verifyComplete()
-      flag shouldBe 'get
+      flag shouldBe Symbol("get")
     }
 
     ".doOnEach should perform an action for every signal" in {
@@ -1169,7 +1169,7 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
       StepVerifier.create(mono)
         .expectNextCount(1)
         .verifyComplete()
-      atomicBoolean shouldBe 'get
+      atomicBoolean shouldBe Symbol("get")
     }
 
     ".doOnTerminate should do something on terminate" in {
@@ -1179,7 +1179,7 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
         .expectNext(1, 2, 3)
         .expectComplete()
         .verify()
-      flag shouldBe 'get
+      flag shouldBe Symbol("get")
     }
 
     ".doFinally should call the callback" in {
@@ -1189,7 +1189,7 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
       StepVerifier.create(flux)
         .expectNext(1, 2, 3)
         .verifyComplete()
-      atomicBoolean shouldBe 'get
+      atomicBoolean shouldBe Symbol("get")
     }
 
     ".elapsed" - {
@@ -2136,7 +2136,7 @@ class FluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
     ".zipWithTimeSinceSubscribe should emit tuple2 with the second element as the time taken to emit since subscription in milliseconds" in {
       StepVerifier.withVirtualTime(() => Flux.just(1, 2, 3).delayElements(1 second).zipWithTimeSinceSubscribe())
         .thenAwait(3 seconds)
-        .expectNext((1, 1000l), (2, 2000l), (3, 3000l))
+        .expectNext((1, 1000L), (2, 2000L), (3, 3000L))
         .verifyComplete()
     }
 

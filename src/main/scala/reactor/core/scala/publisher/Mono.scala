@@ -1806,6 +1806,7 @@ class Mono[T] private(private val jMono: JMono[T])
   final def asJava(): JMono[T] = new ReactiveSMono[T](jMono).asJava()
 }
 
+@deprecated("Use SMono", since = "0.4.0")
 object Mono {
 
   /**

@@ -488,7 +488,7 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport {
         })
         .expectNext(randomValue)
         .verifyComplete()
-      atomicBoolean shouldBe 'get
+      atomicBoolean shouldBe Symbol("get")
       val exception = new RuntimeException
       StepVerifier.create(SMono.raiseError[Long](exception)
         .doAfterSuccessOrError { t =>
@@ -505,7 +505,7 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport {
       StepVerifier.create(SMono.just(randomValue).doAfterTerminate(() => atomicBoolean.compareAndSet(false, true)))
         .expectNext(randomValue)
         .verifyComplete()
-      atomicBoolean shouldBe 'get
+      atomicBoolean shouldBe Symbol("get")
     }
 
     ".doFinally should call the callback" in {
@@ -514,7 +514,7 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport {
         .doFinally(_ => atomicBoolean.compareAndSet(false, true) shouldBe true))
         .expectNext(randomValue)
         .verifyComplete()
-      atomicBoolean shouldBe 'get
+      atomicBoolean shouldBe Symbol("get")
     }
 
     ".doOnCancel should call the callback function when the subscription is cancelled" in {
@@ -534,7 +534,7 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport {
         override def hookOnNext(value: Long): Unit = ()
       })
       subscriptionReference.get().cancel()
-      atomicBoolean shouldBe 'get
+      atomicBoolean shouldBe Symbol("get")
     }
 
     ".doOnNext should call the callback function when the mono emit data successfully" in {
@@ -551,7 +551,7 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport {
       StepVerifier.create(SMono.empty[Int]
         .doOnSuccess(_ => atomicBoolean.compareAndSet(false, true) shouldBe true))
         .verifyComplete()
-      atomicBoolean shouldBe 'get
+      atomicBoolean shouldBe Symbol("get")
     }
 
     ".doOnError" - {
@@ -561,7 +561,7 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport {
           .doOnError(_ => atomicBoolean.compareAndSet(false, true) shouldBe true))
           .expectError(classOf[RuntimeException])
           .verify()
-        atomicBoolean shouldBe 'get
+        atomicBoolean shouldBe Symbol("get")
       }
     }
 
@@ -585,7 +585,7 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport {
         .doOnSubscribe(_ => atomicBoolean.compareAndSet(false, true)))
         .expectNextCount(1)
         .verifyComplete()
-      atomicBoolean shouldBe 'get
+      atomicBoolean shouldBe Symbol("get")
     }
 
     ".doOnTerminate should do something on terminate" in {

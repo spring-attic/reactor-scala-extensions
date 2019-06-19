@@ -114,7 +114,7 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
 
     ".firstEmitter" - {
       "with varargs of publisher should create Flux based on the publisher that emit first onNext or onComplete or onError" in {
-        val flux: SFlux[Long] = SFlux.firstEmitter(Mono.delay(Duration("10 seconds")), Mono.just[Long](1L))
+        val flux: SFlux[Long] = SFlux.firstEmitter(SMono.delay(Duration("10 seconds")), SMono.just[Long](1L))
         StepVerifier.create(flux)
           .expectNext(1)
           .verifyComplete()
@@ -176,7 +176,7 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
       "should return tuple with the index" in {
         val flux = SFlux("a", "b", "c").index()
         StepVerifier.create(flux)
-          .expectNext((0l, "a"), (1l, "b"), (2l, "c"))
+          .expectNext((0L, "a"), (1L, "b"), (2L, "c"))
           .verifyComplete()
       }
       "with index mapper should return the mapped value" in {
@@ -380,23 +380,23 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
           .verifyComplete()
       }
       "with source1, source2, source3 should emit flux with tuple3" in {
-        StepVerifier.create(SFlux.zip3(SFlux.just(1, 2, 3), SFlux.just("one", "two", "three"), SFlux.just(1l, 2l, 3l)))
-          .expectNext((1, "one", 1l), (2, "two", 2l), (3, "three", 3l))
+        StepVerifier.create(SFlux.zip3(SFlux.just(1, 2, 3), SFlux.just("one", "two", "three"), SFlux.just(1L, 2L, 3L)))
+          .expectNext((1, "one", 1L), (2, "two", 2L), (3, "three", 3L))
           .verifyComplete()
       }
       "with source1, source2, source3, source4 should emit flux with tuple4" in {
-        StepVerifier.create(SFlux.zip4(SFlux.just(1, 2, 3), SFlux.just("one", "two", "three"), SFlux.just(1l, 2l, 3l), SFlux.just(BigDecimal("1"), BigDecimal("2"), BigDecimal("3"))))
-          .expectNext((1, "one", 1l, BigDecimal("1")), (2, "two", 2l, BigDecimal("2")), (3, "three", 3l, BigDecimal("3")))
+        StepVerifier.create(SFlux.zip4(SFlux.just(1, 2, 3), SFlux.just("one", "two", "three"), SFlux.just(1L, 2L, 3L), SFlux.just(BigDecimal("1"), BigDecimal("2"), BigDecimal("3"))))
+          .expectNext((1, "one", 1L, BigDecimal("1")), (2, "two", 2L, BigDecimal("2")), (3, "three", 3L, BigDecimal("3")))
           .verifyComplete()
       }
       "with source1, source2, source3, source4, source5 should emit flux with tuple5" in {
-        StepVerifier.create(SFlux.zip5(SFlux.just(1, 2, 3), SFlux.just("one", "two", "three"), SFlux.just(1l, 2l, 3l), SFlux.just(BigDecimal("1"), BigDecimal("2"), BigDecimal("3")), SFlux.just("a", "i", "u")))
-          .expectNext((1, "one", 1l, BigDecimal("1"), "a"), (2, "two", 2l, BigDecimal("2"), "i"), (3, "three", 3l, BigDecimal("3"), "u"))
+        StepVerifier.create(SFlux.zip5(SFlux.just(1, 2, 3), SFlux.just("one", "two", "three"), SFlux.just(1L, 2L, 3L), SFlux.just(BigDecimal("1"), BigDecimal("2"), BigDecimal("3")), SFlux.just("a", "i", "u")))
+          .expectNext((1, "one", 1L, BigDecimal("1"), "a"), (2, "two", 2L, BigDecimal("2"), "i"), (3, "three", 3L, BigDecimal("3"), "u"))
           .verifyComplete()
       }
       "with source1, source2, source3, source4, source5, source6 should emit flux with tuple6" in {
-        StepVerifier.create(SFlux.zip6(SFlux.just(1, 2, 3), SFlux.just("one", "two", "three"), SFlux.just(1l, 2l, 3l), SFlux.just(BigDecimal("1"), BigDecimal("2"), BigDecimal("3")), SFlux.just("a", "i", "u"), SFlux.just("a", "b", "c")))
-          .expectNext((1, "one", 1l, BigDecimal("1"), "a", "a"), (2, "two", 2l, BigDecimal("2"), "i", "b"), (3, "three", 3l, BigDecimal("3"), "u", "c"))
+        StepVerifier.create(SFlux.zip6(SFlux.just(1, 2, 3), SFlux.just("one", "two", "three"), SFlux.just(1L, 2L, 3L), SFlux.just(BigDecimal("1"), BigDecimal("2"), BigDecimal("3")), SFlux.just("a", "i", "u"), SFlux.just("a", "b", "c")))
+          .expectNext((1, "one", 1L, BigDecimal("1"), "a", "a"), (2, "two", 2L, BigDecimal("2"), "i", "b"), (3, "three", 3L, BigDecimal("3"), "u", "c"))
           .verifyComplete()
       }
       "with iterable and combinator should emit flux of combined data" in {
@@ -496,9 +496,9 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
         val originalFlux = Flux.just(1, 2, 3, 4, 5)
         val data = Table(
           ("scenario", "maxSize", "skip", "expectedSequence"),
-          ("maxSize < skip", 2, 3, Iterable(ListBuffer(1, 2), ListBuffer(4, 5))),
-          ("maxSize > skip", 3, 2, Iterable(ListBuffer(1, 2, 3), ListBuffer(3, 4, 5), ListBuffer(5))),
-          ("maxSize = skip", 2, 2, Iterable(ListBuffer(1, 2), ListBuffer(3, 4), ListBuffer(5)))
+          ("maxSize < skip", 2, 3, Iterable(Seq(1, 2), Seq(4, 5))),
+          ("maxSize > skip", 3, 2, Iterable(Seq(1, 2, 3), Seq(3, 4, 5), Seq(5))),
+          ("maxSize = skip", 2, 2, Iterable(Seq(1, 2), Seq(3, 4), Seq(5)))
         )
         forAll(data) { (scenario, maxSize, skip, expectedSequence) => {
           s"when $scenario" in {
@@ -513,9 +513,9 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
       "with maxSize, skip and buffer supplier" - {
         val data = Table(
           ("scenario", "maxSize", "skip", "expectedSequence"),
-          ("maxSize < skip", 1, 2, Iterable(ListBuffer(1), ListBuffer(3), ListBuffer(5))),
-          ("maxSize > skip", 3, 2, Iterable(ListBuffer(1, 2, 3), ListBuffer(3, 4, 5), ListBuffer(5))),
-          ("maxSize = skip", 2, 2, Iterable(ListBuffer(1, 2), ListBuffer(3, 4), ListBuffer(5)))
+          ("maxSize < skip", 1, 2, Iterable(Seq(1), Seq(3), Seq(5))),
+          ("maxSize > skip", 3, 2, Iterable(Seq(1, 2, 3), Seq(3, 4, 5), Seq(5))),
+          ("maxSize = skip", 2, 2, Iterable(Seq(1, 2), Seq(3, 4), Seq(5)))
         )
         forAll(data) { (scenario, maxSize, skip, expectedSequence) => {
           val iterator = expectedSequence.iterator
@@ -528,15 +528,15 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
               seq
             })
             StepVerifier.create(flux)
-              .expectNextMatches((seq: Seq[Int]) => {
+              .expectNextMatches((seq: mutable.Seq[Int]) => {
                 seq shouldBe iterator.next()
                 true
               })
-              .expectNextMatches((seq: Seq[Int]) => {
+              .expectNextMatches((seq: mutable.Seq[Int]) => {
                 seq shouldBe iterator.next()
                 true
               })
-              .expectNextMatches((seq: Seq[Int]) => {
+              .expectNextMatches((seq: mutable.Seq[Int]) => {
                 seq shouldBe iterator.next()
                 true
               })
@@ -556,9 +556,9 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
 
       val data = Table(
         ("scenario", "timespan", "timeshift", "expected"),
-        ("timeshift > timespan", 1500 milliseconds, 2 seconds, Seq(Seq(0l), Seq(1l, 2l), Seq(3l, 4l))),
-        ("timeshift < timespan", 1500 milliseconds, 1 second, Seq(Seq(0l), Seq(0l, 1l), Seq(1l, 2l), Seq(2l, 3l), Seq(3l, 4l), Seq(4l))),
-        ("timeshift = timespan", 1500 milliseconds, 1500 milliseconds, Seq(Seq(0l), Seq(1l), Seq(2l, 3l), Seq(4l)))
+        ("timeshift > timespan", 1500 milliseconds, 2 seconds, Seq(Seq(0L), Seq(1L, 2L), Seq(3L, 4L))),
+        ("timeshift < timespan", 1500 milliseconds, 1 second, Seq(Seq(0L), Seq(0L, 1L), Seq(1L, 2L), Seq(2L, 3L), Seq(3L, 4L), Seq(4L))),
+        ("timeshift = timespan", 1500 milliseconds, 1500 milliseconds, Seq(Seq(0L), Seq(1L), Seq(2L, 3L), Seq(4L)))
       )
       "with duration and timeshift duration should split the values every timespan" in {
         forAll(data) { (_, timespan, timeshift, expected) => {
@@ -593,7 +593,7 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
       "with maxSize and duration should split values every duration or after maximum has been reached" in {
         StepVerifier.withVirtualTime(() => SFlux.interval(1 second).take(5).bufferTimeout(3, 1200 milliseconds))
           .thenAwait(5 seconds)
-          .expectNext(Seq(0l, 1), Seq(2l, 3), Seq(4l))
+          .expectNext(Seq(0L, 1), Seq(2L, 3), Seq(4L))
           .verifyComplete()
       }
     }
@@ -602,7 +602,7 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
       "should buffer until predicate expression returns true" in {
         StepVerifier.withVirtualTime(() => SFlux.interval(1 second).take(5).bufferUntil(l => l % 3 == 0))
           .thenAwait(5 seconds)
-          .expectNext(Seq(0l), Seq(1l, 2l, 3l), Seq(4l))
+          .expectNext(Seq(0L), Seq(1L, 2L, 3L), Seq(4L))
           .verifyComplete()
       }
       "with cutBefore should control if the value that trigger the predicate be included in the previous or after sequence" in {
@@ -762,7 +762,7 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
     }
 
     ".compose should defer transformation of this flux to another publisher" in {
-      StepVerifier.create(SFlux.just(1, 2, 3).compose(Mono.from))
+      StepVerifier.create(SFlux.just(1, 2, 3).compose(SMono.fromPublisher))
         .expectNext(1)
         .verifyComplete()
     }
@@ -839,13 +839,13 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
       "should delay the element but not subscription" in {
         StepVerifier.withVirtualTime[(Long, (Long, Int))](() => SFlux.fromPublisher(SFlux.just[Int](1, 2, 3).delayElements(100 milliseconds).elapsed()).delaySequence(1 seconds).elapsed())
           .thenAwait(1300 milliseconds)
-          .expectNext((1100l, (100l, 1)), (100l, (100l, 2)), (100l, (100l, 3)))
+          .expectNext((1100L, (100L, 1)), (100L, (100L, 2)), (100L, (100L, 3)))
           .verifyComplete()
       }
       "with scheduler should use the scheduler" in {
         StepVerifier.withVirtualTime[(Long, (Long, Int))](() => SFlux.fromPublisher(SFlux.just[Int](1, 2, 3).delayElements(100 milliseconds).elapsed()).delaySequence(1 seconds, VirtualTimeScheduler.getOrSet()).elapsed())
           .thenAwait(1300 milliseconds)
-          .expectNext((1100l, (100l, 1)), (100l, (100l, 2)), (100l, (100l, 3)))
+          .expectNext((1100L, (100L, 1)), (100L, (100L, 2)), (100L, (100L, 3)))
           .verifyComplete()
       }
     }
@@ -912,7 +912,7 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
       StepVerifier.create(flux)
         .expectNext(1, 2, 3)
         .verifyComplete()
-      flag shouldBe 'get
+      flag shouldBe Symbol("get")
     }
 
     ".doOnCancel should perform an action after it is cancelled" in {
@@ -933,7 +933,7 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
         override def hookOnNext(value: Int): Unit = ()
       })
       subscriptionReference.get().cancel()
-      atomicBoolean shouldBe 'get
+      atomicBoolean shouldBe Symbol("get")
     }
 
     ".doOnComplete should perform action after the flux is completed" in {
@@ -945,7 +945,7 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
       StepVerifier.create(flux)
         .expectNext(1, 2, 3)
         .verifyComplete()
-      flag shouldBe 'get
+      flag shouldBe Symbol("get")
     }
 
     ".doOnEach should perform an action for every signal" in {
@@ -1001,7 +1001,7 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
         .doOnSubscribe(_ => atomicBoolean.compareAndSet(false, true)))
         .expectNextCount(1)
         .verifyComplete()
-      atomicBoolean shouldBe 'get
+      atomicBoolean shouldBe Symbol("get")
     }
 
     ".doOnTerminate should do something on terminate" in {
@@ -1010,7 +1010,7 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
         .expectNext(1, 2, 3)
         .expectComplete()
         .verify()
-      flag shouldBe 'get
+      flag shouldBe Symbol("get")
     }
 
     ".doFinally should call the callback" in {
@@ -1019,7 +1019,7 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
         .doFinally(_ => atomicBoolean.compareAndSet(false, true) shouldBe true))
         .expectNext(1, 2, 3)
         .verifyComplete()
-      atomicBoolean shouldBe 'get
+      atomicBoolean shouldBe Symbol("get")
     }
 
     ".drop should return Flux that drop a number of elements" in {
@@ -1988,7 +1988,7 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
     ".zipWithTimeSinceSubscribe should emit tuple2 with the second element as the time taken to emit since subscription in milliseconds" in {
       StepVerifier.withVirtualTime(() => Flux.just(1, 2, 3).delayElements(1 second).zipWithTimeSinceSubscribe())
         .thenAwait(3 seconds)
-        .expectNext((1, 1000l), (2, 2000l), (3, 3000l))
+        .expectNext((1, 1000L), (2, 2000L), (3, 3000L))
         .verifyComplete()
     }
 

@@ -140,7 +140,7 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T])
     * @see #collectList() for an alternative collecting algorithm returning [[Mono]]
     */
   final def buffer(): Flux[Seq[T]] = {
-    Flux(jFlux.buffer()).map(_.asScala)
+    Flux(jFlux.buffer()).map(_.asScala.toSeq)
   }
 
   /**
@@ -153,7 +153,7 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T])
     * @param maxSize the maximum collected size
     * @return a microbatched [[Flux]] of [[Seq]]
     */
-  final def buffer(maxSize: Int): Flux[Seq[T]] = Flux(jFlux.buffer(maxSize)).map(_.asScala)
+  final def buffer(maxSize: Int): Flux[Seq[T]] = Flux(jFlux.buffer(maxSize)).map(_.asScala.toSeq)
 
   /**
     * Collect incoming values into multiple [[Seq]] buckets that will be
@@ -198,7 +198,7 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T])
     * @param maxSize the max collected size
     * @return a microbatched [[Flux]] of possibly overlapped or gapped [[Seq]]
     */
-  final def buffer(maxSize: Int, skip: Int): Flux[Seq[T]] = Flux(jFlux.buffer(maxSize, skip)).map(_.asScala)
+  final def buffer(maxSize: Int, skip: Int): Flux[Seq[T]] = Flux(jFlux.buffer(maxSize, skip)).map(_.asScala.toSeq)
 
   /**
     * Collect incoming values into multiple [[mutable.Seq]] that will be pushed into
@@ -243,7 +243,7 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T])
     * @return a microbatched [[Flux]] of [[Seq]] delimited by a
     *         [[Publisher]]
     */
-  final def buffer(other: Publisher[_]): Flux[Seq[T]] = Flux(jFlux.buffer(other)).map(_.asScala)
+  final def buffer(other: Publisher[_]): Flux[Seq[T]] = Flux(jFlux.buffer(other)).map(_.asScala.toSeq)
 
   /**
     * Collect incoming values into multiple [[Seq]] delimited by the given [[Publisher]] signals.
@@ -258,7 +258,7 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T])
     */
   final def buffer[C <: ListBuffer[T]](other: Publisher[_], bufferSupplier: () => C): Flux[Seq[T]] = Flux(jFlux.buffer(other, new Supplier[JList[T]] {
     override def get(): JList[T] = bufferSupplier().asJava
-  })).map(_.asScala)
+  })).map(_.asScala.toSeq)
 
   /**
     * Collect incoming values into multiple [[Seq]] delimited by the given [[Publisher]] signals. Each
@@ -288,7 +288,7 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T])
     * @return a microbatched [[Flux]] of [[Seq]] delimited by an opening [[Publisher]] and a relative
     *         closing [[Publisher]]
     */
-  final def bufferWhen[U, V](bucketOpening: Publisher[U], closeSelector: U => Publisher[V]): Flux[Seq[T]] = Flux(jFlux.bufferWhen[U, V](bucketOpening, closeSelector)).map(_.asScala)
+  final def bufferWhen[U, V](bucketOpening: Publisher[U], closeSelector: U => Publisher[V]): Flux[Seq[T]] = Flux(jFlux.bufferWhen[U, V](bucketOpening, closeSelector)).map(_.asScala.toSeq)
 
   /**
     * Collect incoming values into multiple [[Seq]] delimited by the given [[Publisher]] signals. Each [[Seq]]
@@ -324,7 +324,7 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T])
                                                  closeSelector: U => Publisher[V],
                                                  bufferSupplier: () => C): Flux[Seq[T]] = Flux(jFlux.bufferWhen(bucketOpening, closeSelector, new Supplier[JList[T]] {
     override def get(): JList[T] = bufferSupplier().asJava
-  })).map(_.asScala)
+  })).map(_.asScala.toSeq)
 
   /**
     * Collect incoming values into multiple [[Seq]] that will be pushed into the returned [[Flux]] every
@@ -336,7 +336,7 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T])
     * @param timespan the duration to use to release a buffered list
     * @return a microbatched [[Flux]] of [[Seq]] delimited by the given period
     */
-  final def buffer(timespan: Duration): Flux[Seq[T]] = Flux(jFlux.buffer(timespan)).map(_.asScala)
+  final def buffer(timespan: Duration): Flux[Seq[T]] = Flux(jFlux.buffer(timespan)).map(_.asScala.toSeq)
 
   /**
     * Collect incoming values into multiple [[Seq]] delimited by the given `timeshift` period. Each [[Seq]]
@@ -361,7 +361,7 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T])
     * @param timeshift the duration to use to create a new bucket
     * @return a microbatched [[Flux]] of [[Seq]] delimited by the given period timeshift and sized by timespan
     */
-  final def buffer(timespan: Duration, timeshift: Duration): Flux[Seq[T]] = Flux(jFlux.buffer(timespan, timeshift)).map(_.asScala)
+  final def buffer(timespan: Duration, timeshift: Duration): Flux[Seq[T]] = Flux(jFlux.buffer(timespan, timeshift)).map(_.asScala.toSeq)
 
   /**
     * Collect incoming values into a [[Seq]] that will be pushed into the returned [[Flux]] every timespan OR
@@ -374,7 +374,7 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T])
     * @param timespan the timeout to use to release a buffered list
     * @return a microbatched [[Flux]] of [[Seq]] delimited by given size or a given period timeout
     */
-  final def bufferTimeout(maxSize: Int, timespan: Duration): Flux[Seq[T]] = Flux(jFlux.bufferTimeout(maxSize, timespan)).map(_.asScala)
+  final def bufferTimeout(maxSize: Int, timespan: Duration): Flux[Seq[T]] = Flux(jFlux.bufferTimeout(maxSize, timespan)).map(_.asScala.toSeq)
 
   /**
     * Collect incoming values into a [[Seq]] that will be pushed into the returned [[Flux]] every timespan OR
@@ -392,7 +392,7 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T])
   //TODO: Test this
   final def bufferTimeout[C <: ListBuffer[T]](maxSize: Int, timespan: Duration, bufferSupplier: () => C): Flux[Seq[T]] = Flux(jFlux.bufferTimeout(maxSize, timespan, new Supplier[JList[T]] {
     override def get(): JList[T] = bufferSupplier().asJava
-  })).map(_.asScala)
+  })).map(_.asScala.toSeq)
 
   /**
     * Collect incoming values into multiple [[Seq]] that will be pushed into
@@ -410,7 +410,7 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T])
     * @param predicate a predicate that triggers the next buffer when it becomes true.
     * @return a microbatched [[Flux]] of [[Seq]]
     */
-  final def bufferUntil(predicate: T => Boolean): Flux[Seq[T]] = Flux(jFlux.bufferUntil(predicate)).map(_.asScala)
+  final def bufferUntil(predicate: T => Boolean): Flux[Seq[T]] = Flux(jFlux.bufferUntil(predicate)).map(_.asScala.toSeq)
 
   /**
     * Collect incoming values into multiple [[Seq]] that will be pushed into
@@ -431,7 +431,7 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T])
     * @param cutBefore set to true to include the triggering element in the new buffer rather than the old.
     * @return a microbatched [[Flux]] of [[Seq]]
     */
-  final def bufferUntil(predicate: T => Boolean, cutBefore: Boolean): Flux[Seq[T]] = Flux(jFlux.bufferUntil(predicate, cutBefore)).map(_.asScala)
+  final def bufferUntil(predicate: T => Boolean, cutBefore: Boolean): Flux[Seq[T]] = Flux(jFlux.bufferUntil(predicate, cutBefore)).map(_.asScala.toSeq)
 
   /**
     * Collect incoming values into multiple [[Seq]] that will be pushed into
@@ -450,7 +450,7 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T])
     * @param predicate a predicate that triggers the next buffer when it becomes false.
     * @return a microbatched [[Flux]] of [[Seq]]
     */
-  final def bufferWhile(predicate: T => Boolean): Flux[Seq[T]] = Flux(jFlux.bufferWhile(predicate)).map(_.asScala)
+  final def bufferWhile(predicate: T => Boolean): Flux[Seq[T]] = Flux(jFlux.bufferWhile(predicate)).map(_.asScala.toSeq)
 
   /**
     * Turn this [[Flux]] into a hot source and cache last emitted signals for further [[Subscriber]]. Will
@@ -585,7 +585,7 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T])
     *
     *
     */
-  final def collectSeq(): Mono[Seq[T]] = Mono(jFlux.collectList()).map(_.asScala)
+  final def collectSeq(): Mono[Seq[T]] = Mono(jFlux.collectList()).map(_.asScala.toSeq)
 
   /**
     * Convert all this
@@ -691,7 +691,7 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T])
       override def get(): util.Map[K, util.Collection[V]] = {
         mapSupplier().asJava
       }
-    })).map(_.asScala.toMap.mapValues(vs => vs.asScala.toSeq))
+    })).map(_.asScala.toMap.view.mapValues(vs => vs.asScala.toSeq).toMap)
 
   /**
     * Accumulate and sort this [[Flux]] sequence in a [[Seq]] that is emitted to the returned [[Mono]] on
@@ -703,7 +703,7 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T])
     * @return a [[Mono]] of all sorted values from this [[Flux]]
     *
     */
-  final def collectSortedSeq(): Mono[Seq[T]] = Mono(jFlux.collectSortedList()).map(_.asScala)
+  final def collectSortedSeq(): Mono[Seq[T]] = Mono(jFlux.collectSortedList()).map(_.asScala.toSeq)
 
   /**
     * Accumulate and sort using the given comparator this
@@ -719,7 +719,7 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T])
     */
   final def collectSortedSeq(ordering: Ordering[T]): Mono[Seq[T]] = Mono(jFlux.collectSortedList(new Comparator[T] {
     override def compare(o1: T, o2: T): Int = ordering.compare(o1, o2)
-  })).map(_.asScala)
+  })).map(_.asScala.toSeq)
 
   /**
     * Defer the transformation of this [[Flux]] in order to generate a target [[Flux]] for each

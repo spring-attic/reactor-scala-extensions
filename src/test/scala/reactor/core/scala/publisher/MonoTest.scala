@@ -235,8 +235,8 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
 
           override def hookOnNext(value: Boolean): Unit = emittedValue.compareAndSet(false, true)
         })
-        isSubscribed shouldBe 'get
-        emittedValue shouldBe 'get
+        isSubscribed shouldBe Symbol("get")
+        emittedValue shouldBe Symbol("get")
       }
       "emit true when both publisher emit the same value according to the isEqual function" in {
         val mono = Mono.sequenceEqual[Int](just(10), just(100), (t1: Int, t2: Int) => t1 % 10 == t2 % 10)
@@ -568,7 +568,7 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
       StepVerifier.create(mono)
         .expectNext(randomValue)
         .verifyComplete()
-      atomicBoolean shouldBe 'get
+      atomicBoolean shouldBe Symbol("get")
     }
 
     ".doAfterTerminate should call the callback function after the mono is terminated" in {
@@ -576,7 +576,7 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
       StepVerifier.create(Mono.just(randomValue).doAfterTerminate(() => atomicBoolean.compareAndSet(false, true)))
         .expectNext(randomValue)
         .verifyComplete()
-      atomicBoolean shouldBe 'get
+      atomicBoolean shouldBe Symbol("get")
     }
 
 
@@ -587,7 +587,7 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
       StepVerifier.create(mono)
         .expectNext(randomValue)
         .verifyComplete()
-      atomicBoolean shouldBe 'get
+      atomicBoolean shouldBe Symbol("get")
     }
 
     ".doOnCancel should call the callback function when the subscription is cancelled" in {
@@ -607,7 +607,7 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
         override def hookOnNext(value: Long): Unit = ()
       })
       subscriptionReference.get().cancel()
-      atomicBoolean shouldBe 'get
+      atomicBoolean shouldBe Symbol("get")
     }
 
     ".doOnNext should call the callback function when the mono emit data successfully" in {
@@ -626,7 +626,7 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
         .doOnSuccess(_ => atomicBoolean.compareAndSet(false, true) shouldBe true)
       StepVerifier.create(mono)
         .verifyComplete()
-      atomicBoolean shouldBe 'get
+      atomicBoolean shouldBe Symbol("get")
     }
 
     ".doOnError" - {
@@ -645,7 +645,7 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
         StepVerifier.create(mono)
           .expectError(classOf[RuntimeException])
           .verify()
-        atomicBoolean shouldBe 'get
+        atomicBoolean shouldBe Symbol("get")
       }
       "with predicate and callback fnction should call the callback function when the predicate returns true" in {
         val atomicBoolean = new AtomicBoolean(false)
@@ -684,7 +684,7 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
       StepVerifier.create(mono)
         .expectNextCount(1)
         .verifyComplete()
-      atomicBoolean shouldBe 'get
+      atomicBoolean shouldBe Symbol("get")
     }
 
     ".doOnTerminate should do something on terminate" in {
