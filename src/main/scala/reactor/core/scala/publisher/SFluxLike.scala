@@ -5,7 +5,6 @@ import java.util.function.Function
 
 import org.reactivestreams.{Publisher, Subscription}
 import reactor.core.publisher.{Flux => JFlux}
-import reactor.core.scala.publisher.PimpMyPublisher._
 import reactor.core.scheduler.Schedulers
 import reactor.util.concurrent.Queues.XS_BUFFER_SIZE
 
@@ -57,13 +56,13 @@ trait SFluxLike[T, Self[U] <: SFluxLike[U, Self]] {
     val predicate = new Function[Throwable, Publisher[_ <: U]] {
       override def apply(t: Throwable): Publisher[_ <: U] = fallback(t)
     }
-    val x: SFlux[T] = coreFlux.onErrorResume(predicate)
+    val x: SFlux[T] = SFlux.fromPublisher(coreFlux.onErrorResume(predicate))
     x.as[SFlux[U]](t => t.map(u => u.asInstanceOf[U]))
   }
 
-  final def reduce[A](initial: A, accumulator: (A, T) => A): SMono[A] = coreFlux.reduce[A](initial, accumulator)
+  final def reduce[A](initial: A, accumulator: (A, T) => A): SMono[A] = SMono.fromPublisher(coreFlux.reduce[A](initial, accumulator))
 
-  final def skip(skipped: Long): SFlux[T] = coreFlux.skip(skipped)
+  final def skip(skipped: Long): SFlux[T] = SFlux.fromPublisher(coreFlux.skip(skipped))
 
   final def sum[R >: T](implicit R: Numeric[R]): SMono[R] = {
     import R._

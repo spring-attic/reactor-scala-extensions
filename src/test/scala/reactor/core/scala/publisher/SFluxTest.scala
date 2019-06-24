@@ -73,7 +73,7 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
 
     ".concat" - {
       "with varargs of publisher should concatenate the underlying publisher" in {
-        val flux = SFlux.concat(Flux.just(1, 2, 3), Mono.just(3), Flux.just(3, 4))
+        val flux = SFlux.concat(SFlux.just(1, 2, 3), Mono.just(3), SFlux.just(3, 4))
         StepVerifier.create(flux)
           .expectNext(1, 2, 3, 3, 3, 4)
           .verifyComplete()
@@ -222,7 +222,7 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
           .verifyComplete()
       }
       "with one element should emit value from provided data" in {
-        val flux = Flux.just[Int](1)
+        val flux = SFlux.just[Int](1)
         StepVerifier.create(flux)
           .expectNext(1)
           .verifyComplete()
@@ -493,7 +493,7 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
           .verifyComplete()
       }
       "with maxSize and skip" - {
-        val originalFlux = Flux.just(1, 2, 3, 4, 5)
+        val originalFlux = SFlux.just(1, 2, 3, 4, 5)
         val data = Table(
           ("scenario", "maxSize", "skip", "expectedSequence"),
           ("maxSize < skip", 2, 3, Iterable(Seq(1, 2), Seq(4, 5))),
@@ -520,7 +520,7 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
         forAll(data) { (scenario, maxSize, skip, expectedSequence) => {
           val iterator = expectedSequence.iterator
           s"when $scenario" in {
-            val originalFlux = Flux.just(1, 2, 3, 4, 5)
+            val originalFlux = SFlux.just(1, 2, 3, 4, 5)
             val seqSet = mutable.Set[mutable.ListBuffer[Int]]()
             val flux = originalFlux.buffer(maxSize, skip, () => {
               val seq = mutable.ListBuffer[Int]()
@@ -1193,6 +1193,7 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
         .verifyComplete()
     }
 
+/*
     ".groupBy" - {
       "with keyMapper should group the flux by the key mapper" in {
         val oddBuffer = ListBuffer.empty[Int]
@@ -1297,10 +1298,11 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
         evenBuffer shouldBe Seq("2", "4", "6")
       }
     }
+*/
 
     ".handle should handle the values" in {
       val buffer = ListBuffer.empty[Int]
-      val flux = SFlux.just(1, 2, 3, 4, 5, 6).handle[Seq[Int]] {
+      val flux = SFlux.just(1, 2, 3, 4, 5, 6).handle[ListBuffer[Int]] {
         case (v, sink) =>
           buffer += v
           if (v == 6) {
@@ -1308,7 +1310,7 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
             sink.complete()
           }
       }
-      val expected = Seq(1, 2, 3, 4, 5, 6)
+      val expected = ListBuffer(1, 2, 3, 4, 5, 6)
       StepVerifier.create(flux)
         .expectNext(expected)
         .verifyComplete()
@@ -1869,7 +1871,7 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
     }
 
     ".thenEmpty should wait for this to complete and then for the supplied publisher to complete" in {
-      StepVerifier.create(SFlux.just(1, 2, 3).thenEmpty(Mono.empty))
+      StepVerifier.create(SFlux.just(1, 2, 3).thenEmpty(SMono.empty))
         .verifyComplete()
     }
 
@@ -1937,7 +1939,7 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
     }
 
     ".transform should defer transformation of this flux to another publisher" in {
-      StepVerifier.create(SFlux.just(1, 2, 3).transform(Mono.from))
+      StepVerifier.create(SFlux.just(1, 2, 3).transform(SMono.fromPublisher))
         .expectNext(1)
         .verifyComplete()
     }

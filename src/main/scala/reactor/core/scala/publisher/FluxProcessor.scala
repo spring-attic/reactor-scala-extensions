@@ -9,7 +9,7 @@ import reactor.core.scala.Scannable
 import scala.collection.JavaConverters._
 
 /**
-  * A base processor that exposes [[Flux]] API for [[org.reactivestreams.Processor]].
+  * A base processor that exposes [[SFlux]] API for [[org.reactivestreams.Processor]].
   *
   * Implementors include [[reactor.core.publisher.UnicastProcessor]], [[reactor.core.publisher.EmitterProcessor]],
   * [[reactor.core.publisher.ReplayProcessor]], [[reactor.core.publisher.WorkQueueProcessor]] and [[reactor.core.publisher.TopicProcessor]].
@@ -17,7 +17,7 @@ import scala.collection.JavaConverters._
   * @tparam IN  the input value type
   * @tparam OUT the output value type
   */
-trait FluxProcessor[IN, OUT] extends Flux[OUT] with Processor[IN, OUT] with Disposable with Scannable {
+trait FluxProcessor[IN, OUT] extends SFlux[OUT] with Processor[IN, OUT] with Disposable with Scannable {
 
   protected def jFluxProcessor: JFluxProcessor[IN, OUT]
 
@@ -86,10 +86,10 @@ trait FluxProcessor[IN, OUT] extends Flux[OUT] with Processor[IN, OUT] with Disp
     *
     * @return a serializing [[FluxProcessor]]
     */
-  final def serialize(): FluxProcessor[IN, OUT] = new Flux[OUT](jFluxProcessor) with FluxProcessor[IN, OUT] {
+  final def serialize(): FluxProcessor[IN, OUT] = new ReactiveSFlux[OUT](jFluxProcessor) with FluxProcessor[IN, OUT] {
     override protected def jFluxProcessor: JFluxProcessor[IN, OUT] = jFluxProcessor.serialize()
 
-    override def jScannable: core.Scannable = jFluxProcessor
+    override val jScannable: core.Scannable = jFluxProcessor
   }
 
   /**
@@ -167,7 +167,7 @@ object FluxProcessor {
     */
   def switchOnNext[T](): FluxProcessor[Publisher[_ <: T], T] = {
     val emitter = new UnicastProcessor[Publisher[_ <: T]](JUnicastProcessor.create())
-    wrap[Publisher[_ <: T], T](emitter, Flux.switchOnNext[T](emitter))
+    wrap[Publisher[_ <: T], T](emitter, SFlux.switchOnNext[T](emitter))
   }
 
   /**
@@ -184,10 +184,10 @@ object FluxProcessor {
   def wrap[IN, OUT](upstream: Subscriber[IN], downstream: Publisher[OUT]): FluxProcessor[IN, OUT] = {
     val jFluxProcessorWrapper: JFluxProcessor[IN, OUT] = JFluxProcessor.wrap(upstream, downstream)
 
-    new Flux[OUT](jFluxProcessorWrapper) with FluxProcessor[IN, OUT] {
+    new ReactiveSFlux[OUT](jFluxProcessorWrapper) with FluxProcessor[IN, OUT] {
       override protected def jFluxProcessor: JFluxProcessor[IN, OUT] = jFluxProcessorWrapper
 
-      override def jScannable: core.Scannable = jFluxProcessor
+      override val jScannable: core.Scannable = jFluxProcessor
     }
   }
 }
