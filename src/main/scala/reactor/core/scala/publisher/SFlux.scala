@@ -50,8 +50,8 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] {
     case t => Option(coreFlux.blockLast(t))
   }
 
-  final def buffer[C >: mutable.Buffer[T]](maxSize: Int = Int.MaxValue, bufferSupplier: () => C = () => mutable.ListBuffer.empty[T]): SFlux[Seq[T]] = {
-    new ReactiveSFlux[Seq[T]](coreFlux.buffer(maxSize, new Supplier[JList[T]] {
+  final def buffer[C >: mutable.Buffer[T]](maxSize: Int = Int.MaxValue, bufferSupplier: () => C = () => mutable.ListBuffer.empty[T])(implicit skip: Int = maxSize): SFlux[Seq[T]] = {
+    new ReactiveSFlux[Seq[T]](coreFlux.buffer(maxSize, skip, new Supplier[JList[T]] {
       override def get(): JList[T] = {
         bufferSupplier().asInstanceOf[mutable.Buffer[T]].asJava
       }
@@ -61,7 +61,12 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] {
   final def bufferTimeSpan(timespan: Duration, timer: Scheduler = Schedulers.parallel())(timeshift: Duration = timespan): SFlux[Seq[T]] =
     new ReactiveSFlux[Seq[T]](coreFlux.buffer(timespan, timeshift, timer).map((l: JList[T]) => l.asScala.toSeq))
 
-  final def bufferPublisher(other: Publisher[_]): SFlux[Seq[T]] = new ReactiveSFlux[Seq[T]](coreFlux.buffer(other).map((l: JList[T]) => l.asScala.toSeq))
+  final def bufferPublisher[C >: mutable.Buffer[T]](other: Publisher[_], bufferSupplier: () => C = () => mutable.ListBuffer.empty[T]): SFlux[Seq[T]] =
+    new ReactiveSFlux[Seq[T]](coreFlux.buffer(other, new Supplier[JList[T]] {
+      override def get(): JList[T] = {
+        bufferSupplier().asInstanceOf[mutable.Buffer[T]].asJava
+      }
+    }).map((l: JList[T]) => l.asScala.toSeq))
 
   final def bufferTimeout[C >: mutable.Buffer[T]](maxSize: Int, timespan: Duration, timer: Scheduler = Schedulers.parallel(), bufferSupplier: () => C = () => mutable.ListBuffer.empty[T]): SFlux[Seq[T]] = {
     new ReactiveSFlux[Seq[T]](coreFlux.bufferTimeout(maxSize, timespan, timer, new Supplier[JList[T]] {
