@@ -15,6 +15,7 @@ import reactor.core.scala.publisher.PimpMyPublisher._
 import reactor.core.scheduler.{Scheduler, Schedulers}
 import reactor.core.{Disposable, publisher, Scannable => JScannable}
 import reactor.util.Logger
+import reactor.util.concurrent.Queues
 import reactor.util.concurrent.Queues.{SMALL_BUFFER_SIZE, XS_BUFFER_SIZE}
 import reactor.util.function.{Tuple2, Tuple3, Tuple4, Tuple5, Tuple6}
 
@@ -291,6 +292,19 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] {
   final def onErrorReturn(fallbackValue: T, predicate: Throwable => Boolean = (_: Throwable ) => true): SFlux[T] = SFlux.fromPublisher(coreFlux.onErrorReturn(predicate, fallbackValue))
 
   final def or(other: Publisher[_ <: T]): SFlux[T] = SFlux.fromPublisher(coreFlux.or(other))
+
+  /**
+    * Prepare to consume this [[SFlux]] on number of 'rails' matching number of CPU
+    * in round-robin fashion.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/parallel.png" alt="">
+    *
+    * @param parallelism the number of parallel rails
+    * @param prefetch    the number of values to prefetch from the source
+    * @return a new [[SParallelFlux]] instance
+    */
+  final def parallel(parallelism: Int = Runtime.getRuntime.availableProcessors(), prefetch: Int = Queues.SMALL_BUFFER_SIZE) = SParallelFlux(coreFlux.parallel(parallelism, prefetch))
 
   final def publishNext(): SMono[T] = SMono.fromPublisher(coreFlux.publishNext())
 

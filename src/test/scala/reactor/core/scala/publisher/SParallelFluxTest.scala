@@ -9,7 +9,7 @@ import reactor.test.StepVerifier
 class SParallelFluxTest extends FreeSpec with Matchers {
   "SParallelFlux" - {
     val data = Seq(1, 2, 3)
-    val flux = SFlux.just(data.head, data.tail: _*)
+    val flux = SFlux.just[Int](data: _*)
     val fluxParallel: SParallelFlux[Int] = flux.parallel()
     ".asJava should convert as Java ParallelFlux" in {
       fluxParallel.asJava shouldBe a[JParallelFlux[_]]

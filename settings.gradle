@@ -2,11 +2,13 @@ rootProject.name = 'reactor-scala-extensions'
 
 buildCache {
     local {
-        enabled = false
+        enabled = true
     }
+/*
     remote(HttpBuildCache) {
         url = "https://cache1.winar.to:32500/"
         enabled = true
         push = true
     }
+*/
 }
