@@ -1440,6 +1440,7 @@ object SMono {
     data match {
       case o: Option[T] => JMono.justOrEmpty[T](o)
       case other: T => JMono.justOrEmpty[T](other)
+      case null => JMono.empty[T]()
     }
   }
 
