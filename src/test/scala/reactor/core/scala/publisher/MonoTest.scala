@@ -204,6 +204,13 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
             .expectNext(randomValue)
             .verifyComplete()
         }
+        "just react on completion signal if it is null" in {
+          val nullData:Any = null
+          val mono = Mono.justOrEmpty(nullData)
+          StepVerifier.create(mono)
+            .expectComplete()
+            .verify()
+        }
       }
     }
 

@@ -154,6 +154,13 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport {
             .expectNext(randomValue)
             .verifyComplete()
         }
+        "just react on completion signal if it is null" in {
+          val nullData:Any = null
+          val mono = SMono.justOrEmpty(nullData)
+          StepVerifier.create(mono)
+            .expectComplete()
+            .verify()
+        }
       }
     }
 
