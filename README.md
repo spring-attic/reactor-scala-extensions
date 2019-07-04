@@ -1,7 +1,7 @@
 # Reactor Scala Extensions
 [![Join the chat at https://gitter.im/reactor/reactor](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/reactor/reactor?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Reactor Scala Extensions](https://maven-badges.herokuapp.com/maven-central/io.projectreactor/reactor-scala-extensions_2.12/badge.svg?style=plastic)](https://mvnrepository.com/artifact/io.projectreactor/reactor-scala-extensions_2.12)
-[![Download](https://api.bintray.com/packages/sinwe/io.projectreactor/reactor-scala-extensions_2.12/images/download.svg?version=0.3.5) ](https://bintray.com/sinwe/io.projectreactor/reactor-scala-extensions_2.12/0.3.5/link)
+[![Download](https://api.bintray.com/packages/sinwe/io.projectreactor/reactor-scala-extensions_2.12/images/download.svg) ](https://bintray.com/sinwe/io.projectreactor/reactor-scala-extensions_2.12/_latestVersion)
 [![Build Status](https://travis-ci.org/reactor/reactor-scala-extensions.svg?branch=master)](https://travis-ci.org/reactor/reactor-scala-extensions)
 [![codecov](https://codecov.io/gh/reactor/reactor-scala-extensions/branch/master/graph/badge.svg)](https://codecov.io/gh/reactor/reactor-scala-extensions)
                             
