@@ -44,7 +44,7 @@ buildscript {
     }
 
     dependencies {
-        classpath "gradle.plugin.com.github.maiflai:gradle-scalatest:0.22"
+        classpath "gradle.plugin.com.github.maiflai:gradle-scalatest:0.25"
         classpath "gradle.plugin.org.scoverage:gradle-scoverage:2.5.0"
         classpath 'net.researchgate:gradle-release:2.7.0'
         classpath 'io.codearte.gradle.nexus:gradle-nexus-staging-plugin:0.11.0'
@@ -115,7 +115,7 @@ task scaladocJar(type: Jar, dependsOn: scaladoc) {
 }
 
 artifacts {
-    archives jar
+//    archives jar
     archives sourcesJar
     archives scaladocJar
 }
