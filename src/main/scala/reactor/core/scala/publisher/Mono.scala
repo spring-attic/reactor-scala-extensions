@@ -61,10 +61,12 @@ import scala.util.{Failure, Success, Try}
   *
   * @tparam T the type of the single value of this class
   * @see Flux
+  * @deprecated Use [[SMono]]
   */
+@deprecated(message = "This class is deprecated, use SMono", since = "0.4.0")
 class Mono[T] private(private val jMono: JMono[T])
   extends Publisher[T] with MapablePublisher[T] with OnErrorReturn[T] with MonoLike[T] with Filter[T] with Scannable {
-  override def subscribe(s: Subscriber[_ >: T]): Unit = jMono.subscribe(s)
+  override def subscribe(s: Subscriber[_ >: T]): Unit = new ReactiveSMono[T](jMono).subscribe(s)
 
   override def jScannable: JScannable = JScannable.from(jMono)
 
@@ -78,14 +80,14 @@ class Mono[T] private(private val jMono: JMono[T])
     * @return the transformed { @link Mono} to instance P
     * @see [[Mono.compose]] for a bounded conversion to [[org.reactivestreams.Publisher]]
     */
-  final def as[P](transformer: (Mono[T] => P)): P = transformer(this)
+  final def as[P](transformer: Mono[T] => P): P = transformer(this)
 
   /**
     * Join the termination signals from this mono and another source into the returned
     * void mono
     *
     * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/and.png" alt="">
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/and.png" alt="">
     * <p>
     *
     * @param other the [[Publisher]] to wait for
@@ -110,7 +112,7 @@ class Mono[T] private(private val jMono: JMono[T])
     *
     * @return T the result
     */
-  final def block(): T = jMono.block()
+  final def block(): T = new ReactiveSMono[T](jMono).block()
 
   /**
     * Block until a next signal is received, will return null if onComplete, T if onNext, throw a
@@ -127,7 +129,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @param timeout maximum time period to wait for before raising a [[RuntimeException]]
     * @return T the result
     */
-  final def block(timeout: Duration): T = jMono.block(timeout)
+  final def block(timeout: Duration): T = new ReactiveSMono[T](jMono).block(timeout)
 
   /**
     * Subscribe to this {[[Mono]] Mono} and <strong>block indefinitely</strong> until a next signal is
@@ -144,7 +146,7 @@ class Mono[T] private(private val jMono: JMono[T])
     *
     * @return T the result
     */
-  final def blockOption(): Option[T] = jMono.blockOptional()
+  final def blockOption(): Option[T] = new ReactiveSMono[T](jMono).blockOption()
 
   /**
     * Subscribe to this [[Mono]] and <strong>block</strong> until a next signal is
@@ -164,7 +166,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @param timeout maximum time period to wait for before raising a [[RuntimeException]]
     * @return T the result
     */
-  final def blockOption(timeout: Duration): Option[T] = jMono.blockOptional(timeout)
+  final def blockOption(timeout: Duration): Option[T] = new ReactiveSMono(jMono).blockOption(timeout)
 
   /**
     * Cast the current [[Mono]] produced type into a target produced type.
@@ -176,9 +178,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @param clazz the target type to cast to
     * @return a casted [[Mono]]
     */
-  final def cast[E](clazz: Class[E]) = new Mono[E](
-    jMono.cast(clazz)
-  )
+  final def cast[E](clazz: Class[E]): Mono[E] = Mono.from(new ReactiveSMono[T](jMono).cast[E](clazz))
 
   /**
     * Turn this [[Mono]] into a hot source and cache last emitted signals for further [[Subscriber]].
@@ -189,9 +189,9 @@ class Mono[T] private(private val jMono: JMono[T])
     *
     * @return a replaying [[Mono]]
     */
-  final def cache(): Mono[T] = Mono[T](jMono.cache())
+  final def cache(): Mono[T] = Mono.from(new ReactiveSMono[T](jMono).cache())
 
-  final def cache(ttl: Duration) = Mono(jMono.cache(ttl))
+  final def cache(ttl: Duration): Mono[T] = Mono.from(new ReactiveSMono[T](jMono).cache(ttl))
 
   /**
     * Prepare this [[Mono]] so that subscribers will cancel from it on a
@@ -201,9 +201,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @param scheduler the [[reactor.core.scheduler.Scheduler]] to signal cancel  on
     * @return a scheduled cancel [[Mono]]
     */
-  final def cancelOn(scheduler: Scheduler): Mono[T] = Mono[T](
-    jMono.cancelOn(scheduler)
-  )
+  final def cancelOn(scheduler: Scheduler): Mono[T] = Mono.from(new ReactiveSMono[T](jMono).cancelOn(scheduler))
 
   /**
     * Defer the given transformation to this [[Mono]] in order to generate a
@@ -218,13 +216,11 @@ class Mono[T] private(private val jMono: JMono[T])
     * @return a new [[Mono]]
     * @see [[Mono.as]] for a loose conversion to an arbitrary type
     */
-  final def compose[V](transformer: (Mono[T] => Publisher[V])): Mono[V] = {
+  final def compose[V](transformer: Mono[T] => Publisher[V]): Mono[V] = {
     val transformerFunction = new Function[JMono[T], Publisher[V]] {
       override def apply(t: JMono[T]): Publisher[V] = transformer(Mono.this)
     }
-    Mono[V](
-      jMono.compose(transformerFunction)
-    )
+    Mono.from(new ReactiveSMono[V](jMono.compose(transformerFunction)))
   }
 
   /**
@@ -236,7 +232,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @param other the [[Publisher]] sequence to concat after this [[Flux]]
     * @return a concatenated [[Flux]]
     */
-  final def concatWith(other: Publisher[T]): Flux[T] = Flux(jMono.concatWith(other))
+  final def concatWith(other: Publisher[T]): Flux[T] = Flux.from(new ReactiveSFlux[T](jMono.concatWith(other)))
 
   /**
     * Provide a default unique value if this mono is completed without any data
@@ -249,7 +245,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @return a new [[Mono]]
     * @see [[Flux.defaultIfEmpty]]
     */
-  final def defaultIfEmpty(defaultV: T): Mono[T] = Mono[T](jMono.defaultIfEmpty(defaultV))
+  final def defaultIfEmpty(defaultV: T): Mono[T] = Mono.from[T](new ReactiveSMono[T](jMono.defaultIfEmpty(defaultV)))
 
   /**
     * Delay this [[Mono]] element ([[Subscriber.onNext]] signal) by a given
@@ -266,7 +262,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @param delay duration by which to delay the [[Subscriber.onNext]] signal
     * @return a delayed [[Mono]]
     */
-  final def delayElement(delay: Duration) = Mono(jMono.delayElement(delay))
+  final def delayElement(delay: Duration): Mono[T] = Mono.from(new ReactiveSMono(jMono).delayElement(delay))
 
   /**
     * Delay this [[Mono]] element ([[Subscriber.onNext]] signal) by a given
@@ -284,7 +280,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @param timer a time-capable [[Scheduler]] instance to delay the value signal on
     * @return a delayed [[Mono]]
     */
-  final def delayElement(delay: Duration, timer: Scheduler) = Mono(jMono.delayElement(delay, timer))
+  final def delayElement(delay: Duration, timer: Scheduler): Mono[T] = Mono.from(new ReactiveSMono(jMono).delayElement(delay, timer))
 
   /**
     * Subscribe to this [[Mono Mono]] and another [[Publisher]] that is generated from
@@ -305,7 +301,7 @@ class Mono[T] private(private val jMono: JMono[T])
     *                                  [[Publisher]] whose termination will trigger relaying the value.
     * @return this Mono, but delayed until the derived publisher terminates.
     */
-  final def delayUntil(triggerProvider: T => Publisher[_]) = Mono(jMono.delayUntil(triggerProvider))
+  final def delayUntil(triggerProvider: T => Publisher[_]): Mono[T] = Mono.from(new ReactiveSMono(jMono).delayUntil(triggerProvider))
 
   /**
     * Delay the [[Mono.subscribe subscription]] to this [[Mono]] source until the given
@@ -318,7 +314,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @return a delayed [[Mono]]
     *
     */
-  final def delaySubscription(delay: Duration): Mono[T] = Mono(jMono.delaySubscription(delay))
+  final def delaySubscription(delay: Duration): Mono[T] = Mono.from(new ReactiveSMono(jMono).delaySubscription(delay))
 
   /**
     * Delay the [[Mono.subscribe subscription]] to this [[Mono]] source until the given
@@ -332,7 +328,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @return a delayed [[Mono]]
     *
     */
-  final def delaySubscription(delay: Duration, timer: Scheduler) = Mono(jMono.delaySubscription(delay, timer))
+  final def delaySubscription(delay: Duration, timer: Scheduler) = Mono.from(new ReactiveSMono(jMono).delaySubscription(delay, timer))
 
   /**
     * Delay the subscription to this [[Mono]] until another [[Publisher]]
@@ -347,9 +343,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @return a delayed [[Mono]]
     *
     */
-  final def delaySubscription[U](subscriptionDelay: Publisher[U]): Mono[T] = new Mono[T](
-    jMono.delaySubscription(subscriptionDelay)
-  )
+  final def delaySubscription[U](subscriptionDelay: Publisher[U]): Mono[T] = Mono.from(new ReactiveSMono(jMono).delaySubscription(subscriptionDelay))
 
   /**
     * A "phantom-operator" working only if this
@@ -363,9 +357,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @tparam X the dematerialized type
     * @return a dematerialized [[Mono]]
     */
-  final def dematerialize[X](): Mono[X] = new Mono[X](
-    jMono.dematerialize[X]()
-  )
+  final def dematerialize[X](): Mono[X] = Mono.from(new ReactiveSMono(jMono).dematerialize[X]())
 
   /**
     * Triggered after the [[Mono]] terminates, either by completing downstream successfully or with an error.
@@ -383,9 +375,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @param afterTerminate the callback to call after [[org.reactivestreams.Subscriber.onNext]], [[org.reactivestreams.Subscriber.onComplete]] without preceding [[org.reactivestreams.Subscriber.onNext]] or [[org.reactivestreams.Subscriber.onError]]
     * @return a new [[Mono]]
     */
-  final def doAfterSuccessOrError(afterTerminate: (_ >: T, Throwable) => Unit): Mono[T] = Mono[T](
-    jMono.doAfterSuccessOrError(afterTerminate)
-  )
+  final def doAfterSuccessOrError(afterTerminate: (_ >: T, Throwable) => Unit): Mono[T] = Mono.from(new ReactiveSMono[T](jMono.doAfterSuccessOrError(afterTerminate)))
 
   /**
     * Add behavior (side-effect) triggered after the [[Mono]] terminates, either by
@@ -397,16 +387,9 @@ class Mono[T] private(private val jMono: JMono[T])
     * @param afterTerminate the callback to call after [[Subscriber.onComplete]] or [[Subscriber.onError]]
     * @return an observed  [[Flux]]
     */
-  final def doAfterTerminate(afterTerminate: () => Unit): Mono[T] = Mono(jMono.doAfterTerminate(afterTerminate))
+  final def doAfterTerminate(afterTerminate: () => Unit): Mono[T] = Mono.from(new ReactiveSMono[T](jMono).doAfterTerminate(afterTerminate))
 
-  final def doFinally(onFinally: (SignalType => Unit)): Mono[T] = {
-    val onFinallyFunction = new Consumer[SignalType] {
-      override def accept(t: SignalType): Unit = onFinally(t)
-    }
-    new Mono[T](
-      jMono.doFinally(onFinallyFunction)
-    )
-  }
+  final def doFinally(onFinally: SignalType => Unit): Mono[T] = Mono.from(new ReactiveSMono[T](jMono).doFinally(onFinally))
 
   /**
     * Triggered when the [[Mono]] is cancelled.
@@ -419,14 +402,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @param onCancel the callback to call on [[org.reactivestreams.Subscriber.cancel]]
     * @return a new [[Mono]]
     */
-  final def doOnCancel(onCancel: () => Unit): Mono[T] = {
-    val onCancelFunction = new Runnable {
-      override def run(): Unit = onCancel()
-    }
-    new Mono[T](
-      jMono.doOnCancel(onCancelFunction)
-    )
-  }
+  final def doOnCancel(onCancel: () => Unit): Mono[T] = Mono.from(new ReactiveSMono[T](jMono).doOnCancel(onCancel))
 
   /**
     * Add behavior triggered when the [[Mono]] emits a data successfully.
@@ -438,14 +414,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @param onNext the callback to call on [[Subscriber.onNext]]
     * @return a new [[Mono]]
     */
-  final def doOnNext(onNext: (T => Unit)): Mono[T] = {
-    val onNextFunction = new Consumer[T] {
-      override def accept(t: T): Unit = onNext(t)
-    }
-    new Mono[T](
-      jMono.doOnNext(onNextFunction)
-    )
-  }
+  final def doOnNext(onNext: T => Unit): Mono[T] = Mono.from(new ReactiveSMono[T](jMono).doOnNext(onNext))
 
   /**
     * Triggered when the [[Mono]] completes successfully.
@@ -464,14 +433,7 @@ class Mono[T] private(private val jMono: JMono[T])
     *                  [[org.reactivestreams.Subscriber.onNext]] or [[org.reactivestreams.Subscriber.onComplete]] without preceding [[org.reactivestreams.Subscriber.onNext]]
     * @return a new [[Mono]]
     */
-  final def doOnSuccess(onSuccess: (T => Unit)): Mono[T] = {
-    val onSuccessFunction = new Consumer[T] {
-      override def accept(t: T): Unit = onSuccess(t)
-    }
-    new Mono[T](
-      jMono.doOnSuccess(onSuccessFunction)
-    )
-  }
+  final def doOnSuccess(onSuccess: T => Unit): Mono[T] = Mono.from(new ReactiveSMono[T](jMono).doOnSuccess(onSuccess))
 
   /**
     * Triggered when the [[Mono]] completes with an error.
@@ -483,9 +445,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @param onError the error callback to call on [[org.reactivestreams.Subscriber.onError]]
     * @return a new [[Mono]]
     */
-  final def doOnError(onError: (Throwable => Unit)): Mono[T] = new Mono[T](
-    jMono.doOnError(onError)
-  )
+  final def doOnError(onError: Throwable => Unit): Mono[T] = Mono.from(new ReactiveSMono[T](jMono).doOnError(onError))
 
   /**
     * Triggered when the [[Mono]] completes with an error matching the given exception type.
@@ -498,10 +458,11 @@ class Mono[T] private(private val jMono: JMono[T])
     * @return an observed  [[Mono]]
     *
     */
-  final def doOnError[E <: Throwable](exceptionType: Class[E], onError: (E => Unit)): Mono[T] = new Mono[T](
-    jMono.doOnError(exceptionType, onError: Consumer[E])
-  )
-
+  final def doOnError[E <: Throwable](exceptionType: Class[E], onError: E => Unit): Mono[T] =
+    doOnError {
+      case e: E => onError(e)
+      case _: Throwable => ()
+    }
   /**
     * Triggered when the [[Mono]] completes with an error matching the given exception.
     * <p>
@@ -512,9 +473,10 @@ class Mono[T] private(private val jMono: JMono[T])
     * @return an observed  [[Mono]]
     *
     */
-  final def doOnError(predicate: (Throwable => Boolean), onError: (Throwable => Unit)): Mono[T] = new Mono[T](
-    jMono.doOnError(predicate: Predicate[Throwable], onError: Consumer[Throwable])
-  )
+  final def doOnError(predicate: Throwable => Boolean, onError: Throwable => Unit): Mono[T] = doOnError {
+    case e: Throwable if predicate(e) => onError(e)
+    case _: Throwable => ()
+  }
 
   /**
     * Attach a `Long consumer` to this [[Mono]] that will observe any request to this [[Mono]].
@@ -525,7 +487,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @param consumer the consumer to invoke on each request
     * @return an observed  [[Mono]]
     */
-  final def doOnRequest(consumer: Long => Unit) = new Mono[T](
+  final def doOnRequest(consumer: Long => Unit): Mono[T] = new Mono[T](
     jMono.doOnRequest(consumer)
   )
 
@@ -539,9 +501,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @param onSubscribe the callback to call on [[Subscriber#onSubscribe]]
     * @return a new [[Mono]]
     */
-  final def doOnSubscribe(onSubscribe: Subscription => Unit) = new Mono[T](
-    jMono.doOnSubscribe(onSubscribe)
-  )
+  final def doOnSubscribe(onSubscribe: Subscription => Unit): Mono[T] = Mono.from(new ReactiveSMono[T](jMono).doOnSubscribe(onSubscribe))
 
   /**
     * Add behavior triggered when the [[Mono]] terminates, either by completing successfully or with an error.
@@ -553,7 +513,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @param onTerminate the callback to call [[Subscriber.onNext]], [[Subscriber.onComplete]] without preceding [[Subscriber.onNext]] or [[Subscriber.onError]]
     * @return a new [[Mono]]
     */
-  final def doOnTerminate(onTerminate:() => Unit) = Mono(jMono.doOnTerminate(onTerminate))
+  final def doOnTerminate(onTerminate:() => Unit): Mono[T] = Mono.from(new ReactiveSMono(jMono).doOnTerminate(onTerminate))
 
   private val javaTupleLongAndT2ScalaTupleLongAndT = new Function[Tuple2[JLong, T], (Long, T)] {
     override def apply(t: Tuple2[JLong, T]): (Long, T) = (Long2long(t.getT1), t.getT2)
@@ -569,7 +529,7 @@ class Mono[T] private(private val jMono: JMono[T])
     *
     * @return a transforming [[Mono]]that emits a tuple of time elapsed in milliseconds and matching data
     */
-  final def elapsed() = Mono[(Long, T)](jMono.elapsed().map(javaTupleLongAndT2ScalaTupleLongAndT))
+  final def elapsed(): Mono[(Long, T)] = Mono.from(new ReactiveSMono[T](jMono).elapsed())
 
   /**
     * Map this [[Mono]] sequence into [[scala.Tuple2]] of T1 [[Long]] timemillis and T2
@@ -618,7 +578,7 @@ class Mono[T] private(private val jMono: JMono[T])
     *                     elements per level of recursion.
     * @return this Mono expanded depth-first to a [[Flux]]
     */
-  final def expandDeep(expander: T => Publisher[_ <: T], capacityHint: Int) = Flux(jMono.expandDeep(expander, capacityHint))
+  final def expandDeep(expander: T => Publisher[_ <: T], capacityHint: Int): Flux[T] = Flux.from(new ReactiveSMono[T](jMono).expandDeep(expander, capacityHint))
 
   /**
     * Recursively expand elements into a graph and emit all the resulting element,
@@ -652,7 +612,7 @@ class Mono[T] private(private val jMono: JMono[T])
     *                             values into a [[Publisher]], producing a graph.
     * @return this Mono expanded depth-first to a [[Flux]]
     */
-  final def expandDeep(expander: T => Publisher[_ <: T]) = Flux(jMono.expandDeep(expander))
+  final def expandDeep(expander: T => Publisher[_ <: T]): Flux[T] = Flux.from(new ReactiveSMono[T](jMono).expandDeep(expander))
 
   /**
     * Recursively expand elements into a graph and emit all the resulting element using
@@ -688,7 +648,7 @@ class Mono[T] private(private val jMono: JMono[T])
     *                     elements per level of recursion.
     * @return this Mono expanded breadth-first to a [[Flux]]
     */
-  final def expand(expander: T => Publisher[_ <: T], capacityHint: Int) = Flux(jMono.expand(expander, capacityHint))
+  final def expand(expander: T => Publisher[_ <: T], capacityHint: Int): Flux[T] = Flux.from(new ReactiveSMono[T](jMono).expand(expander, capacityHint))
 
   /**
     * Recursively expand elements into a graph and emit all the resulting element using
@@ -722,7 +682,7 @@ class Mono[T] private(private val jMono: JMono[T])
     *                             values into a [[Publisher]], producing a graph.
     * @return this Mono expanded breadth-first to a [[Flux]]
     */
-  final def expand(expander: T => Publisher[_ <: T]) = Flux(jMono.expand(expander))
+  final def expand(expander: T => Publisher[_ <: T]): Flux[T] = Flux.from(new ReactiveSMono[T](jMono).expand(expander))
 
   /**
     * Test the result if any of this [[Mono]] and replay it if predicate returns true.
@@ -735,7 +695,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @param tester the predicate to evaluate
     * @return a filtered [[Mono]]
     */
-  final def filter(tester: T => Boolean) = Mono[T](jMono.filter(tester))
+  final def filter(tester: T => Boolean): Mono[T] = Mono.from(new ReactiveSMono[T](jMono).filter(tester))
 
   /**
     * If this [[Mono]] is valued, test the value asynchronously using a generated
@@ -751,10 +711,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @return a filtered [[Mono]]
     */
   final def filterWhen(asyncPredicate: T => _ <: Publisher[Boolean] with MapablePublisher[Boolean]): Mono[T] = {
-    val asyncPredicateFunction = new Function[T, Publisher[JBoolean]] {
-      override def apply(t: T): Publisher[JBoolean] = asyncPredicate(t).map(Boolean2boolean(_))
-    }
-    Mono(jMono.filterWhen(asyncPredicateFunction))
+    Mono.from(new ReactiveSMono[T](jMono).filterWhen(asyncPredicate))
   }
 
   /**
@@ -769,9 +726,12 @@ class Mono[T] private(private val jMono: JMono[T])
     * @tparam R the result type bound
     * @return a new [[Mono]] with an asynchronously mapped value.
     */
-  final def flatMap[R](transformer: T => Mono[R]): Mono[R] = Mono[R](jMono.flatMap(new Function[T, JMono[R]] {
-    override def apply(t: T): JMono[R] = transformer(t).jMono
-  }))
+  final def flatMap[R](transformer: T => Mono[R]): Mono[R] = {
+    def transformerFunction(t: T): SMono[R] = {
+      new ReactiveSMono[R](transformer(t))
+    }
+    Mono.from[R](new ReactiveSMono[T](jMono).flatMap(transformerFunction))
+  }
 
   /**
     * Transform the item emitted by this [[Mono]] into a Publisher, then forward
@@ -786,7 +746,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @tparam R the merged sequence type
     * @return a new [[Flux]] as the sequence is not guaranteed to be single at most
     */
-  final def flatMapMany[R](mapper: T => Publisher[R]): Flux[R] = Flux(jMono.flatMapMany(mapper))
+  final def flatMapMany[R](mapper: T => Publisher[R]): Flux[R] = Flux.from(new ReactiveSMono(jMono).flatMapMany(mapper))
 
   /**
     * Transform the signals emitted by this [[Mono]] into a Publisher, then forward
@@ -805,8 +765,8 @@ class Mono[T] private(private val jMono: JMono[T])
     */
   final def flatMapMany[R](mapperOnNext: T => Publisher[R],
                            mapperOnError: Throwable => Publisher[R],
-                           mapperOnComplete: () => Publisher[R]) =
-    Flux(jMono.flatMapMany(mapperOnNext, mapperOnError, mapperOnComplete))
+                           mapperOnComplete: () => Publisher[R]): Flux[R] =
+    Flux.from(new ReactiveSMono[T](jMono).flatMapMany(mapperOnNext, mapperOnError, mapperOnComplete))
 
   /**
     * Transform the item emitted by this [[Mono]] into [[Iterable]], , then forward
@@ -822,8 +782,8 @@ class Mono[T] private(private val jMono: JMono[T])
     * @return a merged [[Flux]]
     *
     */
-  final def flatMapIterable[R](mapper: T => Iterable[R]): Flux[R] = Flux(
-    jMono.flatMapIterable(mapper.andThen(it => it.asJava))
+  final def flatMapIterable[R](mapper: T => Iterable[R]): Flux[R] = Flux.from(new ReactiveSMono[T](
+    jMono).flatMapIterable(mapper)
   )
 
   /**
@@ -831,7 +791,7 @@ class Mono[T] private(private val jMono: JMono[T])
     *
     * @return a [[Flux]] variant of this [[Mono]]
     */
-  final def flux(): Flux[T] = Flux(jMono.flux())
+  final def flux(): Flux[T] = Flux.from(new ReactiveSMono[T](jMono).flux())
 
   /**
     * Emit a single boolean true if this [[Mono]] has an element.
@@ -842,9 +802,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @return a new [[Mono]] with <code>true</code> if a value is emitted and <code>false</code>
     *                       otherwise
     */
-  final def hasElement = Mono[Boolean](
-    jMono.hasElement.map[Boolean](scalaFunction2JavaFunction((jb: JBoolean) => boolean2Boolean(jb.booleanValue())))
-  )
+  final def hasElement: Mono[Boolean] = Mono.from(new ReactiveSMono[T](jMono).hasElement)
 
   /**
     * Handle the items emitted by this [[Mono]] by calling a biconsumer with the
@@ -856,7 +814,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @tparam R the transformed type
     * @return a transformed [[Mono]]
     */
-  final def handle[R](handler: (T, SynchronousSink[R]) => Unit): Mono[R] = Mono[R](jMono.handle(handler))
+  final def handle[R](handler: (T, SynchronousSink[R]) => Unit): Mono[R] = Mono.from(new ReactiveSMono[T](jMono).handle(handler))
 
   /**
     * Hides the identity of this [[Mono]] instance.
@@ -867,7 +825,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @return a new [[Mono]] instance
     */
   //TODO: How to test this?
-  final def hide: Mono[T] = Mono[T](jMono.hide())
+  final def hide: Mono[T] = Mono.from(new ReactiveSMono[T](jMono).hide())
 
   /**
     * Ignores onNext signal (dropping it) and only reacts on termination.
@@ -878,7 +836,7 @@ class Mono[T] private(private val jMono: JMono[T])
     *
     * @return a new completable [[Mono]].
     */
-  final def ignoreElement: Mono[T] = Mono[T](jMono.ignoreElement())
+  final def ignoreElement: Mono[T] = Mono.from(new ReactiveSMono[T](jMono).ignoreElement)
 
   /**
     * Observe all Reactive Streams signals and trace them using [[reactor.util.Logger]] support.
@@ -895,7 +853,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @see [[Flux.log()]]
     */
   //  TODO: How to test all these .log(...) variants?
-  final def log: Mono[T] = Mono[T](jMono.log())
+  final def log: Mono[T] = Mono.from(new ReactiveSMono[T](jMono).log())
 
   /**
     * Observe all Reactive Streams signals and use [[reactor.util.Logger]] support to handle trace implementation. Default will
@@ -910,7 +868,7 @@ class Mono[T] private(private val jMono: JMono[T])
     *                 suffix will complete, e.g. "reactor.Flux.Map".
     * @return a new [[Mono]]
     */
-  final def log(category: Option[String]): Mono[T] = Mono[T](jMono.log(category.orNull))
+  final def log(category: Option[String]): Mono[T] = Mono.from(new ReactiveSMono[T](jMono).log(category))
 
   /**
     * Observe Reactive Streams signals matching the passed flags `options` and use
@@ -933,7 +891,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @return a new [[Mono]]
     *
     */
-  final def log(category: Option[String], level: Level, options: SignalType*): Mono[T] = Mono[T](jMono.log(category.orNull, level, options: _*))
+  final def log(category: Option[String], level: Level, options: SignalType*): Mono[T] = Mono.from(new ReactiveSMono[T](jMono).log(category, level, options = options))
 
   /**
     * Observe Reactive Streams signals matching the passed filter `options` and
@@ -959,7 +917,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @param options          a vararg [[SignalType]] option to filter log messages
     * @return a new unaltered [[Mono]]
     */
-  final def log(category: Option[String], level: Level, showOperatorLine: Boolean, options: SignalType*): Mono[T] = Mono[T](jMono.log(category.orNull, level, showOperatorLine, options: _*))
+  final def log(category: Option[String], level: Level, showOperatorLine: Boolean, options: SignalType*): Mono[T] = Mono.from(new ReactiveSMono[T](jMono).log(category, level, showOperatorLine, options))
 
   /**
     * Transform the item emitted by this [[Mono]] by applying a synchronous function to it.
@@ -972,7 +930,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @tparam R the transformed type
     * @return a new [[Mono]]
     */
-  final def map[R](mapper: T => R) = Mono(jMono.map(mapper))
+  final def map[R](mapper: T => R): Mono[R] = Mono.from(new ReactiveSMono[T](jMono).map(mapper))
 
   /**
     * Transform the incoming onNext, onError and onComplete signals into [[Signal]].
@@ -984,7 +942,7 @@ class Mono[T] private(private val jMono: JMono[T])
     *
     * @return a [[Mono]] of materialized [[Signal]]
     */
-  final def materialize() = new Mono[Signal[T]](jMono.materialize())
+  final def materialize(): Mono[Signal[T]] = Mono.from(new ReactiveSMono[T](jMono).materialize())
 
   /**
     * Merge emissions of this [[Mono]] with the provided [[Publisher]].
@@ -996,7 +954,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @param other the other [[Publisher]] to merge with
     * @return a new [[Flux]] as the sequence is not guaranteed to be at most 1
     */
-  final def mergeWith(other: Publisher[_ <: T]) = Flux(jMono.mergeWith(other))
+  final def mergeWith(other: Publisher[_ <: T]) = Flux.from(new ReactiveSMono[T](jMono).mergeWith(other))
 
   /**
     * Give a name to this sequence, which can be retrieved using [[reactor.core.scala.Scannable.name()]]
@@ -1018,7 +976,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @return a new [[Mono]]
     * @see [[Mono.first]]
     */
-  final def or(other: Mono[_ <: T]) = Mono[T](jMono.or(other.jMono))
+  final def or(other: Mono[_ <: T]): Mono[T] = Mono.from(new ReactiveSMono[T](jMono).or(other.jMono))
 
   /**
     * Evaluate the accepted value against the given [[Class]] type. If the
@@ -1032,7 +990,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @param clazz the [[Class]] type to test values against
     * @return a new [[Mono]] reduced to items converted to the matched type
     */
-  final def ofType[U](clazz: Class[U]) = Mono[U](jMono.ofType(clazz))
+  final def ofType[U](clazz: Class[U]): Mono[U] = Mono.from(new ReactiveSMono[T](jMono).ofType(clazz))
 
   /**
     * Transform the error emitted by this [[Mono]] by applying a function.
@@ -1043,7 +1001,9 @@ class Mono[T] private(private val jMono: JMono[T])
     * @param mapper the error transforming [[Function1]]
     * @return a transformed [[Mono]]
     */
-  final def onErrorMap(mapper: Throwable => Throwable): Mono[T] = Mono[T](jMono.onErrorMap(mapper))
+  final def onErrorMap(mapper: Throwable => Throwable): Mono[T] = Mono.from(new ReactiveSMono[T](jMono).onErrorMap {
+    case throwable: Throwable => mapper(throwable)
+  })
 
   /**
     * Transform the error emitted by this [[Mono]] by applying a function if the
@@ -1057,7 +1017,9 @@ class Mono[T] private(private val jMono: JMono[T])
     * @tparam E the error type
     * @return a transformed [[Mono]]
     */
-  final def onErrorMap[E <: Throwable](`type`: Class[E], mapper: E => Throwable): Mono[T] = Mono[T](jMono.onErrorMap(`type`, mapper))
+  final def onErrorMap[E <: Throwable](`type`: Class[E], mapper: E => Throwable): Mono[T] = Mono.from(new ReactiveSMono[T](jMono).onErrorMap {
+    case t:E if t.getClass == `type` => mapper(t)
+  })
 
   /**
     * Transform the error emitted by this [[Mono]] by applying a function if the
@@ -1071,7 +1033,9 @@ class Mono[T] private(private val jMono: JMono[T])
     * @param mapper    the error transforming [[Function1]]
     * @return a transformed [[Mono]]
     */
-  final def onErrorMap(predicate: Throwable => Boolean, mapper: Throwable => Throwable): Mono[T] = Mono[T](jMono.onErrorMap(predicate, mapper))
+  final def onErrorMap(predicate: Throwable => Boolean, mapper: Throwable => Throwable): Mono[T] = Mono.from(new ReactiveSMono[T](jMono).onErrorMap {
+    case t: Throwable if predicate(t) => mapper(t)
+  })
 
   /**
     * Subscribe to a returned fallback publisher when any error occurs.
@@ -1085,10 +1049,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @see [[Flux.onErrorResume]]
     */
   final def onErrorResume(fallback: Throwable => Mono[_ <: T]): Mono[T] = {
-    val fallbackFunction = new Function[Throwable, JMono[_ <: T]] {
-      override def apply(t: Throwable): JMono[_ <: T] = fallback(t).jMono
-    }
-    Mono[T](jMono.onErrorResume(fallbackFunction))
+    Mono.from(new ReactiveSMono[T](jMono).onErrorResume((t: Throwable) => fallback(t).jMono))
   }
 
   /**
@@ -1106,10 +1067,9 @@ class Mono[T] private(private val jMono: JMono[T])
     * @see [[Flux.onErrorResume]]
     */
   final def onErrorResume[E <: Throwable](`type`: Class[E], fallback: E => Mono[_ <: T]): Mono[T] = {
-    val fallbackFunction = new Function[E, JMono[_ <: T]] {
-      override def apply(t: E): JMono[_ <: T] = fallback(t).jMono
-    }
-    Mono[T](jMono.onErrorResume(`type`, fallbackFunction))
+    Mono.from(new ReactiveSMono[T](jMono).onErrorResume((t: Throwable) => t match {
+      case e: E => fallback(e).jMono
+    }))
   }
 
   /**
@@ -1125,12 +1085,10 @@ class Mono[T] private(private val jMono: JMono[T])
     * @return a new [[Mono]]
     * @see Flux#onErrorResume
     */
-  final def onErrorResume(predicate: Throwable => Boolean, fallback: Throwable => Mono[_ <: T]): Mono[T] = {
-    val fallbackFunction = new Function[Throwable, JMono[_ <: T]] {
-      override def apply(t: Throwable): JMono[_ <: T] = fallback(t).jMono
-    }
-    Mono[T](jMono.onErrorResume(predicate, fallbackFunction))
-  }
+  final def onErrorResume(predicate: Throwable => Boolean, fallback: Throwable => Mono[_ <: T]): Mono[T] =
+    Mono.from(new ReactiveSMono[T](jMono).onErrorResume((t: Throwable) => t match {
+    case e: Throwable if predicate(e) => fallback(e).jMono
+  }))
 
   /**
     * Simply emit a captured fallback value when any error is observed on this [[Mono]].
@@ -1142,7 +1100,8 @@ class Mono[T] private(private val jMono: JMono[T])
     * @param fallback the value to emit if an error occurs
     * @return a new falling back [[Mono]]
     */
-  final def onErrorReturn(fallback: T): Mono[T] = Mono[T](jMono.onErrorReturn(fallback))
+  final def onErrorReturn(fallback: T): Mono[T] = Mono.from(new ReactiveSMono[T](jMono)
+    .onErrorResume(_ => SMono.just(fallback)))
 
   /**
     * Simply emit a captured fallback value when an error of the specified type is
@@ -1155,7 +1114,10 @@ class Mono[T] private(private val jMono: JMono[T])
     * @tparam E the error type
     * @return a new falling back [[Mono]]
     */
-  final def onErrorReturn[E <: Throwable](`type`: Class[E], fallbackValue: T) = Mono[T](jMono.onErrorReturn(`type`, fallbackValue))
+  final def onErrorReturn[E <: Throwable](`type`: Class[E], fallbackValue: T): Mono[T] = Mono.from(new ReactiveSMono[T](jMono)
+    .onErrorResume((t: Throwable) => t match {
+      case _: E => SMono.just(fallbackValue)
+    }))
 
   /**
     * Simply emit a captured fallback value when an error matching the given predicate is
@@ -1167,7 +1129,10 @@ class Mono[T] private(private val jMono: JMono[T])
     * @param fallbackValue the value to emit if a matching error occurs
     * @return a new [[Mono]]
     */
-  final def onErrorReturn(predicate: Throwable => Boolean, fallbackValue: T) = Mono[T](jMono.onErrorReturn(predicate, fallbackValue))
+  final def onErrorReturn(predicate: Throwable => Boolean, fallbackValue: T): Mono[T] = Mono.from(new ReactiveSMono[T](jMono)
+    .onErrorResume((t: Throwable) => t match {
+      case e: Throwable if predicate(e) => SMono.just(fallbackValue)
+    }))
 
   /**
     * Detaches the both the child [[Subscriber]] and the [[Subscription]] on
@@ -1178,22 +1143,22 @@ class Mono[T] private(private val jMono: JMono[T])
     * @return a detachable [[Mono]]
     */
   //  TODO: How to test this?
-  final def onTerminateDetach() = Mono[T](jMono.onTerminateDetach())
+  final def onTerminateDetach(): Mono[T] = Mono.from(new ReactiveSMono[T](jMono).onTerminateDetach())
 
   /**
     * Shares a [[Mono]] for the duration of a function that may transform it and
     * consume it as many times as necessary without causing multiple subscriptions
     * to the upstream.
     *
-    * @param transform the tranformation function
+    * @param transform the transformation function
     * @tparam R the output value type
     * @return a new [[Mono]]
     */
   final def publish[R](transform: Mono[T] => Mono[R]): Mono[R] = {
-    val transformFunction = new Function[JMono[T], JMono[R]] {
-      override def apply(t: JMono[T]): JMono[R] = transform(Mono.this).jMono
+    def transformF(t: SMono[T]): SMono[R] = {
+      new ReactiveSMono[R](transform(Mono.from[T](t)))
     }
-    Mono[R](jMono.publish(transformFunction))
+    Mono.from[R](new ReactiveSMono[T](jMono).publish[R](transformF))
   }
 
   /**
@@ -1209,7 +1174,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @return an asynchronously producing [[Mono]]
     */
   //TODO: How to test this?
-  final def publishOn(scheduler: Scheduler) = new Mono[T](jMono.publishOn(scheduler))
+  final def publishOn(scheduler: Scheduler): Mono[T] = Mono.from(new ReactiveSMono[T](jMono).publishOn(scheduler))
 
   /**
     * Repeatedly subscribe to the source completion of the previous subscription.
@@ -1219,7 +1184,7 @@ class Mono[T] private(private val jMono: JMono[T])
     *
     * @return an indefinitively repeated [[Flux]] on onComplete
     */
-  final def repeat() = Flux(jMono.repeat())
+  final def repeat(): Flux[T] = Flux.from(new ReactiveSMono[T](jMono).repeat())
 
   /**
     * Repeatedly subscribe to the source if the predicate returns true after completion of the previous subscription.
@@ -1231,7 +1196,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @return an eventually repeated [[Flux]] on onComplete
     *
     */
-  final def repeat(predicate: () => Boolean) = Flux(jMono.repeat(predicate))
+  final def repeat(predicate: () => Boolean): Flux[T] = Flux.from(new ReactiveSMono[T](jMono).repeat(predicate = predicate))
 
   /**
     * Repeatedly subscribe to the source if the predicate returns true after completion of the previous subscription.
@@ -1243,7 +1208,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @return an eventually repeated [[Flux]] on onComplete up to number of repeat specified
     *
     */
-  final def repeat(numRepeat: Long) = Flux(jMono.repeat(numRepeat))
+  final def repeat(numRepeat: Long): Flux[T] = Flux.from(new ReactiveSMono[T](jMono).repeat(numRepeat))
 
   /**
     * Repeatedly subscribe to the source if the predicate returns true after completion of the previous
@@ -1258,7 +1223,7 @@ class Mono[T] private(private val jMono: JMono[T])
     *                                        predicate
     *
     */
-  final def repeat(numRepeat: Long, predicate: () => Boolean) = Flux(jMono.repeat(numRepeat, predicate))
+  final def repeat(numRepeat: Long, predicate: () => Boolean): Flux[T] = Flux.from(new ReactiveSMono[T](jMono).repeat(numRepeat, predicate))
 
   private implicit def fluxLong2PublisherAnyToJFluxJLong2PublisherAny(mapper: (Flux[Long] => Publisher[_])): Function[JFlux[JLong], Publisher[_]] = {
     new Function[JFlux[JLong], Publisher[_]] {
@@ -1282,8 +1247,10 @@ class Mono[T] private(private val jMono: JMono[T])
     *                                        onNext signal
     *
     */
-  //  TODO: How to test this?
-  final def repeatWhen(whenFactory: Flux[Long] => _ <: Publisher[_]) = Flux(jMono.repeatWhen(whenFactory))
+  final def repeatWhen(whenFactory: Flux[Long] => _ <: Publisher[_]): Flux[T] = {
+    def whenF(sFlux: SFlux[Long]): Publisher[_] = whenFactory(Flux.from[Long](sFlux))
+    Flux.from(new ReactiveSMono[T](jMono).repeatWhen(whenF))
+  }
 
   /**
     * Repeatedly subscribe to this [[Mono]] until there is an onNext signal when a companion sequence signals a
@@ -1300,8 +1267,10 @@ class Mono[T] private(private val jMono: JMono[T])
     *                                        onNext signal
     *
     */
-  //  TODO: How to test this?
-  final def repeatWhenEmpty(repeatFactory: Flux[Long] => Publisher[_]): Mono[T] = Mono[T](jMono.repeatWhenEmpty(repeatFactory))
+  final def repeatWhenEmpty(repeatFactory: Flux[Long] => Publisher[_]): Mono[T] = {
+    def repeatF(f: SFlux[Long]): Publisher[_] = repeatFactory(Flux.from(f))
+    Mono.from(new ReactiveSMono[T](jMono).repeatWhenEmpty(repeatF))
+  }
 
   /**
     * Repeatedly subscribe to this [[Mono]] until there is an onNext signal when a companion sequence signals a
@@ -1321,7 +1290,10 @@ class Mono[T] private(private val jMono: JMono[T])
     *
     */
   //  TODO: How to test this?
-  final def repeatWhenEmpty(maxRepeat: Int, repeatFactory: Flux[Long] => Publisher[_]): Mono[T] = Mono[T](jMono.repeatWhenEmpty(maxRepeat, repeatFactory))
+  final def repeatWhenEmpty(maxRepeat: Int, repeatFactory: Flux[Long] => Publisher[_]): Mono[T] = {
+    def repeatF(f: SFlux[Long]): Publisher[_] = repeatFactory(Flux.from(f))
+    Mono.from(new ReactiveSMono[T](jMono).repeatWhenEmpty(repeatF, maxRepeat))
+  }
 
   /**
     * Re-subscribes to this [[Mono]] sequence if it signals any error
@@ -1335,7 +1307,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @return a re-subscribing [[Mono]] on onError
     */
   //  TODO: How to test these retry(...)
-  final def retry(): Mono[T] = Mono[T](jMono.retry())
+  final def retry(): Mono[T] = Mono.from(new ReactiveSMono[T](jMono).retry())
 
   /**
     * Re-subscribes to this [[Mono]] sequence if it signals any error
@@ -1350,7 +1322,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @return a re-subscribing [[Mono]] on onError up to the specified number of retries.
     *
     */
-  final def retry(numRetries: Long): Mono[T] = Mono[T](jMono.retry(numRetries))
+  final def retry(numRetries: Long): Mono[T] = Mono.from(new ReactiveSMono[T](jMono).retry(numRetries))
 
   /**
     * Re-subscribes to this [[Mono]] sequence if it signals any error
@@ -1362,7 +1334,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @param retryMatcher the predicate to evaluate if retry should occur based on a given error signal
     * @return a re-subscribing [[Mono]] on onError if the predicates matches.
     */
-  final def retry(retryMatcher: Throwable => Boolean): Mono[T] = Mono[T](jMono.retry(retryMatcher))
+  final def retry(retryMatcher: Throwable => Boolean): Mono[T] = Mono.from(new ReactiveSMono[T](jMono).retry(retryMatcher = retryMatcher))
 
   /**
     * Re-subscribes to this [[Mono]] sequence up to the specified number of retries if it signals any
@@ -1377,7 +1349,7 @@ class Mono[T] private(private val jMono: JMono[T])
     *                                  matches.
     *
     */
-  final def retry(numRetries: Long, retryMatcher: Throwable => Boolean): Mono[T] = Mono[T](jMono.retry(numRetries, retryMatcher))
+  final def retry(numRetries: Long, retryMatcher: Throwable => Boolean): Mono[T] = Mono.from(new ReactiveSMono[T](jMono).retry(numRetries, retryMatcher))
 
   /**
     * Retries this [[Mono]] when a companion sequence signals
@@ -1393,7 +1365,10 @@ class Mono[T] private(private val jMono: JMono[T])
     * @return a re-subscribing [[Mono]] on onError when the companion [[Publisher]] produces an
     *                                  onNext signal
     */
-  final def retryWhen(whenFactory: Flux[Throwable] => Publisher[_]): Mono[T] = Mono[T](jMono.retryWhen(whenFactory))
+  final def retryWhen(whenFactory: Flux[Throwable] => Publisher[_]): Mono[T] = {
+    def whenF(f: SFlux[Throwable]): Publisher[_] = whenFactory(Flux.from(f))
+    Mono.from(new ReactiveSMono[T](jMono).retryWhen(whenF))
+  }
 
   /**
     * Expect exactly one item from this [[Mono]] source or signal
@@ -1406,7 +1381,7 @@ class Mono[T] private(private val jMono: JMono[T])
     *
     * @return a [[Mono]] with the single item or an error signal
     */
-  final def single() = Mono(jMono.single())
+  final def single(): Mono[T] = Mono.from(new ReactiveSMono[T](jMono).single())
 
   /**
     * Subscribe to this [[Mono]] and request unbounded demand.
@@ -1420,7 +1395,7 @@ class Mono[T] private(private val jMono: JMono[T])
     *
     * @return a new [[Disposable]] that can be used to cancel the underlying [[Subscription]]
     */
-  final def subscribe(): Disposable = jMono.subscribe()
+  final def subscribe(): Disposable = new ReactiveSMono[T](jMono).subscribe()
 
   /**
     * Subscribe a [[Consumer]] to this [[Mono]] that will consume all the
@@ -1435,7 +1410,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @param consumer the consumer to invoke on each value
     * @return a new [[Runnable]] to dispose the [[Subscription]]
     */
-  final def subscribe(consumer: T => Unit): Disposable = jMono.subscribe(consumer)
+  final def subscribe(consumer: T => Unit): Disposable = new ReactiveSMono[T](jMono).subscribe(consumer)
 
   /**
     * Subscribe [[scala.Function1[T,Unit] Consumer]] to this [[Mono]] that will consume all the
@@ -1451,7 +1426,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @param errorConsumer the consumer to invoke on error signal
     * @return a new [[Runnable]] to dispose the [[org.reactivestreams.Subscription]]
     */
-  final def subscribe(consumer: T => Unit, errorConsumer: Throwable => Unit): Disposable = jMono.subscribe(consumer, errorConsumer)
+  final def subscribe(consumer: T => Unit, errorConsumer: Throwable => Unit): Disposable = new ReactiveSMono[T](jMono).subscribe(consumer, errorConsumer)
 
   /**
     * Subscribe `consumer` to this [[Mono]] that will consume all the
@@ -1468,7 +1443,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @param completeConsumer the consumer to invoke on complete signal
     * @return a new [[Disposable]] to dispose the [[Subscription]]
     */
-  final def subscribe(consumer: T => Unit, errorConsumer: Throwable => Unit, completeConsumer: => Unit): Disposable = jMono.subscribe(consumer, errorConsumer, completeConsumer)
+  final def subscribe(consumer: T => Unit, errorConsumer: Throwable => Unit, completeConsumer: => Unit): Disposable = new ReactiveSMono[T](jMono).subscribe(consumer, errorConsumer, completeConsumer)
 
   /**
     * Subscribe [[Consumer]] to this [[Mono]] that will consume all the
@@ -1487,7 +1462,7 @@ class Mono[T] private(private val jMono: JMono[T])
     *                             for the initial [[Subscription.request request]], or null for max request
     * @return a new [[Disposable]] to dispose the [[Subscription]]
     */
-  final def subscribe(consumer: T => Unit, errorConsumer: Throwable => Unit, completeConsumer: => Unit, subscriptionConsumer: Subscription => Unit): Disposable = jMono.subscribe(consumer, errorConsumer, completeConsumer, subscriptionConsumer)
+  final def subscribe(consumer: T => Unit, errorConsumer: Throwable => Unit, completeConsumer: => Unit, subscriptionConsumer: Subscription => Unit): Disposable = new ReactiveSMono[T](jMono).subscribe(consumer, errorConsumer, completeConsumer, subscriptionConsumer)
 
   /**
     * Enrich a potentially empty downstream [[Context]] by adding all values
@@ -1508,7 +1483,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @return a contextualized [[Mono]]
     * @see [[Context]]
     */
-  final def subscriberContext(mergeContext: Context): Mono[T] = Mono[T](jMono.subscriberContext(mergeContext))
+  final def subscriberContext(mergeContext: Context): Mono[T] = Mono.from(new ReactiveSMono[T](jMono).subscriberContext(mergeContext))
 
   /**
     * Enrich a potentially empty downstream [[Context]] by applying a [[Function1]]
@@ -1528,7 +1503,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @return a contextualized [[Mono]]
     * @see [[Context]]
     */
-  final def subscriberContext(doOnContext: Context => Context): Mono[T] = Mono[T](jMono.subscriberContext(doOnContext))
+  final def subscriberContext(doOnContext: Context => Context): Mono[T] = Mono.from(new ReactiveSMono[T](jMono).subscriberContext(doOnContext))
 
   /**
     * Run the requests to this Publisher [[Mono]] on a given worker assigned by the supplied [[Scheduler]].
@@ -1542,8 +1517,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @param scheduler a checked [[reactor.core.scheduler.Scheduler.Worker]] factory
     * @return an asynchronously requesting [[Mono]]
     */
-  //  TODO: How to test this?
-  final def subscribeOn(scheduler: Scheduler): Mono[T] = Mono[T](jMono.subscribeOn(scheduler))
+  final def subscribeOn(scheduler: Scheduler): Mono[T] = Mono.from(new ReactiveSMono[T](jMono).subscribeOn(scheduler))
 
   /**
     * Subscribe the [[Mono]] with the givne [[Subscriber]] and return it.
@@ -1553,7 +1527,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @return the passed [[Subscriber]] after subscribing it to this { @link Mono}
     */
   //  TODO: How to test this?
-  final def subscribeWith[E <: Subscriber[_ >: T]](subscriber: E): E = jMono.subscribeWith(subscriber)
+  final def subscribeWith[E <: Subscriber[_ >: T]](subscriber: E): E = new ReactiveSMono[T](jMono).subscribeWith(subscriber)
 
   /**
     * Provide an alternative [[Mono]] if this mono is completed without data
@@ -1566,7 +1540,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @return an alternating [[Mono]] on source onComplete without elements
     * @see [[Flux.switchIfEmpty]]
     */
-  final def switchIfEmpty(alternate: Mono[_ <: T]): Mono[T] = Mono[T](jMono.switchIfEmpty(alternate.jMono))
+  final def switchIfEmpty(alternate: Mono[_ <: T]): Mono[T] = Mono.from(new ReactiveSMono[T](jMono).switchIfEmpty(alternate.jMono))
 
   /**
     * Tag this mono with a key/value pair. These can be retrieved as a [[Stream]] of
@@ -1578,7 +1552,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @param value a tag value
     * @return the same sequence, but bearing tags
     */
-  final def tag(key: String, value: String) = Mono(jMono.tag(key, value))
+  final def tag(key: String, value: String): Mono[T] = Mono.from(new ReactiveSMono[T](jMono).tag(key, value))
 
   /**
     * Give this Mono a chance to resolve within a specified time frame but complete if it
@@ -1591,7 +1565,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @return a new [[Mono]] that will propagate the signals from the source unless
     *                       no signal is received for `duration`, in which case it completes.
     */
-  final def take(duration: Duration) = Mono(jMono.take(duration))
+  final def take(duration: Duration): Mono[T] = Mono.from(new ReactiveSMono[T](jMono).take(duration))
 
   /**
     * Give this Mono a chance to resolve within a specified time frame but complete if it
@@ -1605,7 +1579,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @return a new [[Mono]] that will propagate the signals from the source unless
     *                       no signal is received for `duration`, in which case it completes.
     */
-  final def take(duration: Duration, timer: Scheduler) = Mono(jMono.take(duration, timer))
+  final def take(duration: Duration, timer: Scheduler): Mono[T] = Mono.from(new ReactiveSMono[T](jMono).take(duration, timer))
 
   /**
     * Give this Mono a chance to resolve before a companion [[Publisher]] emits. If
@@ -1618,7 +1592,7 @@ class Mono[T] private(private val jMono: JMono[T])
     *                       a signal is first received from the companion [[Publisher]], in which case it
     *                       completes.
     */
-  final def takeUntilOther(other: Publisher[_]) = Mono(jMono.takeUntilOther(other))
+  final def takeUntilOther(other: Publisher[_]): Mono[T] = Mono.from(new ReactiveSMono[T](jMono).takeUntilOther(other))
 
   implicit def jMonoVoid2jMonoUnit(jMonoVoid: JMono[Void]): JMono[Unit] = jMonoVoid.map((_: Void) => ())
 
@@ -1632,7 +1606,7 @@ class Mono[T] private(private val jMono: JMono[T])
     *
     * @return a [[Mono]] igoring its payload (actively dropping)
     */
-  final def `then`(): Mono[Unit] = Mono[Unit](jMono.`then`())
+  final def `then`(): Mono[Unit] = Mono.from(new ReactiveSMono[T](jMono).`then`())
 
   /**
     * Ignore element from this [[Mono]] and transform its completion signal into the
@@ -1646,7 +1620,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @tparam V the element type of the supplied Mono
     * @return a new [[Mono]] that emits from the supplied [[Mono]]
     */
-  final def `then`[V](other: Mono[V]): Mono[V] = Mono[V](jMono.`then`(other))
+  final def `then`[V](other: Mono[V]): Mono[V] = Mono.from(new ReactiveSMono[T](jMono).`then`(new ReactiveSMono[V](other.jMono)))
 
   /**
     * Return a `Mono[Unit]` that waits for this [[Mono]] to complete then
@@ -1660,7 +1634,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @return a new [[Mono]] completing when both publishers have completed in
     *                       sequence
     */
-  final def thenEmpty(other: Publisher[Unit]): Mono[Unit] = Mono[Unit]((jMono: JMono[T]).thenEmpty(other))
+  final def thenEmpty(other: MapablePublisher[Unit]): Mono[Unit] = Mono.from(new ReactiveSMono[T](jMono).thenEmpty(other))
 
   /**
     * Ignore element from this mono and transform the completion signal into a
@@ -1674,7 +1648,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @return a new [[Flux]] that emits from the supplied [[Publisher]] after
     *                       this Mono completes.
     */
-  final def thenMany[V](other: Publisher[V]): Flux[V] = Flux(jMono.thenMany(other))
+  final def thenMany[V](other: Publisher[V]): Flux[V] = Flux.from(new ReactiveSMono[T](jMono).thenMany(other))
 
   /**
     * Signal a [[java.util.concurrent.TimeoutException]] in case an item doesn't arrive before the given period.
@@ -1685,7 +1659,12 @@ class Mono[T] private(private val jMono: JMono[T])
     * @param timeout the timeout before the onNext signal from this [[Mono]]
     * @return an expirable [[Mono]]}
     */
-  final def timeout(timeout: Duration) = Mono(jMono.timeout(timeout))
+  final def timeout(timeout: Duration): Mono[T] = Mono.from(new ReactiveSMono[T](jMono).timeout(timeout))
+
+  private def optionMonoExtendT2OptionSMonoT[T](f: Option[Mono[_ <: T]]): Option[SMono[T]] = f map {m: Mono[_ <: T] => {
+    val mt: JMono[T] = m.as(Mono.from[T]).jMono
+    new ReactiveSMono[T](mt)
+  }}
 
   /**
     * Switch to a fallback [[Mono]] in case an item doesn't arrive before the given period.
@@ -1699,7 +1678,9 @@ class Mono[T] private(private val jMono: JMono[T])
     * @param fallback the fallback [[Mono]] to subscribe when a timeout occurs
     * @return an expirable [[Mono]] with a fallback [[Mono]]
     */
-  final def timeout(timeout: Duration, fallback: Option[Mono[_ <: T]]) = Mono[T](jMono.timeout(timeout, fallback.orNull))
+  final def timeout(timeout: Duration, fallback: Option[Mono[_ <: T]]): Mono[T] = {
+    Mono.from(new ReactiveSMono[T](jMono).timeout(timeout, optionMonoExtendT2OptionSMonoT[T](fallback)))
+  }
 
   /**
     * Signal a [[java.util.concurrent.TimeoutException]] error in case an item doesn't arrive before the given period.
@@ -1711,7 +1692,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @param timer a time-capable [[Scheduler]] instance to run on
     * @return an expirable [[Mono]]
     */
-  final def timeout(timeout: Duration, timer: Scheduler): Mono[T] = Mono[T](jMono.timeout(timeout, timer))
+  final def timeout(timeout: Duration, timer: Scheduler): Mono[T] = Mono.from(new ReactiveSMono[T](jMono).timeout(timeout, timer = timer))
 
   /**
     * Switch to a fallback [[Mono]] in case an item doesn't arrive before the given period.
@@ -1726,7 +1707,9 @@ class Mono[T] private(private val jMono: JMono[T])
     * @param timer a time-capable [[Scheduler]] instance to run on
     * @return an expirable [[Mono]] with a fallback [[Mono]]
     */
-  final def timeout(timeout: Duration, fallback: Option[Mono[_ <: T]], timer: Scheduler): Mono[T] = Mono[T](jMono.timeout(timeout, fallback.orNull[Mono[_ <: T]], timer))
+  final def timeout(timeout: Duration, fallback: Option[Mono[_ <: T]], timer: Scheduler): Mono[T] = {
+    Mono.from(new ReactiveSMono[T](jMono).timeout(timeout, optionMonoExtendT2OptionSMonoT[T](fallback), timer))
+  }
 
 
   /**
@@ -1739,9 +1722,9 @@ class Mono[T] private(private val jMono: JMono[T])
     * @param firstTimeout the timeout [[Publisher]] that must not emit before the first signal from this [[Mono]]
     * @tparam U the element type of the timeout Publisher
     * @return an expirable [[Mono]] if the first item does not come before a [[Publisher]] signal
-    *
+    * @see [[SMono.timeoutWhen]]
     */
-  final def timeout[U](firstTimeout: Publisher[U]) = Mono[T](jMono.timeout(firstTimeout))
+  final def timeout[U](firstTimeout: Publisher[U]): Mono[T] = Mono.from(new ReactiveSMono[T](jMono).timeoutWhen(firstTimeout))
 
   /**
     * Switch to a fallback [[Publisher]] in case the  item from this [[Mono]] has
@@ -1758,7 +1741,9 @@ class Mono[T] private(private val jMono: JMono[T])
     * @return a first then per-item expirable [[Mono]] with a fallback [[Publisher]]
     *
     */
-  final def timeout[U](firstTimeout: Publisher[U], fallback: Mono[_ <: T]) = Mono[T](jMono.timeout(firstTimeout, fallback))
+  final def timeout[U](firstTimeout: Publisher[U], fallback: Mono[_ <: T]): Mono[T] = {
+    Mono.from(new ReactiveSMono[T](jMono).timeoutWhen(firstTimeout, optionMonoExtendT2OptionSMonoT[T](Option(fallback))))
+  }
 
   /**
     * Emit a [[Tuple2]] pair of T1 [[Long]] current system time in
@@ -1770,7 +1755,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @return a timestamped [[Mono]]
     */
   //  TODO: How to test timestamp(...) with the actual timestamp?
-  final def timestamp() = new Mono[(Long, T)](jMono.timestamp().map((t2: Tuple2[JLong, T]) => (Long2long(t2.getT1), t2.getT2)))
+  final def timestamp(): Mono[(Long, T)] = Mono.from(new ReactiveSMono[T](jMono).timestamp())
 
   /**
     * Emit a [[Tuple2]] pair of T1 [[Long]] current system time in
@@ -1782,7 +1767,7 @@ class Mono[T] private(private val jMono: JMono[T])
     * @param scheduler a [[Scheduler]] instance to read time from
     * @return a timestamped [[Mono]]
     */
-  final def timestamp(scheduler: Scheduler): Mono[(Long, T)] = Mono[(Long, T)](jMono.timestamp(scheduler).map((t2: Tuple2[JLong, T]) => (Long2long(t2.getT1), t2.getT2)))
+  final def timestamp(scheduler: Scheduler): Mono[(Long, T)] = Mono.from(new ReactiveSMono[T](jMono).timestamp(scheduler))
 
   /**
     * Transform this [[Mono]] into a [[Future]] completing on onNext or onComplete and failing on
@@ -1794,15 +1779,7 @@ class Mono[T] private(private val jMono: JMono[T])
     *
     * @return a [[Future]]
     */
-  final def toFuture: Future[T] = {
-    val promise = Promise[T]()
-    jMono.toFuture.handle[Unit]((value: T, throwable: Throwable) => {
-      Option(value).foreach(v => promise.complete(Try(v)))
-      Option(throwable).foreach(t => promise.failure(t))
-      ()
-    })
-    promise.future
-  }
+  final def toFuture: Future[T] = new ReactiveSMono[T](jMono).toFuture
 
   /**
     * Transform this [[Mono]] in order to generate a target [[Mono]]. Unlike [[Mono.compose]], the
@@ -1819,9 +1796,14 @@ class Mono[T] private(private val jMono: JMono[T])
     * @see [[Mono.compose]] for deferred composition of [[Mono]] for each [[Subscriber]]
     * @see [[Mono.as]] for a loose conversion to an arbitrary type
     */
-  final def transform[V](transformer: Mono[T] => Publisher[V]): Mono[V] = Mono[V](jMono.transform[V]((_: JMono[T]) => transformer(Mono.this)))
+  final def transform[V](transformer: Mono[T] => Publisher[V]): Mono[V] = {
 
-  final def asJava(): JMono[T] = jMono
+    def transformFunction(sMono: SMono[T]): Publisher[V] = transformer(Mono.from[T](sMono))
+
+    Mono.from(new ReactiveSMono[T](jMono).transform[V](transformFunction))
+  }
+
+  final def asJava(): JMono[T] = new ReactiveSMono[T](jMono).asJava()
 }
 
 object Mono {
@@ -1832,23 +1814,16 @@ object Mono {
     * @param javaMono The underlying Java Mono
     * @tparam T The value type that will be emitted by this mono
     * @return Wrapper of Java Mono
+    * @deprecated
     */
   def apply[T](javaMono: JMono[T]): Mono[T] = new Mono[T](javaMono)
 
-  def create[T](callback: MonoSink[T] => Unit): Mono[T] = {
-    new Mono[T](
-      JMono.create(new Consumer[MonoSink[T]] {
-        override def accept(t: MonoSink[T]): Unit = callback(t)
-      })
-    )
-  }
+  def create[T](callback: MonoSink[T] => Unit): Mono[T] = Mono.from(SMono.create(callback))
 
   def defer[T](supplier: () => Mono[T]): Mono[T] = {
-    new Mono[T](
-      JMono.defer(new Supplier[JMono[T]] {
-        override def get(): JMono[T] = supplier().jMono
-      })
-    )
+    def supplierF(): SMono[T] = new ReactiveSMono[T](supplier().jMono)
+
+    Mono.from(SMono.defer[T](() => supplierF()))
   }
 
   /**
@@ -1915,7 +1890,10 @@ object Mono {
     * @tparam T The type of the function result.
     * @return a [[Mono]].
     */
-  def first[T](monos: Mono[_ <: T]*): Mono[T] = Mono[T](JMono.first[T](monos.map(_.jMono): _*))
+  def first[T](monos: Mono[_ <: T]*): Mono[T] = {
+    val sMonos: Seq[SMono[T]] = monos.map((m: Mono[_]) => new ReactiveSMono[T](m.asJava().asInstanceOf[Publisher[T]]))
+    Mono.from(SMono.firstEmitter[T](sMonos: _*))
+  }
 
   /**
     * Pick the first result coming from any of the given monos and populate a new `Mono`.
@@ -1928,7 +1906,10 @@ object Mono {
     * @tparam T The type of the function result.
     * @return a [[Mono]].
     */
-  def first[T](monos: Iterable[_ <: Mono[_ <: T]]): Mono[T] = Mono[T](JMono.first[T](monos.map(_.asJava()).asJava))
+  def first[T](monos: Iterable[_ <: Mono[_ <: T]]): Mono[T] = {
+    val sMonos: Seq[SMono[T]] = monos.map((m: Mono[_]) => new ReactiveSMono[T](m.asJava().asInstanceOf[Publisher[T]])).toSeq
+    Mono.from(SMono.firstEmitter[T](sMonos: _*))
+  }
 
   /**
     * Expose the specified [[Publisher]] with the [[Mono]] API, and ensure it will emit 0 or 1 item.

@@ -1,49 +1,41 @@
 package reactor.core.scala.publisher
 
-import java.time.{Duration => JDuration}
 import java.util.concurrent._
-import java.util.concurrent.atomic.{AtomicBoolean, AtomicLong, AtomicReference}
+import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger, AtomicLong, AtomicReference}
 
-import org.mockito.Mockito.{spy, verify}
+import org.mockito.Mockito.spy
 import org.mockito.{ArgumentMatchers, Mockito}
 import org.reactivestreams.Subscription
-import org.scalatest.mockito.MockitoSugar
-import org.scalatest.prop.TableDrivenPropertyChecks
 import org.scalatest.{AsyncFreeSpec, FreeSpec, Matchers}
 import reactor.core.Disposable
-import reactor.core.publisher.{BaseSubscriber, Signal, SynchronousSink, Flux => JFlux, Mono => JMono}
+import reactor.core.publisher.{BaseSubscriber, Signal, SynchronousSink, Mono => JMono}
 import reactor.core.scala.Scannable
 import reactor.core.scala.publisher.Mono.just
+import reactor.core.scala.publisher.ScalaConverters._
 import reactor.core.scheduler.{Scheduler, Schedulers}
-import reactor.test.StepVerifier
+import reactor.test.{StepVerifier, StepVerifierOptions}
 import reactor.test.scheduler.VirtualTimeScheduler
+import reactor.util.context.Context
 
 import scala.concurrent.Future
-import scala.concurrent.duration.DurationInt
-import scala.language.{existentials, postfixOps}
+import scala.concurrent.duration._
+import scala.language.postfixOps
 import scala.math.ScalaNumber
-import scala.util.Random
+import scala.util.{Failure, Random, Success, Try}
 
-/**
-  * Created by winarto on 12/26/16.
-  */
-class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks with MockitoSugar with TestSupport {
-
+class SMonoTest extends FreeSpec with Matchers with TestSupport {
   private val randomValue = Random.nextLong()
-  "Mono" - {
-    ".create should create a Mono" in {
-      val mono = createMono
 
-      StepVerifier.create(mono)
+  "SMono" - {
+    ".create should create a Mono" in {
+      StepVerifier.create(SMono.create[Long](monoSink => monoSink.success(randomValue)))
         .expectNext(randomValue)
         .expectComplete()
         .verify()
     }
 
     ".defer should create a Mono with deferred Mono" in {
-      val mono = Mono.defer(() => createMono)
-
-      StepVerifier.create(mono)
+      StepVerifier.create(SMono.defer(() => SMono.just(randomValue)))
         .expectNext(randomValue)
         .expectComplete()
         .verify()
@@ -51,16 +43,15 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
 
     ".delay should create a Mono with the first element delayed according to the provided" - {
       "duration" in {
-        StepVerifier.withVirtualTime(() => Mono.delay(5 days))
-          .thenAwait(JDuration.ofDays(5))
+        StepVerifier.withVirtualTime(() => SMono.delay(5 days))
+          .thenAwait(5 days)
           .expectNextCount(1)
           .expectComplete()
           .verify()
       }
-
       "duration in millis with given TimeScheduler" in {
         val vts = VirtualTimeScheduler.getOrSet()
-        StepVerifier.create(Mono.delay(50 seconds, vts))
+        StepVerifier.create(SMono.delay(50 seconds, vts))
           .`then`(() => vts.advanceTimeBy(50 seconds))
           .expectNextCount(1)
           .expectComplete()
@@ -71,33 +62,14 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
 
     ".empty " - {
       "without source should create an empty Mono" in {
-        val mono = Mono.empty
-        verifyEmptyMono(mono)
-      }
-
-      def verifyEmptyMono[T](mono: Mono[T]) = {
-        StepVerifier.create(mono)
-          .expectComplete()
-          .verify()
-      }
-    }
-
-    ".error should create Mono that emit error" in {
-      val mono = Mono.error(new RuntimeException("runtime error"))
-      StepVerifier.create(mono)
-        .expectError(classOf[RuntimeException])
-        .verify()
-    }
-
-    ".first" - {
-      "with varargs should create mono that emit the first item" in {
-        StepVerifier.withVirtualTime(() => Mono.first(Mono.just(1).delaySubscription(3 seconds), Mono.just(2).delaySubscription(2 seconds)))
-          .thenAwait(3 seconds)
-          .expectNext(2)
+        StepVerifier.create(Mono.empty)
           .verifyComplete()
       }
-      "with iterable should create mono that emit the first item" in {
-        StepVerifier.withVirtualTime(() => Mono.first(Iterable(Mono.just(1).delaySubscription(3 seconds), Mono.just(2).delaySubscription(2 seconds))))
+    }
+
+    ".firstEmitter" - {
+      "with varargs should create mono that emit the first item" in {
+        StepVerifier.withVirtualTime(() => SMono.firstEmitter(SMono.just(1).delaySubscription(3 seconds), SMono.just(2).delaySubscription(2 seconds)))
           .thenAwait(3 seconds)
           .expectNext(2)
           .verifyComplete()
@@ -106,78 +78,58 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
 
     ".from" - {
       "a publisher should ensure that the publisher will emit 0 or 1 item." in {
-        val publisher: JFlux[Int] = JFlux.just(1, 2, 3, 4, 5)
-
-        val mono = Mono.from(publisher)
-
-        StepVerifier.create(mono)
+        StepVerifier.create(SMono.fromPublisher(SFlux.just(1, 2, 3, 4, 5)))
           .expectNext(1)
           .expectComplete()
           .verify()
       }
 
       "a callable should ensure that Mono will return a value from the Callable" in {
-        val callable = new Callable[Long] {
-          override def call(): Long = randomValue
-        }
-        val mono = Mono.fromCallable(callable)
-        StepVerifier.create(mono)
+        StepVerifier.create(SMono.fromCallable(() => randomValue))
           .expectNext(randomValue)
           .expectComplete()
           .verify()
       }
 
       "source direct should return mono of the source" in {
-        val mono = Mono.fromDirect(Flux.just(1, 2, 3))
-        StepVerifier.create(mono)
+        StepVerifier.create(SMono.fromDirect(Flux.just(1, 2, 3)))
           .expectNext(1, 2, 3)
           .verifyComplete()
       }
 
       "a future should result Mono that will return the value from the future object" in {
         import scala.concurrent.ExecutionContext.Implicits.global
-        val future = Future[Long] {
+        StepVerifier.create(SMono.fromFuture(Future[Long] {
           randomValue
-        }
-
-        val mono = Mono.fromFuture(future)
-        StepVerifier.create(mono)
+        }))
           .expectNext(randomValue)
-          .expectComplete()
-          .verify()
+          .verifyComplete()
       }
 
-      "a Runnable should run the unit within it" in {
-        val atomicLong = new AtomicLong()
-        val runnable = new Runnable {
-          override def run(): Unit = atomicLong.set(randomValue)
+      "a Try should result SMono that when it is a" - {
+        "Success will emit the value of the Try" in {
+          def aSuccess = Try(randomValue)
+          StepVerifier.create(SMono.fromTry(aSuccess))
+            .expectNext(randomValue)
+            .verifyComplete()
         }
-        val mono = Mono.fromRunnable(runnable)
-        StepVerifier.create(mono)
-          .expectComplete()
-          .verify()
-        atomicLong.get() shouldBe randomValue
-      }
-
-      "a Supplier should result Mono that will return the result from supplier" in {
-        val mono = Mono.fromSupplier(() => randomValue)
-        StepVerifier.create(mono)
-          .expectNext(randomValue)
-          .expectComplete()
-          .verify()
+        "Failure will emit onError with the exception" in {
+          def aFailure = Try(throw new RuntimeException("error message"))
+          StepVerifier.create(SMono.fromTry(aFailure))
+            .expectErrorMessage("error message")
+            .verify()
+        }
       }
     }
 
     ".ignoreElements should ignore all elements from a publisher and just react on completion signal" in {
-      val mono = Mono.ignoreElements(createMono)
-      StepVerifier.create(mono)
+      StepVerifier.create(SMono.ignoreElements(SMono.just(randomValue)))
         .expectComplete()
         .verify()
     }
 
     ".just should emit the specified item" in {
-      val mono = just(randomValue)
-      StepVerifier.create(mono)
+      StepVerifier.create(SMono.just(randomValue))
         .expectNext(randomValue)
         .verifyComplete()
     }
@@ -185,28 +137,26 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
     ".justOrEmpty" - {
       "with Option should" - {
         "emit the specified item if the option is not empty" in {
-          val mono = Mono.justOrEmpty(Option(randomValue))
-          StepVerifier.create(mono)
+          StepVerifier.create(SMono.justOrEmpty(Option(randomValue)))
             .expectNext(randomValue)
             .verifyComplete()
         }
         "just react on completion signal if the option is empty" in {
-          val mono = Mono.justOrEmpty(Option.empty)
-          StepVerifier.create(mono)
+          StepVerifier.create(SMono.justOrEmpty(Option.empty))
             .expectComplete()
             .verify()
         }
       }
       "with data should" - {
         "emit the specified item if it is not null" in {
-          val mono = Mono.justOrEmpty(randomValue)
+          val mono = SMono.justOrEmpty(randomValue)
           StepVerifier.create(mono)
             .expectNext(randomValue)
             .verifyComplete()
         }
         "just react on completion signal if it is null" in {
           val nullData:Any = null
-          val mono = Mono.justOrEmpty(nullData)
+          val mono = SMono.justOrEmpty(nullData)
           StepVerifier.create(mono)
             .expectComplete()
             .verify()
@@ -214,61 +164,54 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
       }
     }
 
-    ".name should name the sequence" in {
-      val name = "mono integer"
-      val mono = Mono.just(randomValue).name(name)
-      val scannable: Scannable = Scannable.from(Option(mono))
-      scannable.name shouldBe name
-    }
-
     ".never will never signal any data, error or completion signal" in {
-      val mono = Mono.never
-      StepVerifier.create(mono)
+      StepVerifier.create(SMono.never)
+        .expectSubscription()
         .expectNoEvent(1 second)
     }
 
+    ".name should give name to this sequence" in {
+      val name = "one two three four"
+      val scannable: Scannable = Scannable.from(Option(SMono.just(randomValue).name(name)))
+      scannable.name shouldBe name
+    }
 
     ".sequenceEqual should" - {
       "emit Boolean.TRUE when both publisher emit the same value" in {
-        val emittedValue = new AtomicBoolean(false)
-        val isSubscribed = new AtomicBoolean(false)
-
-        val mono = Mono.sequenceEqual(just(1), just(1))
-        mono.subscribe(new BaseSubscriber[Boolean] {
-          override def hookOnSubscribe(subscription: Subscription): Unit = {
-            subscription.request(1)
-            isSubscribed.compareAndSet(false, true)
-          }
-
-          override def hookOnNext(value: Boolean): Unit = emittedValue.compareAndSet(false, true)
-        })
-        isSubscribed shouldBe 'get
-        emittedValue shouldBe 'get
+        StepVerifier.create(SMono.sequenceEqual(just(1), just(1)))
+          .expectNext(true)
+          .verifyComplete()
       }
       "emit true when both publisher emit the same value according to the isEqual function" in {
-        val mono = Mono.sequenceEqual[Int](just(10), just(100), (t1: Int, t2: Int) => t1 % 10 == t2 % 10)
+        val mono = SMono.sequenceEqual[Int](just(10), just(100), (t1: Int, t2: Int) => t1 % 10 == t2 % 10)
         StepVerifier.create(mono)
           .expectNext(true)
           .verifyComplete()
       }
       "emit true when both publisher emit the same value according to the isEqual function with bufferSize" in {
-        val mono = Mono.sequenceEqual[Int](just(10), just(100), (t1: Int, t2: Int) => t1 % 10 == t2 % 10, 2)
+        val mono = SMono.sequenceEqual[Int](just(10), just(100), (t1: Int, t2: Int) => t1 % 10 == t2 % 10, 2)
         StepVerifier.create(mono)
           .expectNext(true)
           .verifyComplete()
 
       }
+    }
+
+    ".raiseError should create Mono that emit error" in {
+      StepVerifier.create(SMono.raiseError(new RuntimeException("runtime error")))
+        .expectError(classOf[RuntimeException])
+        .verify()
     }
 
     ".when" - {
       "with iterable" - {
         "of publisher of unit should return when all of the sources has fulfilled" in {
           val completed = new ConcurrentHashMap[String, Boolean]()
-          val mono = Mono.when(Iterable(
-            just[Unit]({
+          val mono = SMono.when(Iterable(
+            SMono.just[Unit]({
               completed.put("first", true)
             }),
-            just[Unit]({
+            SMono.just[Unit]({
               completed.put("second", true)
             })
           ))
@@ -288,8 +231,7 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
             completed.put("second", true)
           })
         )
-        val mono = Mono.when(sources.toArray: _*)
-        StepVerifier.create(mono)
+        StepVerifier.create(SMono.when(sources.toArray: _*))
           .expectComplete()
         completed should contain key "first"
         completed should contain key "second"
@@ -298,31 +240,31 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
 
     ".zipDelayError" - {
       "with p1 and p2 should merge when both Monos are fulfilled" in {
-        StepVerifier.create(Mono.zipDelayError(just(1), just("one")))
+        StepVerifier.create(SMono.zipDelayError(SMono.just(1), SMono.just("one")))
           .expectNext((1, "one"))
           .verifyComplete()
       }
 
       "with p1, p2 and p3 should merge when all Monos are fulfilled" in {
-        StepVerifier.create(Mono.zipDelayError(just(1), just("one"), just(1L)))
+        StepVerifier.create(SMono.zipDelayError(SMono.just(1), SMono.just("one"), SMono.just(1L)))
           .expectNext((1, "one", 1L))
           .verifyComplete()
       }
 
       "with p1, p2, p3 and p4 should merge when all Monos are fulfilled" in {
-        StepVerifier.create(Mono.zipDelayError(just(1), just(2), just(3), just(4)))
+        StepVerifier.create(SMono.zipDelayError(SMono.just(1), SMono.just(2), SMono.just(3), SMono.just(4)))
           .expectNext((1, 2, 3, 4))
           .verifyComplete()
       }
 
       "with p1, p2, p3, p4 and p5 should merge when all Monos are fulfilled" in {
-        StepVerifier.create(Mono.zipDelayError(just(1), just(2), just(3), just(4), just(5)))
+        StepVerifier.create(SMono.zipDelayError(SMono.just(1), SMono.just(2), SMono.just(3), SMono.just(4), SMono.just(5)))
           .expectNext((1, 2, 3, 4, 5))
           .verifyComplete()
       }
 
       "with p1, p2, p3, p4, p5 and p6 should merge when all Monos are fulfilled" in {
-        StepVerifier.create(Mono.zipDelayError(just(1), just(2), just(3), just(4), just(5), just(6)))
+        StepVerifier.create(SMono.zipDelayError(SMono.just(1), SMono.just(2), SMono.just(3), SMono.just(4), SMono.just(5), SMono.just(6)))
           .expectNext((1, 2, 3, 4, 5, 6))
           .verifyComplete()
       }
@@ -330,11 +272,11 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
       "with iterable" - {
         "of publisher of unit should return when all of the sources has fulfilled" in {
           val completed = new ConcurrentHashMap[String, Boolean]()
-          val mono = Mono.whenDelayError(Iterable(
-            just[Unit]({
+          val mono = SMono.whenDelayError(Iterable(
+            SMono.just[Unit]({
               completed.put("first", true)
             }),
-            just[Unit]({
+            SMono.just[Unit]({
               completed.put("second", true)
             })
           ))
@@ -344,98 +286,77 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
           completed should contain key "second"
         }
 
-        "of Mono and combinator function should emit the value after combined by combinator function" in {
-          StepVerifier.create(Mono.zipDelayError(Iterable(Mono.just(1), Mono.just("one")), (values: Array[AnyRef]) => s"${values(0).toString}-${values(1).toString}"))
+        "of combinator function and monos should emit the value after combined by combinator function" in {
+          StepVerifier.create(SMono.zipDelayError((values: Array[Any]) => s"${values(0).toString}-${values(1).toString}", SMono.just(1), SMono.just("one")))
             .expectNext("1-one")
             .verifyComplete()
         }
       }
-
-      "with varargs of Publisher[Unit] should be fulfilled when all the underlying sources are fulfilled" in {
-        val completed = new ConcurrentHashMap[String, Boolean]()
-        val mono = Mono.whenDelayError(
-          Seq(
-            just[Unit](completed.put("first", true)),
-            just[Unit](completed.put("second", true))
-          ).toArray: _*
-        )
-        StepVerifier.create(mono)
-          .expectComplete()
-
-        completed should contain key "first"
-        completed should contain key "second"
-      }
-
-      "with function combinator and varargs of mono should return when all of the monos has fulfilled" in {
-        val combinator: (Array[Any] => String) = { values =>
-          values.map(_.toString).foldLeft("") { (acc, value) => if (acc.isEmpty) s"$value" else s"$acc-$value" }
-        }
-
-        StepVerifier.create(Mono.whenDelayError(combinator, just[Any](1), just[Any](2)))
-          .expectNext("1-2")
-          .expectComplete()
-          .verify()
-      }
     }
 
     ".zip" - {
-      val combinator: (Array[AnyRef] => String) = { datas => datas.map(_.toString).foldLeft("") { (acc, v) => if (acc.isEmpty) v else s"$acc-$v" } }
+      val combinator: Array[AnyRef] => String = { datas => datas.map(_.toString).foldLeft("") { (acc, v) => if (acc.isEmpty) v else s"$acc-$v" } }
       "with combinator function and varargs of mono should fullfill when all Monos are fulfilled" in {
-        val mono = Mono.zip(combinator, just(1), just(2))
+        val mono = SMono.zip(combinator, SMono.just(1), SMono.just(2))
         StepVerifier.create(mono)
           .expectNext("1-2")
           .verifyComplete()
       }
       "with combinator function and Iterable of mono should fulfill when all Monos are fulfilled" in {
-        val mono = Mono.zip(Iterable(just(1), just(2)), combinator)
+        val mono = SMono.zip(Iterable(SMono.just(1), SMono.just("2")), combinator)
         StepVerifier.create(mono)
           .expectNext("1-2")
           .verifyComplete()
       }
     }
 
-    ".as should transform the Mono to whatever the transformer function is provided" in {
-      val mono = just(randomValue)
-
-      val flux = mono.as(m => Flux.from(m))
-      StepVerifier.create(flux)
-        .expectNext(randomValue)
-        .verifyComplete()
-    }
-
     ".and" - {
       "should combine this mono and the other" in {
-        val mono: Mono[Unit] = just(1) and just(2)
-        StepVerifier.create(mono)
-          //          .expectNext((1, 2))
+        StepVerifier.create(SMono.just(1) and SMono.just(2))
           .verifyComplete()
       }
     }
 
+    ".as should transform the Mono to whatever the transformer function is provided" in {
+      val mono = SMono.just(randomValue)
+
+      StepVerifier.create(mono.as(m => SFlux.fromPublisher(m)))
+        .expectNext(randomValue)
+        .verifyComplete()
+    }
+
+    ".asJava should convert to java" in {
+      SMono.just(randomValue).asJava() shouldBe a[JMono[_]]
+    }
+
+    ".asScala should transform Mono to SMono" in {
+      JMono.just(randomValue).asScala shouldBe an[SMono[_]]
+    }
+
     ".block" - {
       "should block the mono to get the value" in {
-        Mono.just(randomValue).block() shouldBe randomValue
+        SMono.just(randomValue).block() shouldBe randomValue
       }
       "with duration should block the mono up to the duration" in {
-        Mono.just(randomValue).block(10 seconds) shouldBe randomValue
+        SMono.just(randomValue).block(10 seconds) shouldBe randomValue
       }
     }
 
     ".blockOption" - {
       "without duration" - {
         "should block the mono to get value" in {
-          Mono.just(randomValue).blockOption() shouldBe Some(randomValue)
+          SMono.just(randomValue).blockOption() shouldBe Some(randomValue)
         }
-        "should retun None if mono is empty" in {
-          Mono.empty.blockOption() shouldBe None
+        "should return None if mono is empty" in {
+          SMono.empty.blockOption() shouldBe None
         }
       }
       "with duration" - {
         "should block the mono up to the duration" in {
-          Mono.just(randomValue).blockOption(10 seconds) shouldBe Some(randomValue)
+          SMono.just(randomValue).blockOption(10 seconds) shouldBe Some(randomValue)
         }
         "shouldBlock the mono up to the duration and return None" in {
-          StepVerifier.withVirtualTime(() => Mono.just(Mono.empty.blockOption(10 seconds)))
+          StepVerifier.withVirtualTime(() => SMono.just(SMono.empty.blockOption(10 seconds)))
             .thenAwait(10 seconds)
             .expectNext(None)
             .verifyComplete()
@@ -444,7 +365,7 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
     }
 
     ".cast should cast the underlying value" in {
-      val number = Mono.just(BigDecimal("123")).cast(classOf[ScalaNumber]).block()
+      val number = SMono.just(BigDecimal("123")).cast(classOf[ScalaNumber]).block()
       number shouldBe a[ScalaNumber]
     }
 
@@ -452,7 +373,7 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
       "should cache the value" in {
         val queue = new ArrayBlockingQueue[Int](1)
         queue.put(1)
-        val mono = Mono.create[Int](sink => {
+        val mono = SMono.create[Int](sink => {
           sink.success(queue.poll())
         }).cache()
         StepVerifier.create(mono)
@@ -467,7 +388,7 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
         val timeScheduler = VirtualTimeScheduler.getOrSet
         val queue = new ArrayBlockingQueue[Int](1)
         queue.put(1)
-        val mono = Mono.create[Int](sink => {
+        val mono = SMono.create[Int](sink => {
           sink.success(queue.poll())
         }).cache(1 minute)
         StepVerifier.create(mono)
@@ -483,115 +404,121 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
       }
     }
 
-
     ".cancelOn should cancel the subscriber on a particular scheduler" in {
       val jMono = spy(JMono.just(1))
-      Mono(jMono).cancelOn(Schedulers.immediate())
+      new ReactiveSMono[Int](jMono).cancelOn(Schedulers.immediate())
       Mockito.verify(jMono).cancelOn(ArgumentMatchers.any[Scheduler]())
     }
 
     ".compose should defer creating the target mono type" in {
-      val mono = Mono.just(1)
-      val mono1: Mono[String] = mono.compose[String](m => Flux.from(m.map(_.toString)))
-
-      StepVerifier.create(mono1)
+      StepVerifier.create(SMono.just(1).compose[String](m => SFlux.fromPublisher(m.map(_.toString))))
         .expectNext("1")
         .verifyComplete()
     }
 
     ".concatWith should concatenate mono with another source" in {
-      val mono = Mono.just(1)
-      StepVerifier.create(mono.concatWith(Mono.just(2)))
+      StepVerifier.create(SMono.just(1).concatWith(SMono.just(2)))
+        .expectNext(1)
+        .expectNext(2)
+        .verifyComplete()
+    }
+
+    "++ should concatenate mono with another source" in {
+      StepVerifier.create(SMono.just(1) ++ SMono.just(2))
         .expectNext(1)
         .expectNext(2)
         .verifyComplete()
     }
 
     ".defaultIfEmpty should use the provided default value if the mono is empty" in {
-      val mono = Mono.empty[Int]
-      StepVerifier.create(mono.defaultIfEmpty(-1))
+      StepVerifier.create(SMono.empty[Int].defaultIfEmpty(-1))
         .expectNext(-1)
         .verifyComplete()
     }
 
     ".delayElement" - {
       "should delay the element" in {
-        StepVerifier.withVirtualTime(() => Mono.just(randomValue).delayElement(5 seconds))
+        StepVerifier.withVirtualTime(() => SMono.just(randomValue).delayElement(5 seconds))
           .thenAwait(5 seconds)
           .expectNext(randomValue)
           .verifyComplete()
       }
       "with timer should delay using timer" in {
-        StepVerifier.withVirtualTime(() => Mono.just(randomValue).delayElement(5 seconds, Schedulers.parallel()))
+        StepVerifier.withVirtualTime(() => SMono.just(randomValue).delayElement(5 seconds, Schedulers.immediate()))
           .thenAwait(5 seconds)
           .expectNext(randomValue)
           .verifyComplete()
       }
     }
 
-    ".delayUntil should delay until the other provider terminate" in {
-      StepVerifier.withVirtualTime(() => Mono.just(randomValue).delayUntil(_ => Flux.just(1, 2).delayElements(2 seconds)))
-        .thenAwait(4 seconds)
-        .expectNext(randomValue)
-        .verifyComplete()
-    }
-
     ".delaySubscription" - {
       "with delay duration should delay subscription as long as the provided duration" in {
-        StepVerifier.withVirtualTime(() => Mono.just(1).delaySubscription(1 hour))
+        StepVerifier.withVirtualTime(() => SMono.just(1).delaySubscription(1 hour))
           .thenAwait(1 hour)
           .expectNext(1)
           .verifyComplete()
       }
       "with delay duration and scheduler should delay subscription as long as the provided duration" in {
-        StepVerifier.withVirtualTime(() => Mono.just(1).delaySubscription(1 hour, Schedulers.single()))
+        StepVerifier.withVirtualTime(() => SMono.just(1).delaySubscription(1 hour, Schedulers.single()))
           .thenAwait(1 hour)
           .expectNext(1)
           .verifyComplete()
       }
       "with another publisher should delay the current subscription until the other publisher completes" in {
-        StepVerifier.withVirtualTime(() => Mono.just(1).delaySubscription(Mono.just("one").delaySubscription(1 hour)))
-          .thenAwait(JDuration.ofHours(1))
+        StepVerifier.withVirtualTime(() => SMono.just(1).delaySubscription(SMono.just("one").delaySubscription(1 hour)))
+          .thenAwait(1 hour)
           .expectNext(1)
           .verifyComplete()
 
       }
     }
 
+    ".delayUntil should delay until the other provider terminate" in {
+      StepVerifier.withVirtualTime(() => SMono.just(randomValue).delayUntil(_ => SFlux.just(1, 2).delayElements(2 seconds)))
+        .thenAwait(4 seconds)
+        .expectNext(randomValue)
+        .verifyComplete()
+    }
+
     ".dematerialize should dematerialize the underlying mono" in {
-      val mono = Mono.just(Signal.next(randomValue))
-      StepVerifier.create(mono.dematerialize())
+      StepVerifier.create(SMono.just(Signal.next(randomValue)).dematerialize())
         .expectNext(randomValue)
         .verifyComplete()
     }
 
     ".doAfterSuccessOrError should call the callback function after the mono is terminated" in {
       val atomicBoolean = new AtomicBoolean(false)
-      val mono = Mono.just(randomValue)
-        .doAfterSuccessOrError { (_: Long, _: Throwable) =>
+      StepVerifier.create(SMono.just(randomValue)
+        .doAfterSuccessOrError { t =>
           atomicBoolean.compareAndSet(false, true) shouldBe true
-          ()
-        }
-      StepVerifier.create(mono)
+          t shouldBe Success(randomValue)
+        })
         .expectNext(randomValue)
         .verifyComplete()
       atomicBoolean shouldBe 'get
+      val exception = new RuntimeException
+      StepVerifier.create(SMono.raiseError[Long](exception)
+        .doAfterSuccessOrError { t =>
+          atomicBoolean.compareAndSet(true, false) shouldBe true
+          t shouldBe Failure(exception)
+        })
+        .expectError()
+        .verify()
+      atomicBoolean.get() shouldBe false
     }
 
     ".doAfterTerminate should call the callback function after the mono is terminated" in {
       val atomicBoolean = new AtomicBoolean(false)
-      StepVerifier.create(Mono.just(randomValue).doAfterTerminate(() => atomicBoolean.compareAndSet(false, true)))
+      StepVerifier.create(SMono.just(randomValue).doAfterTerminate(() => atomicBoolean.compareAndSet(false, true)))
         .expectNext(randomValue)
         .verifyComplete()
       atomicBoolean shouldBe 'get
     }
 
-
     ".doFinally should call the callback" in {
       val atomicBoolean = new AtomicBoolean(false)
-      val mono = Mono.just(randomValue)
-        .doFinally(_ => atomicBoolean.compareAndSet(false, true) shouldBe true)
-      StepVerifier.create(mono)
+      StepVerifier.create(SMono.just(randomValue)
+        .doFinally(_ => atomicBoolean.compareAndSet(false, true) shouldBe true))
         .expectNext(randomValue)
         .verifyComplete()
       atomicBoolean shouldBe 'get
@@ -599,7 +526,7 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
 
     ".doOnCancel should call the callback function when the subscription is cancelled" in {
       val atomicBoolean = new AtomicBoolean(false)
-      val mono = Mono.delay(1 minute)
+      val mono = SMono.delay(1 minute)
         .doOnCancel(() => {
           atomicBoolean.compareAndSet(false, true) shouldBe true
         })
@@ -619,9 +546,8 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
 
     ".doOnNext should call the callback function when the mono emit data successfully" in {
       val atomicLong = new AtomicLong()
-      val mono = Mono.just(randomValue)
-        .doOnNext(t => atomicLong.compareAndSet(0, t))
-      StepVerifier.create(mono)
+      StepVerifier.create(SMono.just(randomValue)
+        .doOnNext(t => atomicLong.compareAndSet(0, t)))
         .expectNext(randomValue)
         .verifyComplete()
       atomicLong.get() shouldBe randomValue
@@ -629,9 +555,8 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
 
     ".doOnSuccess should call the callback function when the mono completes successfully" in {
       val atomicBoolean = new AtomicBoolean(false)
-      val mono = Mono.empty[Int]
-        .doOnSuccess(_ => atomicBoolean.compareAndSet(false, true) shouldBe true)
-      StepVerifier.create(mono)
+      StepVerifier.create(SMono.empty[Int]
+        .doOnSuccess(_ => atomicBoolean.compareAndSet(false, true) shouldBe true))
         .verifyComplete()
       atomicBoolean shouldBe 'get
     }
@@ -639,41 +564,18 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
     ".doOnError" - {
       "with callback function should call the callback function when the mono encounter error" in {
         val atomicBoolean = new AtomicBoolean(false)
-        val mono = Mono.error(new RuntimeException())
-          .doOnError(_ => atomicBoolean.compareAndSet(false, true) shouldBe true)
-        StepVerifier.create(mono)
-          .expectError(classOf[RuntimeException])
-      }
-      "with exception type and callback function should call the callback function when the mono encounter exception with the provided type" in {
-        val atomicBoolean = new AtomicBoolean(false)
-        val mono = Mono.error(new RuntimeException())
-          .doOnError(classOf[RuntimeException]: Class[RuntimeException],
-            ((_: RuntimeException) => atomicBoolean.compareAndSet(false, true) shouldBe true): SConsumer[RuntimeException])
-        StepVerifier.create(mono)
+        StepVerifier.create(SMono.raiseError(new RuntimeException())
+          .doOnError(_ => atomicBoolean.compareAndSet(false, true) shouldBe true))
           .expectError(classOf[RuntimeException])
           .verify()
         atomicBoolean shouldBe 'get
-      }
-      "with predicate and callback fnction should call the callback function when the predicate returns true" in {
-        val atomicBoolean = new AtomicBoolean(false)
-        val mono: Mono[Int] = Mono.error[Int](new RuntimeException("Whatever"))
-          .doOnError((_: Throwable) => true,
-            ((_: Throwable) => atomicBoolean.compareAndSet(false, true) shouldBe true): SConsumer[Throwable])
-        StepVerifier.create(mono)
-          .expectError(classOf[RuntimeException])
-
       }
     }
 
     ".doOnRequest should call the callback function when subscriber request data" in {
       val atomicLong = new AtomicLong(0)
-      val mono = Mono.just(randomValue)
-        .doOnRequest{
-          l => {
-            atomicLong.compareAndSet(0, l)
-          }
-        }
-      mono.subscribe(new BaseSubscriber[Long] {
+      SMono.just(randomValue)
+        .doOnRequest(l => atomicLong.compareAndSet(0, l)).subscribe(new BaseSubscriber[Long] {
         override def hookOnSubscribe(subscription: Subscription): Unit = {
           subscription.request(1)
           ()
@@ -686,9 +588,8 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
 
     ".doOnSubscribe should call the callback function when the mono is subscribed" in {
       val atomicBoolean = new AtomicBoolean(false)
-      val mono = Mono.just(randomValue)
-        .doOnSubscribe(_ => atomicBoolean.compareAndSet(false, true))
-      StepVerifier.create(mono)
+      StepVerifier.create(SMono.just(randomValue)
+        .doOnSubscribe(_ => atomicBoolean.compareAndSet(false, true)))
         .expectNextCount(1)
         .verifyComplete()
       atomicBoolean shouldBe 'get
@@ -696,8 +597,7 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
 
     ".doOnTerminate should do something on terminate" in {
       val atomicLong = new AtomicLong()
-      val mono: Mono[Long] = createMono.doOnTerminate { () => atomicLong.set(randomValue) }
-      StepVerifier.create(mono)
+      StepVerifier.create(SMono.just(randomValue).doOnTerminate { () => atomicLong.set(randomValue) })
         .expectNext(randomValue)
         .expectComplete()
         .verify()
@@ -706,7 +606,7 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
 
     ".elapsed" - {
       "should provide the time elapse when this mono emit value" in {
-        StepVerifier.withVirtualTime(() => Mono.just(randomValue).delaySubscription(1 second).elapsed(), 1)
+        StepVerifier.withVirtualTime(() => SMono.just(randomValue).delaySubscription(1 second).elapsed(), 1)
           .thenAwait(1 second)
           .expectNextMatches((t: (Long, Long)) => t match {
             case (time, data) => time >= 1000 && data == randomValue
@@ -715,7 +615,7 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
       }
       "with TimedScheduler should provide the time elapsed using the provided scheduler when this mono emit value" in {
         val virtualTimeScheduler = VirtualTimeScheduler.getOrSet()
-        StepVerifier.create(Mono.just(randomValue)
+        StepVerifier.create(SMono.just(randomValue)
           .delaySubscription(1 second, virtualTimeScheduler)
           .elapsed(virtualTimeScheduler), 1)
           .`then`(() => virtualTimeScheduler.advanceTimeBy(1 second))
@@ -728,14 +628,12 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
 
     ".expandDeep" - {
       "should expand the mono" in {
-        val flux = Mono.just("a").expandDeep(s => Mono.just(s"$s$s")).take(3)
-        StepVerifier.create(flux)
+        StepVerifier.create(SMono.just("a").expandDeep(s => SMono.just(s"$s$s")).take(3))
           .expectNext("a", "aa", "aaaa")
           .verifyComplete()
       }
       "with capacity hint should expand the mono" in {
-        val flux = Mono.just("a").expandDeep(s => Mono.just(s"$s$s"), 10).take(3)
-        StepVerifier.create(flux)
+        StepVerifier.create(SMono.just("a").expandDeep(s => SMono.just(s"$s$s"), 10).take(3))
           .expectNext("a", "aa", "aaaa")
           .verifyComplete()
       }
@@ -743,91 +641,82 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
 
     ".expand" - {
       "should expand the mono" in {
-        val flux = Mono.just("a").expand(s => Mono.just(s"$s$s")).take(3)
-        StepVerifier.create(flux)
+        StepVerifier.create(SMono.just("a").expand(s => SMono.just(s"$s$s")).take(3))
           .expectNext("a", "aa", "aaaa")
           .verifyComplete()
       }
       "with capacity hint should expand the mono" in {
-        val flux = Mono.just("a").expand(s => Mono.just(s"$s$s"), 10).take(3)
-        StepVerifier.create(flux)
+        StepVerifier.create(SMono.just("a").expand(s => SMono.just(s"$s$s"), 10).take(3))
           .expectNext("a", "aa", "aaaa")
           .verifyComplete()
       }
     }
 
     ".filter should filter the value of mono where it pass the provided predicate" in {
-      val mono = Mono.just(10)
-        .filter(i => i < 10)
-      StepVerifier.create(mono)
+      StepVerifier.create(SMono.just(10)
+        .filter(i => i < 10))
         .verifyComplete()
     }
 
     ".filterWhen should replay the value of mono if the first item emitted by the test is true" in {
-      val mono = Mono.just(10).filterWhen((i: Int) => Mono.just(i % 2 == 0))
-      StepVerifier.create(mono)
+      StepVerifier.create(SMono.just(10).filterWhen((i: Int) => SMono.just(i % 2 == 0)))
         .expectNext(10)
         .verifyComplete()
     }
 
     ".flatMap should flatmap the provided mono" in {
-      val mono = Mono.just(randomValue).flatMap(l => Mono.just(l.toString))
-      StepVerifier.create(mono)
+      StepVerifier.create(Mono.just(randomValue).flatMap(l => Mono.just(l.toString)))
         .expectNext(randomValue.toString)
         .verifyComplete()
     }
 
     ".flatMapMany" - {
       "with a single mapper should flatmap the value mapped by the provided mapper" in {
-        val flux = Mono.just(1).flatMapMany(i => Flux.just(i, i * 2))
-        StepVerifier.create(flux)
+        StepVerifier.create(SMono.just(1).flatMapMany(i => SFlux.just(i, i * 2)))
           .expectNext(1, 2)
           .verifyComplete()
       }
       "with mapperOnNext, mapperOnError and mapperOnComplete should mapped each individual event into values emitted by flux" in {
-        val flux = Mono.just(1)
+        StepVerifier.create(SMono.just(1)
           .flatMapMany(
-            _ => Mono.just("one"),
-            _ => Mono.just("error"),
-            () => Mono.just("complete")
-          )
-        StepVerifier.create(flux)
+            _ => SMono.just("one"),
+            _ => SMono.just("error"),
+            () => SMono.just("complete")
+          ))
           .expectNext("one", "complete")
           .verifyComplete()
       }
     }
 
     ".flatMapIterable should flatmap the value mapped by the provided mapper" in {
-      val flux = Mono.just("one").flatMapIterable(str => str.toCharArray)
-      StepVerifier.create(flux)
+      StepVerifier.create(SMono.just("one").flatMapIterable(str => str.toCharArray))
         .expectNext('o', 'n', 'e')
         .verifyComplete()
     }
 
     ".flux should convert this mono into a flux" in {
-      val flux = Mono.just(randomValue).flux()
+      val flux = SMono.just(randomValue).flux()
       StepVerifier.create(flux)
         .expectNext(randomValue)
         .verifyComplete()
+      flux shouldBe an[SFlux[Long]]
     }
 
     ".hasElement should convert to another Mono that emit" - {
       "true if it has element" in {
-        val mono = Mono.just(1).hasElement
-        StepVerifier.create(mono)
+        StepVerifier.create(SMono.just(1).hasElement)
           .expectNext(true)
           .verifyComplete()
       }
       "false if it is empty" in {
-        val mono = Mono.empty.hasElement
-        StepVerifier.create(mono)
+        StepVerifier.create(SMono.empty.hasElement)
           .expectNext(false)
           .verifyComplete()
       }
     }
 
     ".handle should handle onNext, onError and onComplete" in {
-      StepVerifier.create(Mono.just(randomValue)
+      StepVerifier.create(SMono.just(randomValue)
         .handle((_: Long, s: SynchronousSink[String]) => {
           s.next("One")
           s.complete()
@@ -837,15 +726,12 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
     }
 
     ".ignoreElement should only emit termination event" in {
-      val mono = Mono.just(randomValue).ignoreElement
-      StepVerifier.create(mono)
+      StepVerifier.create(SMono.just(randomValue).ignoreElement)
         .verifyComplete()
     }
 
     ".map should map the type of Mono from T to R" in {
-      val mono = createMono.map(_.toString)
-
-      StepVerifier.create(mono)
+      StepVerifier.create(SMono.just(randomValue).map(_.toString))
         .expectNext(randomValue.toString)
         .expectComplete()
         .verify()
@@ -854,9 +740,8 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
     ".mapError" - {
       class MyCustomException(val message: String) extends Exception(message)
       "with mapper should map the error to another error" in {
-        val mono: Mono[Int] = Mono.error[Int](new RuntimeException("runtimeException"))
-          .onErrorMap(t => new MyCustomException(t.getMessage))
-        StepVerifier.create(mono)
+        StepVerifier.create(SMono.raiseError[Int](new RuntimeException("runtimeException"))
+          .onErrorMap { case t: Throwable => new MyCustomException(t.getMessage) })
           .expectErrorMatches((t: Throwable) => {
             t.getMessage shouldBe "runtimeException"
             t should not be a[RuntimeException]
@@ -867,9 +752,8 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
       }
       "with an error type and mapper should" - {
         "map the error to another type if the exception is according to the provided type" in {
-          val mono: Mono[Int] = Mono.error[Int](new RuntimeException("runtimeException"))
-            .onErrorMap(classOf[RuntimeException], (t: RuntimeException) => new MyCustomException(t.getMessage))
-          StepVerifier.create(mono)
+          StepVerifier.create(SMono.raiseError[Int](new RuntimeException("runtimeException"))
+            .onErrorMap { case t: RuntimeException => new MyCustomException(t.getMessage) })
             .expectErrorMatches((t: Throwable) => {
               t.getMessage shouldBe "runtimeException"
               t should not be a[RuntimeException]
@@ -879,9 +763,10 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
             .verify()
         }
         "not map the error if the exception is not the type of provided exception class" in {
-          val mono: Mono[Int] = Mono.error[Int](new Exception("runtimeException"))
-            .onErrorMap(classOf[RuntimeException], (t: RuntimeException) => new MyCustomException(t.getMessage))
-          StepVerifier.create(mono)
+          StepVerifier.create(SMono.raiseError[Int](new Exception("runtimeException"))
+            .onErrorMap {
+              case t: RuntimeException => new MyCustomException(t.getMessage)
+            })
             .expectErrorMatches((t: Throwable) => {
               t.getMessage shouldBe "runtimeException"
               t should not be a[MyCustomException]
@@ -893,16 +778,14 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
       }
       "with a predicate and mapper should" - {
         "map the error to another type if the predicate returns true" in {
-          val mono: Mono[Int] = Mono.error[Int](new RuntimeException("should map"))
-            .onErrorMap(t => t.getMessage == "should map", t => new MyCustomException(t.getMessage))
-          StepVerifier.create(mono)
+          StepVerifier.create(SMono.raiseError[Int](new RuntimeException("should map"))
+            .onErrorMap { case t: Throwable if t.getMessage == "should map" => new MyCustomException(t.getMessage) })
             .expectError(classOf[MyCustomException])
             .verify()
         }
         "not map the error to another type if the predicate returns false" in {
-          val mono: Mono[Int] = Mono.error[Int](new RuntimeException("should not map"))
-            .onErrorMap(t => t.getMessage == "should map", t => new MyCustomException(t.getMessage))
-          StepVerifier.create(mono)
+          StepVerifier.create(SMono.raiseError[Int](new RuntimeException("should not map"))
+            .onErrorMap { case t: Throwable if t.getMessage == "should map" => new MyCustomException(t.getMessage) })
             .expectError(classOf[RuntimeException])
             .verify()
         }
@@ -910,56 +793,33 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
     }
 
     ".materialize should convert the mono into a mono that emit its signal" in {
-      val mono = Mono.just(randomValue).materialize()
-      StepVerifier.create(mono)
+      StepVerifier.create(SMono.just(randomValue).materialize())
         .expectNext(Signal.next(randomValue))
         .verifyComplete()
     }
 
     ".mergeWith should convert this mono to flux with value emitted from this mono followed by the other" in {
-      val flux = Mono.just(1).mergeWith(Mono.just(2))
-      StepVerifier.create(flux)
+      StepVerifier.create(SMono.just(1).mergeWith(SMono.just(2)))
         .expectNext(1, 2)
-        .verifyComplete()
-    }
-
-    ".or should return Mono that emit the value between the two Monos that is emited first" in {
-      val mono = Mono.delay(5 seconds).or(Mono.just(2))
-      StepVerifier.create(mono)
-        .expectNext(2)
         .verifyComplete()
     }
 
     ".ofType should" - {
       "convert the Mono value type to the provided type if it can be casted" in {
-        val mono = Mono.just(BigDecimal("1")).ofType(classOf[ScalaNumber])
-        StepVerifier.create(mono)
+        StepVerifier.create(SMono.just(BigDecimal("1")).ofType(classOf[ScalaNumber]))
           .expectNextCount(1)
           .verifyComplete()
       }
       "ignore the Mono value if it can't be casted" in {
-        val mono = Mono.just(1).ofType(classOf[String])
-        StepVerifier.create(mono)
-          .expectComplete()
-          .verify()
+        StepVerifier.create(SMono.just(1).ofType(classOf[String]))
+          .verifyComplete()
       }
     }
 
     ".onErrorRecover" - {
       "should recover with a Mono of element that has been recovered" in {
-        val convoy = Mono.error(new RuntimeException("oops"))
-          .onErrorRecover {case _ => Truck(5)}
-        StepVerifier.create(convoy)
-          .expectNext(Truck(5))
-          .verifyComplete()
-      }
-    }
-
-    ".onErrorRecoverWith" - {
-      "should recover with a Flux of element that is provided for recovery" in {
-        val convoy = Mono.error(new RuntimeException("oops"))
-          .onErrorRecoverWith {case _ => Mono.just(Truck(5))}
-        StepVerifier.create(convoy)
+        StepVerifier.create(SMono.raiseError(new RuntimeException("oops"))
+          .onErrorRecover { case _ => Truck(5) })
           .expectNext(Truck(5))
           .verifyComplete()
       }
@@ -967,57 +827,41 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
 
     ".onErrorResume" - {
       "will fallback to the provided value when error happens" in {
-        val mono = Mono.error(new RuntimeException()).onErrorResume(_ => Mono.just(-1))
-        StepVerifier.create(mono)
+        StepVerifier.create(SMono.raiseError(new RuntimeException()).onErrorResume(_ => SMono.just(-1)))
           .expectNext(-1)
           .verifyComplete()
       }
       "with class type and fallback function will fallback to the provided value when the exception is of provided type" in {
-        val mono = Mono.error(new RuntimeException()).onErrorResume(classOf[RuntimeException], (_: Exception) => Mono.just(-1))
-        StepVerifier.create(mono)
+        StepVerifier.create(SMono.raiseError(new RuntimeException()).onErrorResume {
+          case _: Exception => SMono.just(-1)
+        })
           .expectNext(-1)
           .verifyComplete()
+
+        StepVerifier.create(SMono.raiseError(new Exception()).onErrorResume {
+          case _: RuntimeException => SMono.just(-1)
+        })
+          .expectError(classOf[Exception])
+          .verify()
       }
       "with predicate and fallback function will fallback to the provided value when the predicate returns true" in {
-        val mono = Mono.error(new RuntimeException("fallback")).onErrorResume(t => t.getMessage == "fallback", (_: Throwable) => Mono.just(-1))
-        StepVerifier.create(mono)
+        StepVerifier.create(SMono.raiseError(new RuntimeException("fallback")).onErrorResume {
+          case t if t.getMessage == "fallback" => SMono.just(-1)
+        })
           .expectNext(-1)
           .verifyComplete()
       }
     }
 
-    ".switchIfEmpty with alternative will emit the value from alternative Mono when this mono is empty" in {
-      val mono = Mono.empty.switchIfEmpty(Mono.just(-1))
-      StepVerifier.create(mono)
-        .expectNext(-1)
+    ".or should return Mono that emit the value between the two Monos that is emited first" in {
+      StepVerifier.create(SMono.delay(5 seconds).or(SMono.just(2)))
+        .expectNext(2)
         .verifyComplete()
     }
 
-    ".onErrorReturn" - {
-      "with fallback will emit to the fallback value when error occurs" in {
-        val mono = Mono.error(new RuntimeException).onErrorReturn(-1)
-        StepVerifier.create(mono)
-          .expectNext(-1)
-          .verifyComplete()
-      }
-      class MyCustomException(message: String) extends Exception(message)
-      "with exception type and fallback value will emit the fallback value when exception of provided type occurs" in {
-        val mono = Mono.error(new MyCustomException("whatever")).onErrorReturn(classOf[MyCustomException], -1)
-        StepVerifier.create(mono)
-          .expectNext(-1)
-          .verifyComplete()
-      }
-      "with predicate of exception and fallback value will emit the fallback value when predicate exception return true" in {
-        val mono = Mono.error(new MyCustomException("should fallback")).onErrorReturn(t => t.getMessage == "should fallback", -1)
-        StepVerifier.create(mono)
-          .expectNext(-1)
-          .verifyComplete()
-      }
-    }
-
-    ".publish should share share and may transform it and consume it as many times as necessary without causing" +
+    ".publish should share and may transform it and consume it as many times as necessary without causing" +
       "multiple subscription" in {
-      val mono = Mono.just(randomValue).publish[String](ml => ml.map(l => l.toString))
+      val mono = SMono.just(randomValue).publish[String](ml => ml.map(l => l.toString))
 
       val counter = new AtomicLong()
 
@@ -1036,15 +880,14 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
 
     ".repeat" - {
       "should return flux that repeat the value from this mono" in {
-        val flux = Mono.just(randomValue).repeat().take(3)
-        StepVerifier.create(flux)
+        StepVerifier.create(SMono.just(randomValue).repeat().take(3))
           .expectNext(randomValue, randomValue, randomValue)
           .verifyComplete()
       }
       "with boolean predicate should repeat the value from this mono as long as the predicate returns true" in {
         val counter = new AtomicLong()
-        val flux = Mono.just(randomValue)
-          .repeat(() => counter.get() < 3)
+        val flux = SMono.just(randomValue)
+          .repeat(predicate = () => counter.get() < 3)
         val buffer = new LinkedBlockingQueue[Long]()
         val latch = new CountDownLatch(1)
         flux.subscribe(new BaseSubscriber[Long] {
@@ -1064,15 +907,15 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
 
       }
       "with number of repeat should repeat value from this value as many as the provided parameter" in {
-        val flux = Mono.just(randomValue).repeat(5)
-        StepVerifier.create(flux)
+        StepVerifier.create(SMono.just(randomValue).repeat(5))
+          //          this is a bug in https://github.com/reactor/reactor-core/issues/1252. It should only be 5 in total
           .expectNext(randomValue, randomValue, randomValue, randomValue, randomValue, randomValue)
           .verifyComplete()
       }
       "with number of repeat and predicate should repeat value from this value as many as provided parameter and as" +
         "long as the predicate returns true" in {
         val counter = new AtomicLong()
-        val flux = Mono.just(randomValue).repeat(5, () => counter.get() < 3)
+        val flux = SMono.just(randomValue).repeat(5, () => counter.get() < 3)
         val buffer = new LinkedBlockingQueue[Long]()
         val latch = new CountDownLatch(1)
         flux.subscribe(new BaseSubscriber[Long] {
@@ -1093,62 +936,57 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
     }
 
     ".repeatWhen should emit the value of this mono accompanied by the publisher" in {
-      val flux = Mono.just(randomValue).repeatWhen((_: Flux[Long]) => Flux.just[Long](10, 20))
-      StepVerifier.create(flux)
+      StepVerifier.create(SMono.just(randomValue).repeatWhen((_: SFlux[Long]) => SFlux.just[Long](10, 20)))
         .expectNext(randomValue, randomValue, randomValue)
         .verifyComplete()
     }
 
-    //    Is this the right way to test?
     ".repeatWhenEmpty should emit resubscribe to this mono when the companion is empty" in {
-      val mono = Mono.just(1).repeatWhenEmpty((_: Flux[Long]) => Flux.just(-1, -2, -3))
-      StepVerifier.create(mono)
-        .expectNext(1)
+      val counter = new AtomicInteger(0)
+      StepVerifier.create(SMono.empty.doOnSubscribe(_ => counter.incrementAndGet()).repeatWhenEmpty((_: SFlux[Long]) => SFlux.just(-1, -2, -3)))
         .verifyComplete()
+      counter.get() shouldBe 4
     }
 
     ".single" - {
       "should enforce the existence of element" in {
-        val mono = Mono.just(randomValue).single()
-        StepVerifier.create(mono)
+        StepVerifier.create(SMono.just(randomValue).single())
           .expectNext(randomValue)
           .verifyComplete()
       }
       "should throw exception if it is empty" in {
-        val mono = Mono.empty.single()
-        StepVerifier.create(mono)
+        StepVerifier.create(SMono.empty.single())
           .expectError(classOf[NoSuchElementException])
           .verify()
       }
-
     }
 
     ".subscribe" - {
       "without parameter should return Disposable" in {
-        val x = Mono.just(randomValue).subscribe()
+        val x = SMono.just(randomValue).subscribe()
         x shouldBe a[Disposable]
       }
       "with consumer should invoke the consumer" in {
         val counter = new CountDownLatch(1)
-        val disposable = Mono.just(randomValue).subscribe(_ => counter.countDown())
+        val disposable = SMono.just(randomValue).subscribe(_ => counter.countDown())
         disposable shouldBe a[Disposable]
         counter.await(1, TimeUnit.SECONDS) shouldBe true
       }
       "with consumer and error consumer should invoke the error consumer when error happen" in {
         val counter = new CountDownLatch(1)
-        val disposable = Mono.error[Any](new RuntimeException()).subscribe(_ => (), _ => counter.countDown())
+        val disposable = SMono.raiseError[Any](new RuntimeException()).subscribe(_ => (), _ => counter.countDown())
         disposable shouldBe a[Disposable]
         counter.await(1, TimeUnit.SECONDS) shouldBe true
       }
       "with consumer, error consumer and completeConsumer should invoke the completeConsumer when it's complete" in {
         val counter = new CountDownLatch(2)
-        val disposable = Mono.just(randomValue).subscribe(_ => counter.countDown(), _ => (), counter.countDown())
+        val disposable = SMono.just(randomValue).subscribe(_ => counter.countDown(), _ => (), counter.countDown())
         disposable shouldBe a[Disposable]
         counter.await(1, TimeUnit.SECONDS) shouldBe true
       }
       "with consumer, error consumer, completeConsumer and subscriptionConsumer should invoke the subscriptionConsumer when there is subscription" in {
         val counter = new CountDownLatch(3)
-        val disposable = Mono.just(randomValue).subscribe(_ => counter.countDown(), _ => (), counter.countDown(), s => {
+        val disposable = SMono.just(randomValue).subscribe(_ => counter.countDown(), _ => (), counter.countDown(), s => {
           s.request(1)
           counter.countDown()
         })
@@ -1157,41 +995,63 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
       }
     }
 
-    ".tag should call the underlying Mono.tag method" in {
-      val jMono = spy(JMono.just(1))
-      val flux = Mono(jMono)
-      flux.tag("integer", "one")
-      verify(jMono).tag("integer", "one")
+    ".subscribeContext should pass context properly" in {
+      val key = "message"
+      val r: SMono[String] = SMono.just("Hello")
+          .flatMap(s => SMono.subscribeContext()
+          .map(ctx => s"$s ${ctx.get(key)}"))
+          .subscriberContext(ctx => ctx.put(key, "World"))
+
+      StepVerifier.create(r)
+          .expectNext("Hello World")
+          .verifyComplete()
+
+      StepVerifier.create(SMono.just(1).map(i => i + 10),
+        StepVerifierOptions.create().withInitialContext(Context.of("foo", "bar")))
+        .expectAccessibleContext()
+        .contains("foo", "bar")
+        .`then`()
+        .expectNext(11)
+        .verifyComplete()
+    }
+
+    ".switchIfEmpty with alternative will emit the value from alternative Mono when this mono is empty" in {
+      StepVerifier.create(SMono.empty.switchIfEmpty(SMono.just(-1)))
+        .expectNext(-1)
+        .verifyComplete()
+    }
+
+    ".tag should tag the Mono and accessible from Scannable" in {
+      val mono = SMono.just(randomValue).tag("integer", "one, two, three")
+      Scannable.from(Option(mono)).tags shouldBe Stream("integer" -> "one, two, three")
     }
 
     ".take" - {
       "should complete after duration elapse" in {
-        StepVerifier.withVirtualTime(() => Mono.delay(10 seconds).take(5 seconds))
-          .thenAwait(JDuration.ofSeconds(5))
+        StepVerifier.withVirtualTime(() => SMono.delay(10 seconds).take(5 seconds))
+          .thenAwait(5 seconds)
           .verifyComplete()
       }
       "with duration and scheduler should complete after duration elapse" in {
-        StepVerifier.withVirtualTime(() => Mono.delay(10 seconds).take(5 seconds, Schedulers.parallel()))
-          .thenAwait(JDuration.ofSeconds(5))
+        StepVerifier.withVirtualTime(() => SMono.delay(10 seconds).take(5 seconds, Schedulers.parallel()))
+          .thenAwait(5 seconds)
           .verifyComplete()
       }
     }
 
     ".takeUntilOther should complete if the companion publisher emit any signal first" in {
-      StepVerifier.withVirtualTime(() => Mono.delay(10 seconds).takeUntilOther(Mono.just("a")))
+      StepVerifier.withVirtualTime(() => SMono.delay(10 seconds).takeUntilOther(SMono.just("a")))
         .verifyComplete()
     }
 
     ".then" - {
       "without parameter should only replays complete and error signals from this mono" in {
-        val mono = Mono.just(randomValue).`then`()
-        StepVerifier.create(mono)
+        StepVerifier.create(SMono.just(randomValue).`then`())
           .verifyComplete()
       }
       "with other mono should ignore element from this mono and transform its completion signal into emission and " +
         "completion signal of the provided mono" in {
-        val mono = Mono.just(randomValue).`then`(Mono.just("1"))
-        StepVerifier.create(mono)
+        StepVerifier.create(SMono.just(randomValue).`then`(SMono.just("1")))
           .expectNext("1")
           .verifyComplete()
       }
@@ -1199,9 +1059,9 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
 
     ".thenEmpty should complete this mono then for a supplied publisher to also complete" in {
       val latch = new CountDownLatch(1)
-      val mono = Mono.just(randomValue)
+      val mono = SMono.just(randomValue)
         .doOnSuccess(_ => latch.countDown())
-        .thenEmpty(Mono.empty)
+        .thenEmpty(SMono.empty)
       StepVerifier.create(mono)
         .verifyComplete()
       latch.await(1, TimeUnit.SECONDS) shouldBe true
@@ -1210,8 +1070,7 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
     ".thenMany should ignore the element from this mono and transform the completion signal into a Flux that will emit " +
       "from the provided publisher when the publisher is provided " - {
       "directly" in {
-        val flux = Mono.just(randomValue).thenMany(Flux.just(1, 2, 3))
-        StepVerifier.create(flux)
+        StepVerifier.create(SMono.just(randomValue).thenMany(SFlux.just(1, 2, 3)))
           .expectNext(1, 2, 3)
           .verifyComplete()
       }
@@ -1219,40 +1078,40 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
 
     ".timeout" - {
       "should raise TimeoutException after duration elapse" in {
-        StepVerifier.withVirtualTime(() => Mono.delay(10 seconds).timeout(5 seconds))
-          .thenAwait(JDuration.ofSeconds(5))
+        StepVerifier.withVirtualTime(() => SMono.delay(10 seconds).timeout(5 seconds))
+          .thenAwait(5 seconds)
           .expectError(classOf[TimeoutException])
           .verify()
       }
       "should fallback to the provided mono if the value doesn't arrive in given duration" in {
-        StepVerifier.withVirtualTime(() => Mono.delay(10 seconds).timeout(5 seconds, Option(Mono.just(1L))))
+        StepVerifier.withVirtualTime(() => SMono.delay(10 seconds).timeout(5 seconds, Option(SMono.just(1L))))
           .thenAwait(5 seconds)
           .expectNext(1)
           .verifyComplete()
       }
       "with timeout and timer should signal TimeoutException if the item does not arrive before a given period" in {
         val timer = VirtualTimeScheduler.getOrSet()
-        StepVerifier.withVirtualTime(() => Mono.delay(10 seconds).timeout(5 seconds, timer), () => timer, 1)
+        StepVerifier.withVirtualTime(() => SMono.delay(10 seconds).timeout(5 seconds, timer = timer), () => timer, 1)
           .thenAwait(5 seconds)
           .expectError(classOf[TimeoutException])
           .verify()
       }
       "should raise TimeoutException if this mono has not emit value when the provided publisher has emit value" in {
-        val mono = Mono.delay(10 seconds).timeout(Mono.just("whatever"))
+        val mono = SMono.delay(10 seconds).timeoutWhen(SMono.just("whatever"))
         StepVerifier.create(mono)
           .expectError(classOf[TimeoutException])
           .verify()
       }
       "should fallback to the provided fallback mono if this mono does not emit value when the provided publisher emits value" in {
-        val mono = Mono.delay(10 seconds).timeout(Mono.just("whatever"), Mono.just(-1L))
+        val mono = SMono.delay(10 seconds).timeoutWhen(SMono.just("whatever"), Option(SMono.just(-1L)))
         StepVerifier.create(mono)
           .expectNext(-1)
           .verifyComplete()
       }
       "with timeout, fallback and timer should fallback to the given mono if the item does not arrive before a given period" in {
         val timer = VirtualTimeScheduler.getOrSet()
-        StepVerifier.create(Mono.delay(10 seconds, timer)
-          .timeout(5 seconds, Option(Mono.just(-1)), timer), 1)
+        StepVerifier.create(SMono.delay(10 seconds, timer)
+          .timeout(5 seconds, Option(SMono.just(-1)), timer), 1)
           .`then`(() => timer.advanceTimeBy(5 seconds))
           .expectNext(-1)
           .verifyComplete()
@@ -1260,32 +1119,22 @@ class MonoTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wit
     }
 
     ".transform should transform this mono in order to generate a target mono" in {
-      val mono = Mono.just(randomValue).transform(ml => Mono.just(ml.block().toString))
-      StepVerifier.create(mono)
+      StepVerifier.create(SMono.just(randomValue).transform(ml => SMono.just(ml.block().toString)))
         .expectNext(randomValue.toString)
         .verifyComplete()
     }
 
-    ".asJava should convert to java" in {
-      Mono.just(randomValue).asJava() shouldBe a[JMono[_]]
-    }
-
     ".apply should convert to scala" in {
-      val mono = Mono(JMono.just(randomValue))
-      mono shouldBe a[Mono[_]]
+      val mono = SMono(JMono.just(randomValue))
+      mono shouldBe a[SMono[_]]
     }
-  }
-
-
-  private def createMono = {
-    Mono.create[Long](monoSink => monoSink.success(randomValue))
   }
 }
 
-class MonoAsyncTest extends AsyncFreeSpec {
-  "Mono" - {
+class SMonoAsyncTest extends AsyncFreeSpec {
+  "SMono" - {
     ".toFuture should convert this mono to future" in {
-      val future: Future[Int] = Mono.just(1).toFuture
+      val future: Future[Int] = SMono.just(1).toFuture
       future map { v => {
         assert(v == 1)
       }

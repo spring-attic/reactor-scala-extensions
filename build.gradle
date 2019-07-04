@@ -45,7 +45,7 @@ buildscript {
 
     dependencies {
         classpath "gradle.plugin.com.github.maiflai:gradle-scalatest:0.22"
-        classpath "gradle.plugin.org.scoverage:gradle-scoverage:2.3.0"
+        classpath "gradle.plugin.org.scoverage:gradle-scoverage:2.5.0"
         classpath 'net.researchgate:gradle-release:2.7.0'
         classpath 'io.codearte.gradle.nexus:gradle-nexus-staging-plugin:0.11.0'
         classpath 'org.owasp:dependency-check-gradle:3.3.1'
@@ -61,7 +61,7 @@ targetCompatibility = "1.8"
 
 if (!project.parent) {
     apply plugin: 'net.researchgate.release'
-    final svs = ['2.12.6', '2.11.12', '2.13.0-M3']
+    final svs = ['2.12.7', '2.11.12', '2.13.0-M3']
 
     for (sv in svs) {
         String scalaVersionInDot = sv.replaceAll("_", ".")
@@ -203,7 +203,7 @@ ScalaCompileOptions.metaClass.useAnt = false
 ScalaCompileOptions.metaClass.useCompileDaemon = false
 
 project.tasks.scaladoc.scalaDocOptions.additionalParameters = ["-no-link-warnings"]
-project.tasks.compileScala.scalaCompileOptions.additionalParameters = ["-target:jvm-1.8"]
+project.tasks.compileScala.scalaCompileOptions.additionalParameters = ["-target:jvm-1.8", "-feature"]
 project.tasks.compileTestScala.scalaCompileOptions.additionalParameters = ["-target:jvm-1.8"]
 
 release {

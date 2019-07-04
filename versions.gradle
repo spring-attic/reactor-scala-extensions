@@ -1,5 +1,5 @@
 ext.defaultScala_2_11_Version = '2.11.12'
-ext.defaultScala_2_12_Version = '2.12.6'
+ext.defaultScala_2_12_Version = '2.12.8'
 
 if (!hasProperty('scalaVersion')) {
     ext.scalaVersion = ext.defaultScala_2_12_Version
@@ -19,15 +19,13 @@ ext {
     logbackVersion      = "1.3.0-alpha4"
     mockitoVersion      = "2.21.0"
     pegdownVersion      = "1.6.0"
-    reactorVersion      = "3.1.8.RELEASE"
+    reactorVersion      = "3.2.9.RELEASE"
     scalaLoggingVersion = "3.9.0"
     scalatestVersion    = "3.0.5-M1"
     scoverageVersion    = "1.4.0-M3"
 }
 
 ext.libraries = [
-        bytebuddy           : "net.bytebuddy:byte-buddy:$bytebuddyVersion",
-        bytebuddyAgent      : "net.bytebuddy:byte-buddy-agent:$bytebuddyVersion",
         findbugs            : "com.google.code.findbugs:jsr305:$findBugsVersion",
         logback             : "ch.qos.logback:logback-classic:$logbackVersion",
         mockitoInline       : "org.mockito:mockito-inline:$mockitoVersion",

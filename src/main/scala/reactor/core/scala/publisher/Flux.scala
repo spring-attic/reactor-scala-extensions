@@ -3,17 +3,16 @@ package reactor.core.scala.publisher
 import java.lang.{Boolean => JBoolean, Iterable => JIterable, Long => JLong}
 import java.util
 import java.util.concurrent.{Callable, TimeUnit}
-import java.util.function.{BiFunction, Consumer, Function, Predicate, Supplier}
+import java.util.function.{BiFunction, Consumer, Function, Supplier}
 import java.util.logging.Level
 import java.util.{Comparator, stream, List => JList}
 
 import org.reactivestreams.{Publisher, Subscriber, Subscription}
-import reactor.core
-import reactor.core.{Disposable, Scannable => JScannable}
 import reactor.core.publisher.FluxSink.OverflowStrategy
 import reactor.core.publisher.{BufferOverflowStrategy, FluxSink, Signal, SignalType, SynchronousSink, Flux => JFlux, GroupedFlux => JGroupedFlux}
 import reactor.core.scala.Scannable
 import reactor.core.scheduler.{Scheduler, Schedulers}
+import reactor.core.{Disposable, Scannable => JScannable}
 import reactor.util.Logger
 import reactor.util.context.Context
 import reactor.util.function.Tuple2
@@ -43,7 +42,9 @@ import scala.concurrent.duration.Duration
   *
   * @tparam T the element type of this Reactive Streams [[Publisher]]
   * @see [[Mono]]
+  * @deprecated Use [[SFlux]]
   */
+@deprecated(message = "This class is deprecated. Use SFlux", since = "0.4.0")
 class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T])
   extends Publisher[T] with MapablePublisher[T] with OnErrorReturn[T] with FluxLike[T] with Filter [T] with Scannable {
 
@@ -1950,7 +1951,7 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T])
     * @return a new unaltered [[Flux]]
     */
   //  TODO: How to test?
-  final def log() = Flux(jFlux.log())
+  final def log(): Flux[T] = Flux.from(new ReactiveSFlux[T](jFlux).log())
 
   /**
     * Observe all Reactive Streams signals and use [[Logger]] support to handle trace implementation. Default will
@@ -3310,7 +3311,7 @@ class Flux[T] private[publisher](private[publisher] val jFlux: JFlux[T])
     * @param alternate the alternate publisher if this sequence is empty
     * @return an alternating [[Flux]] on source onComplete without elements
     */
-  final def switchIfEmpty(alternate: Publisher[_ <: T]) = Flux(jFlux.switchIfEmpty(alternate))
+  final def switchIfEmpty(alternate: Publisher[_ <: T]): Flux[T] = Flux.from(new ReactiveSFlux[T](jFlux).switchIfEmpty(alternate))
 
   /**
     * Switch to a new [[Publisher]] generated via a `Function` whenever this [[Flux]] produces an item.
