@@ -144,9 +144,34 @@ publishing {
     publications {
         MyPublication(MavenPublication) {
             from components.java
+            artifact sourcesJar
+            artifact javadocJar
             groupId "${project.group}"
             artifactId "${project.archivesBaseName}"
             version "${project.version}"
+            pom {
+                name = "reactor-scala-extensions"
+                description = "Reactor Scala Extensions"
+                url = "https://github.com/reactor/reactor-scala-extensions"
+                licenses {
+                    license {
+                        name = "Apache License"
+                        url = "https://github.com/reactor/reactor-scala-extensions/blob/master/LICENSE"
+                    }
+                }
+                developers {
+                    developer {
+                        id = "sinwe"
+                        name = "Winarto Zhao"
+                        email = "winarto@gmail.com"
+                    }
+                }
+                scm {
+                    connection = "scm:git:https://github.com/reactor/reactor-scala-extensions.git"
+                    developerConnection = "scm:git:https://github.com/reactor/reactor-scala-extensions.git"
+                    url = "https://github.com/reactor/reactor-scala-extensions.git"
+                }
+            }
         }
     }
 }
