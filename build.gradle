@@ -145,7 +145,7 @@ publishing {
         MyPublication(MavenPublication) {
             from components.java
             artifact sourcesJar
-            artifact javadocJar
+            artifact scaladocJar
             groupId "${project.group}"
             artifactId "${project.archivesBaseName}"
             version "${project.version}"
