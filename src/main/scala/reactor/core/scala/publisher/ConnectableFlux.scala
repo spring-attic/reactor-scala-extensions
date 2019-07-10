@@ -6,7 +6,7 @@ import reactor.core.scheduler.Scheduler
 
 import scala.concurrent.duration.Duration
 
-class ConnectableFlux[T]private (private val jConnectableFlux: JConnectableFlux[T]) extends Flux[T](jConnectableFlux) {
+class ConnectableFlux[T]private (private val jConnectableFlux: JConnectableFlux[T]) extends SFlux[T] {
 
   /**
     * Connects this [[ConnectableFlux]] to the upstream source when the first [[org.reactivestreams.Subscriber]]
@@ -15,9 +15,9 @@ class ConnectableFlux[T]private (private val jConnectableFlux: JConnectableFlux[
     * <p>
     * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/autoconnect.png" alt="">
     *
-    * @return a [[Flux]] that connects to the upstream source when the first [[org.reactivestreams.Subscriber]] subscribes
+    * @return a [[SFlux]] that connects to the upstream source when the first [[org.reactivestreams.Subscriber]] subscribes
     */
-  final def autoConnect() = Flux(jConnectableFlux.autoConnect())
+  final def autoConnect(): SFlux[T] = SFlux.fromPublisher(jConnectableFlux.autoConnect())
 
   /**
     * Connects this [[ConnectableFlux]] to the upstream source when the specified amount of
@@ -30,9 +30,9 @@ class ConnectableFlux[T]private (private val jConnectableFlux: JConnectableFlux[
     * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/autoconnect.png" alt="">
     *
     * @param minSubscribers the minimum number of subscribers
-    * @return a [[Flux]] that connects to the upstream source when the given amount of Subscribers subscribe
+    * @return a [[SFlux]] that connects to the upstream source when the given amount of Subscribers subscribe
     */
-  final def autoConnect(minSubscribers: Int) = Flux(jConnectableFlux.autoConnect(minSubscribers))
+  final def autoConnect(minSubscribers: Int): SFlux[T] = SFlux.fromPublisher(jConnectableFlux.autoConnect(minSubscribers))
 
   /**
     * Connects this [[ConnectableFlux]] to the upstream source when the specified amount of
@@ -45,7 +45,7 @@ class ConnectableFlux[T]private (private val jConnectableFlux: JConnectableFlux[
     *                                                                  <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/autoconnect.png" alt="">
     * @return a { @link Flux} that connects to the upstream source when the given amount of subscribers subscribed
     */
-  final def autoConnect(minSubscribers: Int, cancelSupport: Disposable => Unit) = Flux(jConnectableFlux.autoConnect(minSubscribers, cancelSupport))
+  final def autoConnect(minSubscribers: Int, cancelSupport: Disposable => Unit): SFlux[T] = SFlux.fromPublisher(jConnectableFlux.autoConnect(minSubscribers, cancelSupport))
 
   /**
     * Connect this [[ConnectableFlux]] to its source and return a [[Runnable]] that
@@ -75,9 +75,9 @@ class ConnectableFlux[T]private (private val jConnectableFlux: JConnectableFlux[
     * <p>
     * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/refCount.png" alt="">
     *
-    * @return a reference counting [[Flux]]
+    * @return a reference counting [[SFlux]]
     */
-  final def refCount() = Flux(jConnectableFlux.refCount())
+  final def refCount() = SFlux.fromPublisher(jConnectableFlux.refCount())
 
   /**
     * Connects to the upstream source when the given number of [[org.reactivestreams.Subscriber]] subscribes and disconnects
@@ -87,9 +87,9 @@ class ConnectableFlux[T]private (private val jConnectableFlux: JConnectableFlux[
     * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/refCount.png" alt="">
     *
     * @param minSubscribers the number of subscribers expected to subscribe before connection
-    * @return a reference counting [[Flux]]
+    * @return a reference counting [[SFlux]]
     */
-  final def refCount(minSubscribers: Int) = Flux(jConnectableFlux.refCount(minSubscribers))
+  final def refCount(minSubscribers: Int) = SFlux.fromPublisher(jConnectableFlux.refCount(minSubscribers))
 
   /**
     * Connects to the upstream source when the given number of [[org.reactivestreams.Subscriber]] subscribes.
@@ -104,9 +104,9 @@ class ConnectableFlux[T]private (private val jConnectableFlux: JConnectableFlux[
     * @param minSubscribers the number of subscribers expected to subscribe before connection
     * @param gracePeriod    the [[Duration]] for which to wait for new subscribers before actually
     *                                   disconnecting when all subscribers have cancelled.
-    * @return a reference counting [[Flux]] with a grace period for disconnection
+    * @return a reference counting [[SFlux]] with a grace period for disconnection
     */
-  final def refCount(minSubscribers: Int, gracePeriod: Duration) = Flux(jConnectableFlux.refCount(minSubscribers, gracePeriod))
+  final def refCount(minSubscribers: Int, gracePeriod: Duration): SFlux[T] = SFlux.fromPublisher(jConnectableFlux.refCount(minSubscribers, gracePeriod))
 
   /**
     * Connects to the upstream source when the given number of [[org.reactivestreams.Subscriber]] subscribes.
@@ -122,9 +122,11 @@ class ConnectableFlux[T]private (private val jConnectableFlux: JConnectableFlux[
     * @param gracePeriod    the [[Duration]] for which to wait for new subscribers before actually
     *                                   disconnecting when all subscribers have cancelled.
     * @param scheduler the [[Scheduler]] on which to run timeouts
-    * @return a reference counting [[Flux]] with a grace period for disconnection
+    * @return a reference counting [[reactor.core.publisher.Flux]] with a grace period for disconnection
     */
-  final def refCount(minSubscribers: Int, gracePeriod: Duration, scheduler: Scheduler) = Flux(jConnectableFlux.refCount(minSubscribers, gracePeriod, scheduler))
+  final def refCount(minSubscribers: Int, gracePeriod: Duration, scheduler: Scheduler): SFlux[T] = SFlux.fromPublisher(jConnectableFlux.refCount(minSubscribers, gracePeriod, scheduler))
+
+  override private[publisher] def coreFlux: JConnectableFlux[T] = jConnectableFlux
 }
 
 object ConnectableFlux {

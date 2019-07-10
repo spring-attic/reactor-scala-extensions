@@ -13,7 +13,7 @@ import reactor.core.publisher.{UnicastProcessor => JUnicastProcessor}
   *
   * @tparam T the input and output type
   */
-class UnicastProcessor[T](val jUnicastProcessor: JUnicastProcessor[T]) extends Flux[T](jUnicastProcessor) with FluxProcessor[T, T] {
+class UnicastProcessor[T](val jUnicastProcessor: JUnicastProcessor[T]) extends SFlux[T] with FluxProcessor[T, T] {
 
   override def onComplete(): Unit = jUnicastProcessor.onComplete()
 
@@ -26,6 +26,8 @@ class UnicastProcessor[T](val jUnicastProcessor: JUnicastProcessor[T]) extends F
   override protected def jFluxProcessor: publisher.FluxProcessor[T, T] = jUnicastProcessor
 
   override def jScannable: Scannable = jFluxProcessor
+
+  override private[publisher] def coreFlux = jUnicastProcessor
 }
 
 object UnicastProcessor {

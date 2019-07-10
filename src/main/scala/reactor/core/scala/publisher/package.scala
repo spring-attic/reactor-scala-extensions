@@ -98,9 +98,9 @@ package object publisher {
 
   implicit def mappableJLong2MappableLong(mappableJLong: MapablePublisher[JLong]): MapablePublisher[Long] = mappableJLong.map(Long2long(_: JLong))
 
-  implicit def fluxTToU2JFluxTToU[T, U](fluxTToU: Flux[T] => U): Function[JFlux[T], U] = {
+  implicit def fluxTToU2JFluxTToU[T, U](fluxTToU: SFlux[T] => U): Function[JFlux[T], U] = {
     new Function[JFlux[T], U] {
-      override def apply(t: JFlux[T]): U = fluxTToU(Flux.from(t))
+      override def apply(t: JFlux[T]): U = fluxTToU(SFlux.fromPublisher(t))
     }
   }
 
@@ -110,19 +110,13 @@ package object publisher {
     }
   }
 
-  implicit def scalaFunctionTToMonoR2JavaFunctionTToJMonoR[T, R](function: T => Mono[R]): Function[T, JMono[_ <: R]] = {
+  implicit def scalaFunctionTToMonoR2JavaFunctionTToJMonoR[T, R](function: T => SMono[R]): Function[T, JMono[_ <: R]] = {
     new Function[T, JMono[_ <: R]] {
       override def apply(t: T): JMono[R] = function(t).asJava()
     }
   }
 
   implicit def scalaSupplierSMonoR2JavaSupplierJMonoR[R](supplier: () => SMono[R]): Supplier[JMono[R]] = {
-    new Supplier[JMono[R]] {
-      override def get(): JMono[R] = supplier().asJava()
-    }
-  }
-
-  implicit def scalaSupplierMonoR2JavaSupplierJMonoR[R](supplier: () => Mono[R]): Supplier[JMono[R]] = {
     new Supplier[JMono[R]] {
       override def get(): JMono[R] = supplier().asJava()
     }
@@ -155,7 +149,7 @@ package object publisher {
   }
 
   implicit def scalaBiPredicate2JavaBiPredicate[T, U](scalaBiPredicate: (T, U) => Boolean): BiPredicate[T, U] = new BiPredicate[T, U] {
-    override def test(t: T, u: U) = scalaBiPredicate(t, u)
+    override def test(t: T, u: U): Boolean = scalaBiPredicate(t, u)
   }
 
   implicit def javaOptional2ScalaOption[T](jOptional: Optional[T]): Option[T] = if(jOptional.isPresent) Some(jOptional.get()) else None

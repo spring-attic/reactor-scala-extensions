@@ -9,7 +9,7 @@ import reactor.core.publisher.{ParallelFlux => JParallelFlux}
 import reactor.core.scheduler.Scheduler
 import reactor.util.concurrent.Queues
 
-class SParallelFlux[T] private(private val jParallelFlux: JParallelFlux[T]) extends Publisher[T]{
+class SParallelFlux[T] private(private val jParallelFlux: JParallelFlux[T]) extends Publisher[T] with ScalaConverters {
 
   /**
     * Perform a fluent transformation to a value via a converter function which receives
@@ -55,7 +55,7 @@ class SParallelFlux[T] private(private val jParallelFlux: JParallelFlux[T]) exte
     * @return the new Mono instance emitting the reduced value or empty if the
     *         [[SParallelFlux]] was empty
     */
-  final def reduce(reducer: (T, T) => T) = Mono(jParallelFlux.reduce(reducer))
+  final def reduce(reducer: (T, T) => T):SMono[T] = jParallelFlux.reduce(reducer).asScala
 
   /**
     * Reduces all values within a 'rail' to a single value (with a possibly different
@@ -104,7 +104,7 @@ class SParallelFlux[T] private(private val jParallelFlux: JParallelFlux[T]) exte
     * @param prefetch the prefetch amount to use for each rail
     * @return the new Flux instance
     */
-  final def sequential(prefetch: Int = Queues.SMALL_BUFFER_SIZE) = Flux(jParallelFlux.sequential(prefetch))
+  final def sequential(prefetch: Int = Queues.SMALL_BUFFER_SIZE): SFlux[T] = jParallelFlux.sequential(prefetch).asScala
 
   /**
     * Subscribes to this [[SParallelFlux]] by providing an onNext, onError,
@@ -139,10 +139,10 @@ class SParallelFlux[T] private(private val jParallelFlux: JParallelFlux[T]) exte
                       }
 
   /**
-    * Merge the rails into a [[Flux.sequential]] Flux and
-    * [[Flux#subscribe(Subscriber) subscribe]] to said Flux.
+    * Merge the rails into a [[SFlux.sequential]] Flux and
+    * [[SFlux#subscribe(Subscriber) subscribe]] to said Flux.
     *
-    * @param s the subscriber to use on [[#sequential()]] Flux
+    * @param s the subscriber to use on [[SParallelFlux#sequential()]] Flux
     */
   override def subscribe(s: Subscriber[_ >: T]): Unit = jParallelFlux.subscribe(s)
 

@@ -10,11 +10,11 @@ import org.scalatest.{AsyncFreeSpec, FreeSpec, Matchers}
 import reactor.core.Disposable
 import reactor.core.publisher.{BaseSubscriber, Signal, SynchronousSink, Mono => JMono}
 import reactor.core.scala.Scannable
-import reactor.core.scala.publisher.Mono.just
+import reactor.core.scala.publisher.SMono.just
 import reactor.core.scala.publisher.ScalaConverters._
 import reactor.core.scheduler.{Scheduler, Schedulers}
-import reactor.test.{StepVerifier, StepVerifierOptions}
 import reactor.test.scheduler.VirtualTimeScheduler
+import reactor.test.{StepVerifier, StepVerifierOptions}
 import reactor.util.context.Context
 
 import scala.concurrent.Future
@@ -62,7 +62,7 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport {
 
     ".empty " - {
       "without source should create an empty Mono" in {
-        StepVerifier.create(Mono.empty)
+        StepVerifier.create(SMono.empty)
           .verifyComplete()
       }
     }
@@ -92,7 +92,7 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport {
       }
 
       "source direct should return mono of the source" in {
-        StepVerifier.create(SMono.fromDirect(Flux.just(1, 2, 3)))
+        StepVerifier.create(SMono.fromDirect(SFlux.just(1, 2, 3)))
           .expectNext(1, 2, 3)
           .verifyComplete()
       }
@@ -606,7 +606,7 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport {
 
     ".elapsed" - {
       "should provide the time elapse when this mono emit value" in {
-        StepVerifier.withVirtualTime(() => SMono.just(randomValue).delaySubscription(1 second).elapsed(), 1)
+        StepVerifier.withVirtualTime(scalaSupplierSMonoR2JavaSupplierJMonoR(() => SMono.just[Long](randomValue).delaySubscription(1 second).elapsed()), 1)
           .thenAwait(1 second)
           .expectNextMatches((t: (Long, Long)) => t match {
             case (time, data) => time >= 1000 && data == randomValue
@@ -665,7 +665,7 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport {
     }
 
     ".flatMap should flatmap the provided mono" in {
-      StepVerifier.create(Mono.just(randomValue).flatMap(l => Mono.just(l.toString)))
+      StepVerifier.create(SMono.just(randomValue).flatMap(l => SMono.just(l.toString)))
         .expectNext(randomValue.toString)
         .verifyComplete()
     }

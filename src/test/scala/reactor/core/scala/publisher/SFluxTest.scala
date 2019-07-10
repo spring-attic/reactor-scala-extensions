@@ -73,7 +73,7 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
 
     ".concat" - {
       "with varargs of publisher should concatenate the underlying publisher" in {
-        val flux = SFlux.concat(Flux.just(1, 2, 3), Mono.just(3), Flux.just(3, 4))
+        val flux = SFlux.concat(SFlux.just(1, 2, 3), Mono.just(3), SFlux.just(3, 4))
         StepVerifier.create(flux)
           .expectNext(1, 2, 3, 3, 3, 4)
           .verifyComplete()
@@ -114,7 +114,7 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
 
     ".firstEmitter" - {
       "with varargs of publisher should create Flux based on the publisher that emit first onNext or onComplete or onError" in {
-        val flux: SFlux[Long] = SFlux.firstEmitter(Mono.delay(Duration("10 seconds")), Mono.just[Long](1L))
+        val flux: SFlux[Long] = SFlux.firstEmitter(SMono.delay(Duration("10 seconds")), Mono.just[Long](1L))
         StepVerifier.create(flux)
           .expectNext(1)
           .verifyComplete()
@@ -222,7 +222,7 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
           .verifyComplete()
       }
       "with one element should emit value from provided data" in {
-        val flux = Flux.just[Int](1)
+        val flux = SFlux.just[Int](1)
         StepVerifier.create(flux)
           .expectNext(1)
           .verifyComplete()
@@ -298,7 +298,7 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
       "with throwable and whenRequest flag should" - {
         "emit onError during onSubscribe if the flag is false" in {
           val flag = new AtomicBoolean(false)
-          val flux = SFlux.raiseError(new RuntimeException())
+          val flux = SFlux.raiseError(new RuntimeException("Error message"))
             .doOnRequest(_ => flag.compareAndSet(false, true))
           Try(flux.subscribe(new BaseSubscriber[Long] {
             override def hookOnSubscribe(subscription: Subscription): Unit = {
@@ -493,7 +493,7 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
           .verifyComplete()
       }
       "with maxSize and skip" - {
-        val originalFlux = Flux.just(1, 2, 3, 4, 5)
+        val originalFlux = SFlux.just(1, 2, 3, 4, 5)
         val data = Table(
           ("scenario", "maxSize", "skip", "expectedSequence"),
           ("maxSize < skip", 2, 3, Iterable(ListBuffer(1, 2), ListBuffer(4, 5))),
@@ -502,7 +502,7 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
         )
         forAll(data) { (scenario, maxSize, skip, expectedSequence) => {
           s"when $scenario" in {
-            val flux = originalFlux.buffer(maxSize, skip)
+            val flux = originalFlux.buffer(maxSize)(skip)
             StepVerifier.create(flux)
               .expectNextSequence(expectedSequence)
               .verifyComplete()
@@ -520,13 +520,13 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
         forAll(data) { (scenario, maxSize, skip, expectedSequence) => {
           val iterator = expectedSequence.iterator
           s"when $scenario" in {
-            val originalFlux = Flux.just(1, 2, 3, 4, 5)
+            val originalFlux = SFlux.just(1, 2, 3, 4, 5)
             val seqSet = mutable.Set[mutable.ListBuffer[Int]]()
-            val flux = originalFlux.buffer(maxSize, skip, () => {
+            val flux = originalFlux.buffer(maxSize, () => {
               val seq = mutable.ListBuffer[Int]()
               seqSet += seq
               seq
-            })
+            })(skip)
             StepVerifier.create(flux)
               .expectNextMatches((seq: Seq[Int]) => {
                 seq shouldBe iterator.next()
@@ -570,14 +570,14 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
         }
       }
       "with other publisher should split the incoming value" in {
-        StepVerifier.withVirtualTime(() => Flux.just(1, 2, 3, 4, 5, 6, 7, 8).delayElements(1 second).buffer(Flux.interval(3 seconds)))
+        StepVerifier.withVirtualTime(() => SFlux.just(1, 2, 3, 4, 5, 6, 7, 8).delayElements(1 second).bufferPublisher(SFlux.interval(3 seconds)))
           .thenAwait(9 seconds)
           .expectNext(Seq(1, 2), Seq(3, 4, 5), Seq(6, 7, 8))
           .verifyComplete()
       }
       "with other publisher and buffer supplier" in {
         val buffer = ListBuffer.empty[ListBuffer[Int]]
-        StepVerifier.withVirtualTime(() => Flux.just(1, 2, 3, 4, 5, 6, 7, 8).delayElements(1 second).buffer(Flux.interval(3 seconds), () => {
+        StepVerifier.withVirtualTime(() => SFlux.just(1, 2, 3, 4, 5, 6, 7, 8).delayElements(1 second).bufferPublisher(SFlux.interval(3 seconds), () => {
           val buff = ListBuffer.empty[Int]
           buffer += buff
           buff
@@ -616,7 +616,7 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
     ".bufferWhen" - {
       "should buffer with opening and closing publisher" in {
         StepVerifier.withVirtualTime(() => SFlux.just(1, 2, 3, 4, 5, 6, 7, 8, 9).delayElements(1 second)
-          .bufferWhen(Flux.interval(3 seconds), (_: Long) => SFlux.interval(3 seconds)))
+          .bufferWhen(SFlux.interval(3 seconds), (_: Long) => SFlux.interval(3 seconds)))
           .thenAwait(9 seconds)
           .expectNext(Seq(3, 4, 5), Seq(6, 7, 8), Seq(9))
           .verifyComplete()
@@ -762,7 +762,7 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
     }
 
     ".compose should defer transformation of this flux to another publisher" in {
-      StepVerifier.create(SFlux.just(1, 2, 3).compose(Mono.from))
+      StepVerifier.create(SFlux.just(1, 2, 3).compose(SMono.fromPublisher))
         .expectNext(1)
         .verifyComplete()
     }
@@ -997,7 +997,7 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
 
     ".doOnSubscribe should be called upon subscribe" in {
       val atomicBoolean = new AtomicBoolean(false)
-      StepVerifier.create(Flux.just[Long](1L)
+      StepVerifier.create(SFlux.just[Long](1L)
         .doOnSubscribe(_ => atomicBoolean.compareAndSet(false, true)))
         .expectNextCount(1)
         .verifyComplete()
@@ -1170,8 +1170,8 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
       }
       "with delayError should respect whether error be delayed after current merge backlog" in {
         StepVerifier.create(SFlux.just(1, 2, 3).flatMapSequential(i => {
-          if (i == 2) Flux.error[Int](new RuntimeException("just an error"))
-          else Flux.just(i * 2, i * 3)
+          if (i == 2) SFlux.raiseError[Int](new RuntimeException("just an error"))
+          else SFlux.just(i * 2, i * 3)
         }, 2, 2, delayError = true))
           .expectNext(2, 3, 6, 9)
           .verifyError(classOf[RuntimeException])
@@ -1778,7 +1778,7 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
           .verifyComplete()
       }
       "with publisher should prepend the flux with the provided publisher" in {
-        StepVerifier.create(SFlux.just(1, 2, 3).startWith(Flux.just(10, 20, 30)))
+        StepVerifier.create(SFlux.just(1, 2, 3).startWith(SFlux.just(10, 20, 30)))
           .expectNext(10, 20, 30, 1, 2, 3)
           .verifyComplete()
       }
@@ -1798,7 +1798,7 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
 
     ".switchMap" - {
       "with function should switch to the new publisher" in {
-        StepVerifier.create(SFlux.just(1, 2, 3).switchMap(i => Flux.just(i * 10, i * 20)))
+        StepVerifier.create(SFlux.just(1, 2, 3).switchMap(i => SFlux.just(i * 10, i * 20)))
           .expectNext(10, 20, 20, 40, 30, 60)
           .verifyComplete()
       }
@@ -1869,7 +1869,7 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
     }
 
     ".thenEmpty should wait for this to complete and then for the supplied publisher to complete" in {
-      StepVerifier.create(SFlux.just(1, 2, 3).thenEmpty(Mono.empty))
+      StepVerifier.create(SFlux.just(1, 2, 3).thenEmpty(SMono.empty))
         .verifyComplete()
     }
 
@@ -1937,7 +1937,7 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
     }
 
     ".transform should defer transformation of this flux to another publisher" in {
-      StepVerifier.create(SFlux.just(1, 2, 3).transform(Mono.from))
+      StepVerifier.create(SFlux.just(1, 2, 3).transform(SMono.fromPublisher))
         .expectNext(1)
         .verifyComplete()
     }
@@ -1986,7 +1986,7 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
     }
 
     ".zipWithTimeSinceSubscribe should emit tuple2 with the second element as the time taken to emit since subscription in milliseconds" in {
-      StepVerifier.withVirtualTime(() => Flux.just(1, 2, 3).delayElements(1 second).zipWithTimeSinceSubscribe())
+      StepVerifier.withVirtualTime(() => SFlux.just(1, 2, 3).delayElements(1 second).zipWithTimeSinceSubscribe())
         .thenAwait(3 seconds)
         .expectNext((1, 1000l), (2, 2000l), (3, 3000l))
         .verifyComplete()
