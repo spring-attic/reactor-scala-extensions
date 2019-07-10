@@ -353,8 +353,6 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] with ScalaCo
 
   final def startWith(publisher: Publisher[_ <: T]): SFlux[T] = coreFlux.startWith(publisher).asScala
 
-  final def subscribe(): Disposable = coreFlux.subscribe()
-
   override def subscribe(s: Subscriber[_ >: T]): Unit = coreFlux.subscribe(s)
 
   /**
@@ -369,9 +367,13 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] with ScalaCo
     * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/subscribe.png" alt="">
     *
     * @param consumer the consumer to invoke on each value
+    * @param errorConsumer the consumer to invoke on error signal
+    * @param completeConsumer the consumer to invoke on complete signal
     * @return a new [[Disposable]] to dispose the [[org.reactivestreams.Subscription]]
     */
-  final def subscribe(consumer: T => Unit): Disposable = coreFlux.subscribe(consumer)
+  final def subscribe(consumer: Option[T => Unit] = None,
+                      errorConsumer: Option[Throwable => Unit] = None,
+                      completeConsumer: Option[Runnable] = None): Disposable = coreFlux.subscribe(consumer.orNull[T => Unit], errorConsumer.orNull[Throwable => Unit], completeConsumer.orNull)
 
   /**
     * Provide an alternative if this sequence is completed without any data

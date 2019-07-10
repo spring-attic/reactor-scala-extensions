@@ -55,7 +55,7 @@ package object publisher {
 
   implicit def scalaConsumer2JConsumer[T](sc: SConsumer[T]): Consumer[T] = {
     new Consumer[T] {
-      override def accept(t: T): Unit = sc(t)
+      override def accept(t: T): Unit = Option(sc).foreach(x => x(t))
     }
   }
 

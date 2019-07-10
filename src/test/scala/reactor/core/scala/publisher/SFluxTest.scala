@@ -675,7 +675,7 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
 
       }
       "with history and ttl should retain the cache up to ttl and max history" in {
-        val supplier = () => {
+        val supplier: () => SFlux[Int] = () => {
           val tested = SFlux.just(1, 2, 3).cache(2, 10 seconds)
           tested.subscribe()
           tested
@@ -1204,13 +1204,13 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
         })
           .expectNextMatches(new Predicate[GroupedFlux[String, Int]] {
             override def test(t: GroupedFlux[String, Int]): Boolean = {
-              t.subscribe(oddBuffer += _)
+              t.subscribe(Option((x: Int) => oddBuffer append x))
               t.key() == "odd"
             }
           })
           .expectNextMatches(new Predicate[GroupedFlux[String, Int]] {
             override def test(t: GroupedFlux[String, Int]): Boolean = {
-              t.subscribe(evenBuffer += _)
+              t.subscribe(Option((x: Int) => evenBuffer append x))
               t.key() == "even"
             }
           })
@@ -1229,13 +1229,13 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
         }: Int => String, identity, 6))
           .expectNextMatches(new Predicate[GroupedFlux[String, Int]] {
             override def test(t: GroupedFlux[String, Int]): Boolean = {
-              t.subscribe(oddBuffer += _)
+              t.subscribe(Option((x: Int) => oddBuffer append x))
               t.key() == "odd"
             }
           })
           .expectNextMatches(new Predicate[GroupedFlux[String, Int]] {
             override def test(t: GroupedFlux[String, Int]): Boolean = {
-              t.subscribe(evenBuffer += _)
+              t.subscribe(Option((x: Int) => evenBuffer append x))
               t.key() == "even"
             }
           })
@@ -1255,13 +1255,13 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
         }: Int => String, (i => i.toString): Int => String))
           .expectNextMatches(new Predicate[GroupedFlux[String, String]] {
             override def test(t: GroupedFlux[String, String]): Boolean = {
-              t.subscribe(oddBuffer += _)
+              t.subscribe(Option((x: String) => oddBuffer append x))
               t.key() == "odd"
             }
           })
           .expectNextMatches(new Predicate[GroupedFlux[String, String]] {
             override def test(t: GroupedFlux[String, String]): Boolean = {
-              t.subscribe(evenBuffer += _)
+              t.subscribe(Option((x: String) => evenBuffer append x))
               t.key() == "even"
             }
           })
@@ -1281,13 +1281,13 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
         }: Int => String, (i => i.toString): Int => String, 6))
           .expectNextMatches(new Predicate[GroupedFlux[String, String]] {
             override def test(t: GroupedFlux[String, String]): Boolean = {
-              t.subscribe(oddBuffer += _)
+              t.subscribe(Option((x: String) => oddBuffer append x))
               t.key() == "odd"
             }
           })
           .expectNextMatches(new Predicate[GroupedFlux[String, String]] {
             override def test(t: GroupedFlux[String, String]): Boolean = {
-              t.subscribe(evenBuffer += _)
+              t.subscribe(Option((x: String) => evenBuffer append x))
               t.key() == "even"
             }
           })
