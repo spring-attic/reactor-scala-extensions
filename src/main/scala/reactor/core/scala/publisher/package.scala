@@ -55,7 +55,7 @@ package object publisher {
 
   implicit def scalaConsumer2JConsumer[T](sc: SConsumer[T]): Consumer[T] = {
     new Consumer[T] {
-      override def accept(t: T): Unit = sc(t)
+      override def accept(t: T): Unit = Option(sc).foreach(x => x(t))
     }
   }
 
@@ -122,12 +122,6 @@ package object publisher {
     }
   }
 
-  implicit def scalaSupplierMonoR2JavaSupplierJMonoR[R](supplier: () => SMono[R]): Supplier[JMono[R]] = {
-    new Supplier[JMono[R]] {
-      override def get(): JMono[R] = supplier().asJava()
-    }
-  }
-
   implicit def publisherUnit2PublisherVoid(publisher: MapablePublisher[Unit]): Publisher[Void] = {
     publisher.map[Void](_ => null: Void)
   }
@@ -155,7 +149,7 @@ package object publisher {
   }
 
   implicit def scalaBiPredicate2JavaBiPredicate[T, U](scalaBiPredicate: (T, U) => Boolean): BiPredicate[T, U] = new BiPredicate[T, U] {
-    override def test(t: T, u: U) = scalaBiPredicate(t, u)
+    override def test(t: T, u: U): Boolean = scalaBiPredicate(t, u)
   }
 
   implicit def javaOptional2ScalaOption[T](jOptional: Optional[T]): Option[T] = if(jOptional.isPresent) Some(jOptional.get()) else None

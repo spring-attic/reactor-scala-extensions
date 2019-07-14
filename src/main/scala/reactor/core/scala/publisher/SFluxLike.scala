@@ -10,7 +10,7 @@ import reactor.util.concurrent.Queues.XS_BUFFER_SIZE
 
 import scala.language.higherKinds
 
-trait SFluxLike[T, Self[U] <: SFluxLike[U, Self]] {
+trait SFluxLike[T, Self[U] <: SFluxLike[U, Self]] extends ScalaConverters {
   self: Self[T] =>
 
   final def collect[E](containerSupplier: () => E, collector: (E, T) => Unit): SMono[E] = new ReactiveSMono[E](coreFlux.collect(containerSupplier, collector: JBiConsumer[E, T]))
@@ -56,13 +56,13 @@ trait SFluxLike[T, Self[U] <: SFluxLike[U, Self]] {
     val predicate = new Function[Throwable, Publisher[_ <: U]] {
       override def apply(t: Throwable): Publisher[_ <: U] = fallback(t)
     }
-    val x: SFlux[T] = SFlux.fromPublisher(coreFlux.onErrorResume(predicate))
+    val x: SFlux[T] = coreFlux.onErrorResume(predicate).asScala
     x.as[SFlux[U]](t => t.map(u => u.asInstanceOf[U]))
   }
 
-  final def reduce[A](initial: A, accumulator: (A, T) => A): SMono[A] = SMono.fromPublisher(coreFlux.reduce[A](initial, accumulator))
+  final def reduce[A](initial: A, accumulator: (A, T) => A): SMono[A] = coreFlux.reduce[A](initial, accumulator).asScala
 
-  final def skip(skipped: Long): SFlux[T] = SFlux.fromPublisher(coreFlux.skip(skipped))
+  final def skip(skipped: Long): SFlux[T] = coreFlux.skip(skipped).asScala
 
   final def sum[R >: T](implicit R: Numeric[R]): SMono[R] = {
     import R._

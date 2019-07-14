@@ -1,7 +1,7 @@
 # Reactor Scala Extensions
 [![Join the chat at https://gitter.im/reactor/reactor](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/reactor/reactor?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Reactor Scala Extensions](https://maven-badges.herokuapp.com/maven-central/io.projectreactor/reactor-scala-extensions_2.12/badge.svg?style=plastic)](https://mvnrepository.com/artifact/io.projectreactor/reactor-scala-extensions_2.12)
-[![Download](https://api.bintray.com/packages/sinwe/io.projectreactor/reactor-scala-extensions_2.12/images/download.svg?version=0.3.5) ](https://bintray.com/sinwe/io.projectreactor/reactor-scala-extensions_2.12/0.3.5/link)
+[![Download](https://api.bintray.com/packages/sinwe/io.projectreactor/reactor-scala-extensions_2.12/images/download.svg) ](https://bintray.com/sinwe/io.projectreactor/reactor-scala-extensions_2.12/_latestVersion)
 [![Build Status](https://travis-ci.org/reactor/reactor-scala-extensions.svg?branch=master)](https://travis-ci.org/reactor/reactor-scala-extensions)
 [![codecov](https://codecov.io/gh/reactor/reactor-scala-extensions/branch/master/graph/badge.svg)](https://codecov.io/gh/reactor/reactor-scala-extensions)
                             
@@ -34,10 +34,17 @@ With Gradle:
     }
     
     dependencies {
+<<<<<<< HEAD
         //compile "io.projectreactor:reactor-scala-extensions_2.12:0.4.0-SNAPSHOT
         //compile "io.projectreactor:reactor-scala-extensions_2.13.0-M3:0.3.5 //for scala 2.13.0-M3
         compile "io.projectreactor:reactor-scala-extensions_2.12:0.3.5 //for scala 2.12
         //compile "io.projectreactor:reactor-scala-extensions_2.11:0.3.5 //for scala 2.11
+=======
+        //compile "io.projectreactor:reactor-scala-extensions_2.12:0.4.1-SNAPSHOT
+        //compile "io.projectreactor:reactor-scala-extensions_2.13.0-M3:0.4.0 //for scala 2.13.0-M3
+        compile "io.projectreactor:reactor-scala-extensions_2.12:0.4.0 //for scala 2.12
+        //compile "io.projectreactor:reactor-scala-extensions_2.11:0.4.0 //for scala 2.11
+>>>>>>> master
     }
 
 With Maven:
@@ -58,7 +65,11 @@ With Maven:
     <dependency>
         <groupId>io.projectreactor</groupId>
         <artifactId>reactor-scala-extensions</artifactId>
+<<<<<<< HEAD
         <version>0.4.0-SNAPSHOT</version>
+=======
+        <version>0.4.1-SNAPSHOT</version>
+>>>>>>> master
     </dependency>
     -->
     <dependency>
@@ -66,7 +77,7 @@ With Maven:
         <artifactId>reactor-scala-extensions_2.12</artifactId> <!-- for scala 2.12 -->
         <!--<artifactId>reactor-scala-extensions_2.11</artifactId> for scala 2.11 -->
         <!--<artifactId>reactor-scala-extensions_2.13.0-M3</artifactId> for scala 2.13.0-M3 -->
-        <version>0.3.5</version>
+        <version>0.4.0</version>
     </dependency>
 
 ## Contributing

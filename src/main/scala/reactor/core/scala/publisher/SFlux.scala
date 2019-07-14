@@ -13,7 +13,7 @@ import reactor.core.publisher.{BufferOverflowStrategy, FluxSink, Signal, SignalT
 import reactor.core.scala.Scannable
 import reactor.core.scala.publisher.PimpMyPublisher._
 import reactor.core.scheduler.{Scheduler, Schedulers}
-import reactor.core.{Disposable, publisher, Scannable => JScannable}
+import reactor.core.{Disposable, Scannable => JScannable}
 import reactor.util.Logger
 import reactor.util.concurrent.Queues
 import reactor.util.concurrent.Queues.{SMALL_BUFFER_SIZE, XS_BUFFER_SIZE}
@@ -26,7 +26,7 @@ import scala.concurrent.duration.Duration.Infinite
 import scala.language.postfixOps
 import scala.reflect.ClassTag
 
-trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] {
+trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] with ScalaConverters {
   self =>
 
   final def all(predicate: T => Boolean): SMono[Boolean] = new ReactiveSMono[Boolean](coreFlux.all(predicate).map((b: JBoolean) => Boolean2boolean(b)))
@@ -153,7 +153,7 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] {
 
   final def delaySubscription[U](subscriptionDelay: Publisher[U]): SFlux[T] = new ReactiveSFlux[T](coreFlux.delaySubscription(subscriptionDelay))
 
-  final def dematerialize[X](): SFlux[X] = SFlux.fromPublisher(coreFlux.dematerialize[X]())
+  final def dematerialize[X](): SFlux[X] = new ReactiveSFlux[X](coreFlux.dematerialize[X]())
 
   final def distinct(): SFlux[T] = distinct(identity)
 
@@ -308,56 +308,76 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] {
 
   final def publishNext(): SMono[T] = SMono.fromPublisher(coreFlux.publishNext())
 
-  final def reduce(aggregator: (T, T) => T): SMono[T] = SMono.fromPublisher(coreFlux.reduce(aggregator))
+  final def reduce(aggregator: (T, T) => T): SMono[T] = coreFlux.reduce(aggregator).asScala
 
-  final def reduceWith[A](initial: () => A, accumulator: (A, T) => A): SMono[A] = SMono.fromPublisher(coreFlux.reduceWith[A](initial, accumulator))
+  final def reduceWith[A](initial: () => A, accumulator: (A, T) => A): SMono[A] = coreFlux.reduceWith[A](initial, accumulator).asScala
 
-  final def repeat(numRepeat: Long = Long.MaxValue, predicate: () => Boolean = () => true): SFlux[T] = SFlux.fromPublisher( coreFlux.repeat(numRepeat, predicate))
+  final def repeat(numRepeat: Long = Long.MaxValue, predicate: () => Boolean = () => true): SFlux[T] = coreFlux.repeat(numRepeat, predicate).asScala
 
-  final def retry(numRetries: Long = Long.MaxValue, retryMatcher: Throwable => Boolean = (_: Throwable) => true): SFlux[T] = SFlux.fromPublisher(coreFlux.retry(numRetries, retryMatcher))
+  final def retry(numRetries: Long = Long.MaxValue, retryMatcher: Throwable => Boolean = (_: Throwable) => true): SFlux[T] = coreFlux.retry(numRetries, retryMatcher).asScala
 
   final def retryWhen(whenFactory: SFlux[Throwable] => Publisher[_]): SFlux[T] = {
     val func = new Function[JFlux[Throwable], Publisher[_]] {
       override def apply(t: JFlux[Throwable]): Publisher[_] = whenFactory(new ReactiveSFlux[Throwable](t))
     }
-    SFlux.fromPublisher(coreFlux.retryWhen(func))
+    coreFlux.retryWhen(func).asScala
   }
 
-  final def sample(timespan: Duration): SFlux[T] = SFlux.fromPublisher(coreFlux.sample(timespan))
+  final def sample(timespan: Duration): SFlux[T] = coreFlux.sample(timespan).asScala
 
-  final def sampleFirst(timespan: Duration): SFlux[T] = SFlux.fromPublisher(coreFlux.sampleFirst(timespan))
+  final def sampleFirst(timespan: Duration): SFlux[T] = coreFlux.sampleFirst(timespan).asScala
 
-  final def scan(accumulator: (T, T) => T): SFlux[T] = SFlux.fromPublisher(coreFlux.scan(accumulator))
+  final def scan(accumulator: (T, T) => T): SFlux[T] = coreFlux.scan(accumulator).asScala
 
-  final def scan[A](initial: A, accumulator: (A, T) => A): SFlux[A] = SFlux.fromPublisher(coreFlux.scan(initial, accumulator))
+  final def scan[A](initial: A, accumulator: (A, T) => A): SFlux[A] = coreFlux.scan(initial, accumulator).asScala
 
-  final def scanWith[A](initial: () => A, accumulator: (A, T) => A): SFlux[A] = SFlux.fromPublisher(coreFlux.scanWith(initial, accumulator))
+  final def scanWith[A](initial: () => A, accumulator: (A, T) => A): SFlux[A] = coreFlux.scanWith(initial, accumulator).asScala
 
-  final def single(defaultValue: Option[T] = None): SMono[T] = SMono.fromPublisher{
-    defaultValue map { coreFlux.single(_) } getOrElse {coreFlux.single()}: publisher.Mono[T]
+  final def single(defaultValue: Option[T] = None): SMono[T] = {
+    (defaultValue map { coreFlux.single(_) } getOrElse {coreFlux.single()}).asScala
   }
 
-  final def singleOrEmpty(): SMono[T] = SMono.fromPublisher(coreFlux.singleOrEmpty())
+  final def singleOrEmpty(): SMono[T] = coreFlux.singleOrEmpty().asScala
 
-  final def skip(timespan: Duration, timer: Scheduler = Schedulers.parallel): SFlux[T] = SFlux.fromPublisher(coreFlux.skip(timespan, timer))
+  final def skip(timespan: Duration, timer: Scheduler = Schedulers.parallel): SFlux[T] = coreFlux.skip(timespan, timer).asScala
 
-  final def skipLast(n: Int): SFlux[T] = SFlux.fromPublisher(coreFlux.skipLast(n))
+  final def skipLast(n: Int): SFlux[T] = coreFlux.skipLast(n).asScala
 
-  final def skipUntil(untilPredicate: T => Boolean): SFlux[T] = SFlux.fromPublisher(coreFlux.skipUntil(untilPredicate))
+  final def skipUntil(untilPredicate: T => Boolean): SFlux[T] = coreFlux.skipUntil(untilPredicate).asScala
 
-  final def skipWhile(skipPredicate: T => Boolean): SFlux[T] = SFlux.fromPublisher(coreFlux.skipWhile(skipPredicate))
+  final def skipWhile(skipPredicate: T => Boolean): SFlux[T] = coreFlux.skipWhile(skipPredicate).asScala
 
-  final def sort(): SFlux[T] = SFlux.fromPublisher(coreFlux.sort())
+  final def sort(): SFlux[T] = coreFlux.sort().asScala
 
-  final def sort(sortFunction: Ordering[T]): SFlux[T] = SFlux.fromPublisher(coreFlux.sort(sortFunction))
+  final def sort(sortFunction: Ordering[T]): SFlux[T] = coreFlux.sort(sortFunction).asScala
 
-  final def startWith(iterable: Iterable[_ <: T]): SFlux[T] = SFlux.fromPublisher(coreFlux.startWith(iterable))
+  final def startWith(iterable: Iterable[_ <: T]): SFlux[T] = coreFlux.startWith(iterable).asScala
 
-  final def startWith(values: T*): SFlux[T] = SFlux.fromPublisher(coreFlux.startWith(values: _*))
+  final def startWith(values: T*): SFlux[T] = coreFlux.startWith(values: _*).asScala
 
-  final def startWith(publisher: Publisher[_ <: T]): SFlux[T] = SFlux.fromPublisher(coreFlux.startWith(publisher))
+  final def startWith(publisher: Publisher[_ <: T]): SFlux[T] = coreFlux.startWith(publisher).asScala
 
-  final def subscribe(): Disposable = coreFlux.subscribe()
+  override def subscribe(s: Subscriber[_ >: T]): Unit = coreFlux.subscribe(s)
+
+  /**
+    * Subscribe a `consumer` to this [[SFlux]] that will consume all the
+    * sequence. It will request an unbounded demand.
+    * <p>
+    * For a passive version that observe and forward incoming data see [[SFlux.doOnNext]].
+    * <p>For a version that gives you more control over backpressure and the request, see
+    * [[SFlux.subscribe]] with a [[reactor.core.publisher.BaseSubscriber]].
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/subscribe.png" alt="">
+    *
+    * @param consumer the consumer to invoke on each value
+    * @param errorConsumer the consumer to invoke on error signal
+    * @param completeConsumer the consumer to invoke on complete signal
+    * @return a new [[Disposable]] to dispose the [[org.reactivestreams.Subscription]]
+    */
+  final def subscribe(consumer: Option[T => Unit] = None,
+                      errorConsumer: Option[Throwable => Unit] = None,
+                      completeConsumer: Option[Runnable] = None): Disposable = coreFlux.subscribe(consumer.orNull[T => Unit], errorConsumer.orNull[Throwable => Unit], completeConsumer.orNull)
 
   /**
     * Provide an alternative if this sequence is completed without any data
@@ -368,55 +388,53 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] {
     * @param alternate the alternate publisher if this sequence is empty
     * @return an alternating [[SFlux]] on source onComplete without elements
     */
-  final def switchIfEmpty(alternate: Publisher[_ <: T]): SFlux[T] = SFlux.fromPublisher(coreFlux.switchIfEmpty(alternate))
+  final def switchIfEmpty(alternate: Publisher[_ <: T]): SFlux[T] = coreFlux.switchIfEmpty(alternate).asScala
 
-  final def switchMap[V](fn: T => Publisher[_ <: V], prefetch: Int = XS_BUFFER_SIZE): SFlux[V] = SFlux.fromPublisher(coreFlux.switchMap[V](fn, prefetch))
+  final def switchMap[V](fn: T => Publisher[_ <: V], prefetch: Int = XS_BUFFER_SIZE): SFlux[V] = coreFlux.switchMap[V](fn, prefetch).asScala
 
-  override def subscribe(s: Subscriber[_ >: T]): Unit = coreFlux.subscribe(s)
+  final def tag(key: String, value: String): SFlux[T] = coreFlux.tag(key, value).asScala
 
-  final def tag(key: String, value: String): SFlux[T] = SFlux.fromPublisher(coreFlux.tag(key, value))
+  final def take(timespan: Duration, timer: Scheduler = Schedulers.parallel): SFlux[T] = coreFlux.take(timespan, timer).asScala
 
-  final def take(timespan: Duration, timer: Scheduler = Schedulers.parallel): SFlux[T] = SFlux.fromPublisher(coreFlux.take(timespan, timer))
+  final def takeLast(n: Int): SFlux[T] = coreFlux.takeLast(n).asScala
 
-  final def takeLast(n: Int): SFlux[T] = SFlux.fromPublisher(coreFlux.takeLast(n))
+  final def takeUntil(predicate: T => Boolean): SFlux[T] = coreFlux.takeUntil(predicate).asScala
 
-  final def takeUntil(predicate: T => Boolean): SFlux[T] = SFlux.fromPublisher(coreFlux.takeUntil(predicate))
-
-  final def takeWhile(continuePredicate: T => Boolean): SFlux[T] = SFlux.fromPublisher(coreFlux.takeWhile(continuePredicate))
+  final def takeWhile(continuePredicate: T => Boolean): SFlux[T] = coreFlux.takeWhile(continuePredicate).asScala
 
   final def `then`(): SMono[Unit] = new ReactiveSMono(coreFlux.`then`()).map(_ => ())
 
   final def thenEmpty(other: MapablePublisher[Unit]): SMono[Unit] = new ReactiveSMono(
     coreFlux.thenEmpty(publisherUnit2PublisherVoid(other))).map(_ => ())
 
-  final def thenMany[V](other: Publisher[V]): SFlux[V] = SFlux.fromPublisher(coreFlux.thenMany[V](other))
+  final def thenMany[V](other: Publisher[V]): SFlux[V] = coreFlux.thenMany[V](other).asScala
 
-  final def timeout(timeout: Duration): SFlux[T] = SFlux.fromPublisher(coreFlux.timeout(timeout))
+  final def timeout(timeout: Duration): SFlux[T] = coreFlux.timeout(timeout).asScala
 
-  final def timeout(timeout: Duration, fallback: Option[Publisher[_ <: T]]): SFlux[T] = SFlux.fromPublisher(coreFlux.timeout(timeout, fallback.orNull))
+  final def timeout(timeout: Duration, fallback: Option[Publisher[_ <: T]]): SFlux[T] = coreFlux.timeout(timeout, fallback.orNull).asScala
 
-  final def timeout[U](firstTimeout: Publisher[U]): SFlux[T] = SFlux.fromPublisher(coreFlux.timeout[U](firstTimeout))
+  final def timeout[U](firstTimeout: Publisher[U]): SFlux[T] = coreFlux.timeout[U](firstTimeout).asScala
 
-  final def timeout[U, V](firstTimeout: Publisher[U], nextTimeoutFactory: T => Publisher[V]): SFlux[T] = SFlux.fromPublisher(coreFlux.timeout(firstTimeout, nextTimeoutFactory))
+  final def timeout[U, V](firstTimeout: Publisher[U], nextTimeoutFactory: T => Publisher[V]): SFlux[T] = coreFlux.timeout(firstTimeout, nextTimeoutFactory).asScala
 
   final def timeout[U, V](firstTimeout: Publisher[U], nextTimeoutFactory: T => Publisher[V], fallback: Publisher[_ <: T]): SFlux[T] =
-    SFlux.fromPublisher(coreFlux.timeout(firstTimeout, nextTimeoutFactory, fallback))
+    coreFlux.timeout(firstTimeout, nextTimeoutFactory, fallback).asScala
 
   final def toIterable(batchSize: Int = SMALL_BUFFER_SIZE, queueProvider: Option[Supplier[util.Queue[T]]] = None): Iterable[T] = coreFlux.toIterable(batchSize, queueProvider.orNull).asScala
 
   final def toStream(batchSize: Int = SMALL_BUFFER_SIZE): Stream[T] = coreFlux.toStream.iterator().asScala.toStream
 
-  final def transform[V](transformer: SFlux[T] => Publisher[V]): SFlux[V] = SFlux.fromPublisher(coreFlux.transform[V](transformer))
+  final def transform[V](transformer: SFlux[T] => Publisher[V]): SFlux[V] = coreFlux.transform[V](transformer).asScala
 
-  final def withLatestFrom[U, R](other: Publisher[_ <: U], resultSelector: (T, U) => _ <: R): SFlux[R] = SFlux.fromPublisher(coreFlux.withLatestFrom[U, R](other, resultSelector))
+  final def withLatestFrom[U, R](other: Publisher[_ <: U], resultSelector: (T, U) => _ <: R): SFlux[R] = coreFlux.withLatestFrom[U, R](other, resultSelector).asScala
 
   final def zipWith[T2](source2: Publisher[_ <: T2], prefetch: Int = XS_BUFFER_SIZE): SFlux[(T, T2)] = zipWithCombinator(source2, (t: T, t2: T2) => (t, t2), prefetch)
 
-  final def zipWithCombinator[T2, V](source2: Publisher[_ <: T2], combinator: (T, T2) => V, prefetch: Int = XS_BUFFER_SIZE): SFlux[V] = SFlux.fromPublisher(coreFlux.zipWith[T2, V](source2, prefetch, combinator))
+  final def zipWithCombinator[T2, V](source2: Publisher[_ <: T2], combinator: (T, T2) => V, prefetch: Int = XS_BUFFER_SIZE): SFlux[V] = coreFlux.zipWith[T2, V](source2, prefetch, combinator).asScala
 
   final def zipWithIterable[T2](iterable: Iterable[_ <: T2]): SFlux[(T, T2)] = zipWithIterable(iterable, (t: T, t2: T2) => (t, t2))
 
-  final def zipWithIterable[T2, V](iterable: Iterable[_ <: T2], zipper: (T, T2) => _ <: V): SFlux[V] = SFlux.fromPublisher(coreFlux.zipWithIterable[T2, V](iterable, zipper))
+  final def zipWithIterable[T2, V](iterable: Iterable[_ <: T2], zipper: (T, T2) => _ <: V): SFlux[V] = coreFlux.zipWithIterable[T2, V](iterable, zipper).asScala
 
 }
 

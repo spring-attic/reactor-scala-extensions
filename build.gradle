@@ -44,7 +44,7 @@ buildscript {
     }
 
     dependencies {
-        classpath "gradle.plugin.com.github.maiflai:gradle-scalatest:0.22"
+        classpath "gradle.plugin.com.github.maiflai:gradle-scalatest:0.25"
         classpath "gradle.plugin.org.scoverage:gradle-scoverage:2.5.0"
         classpath 'net.researchgate:gradle-release:2.7.0'
         classpath 'io.codearte.gradle.nexus:gradle-nexus-staging-plugin:0.11.0'
@@ -101,7 +101,8 @@ archivesBaseName = "${rootProject.name}_$baseScalaVersion"
 ext.isReleaseVersion = !version.endsWith("SNAPSHOT")
 signing {
     required { isReleaseVersion }
-    sign configurations.archives
+//    sign configurations.archives
+    sign publishing.publications
 }
 
 task sourcesJar(type: Jar, dependsOn: classes) {
@@ -115,7 +116,7 @@ task scaladocJar(type: Jar, dependsOn: scaladoc) {
 }
 
 artifacts {
-    archives jar
+//    archives jar
     archives sourcesJar
     archives scaladocJar
 }
@@ -144,9 +145,34 @@ publishing {
     publications {
         MyPublication(MavenPublication) {
             from components.java
+            artifact sourcesJar
+            artifact scaladocJar
             groupId "${project.group}"
             artifactId "${project.archivesBaseName}"
             version "${project.version}"
+            pom {
+                name = "reactor-scala-extensions"
+                description = "Reactor Scala Extensions"
+                url = "https://github.com/reactor/reactor-scala-extensions"
+                licenses {
+                    license {
+                        name = "Apache License"
+                        url = "https://github.com/reactor/reactor-scala-extensions/blob/master/LICENSE"
+                    }
+                }
+                developers {
+                    developer {
+                        id = "sinwe"
+                        name = "Winarto Zhao"
+                        email = "winarto@gmail.com"
+                    }
+                }
+                scm {
+                    connection = "scm:git:https://github.com/reactor/reactor-scala-extensions.git"
+                    developerConnection = "scm:git:https://github.com/reactor/reactor-scala-extensions.git"
+                    url = "https://github.com/reactor/reactor-scala-extensions.git"
+                }
+            }
         }
     }
 }

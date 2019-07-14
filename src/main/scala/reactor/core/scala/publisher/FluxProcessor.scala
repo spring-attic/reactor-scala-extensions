@@ -156,7 +156,7 @@ object FluxProcessor {
 
   /**
     * Build a [[FluxProcessor]] whose data are emitted by the most recent emitted [[Publisher]].
-    * The [[Flux]] will complete once both the publishers source and the last switched to [[Publisher]] have
+    * The [[SFlux]] will complete once both the publishers source and the last switched to [[Publisher]] have
     * completed.
     *
     * <p>

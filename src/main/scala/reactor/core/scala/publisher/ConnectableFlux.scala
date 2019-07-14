@@ -87,7 +87,7 @@ class ConnectableFlux[T]private (private val jConnectableFlux: JConnectableFlux[
     * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/refCount.png" alt="">
     *
     * @param minSubscribers the number of subscribers expected to subscribe before connection
-    * @return a reference counting [[reactor.core.publisher.Flux]]
+    * @return a reference counting [[SFlux]]
     */
   final def refCount(minSubscribers: Int): SFlux[T] = SFlux.fromPublisher(jConnectableFlux.refCount(minSubscribers))
 
@@ -126,7 +126,7 @@ class ConnectableFlux[T]private (private val jConnectableFlux: JConnectableFlux[
     */
   final def refCount(minSubscribers: Int, gracePeriod: Duration, scheduler: Scheduler): SFlux[T] = SFlux.fromPublisher(jConnectableFlux.refCount(minSubscribers, gracePeriod, scheduler))
 
-  override private[publisher] def coreFlux = jConnectableFlux
+  override private[publisher] def coreFlux: JConnectableFlux[T] = jConnectableFlux
 }
 
 object ConnectableFlux {

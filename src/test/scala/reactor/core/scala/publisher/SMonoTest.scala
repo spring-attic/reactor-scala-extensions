@@ -13,8 +13,8 @@ import reactor.core.scala.Scannable
 import reactor.core.scala.publisher.SMono.just
 import reactor.core.scala.publisher.ScalaConverters._
 import reactor.core.scheduler.{Scheduler, Schedulers}
-import reactor.test.{StepVerifier, StepVerifierOptions}
 import reactor.test.scheduler.VirtualTimeScheduler
+import reactor.test.{StepVerifier, StepVerifierOptions}
 import reactor.util.context.Context
 
 import scala.concurrent.Future
@@ -153,6 +153,13 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport {
           StepVerifier.create(mono)
             .expectNext(randomValue)
             .verifyComplete()
+        }
+        "just react on completion signal if it is null" in {
+          val nullData:Any = null
+          val mono = SMono.justOrEmpty(nullData)
+          StepVerifier.create(mono)
+            .expectComplete()
+            .verify()
         }
       }
     }
