@@ -279,6 +279,17 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] with ScalaCo
   }
 
   /**
+    * Prepare this [[SFlux]] so that subscribers will cancel from it on a
+    * specified
+    * [[Scheduler]].
+    *
+    * @param scheduler the [[Scheduler]] to signal cancel  on
+    * @return a scheduled cancel [[SFlux]]
+    */
+  //  TODO: how to test this?
+  final def cancelOn(scheduler: Scheduler): SFlux[T] = new ReactiveSFlux[T](coreFlux.cancelOn(scheduler))
+
+  /**
     * Cast the current [[SFlux]] produced type into a target produced type.
     *
     * <p>
