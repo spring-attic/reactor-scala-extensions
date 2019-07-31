@@ -301,16 +301,37 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] with ScalaCo
   final def cast[E](implicit classTag: ClassTag[E]): SFlux[E] = new ReactiveSFlux[E](coreFlux.cast(classTag.runtimeClass.asInstanceOf[Class[E]]))
 
   /**
-    * Activate assembly tracing for this particular [[SFlux]], in case of an error
-    * upstream of the checkpoint.
+    * Activate assembly tracing or the lighter assembly marking depending on the
+    * <code>forceStackTrace</code> option.
+    * <p>
+    * By setting the <code>forceStackTrace</code> parameter to `true`, activate assembly
+    * tracing for this particular [[SFlux]] and give it a description that
+    * will be reflected in the assembly traceback in case of an error upstream of the
+    * checkpoint. Note that unlike [[SFlux.checkpoint(Option[String])]], this will incur
+    * the cost of an exception stack trace creation. The description could for
+    * example be a meaningful name for the assembled flux or a wider correlation ID,
+    * since the stack trace will always provide enough information to locate where this
+    * Flux was assembled.
+    * <p>
+    * By setting <code>forceStackTrace</code> to `false`, behaves like
+    * [[SFlux.checkpoint(Option[String])]] and is subject to the same caveat in choosing the
+    * description.
     * <p>
     * It should be placed towards the end of the reactive chain, as errors
-    * triggered downstream of it cannot be observed and augmented with assembly trace.
+    * triggered downstream of it cannot be observed and augmented with assembly marker.
     *
-    * @return the assembly tracing [[SFlux]].
+    * @param description     a description (must be unique enough if forceStackTrace is set
+    *                        to false).
+    * @param forceStackTrace false to make a light checkpoint without a stacktrace, true
+    *                        to use a stack trace.
+    * @return the assembly marked [[SFlux]].
     */
   //  TODO: how to test?
-  final def checkpoint(): SFlux[T] = new ReactiveSFlux[T](coreFlux.checkpoint())
+  final def checkpoint(description: Option[String] = None, forceStackTrace: Option[Boolean]): SFlux[T] = (description, forceStackTrace) match {
+    case (None, None) => new ReactiveSFlux[T](coreFlux.checkpoint())
+    case (Some(desc), _) => new ReactiveSFlux[T](coreFlux.checkpoint(desc, false))
+    case (Some(desc), Some(force)) => new ReactiveSFlux[T](coreFlux.checkpoint(desc, force))
+  }
 
   final def collectSeq(): SMono[Seq[T]] = new ReactiveSMono[Seq[T]](coreFlux.collectList().map((l: JList[T]) => l.asScala))
 
