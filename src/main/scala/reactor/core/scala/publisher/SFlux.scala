@@ -300,6 +300,18 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] with ScalaCo
     */
   final def cast[E](implicit classTag: ClassTag[E]): SFlux[E] = new ReactiveSFlux[E](coreFlux.cast(classTag.runtimeClass.asInstanceOf[Class[E]]))
 
+  /**
+    * Activate assembly tracing for this particular [[SFlux]], in case of an error
+    * upstream of the checkpoint.
+    * <p>
+    * It should be placed towards the end of the reactive chain, as errors
+    * triggered downstream of it cannot be observed and augmented with assembly trace.
+    *
+    * @return the assembly tracing [[SFlux]].
+    */
+  //  TODO: how to test?
+  final def checkpoint(): SFlux[T] = new ReactiveSFlux[T](coreFlux.checkpoint())
+
   final def collectSeq(): SMono[Seq[T]] = new ReactiveSMono[Seq[T]](coreFlux.collectList().map((l: JList[T]) => l.asScala))
 
   final def collectMap[K](keyExtractor: T => K): SMono[Map[K, T]] = collectMap[K, T](keyExtractor, (t: T) => t)
