@@ -28,10 +28,51 @@ import scala.reflect.ClassTag
 trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] with ScalaConverters {
   self =>
 
+  /**
+    *
+    * Emit a single boolean true if all values of this sequence match
+    * the given predicate.
+    * <p>
+    * The implementation uses short-circuit logic and completes with false if
+    * the predicate doesn't match a value.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/all.png" alt="">
+    *
+    * @param predicate the predicate to match all emitted items
+    * @return a [[SMono]] of all evaluations
+    */
   final def all(predicate: T => Boolean): SMono[Boolean] = new ReactiveSMono[Boolean](coreFlux.all(predicate).map((b: JBoolean) => Boolean2boolean(b)))
 
+  /**
+    * Emit a single boolean true if any of the values of this [[SFlux]] sequence match
+    * the predicate.
+    * <p>
+    * The implementation uses short-circuit logic and completes with true if
+    * the predicate matches a value.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/any.png" alt="">
+    *
+    * @param predicate predicate tested upon values
+    * @return a new [[SFlux]] with <code>true</code> if any value satisfies a predicate and <code>false</code>
+    *         otherwise
+    *
+    */
   final def any(predicate: T => Boolean): SMono[Boolean] = new ReactiveSMono[Boolean](coreFlux.any(predicate).map((b: JBoolean) => Boolean2boolean(b)))
 
+  /**
+    * Immediately apply the given transformation to this [[SFlux]] in order to generate a target type.
+    *
+    * `flux.as(Mono::from).subscribe()`
+    *
+    * @param transformer the [[Function1]] to immediately map this [[SFlux]]
+    *                    into a target type
+    *                    instance.
+    * @tparam P the returned type
+    * @return a an instance of P
+    * @see [[SFlux.compose]] for a bounded conversion to [[Publisher]]
+    */
   final def as[P](transformer: SFlux[T] => P): P = {
     coreFlux.as[P](new Function[JFlux[T], P] {
       override def apply(t: JFlux[T]): P = transformer(SFlux.fromPublisher(t))
@@ -40,16 +81,56 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] with ScalaCo
 
   final def asJava(): JFlux[T] = coreFlux
 
+  /**
+    * Blocks until the upstream signals its first value or completes.
+    *
+    * @return the [[Some]] value or [[None]]
+    */
   final def blockFirst(timeout: Duration = Duration.Inf): Option[T] = timeout match {
     case _: Infinite => Option(coreFlux.blockFirst())
     case t => Option(coreFlux.blockFirst(t))
   }
 
+  /**
+    * Blocks until the upstream completes and return the last emitted value.
+    *
+    * @param timeout max duration timeout to wait for.
+    * @return the last [[Some value]] or [[None]]
+    */
   final def blockLast(timeout: Duration = Duration.Inf): Option[T] = timeout match {
     case _: Infinite => Option(coreFlux.blockLast())
     case t => Option(coreFlux.blockLast(t))
   }
 
+  /**
+    * Collect incoming values into multiple [[mutable.Seq]] that will be pushed into
+    * the returned [[SFlux]] when the
+    * given max size is reached or onComplete is received. A new container
+    * [[mutable.Seq]] will be created every given
+    * skip count.
+    * <p>
+    * When Skip > Max Size : dropping buffers
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/buffersizeskip.png"
+    * alt="">
+    * <p>
+    * When Skip < Max Size : overlapping buffers
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/buffersizeskipover.png"
+    * alt="">
+    * <p>
+    * When Skip == Max Size : exact buffers
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/buffersize.png"
+    * alt="">
+    *
+    * @param skip           the number of items to skip before creating a new bucket
+    * @param maxSize        the max collected size
+    * @param bufferSupplier the collection to use for each data segment
+    * @tparam C the supplied [[mutable.Seq]] type
+    * @return a microbatched [[SFlux]] of possibly overlapped or gapped
+    *         [[mutable.Seq]]
+    */
   final def buffer[C >: mutable.Buffer[T]](maxSize: Int = Int.MaxValue, bufferSupplier: () => C = () => mutable.ListBuffer.empty[T])(implicit skip: Int = maxSize): SFlux[Seq[T]] = {
     new ReactiveSFlux[Seq[T]](coreFlux.buffer(maxSize, skip, new Supplier[JList[T]] {
       override def get(): JList[T] = {
@@ -61,6 +142,17 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] with ScalaCo
   final def bufferTimeSpan(timespan: Duration, timer: Scheduler = Schedulers.parallel())(timeshift: Duration = timespan): SFlux[Seq[T]] =
     new ReactiveSFlux[Seq[T]](coreFlux.buffer(timespan, timeshift, timer).map((l: JList[T]) => l.asScala))
 
+  /**
+    * Collect incoming values into multiple [[Seq]] delimited by the given [[Publisher]] signals.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/bufferboundary.png"
+    * alt="">
+    *
+    * @param other          the other [[Publisher]]  to subscribe to for emitting and recycling receiving bucket
+    * @param bufferSupplier the collection to use for each data segment
+    * @tparam C the supplied [[Seq]] type
+    * @return a microbatched [[SFlux]] of [[Seq]] delimited by a [[Publisher]]
+    */
   final def bufferPublisher[C >: mutable.Buffer[T]](other: Publisher[_], bufferSupplier: () => C = () => mutable.ListBuffer.empty[T]): SFlux[Seq[T]] =
     new ReactiveSFlux[Seq[T]](coreFlux.buffer(other, new Supplier[JList[T]] {
       override def get(): JList[T] = {
@@ -68,6 +160,19 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] with ScalaCo
       }
     }).map((l: JList[T]) => l.asScala.toSeq))
 
+  /**
+    * Collect incoming values into a [[Seq]] that will be pushed into the returned [[SFlux]] every timespan OR
+    * maxSize items.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/buffertimespansize.png"
+    * alt="">
+    *
+    * @param maxSize        the max collected size
+    * @param timespan       the timeout to use to release a buffered list
+    * @param bufferSupplier the collection to use for each data segment
+    * @tparam C the supplied [[Seq]] type
+    * @return a microbatched [[SFlux]] of [[Seq]] delimited by given size or a given period timeout
+    */
   final def bufferTimeout[C >: mutable.Buffer[T]](maxSize: Int, timespan: Duration, timer: Scheduler = Schedulers.parallel(), bufferSupplier: () => C = () => mutable.ListBuffer.empty[T]): SFlux[Seq[T]] = {
     new ReactiveSFlux[Seq[T]](coreFlux.bufferTimeout(maxSize, timespan, timer, new Supplier[JList[T]] {
       override def get(): JList[T] = {
@@ -76,8 +181,57 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] with ScalaCo
     }).map((l: JList[T]) => l.asScala))
   }
 
+  /**
+    * Collect incoming values into multiple [[Seq]] that will be pushed into
+    * the returned [[SFlux]] each time the given predicate returns true. Note that
+    * the buffer into which the element that triggers the predicate to return true
+    * (and thus closes a buffer) is included depends on the `cutBefore` parameter:
+    * set it to true to include the boundary element in the newly opened buffer, false to
+    * include it in the closed buffer (as in [[SFlux.bufferUntil]]).
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/buffersize.png"
+    * alt="">
+    * <p>
+    * On completion, if the latest buffer is non-empty and has not been closed it is
+    * emitted. However, such a "partial" buffer isn't emitted in case of onError
+    * termination.
+    *
+    * @param predicate a predicate that triggers the next buffer when it becomes true.
+    * @param cutBefore set to true to include the triggering element in the new buffer rather than the old.
+    * @return a microbatched [[SFlux]] of [[Seq]]
+    */
   final def bufferUntil(predicate: T => Boolean, cutBefore: Boolean = false): SFlux[Seq[T]] = new ReactiveSFlux[Seq[T]](coreFlux.bufferUntil(predicate, cutBefore).map((l: JList[T]) => l.asScala))
 
+  /**
+    * Collect incoming values into multiple [[Seq]] delimited by the given [[Publisher]] signals. Each [[Seq]]
+    * bucket will last until the mapped [[Publisher]] receiving the boundary signal emits, thus releasing the
+    * bucket to the returned [[SFlux]].
+    * <p>
+    * When Open signal is strictly not overlapping Close signal : dropping buffers
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/bufferopenclose.png"
+    * alt="">
+    * <p>
+    * When Open signal is strictly more frequent than Close signal : overlapping buffers
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/bufferopencloseover.png"
+    * alt="">
+    * <p>
+    * When Open signal is exactly coordinated with Close signal : exact buffers
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/bufferboundary.png"
+    * alt="">
+    *
+    * @param bucketOpening  a [[Publisher]] to subscribe to for creating new receiving bucket signals.
+    * @param closeSelector  a [[Publisher]] factory provided the opening signal and returning a [[Publisher]] to
+    *                       subscribe to for emitting relative bucket.
+    * @param bufferSupplier the collection to use for each data segment
+    * @tparam U the element type of the bucket-opening sequence
+    * @tparam V the element type of the bucket-closing sequence
+    * @tparam C the supplied [[Seq]] type
+    * @return a microbatched [[SFlux]] of [[Seq]] delimited by an opening [[Publisher]] and a relative
+    *         closing [[Publisher]]
+    */
   final def bufferWhen[U, V, C >: mutable.Buffer[T]](bucketOpening: Publisher[U], closeSelector: U => Publisher[V], bufferSupplier: () => C = () => mutable.ListBuffer.empty[T]): SFlux[Seq[T]] =
     new ReactiveSFlux[Seq[T]](coreFlux.bufferWhen(bucketOpening, closeSelector, new Supplier[JList[T]] {
       override def get(): JList[T] = {
@@ -85,8 +239,38 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] with ScalaCo
       }
     }).map((l: JList[T]) => l.asScala))
 
+  /**
+    * Collect incoming values into multiple [[Seq]] that will be pushed into
+    * the returned [[SFlux]]. Each buffer continues aggregating values while the
+    * given predicate returns true, and a new buffer is created as soon as the
+    * predicate returns false... Note that the element that triggers the predicate
+    * to return false (and thus closes a buffer) is NOT included in any emitted buffer.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/buffersize.png"
+    * alt="">
+    * <p>
+    * On completion, if the latest buffer is non-empty and has not been closed it is
+    * emitted. However, such a "partial" buffer isn't emitted in case of onError
+    * termination.
+    *
+    * @param predicate a predicate that triggers the next buffer when it becomes false.
+    * @return a microbatched [[SFlux]] of [[Seq]]
+    */
   final def bufferWhile(predicate: T => Boolean): SFlux[Seq[T]] = new ReactiveSFlux[Seq[T]](coreFlux.bufferWhile(predicate).map((l: JList[T]) => l.asScala))
 
+  /**
+    * Turn this [[SFlux]] into a hot source and cache last emitted signals for further
+    * [[Subscriber]]. Will retain up to the given history size  with per-item expiry
+    * timeout.
+    * <p>
+    * <p>
+    * <img width="500" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/cache.png"
+    * alt="">
+    *
+    * @param history number of events retained in history excluding complete and error
+    * @param ttl     Time-to-live for each cached item.
+    * @return a replaying [[SFlux]]
+    */
   final def cache(history: Int = Int.MaxValue, ttl: Duration = Duration.Inf): SFlux[T] = {
     ttl match {
       case _: Duration.Infinite => new ReactiveSFlux[T](coreFlux.cache(history))
@@ -94,6 +278,15 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] with ScalaCo
     }
   }
 
+  /**
+    * Cast the current [[SFlux]] produced type into a target produced type.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/cast.png" alt="">
+    *
+    * @tparam E the [[SFlux]] output type
+    * @return a casted [[SFlux]]
+    */
   final def cast[E](implicit classTag: ClassTag[E]): SFlux[E] = new ReactiveSFlux[E](coreFlux.cast(classTag.runtimeClass.asInstanceOf[Class[E]]))
 
   final def collectSeq(): SMono[Seq[T]] = new ReactiveSMono[Seq[T]](coreFlux.collectList().map((l: JList[T]) => l.asScala))
