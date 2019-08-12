@@ -1,5 +1,6 @@
 rootProject.name = 'reactor-scala-extensions'
 
+/*
 buildCache {
     local {
         enabled = false
@@ -10,3 +11,4 @@ buildCache {
         push = true
     }
 }
+*/
