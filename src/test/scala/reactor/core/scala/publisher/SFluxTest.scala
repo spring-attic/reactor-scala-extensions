@@ -1178,6 +1178,41 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
       }
     }
 
+    ".flatMap(Function,Int,Int)" - {
+      "should transform items emitted by this flux into publishers then flatten them in the order they complete" in {
+        StepVerifier.withVirtualTime(() =>
+            SFlux.just(2, 3, 1)
+                 .flatMap(i => SFlux.just(i * 2, i * 3).delaySequence(5-i seconds)))
+          .thenAwait(2 seconds)
+          .expectNext(6, 9)
+          .thenAwait(1 second)
+          .expectNext(4, 6)
+          .thenAwait(1 second)
+          .expectNext(2, 3)
+          .verifyComplete()
+      }
+      "with limited maxConcurrency, should further delay an element that would have otherwise returned sooner" in {
+        StepVerifier.withVirtualTime(() =>
+            SFlux.just(2, 1, 3)
+                 .flatMap(i => SFlux.just(i * 2, i * 3).delaySequence(5-i seconds), 2))
+          .thenAwait(3 seconds)
+          .expectNext(4, 6)
+          .thenAwait(1 second)
+          .expectNext(2, 3)
+          .thenAwait(1 second)
+          .expectNext(6, 9)
+          .verifyComplete()
+      }
+      "with delayError should respect whether error be delayed after current merge backlog" in {
+        StepVerifier.create(SFlux.just(1, 2, 3).flatMap(i => {
+          if (i == 2) SFlux.raiseError[Int](new RuntimeException("just an error"))
+          else SFlux.just(i * 2, i * 3)
+        }, 2, 2, delayError = true))
+          .expectNext(2, 3, 6, 9)
+          .verifyError(classOf[RuntimeException])
+      }
+    }
+
     ".flatten" - {
       "with mapper should map the element sequentially" in {
         StepVerifier.create(SFlux.just(1, 2, 3).map(i => SFlux.just(i * 2, i * 3)).flatten)
