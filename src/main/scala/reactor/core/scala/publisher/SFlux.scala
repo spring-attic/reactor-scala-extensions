@@ -450,6 +450,10 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] with ScalaCo
     if (!delayError) SFlux.fromPublisher(coreFlux.flatMapSequential[R](mapper, maxConcurrency, prefetch))
     else SFlux.fromPublisher(coreFlux.flatMapSequentialDelayError[R](mapper, maxConcurrency, prefetch))
 
+  final def flatMap[R](mapper: T => Publisher[_ <: R], maxConcurrency: Int = SMALL_BUFFER_SIZE, prefetch: Int = XS_BUFFER_SIZE, delayError: Boolean = false): SFlux[R] =
+    if (!delayError) SFlux.fromPublisher(coreFlux.flatMap[R](mapper, maxConcurrency, prefetch))
+    else SFlux.fromPublisher(coreFlux.flatMapDelayError[R](mapper, maxConcurrency, prefetch))
+
 
   final def groupBy[K](keyMapper: T => K): SFlux[GroupedFlux[K, T]] =
     groupBy(keyMapper, identity)
