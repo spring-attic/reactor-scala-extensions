@@ -18,6 +18,7 @@ import reactor.util.function.{Tuple2, Tuple3, Tuple4, Tuple5, Tuple6}
 import scala.collection.JavaConverters._
 import scala.concurrent.duration.Duration
 import scala.concurrent.{ExecutionContext, Future, Promise}
+import scala.reflect.ClassTag
 import scala.util.{Failure, Success, Try}
 
 /**
@@ -134,10 +135,9 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] with ScalaCo
     * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/cast1.png" alt="">
     *
     * @tparam E the [[SMono]] output type
-    * @param clazz the target type to cast to
     * @return a casted [[SMono]]
     */
-  final def cast[E](clazz: Class[E]): SMono[E] = coreMono.cast(clazz).asScala
+  final def cast[E](implicit classTag: ClassTag[E]): SMono[E] = coreMono.cast(classTag.runtimeClass.asInstanceOf[Class[E]]).asScala
 
   /**
     * Turn this [[SMono]] into a hot source and cache last emitted signals for further
@@ -753,10 +753,10 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] with ScalaCo
     * <p>
     * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/filter.png" alt="">
     *
-    * @param clazz the [[Class]] type to test values against
+    * @tparam U the [[Class]] type to test values against
     * @return a new [[SMono]] reduced to items converted to the matched type
     */
-  final def ofType[U](clazz: Class[U]): SMono[U] = coreMono.ofType[U](clazz).asScala
+  final def ofType[U](implicit classTag: ClassTag[U]): SMono[U] = coreMono.ofType[U](classTag.runtimeClass.asInstanceOf[Class[U]]).asScala
 
   /**
     * Transform the error emitted by this [[SMono]] by applying a function.

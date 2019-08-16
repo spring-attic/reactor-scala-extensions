@@ -365,7 +365,7 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport {
     }
 
     ".cast should cast the underlying value" in {
-      val number = SMono.just(BigDecimal("123")).cast(classOf[ScalaNumber]).block()
+      val number = SMono.just(BigDecimal("123")).cast[ScalaNumber].block()
       number shouldBe a[ScalaNumber]
     }
 
@@ -806,12 +806,12 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport {
 
     ".ofType should" - {
       "convert the Mono value type to the provided type if it can be casted" in {
-        StepVerifier.create(SMono.just(BigDecimal("1")).ofType(classOf[ScalaNumber]))
+        StepVerifier.create(SMono.just(BigDecimal("1")).ofType[ScalaNumber])
           .expectNextCount(1)
           .verifyComplete()
       }
       "ignore the Mono value if it can't be casted" in {
-        StepVerifier.create(SMono.just(1).ofType(classOf[String]))
+        StepVerifier.create(SMono.just(1).ofType[String])
           .verifyComplete()
       }
     }
