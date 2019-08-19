@@ -135,6 +135,19 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] with ScalaCo
     * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/cast1.png" alt="">
     *
     * @tparam E the [[SMono]] output type
+    * @param clazz the target type to cast to
+    * @return a casted [[SMono]]
+    */
+  @deprecated("Use the other cast signature instead", "reactor-scala-extensions 0.5.0")
+  final def cast[E](clazz: Class[E]): SMono[E] = coreMono.cast(clazz).asScala
+
+  /**
+    * Cast the current [[SMono]] produced type into a target produced type.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/cast1.png" alt="">
+    *
+    * @tparam E the [[SMono]] output type
     * @return a casted [[SMono]]
     */
   final def cast[E](implicit classTag: ClassTag[E]): SMono[E] = coreMono.cast(classTag.runtimeClass.asInstanceOf[Class[E]]).asScala
@@ -743,6 +756,22 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] with ScalaCo
     * @return the same sequence, but bearing a name
     */
   final def name(name: String): SMono[T] = coreMono.name(name).asScala
+
+  /**
+    * Evaluate the accepted value against the given [[Class]] type. If the
+    * predicate test succeeds, the value is
+    * passed into the new [[SMono]]. If the predicate test fails, the value is
+    * ignored.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/filter.png" alt="">
+    *
+    * @param clazz the [[Class]] type to test values against
+    * @return a new [[SMono]] reduced to items converted to the matched type
+    */
+  @deprecated("Use the other ofType signature instead", "reactor-scala-extensions 0.5.0")
+  final def ofType[U](clazz: Class[U]): SMono[U] = coreMono.ofType[U](clazz).asScala
+
 
   /**
     * Evaluate the accepted value against the given [[Class]] type. If the
