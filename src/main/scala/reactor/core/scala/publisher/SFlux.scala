@@ -677,6 +677,8 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] with ScalaCo
 }
 
 object SFlux {
+  def apply[T](source: Publisher[_ <: T]): SFlux[T] = SFlux.fromPublisher[T](source)
+
   def apply[T](elements: T*): SFlux[T] = SFlux.fromIterable(elements)
 
   def combineLatest[T1, T2](p1: Publisher[T1], p2: Publisher[T2]): SFlux[(T1, T2)] =

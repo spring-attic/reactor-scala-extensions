@@ -33,7 +33,13 @@ import ScalaConverters._
 
 class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks with TestSupport {
   "SFlux" - {
-    ".apply should return a proper SFlux" in {
+    ".apply should return a proper SFlux when provided a Publisher" in {
+      StepVerifier.create(SFlux(JFlux.just(1,2,3)))
+        .expectNext(1,2,3)
+        .verifyComplete()
+    }
+
+    ".apply should return a proper SFlux when provided a list of elements" in {
       StepVerifier.create(SFlux(1, 2, 3))
         .expectNext(1, 2, 3)
         .verifyComplete()
