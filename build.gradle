@@ -147,7 +147,6 @@ publishing {
             from components.java
             artifact sourcesJar
             artifact scaladocJar
-            artifact signing
             groupId "${project.group}"
             artifactId "${project.archivesBaseName}"
             version "${project.version}"
