@@ -329,8 +329,8 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] with ScalaCo
   //  TODO: how to test?
   final def checkpoint(description: Option[String] = None, forceStackTrace: Option[Boolean]): SFlux[T] = (description, forceStackTrace) match {
     case (None, None) => new ReactiveSFlux[T](coreFlux.checkpoint())
-    case (Some(desc), _) => new ReactiveSFlux[T](coreFlux.checkpoint(desc, false))
     case (Some(desc), Some(force)) => new ReactiveSFlux[T](coreFlux.checkpoint(desc, force))
+    case (Some(desc), _) => new ReactiveSFlux[T](coreFlux.checkpoint(desc, false))
   }
 
   final def collectSeq(): SMono[Seq[T]] = new ReactiveSMono[Seq[T]](coreFlux.collectList().map((l: JList[T]) => l.asScala))
