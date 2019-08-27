@@ -243,6 +243,6 @@ testScoverage {
 
 signing {
     required { isReleaseVersion }
-//    sign configurations.archives
-    sign publishing.publications.MyPublication
+    sign configurations.archives
+//    sign publishing.publications.MyPublication
 }
