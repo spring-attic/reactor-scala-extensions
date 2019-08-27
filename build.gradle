@@ -102,7 +102,7 @@ ext.isReleaseVersion = !version.endsWith("SNAPSHOT")
 signing {
     required { isReleaseVersion }
 //    sign configurations.archives
-    sign publishing.publications
+    sign publishing.publications.mavenJava
 }
 
 task sourcesJar(type: Jar, dependsOn: classes) {
