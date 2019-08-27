@@ -99,11 +99,6 @@ if (!project.parent) {
 archivesBaseName = "${rootProject.name}_$baseScalaVersion"
 
 ext.isReleaseVersion = !version.endsWith("SNAPSHOT")
-signing {
-    required { isReleaseVersion }
-//    sign configurations.archives
-    sign publishing.publications.MyPublication
-}
 
 task sourcesJar(type: Jar, dependsOn: classes) {
     classifier = 'sources'
@@ -244,4 +239,10 @@ test {
 
 testScoverage {
     maxParallelForks = 1
+}
+
+signing {
+    required { isReleaseVersion }
+//    sign configurations.archives
+    sign publishing.publications.MyPublication
 }
