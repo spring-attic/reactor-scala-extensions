@@ -111,7 +111,7 @@ task scaladocJar(type: Jar, dependsOn: scaladoc) {
 }
 
 artifacts {
-//    archives jar
+    archives jar
     archives sourcesJar
     archives scaladocJar
 }
