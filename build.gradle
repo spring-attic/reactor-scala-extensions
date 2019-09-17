@@ -184,10 +184,10 @@ uploadArchives {
             }
 
             pom.project {
-                name 'Scala wrapper for reactor-core'
+                name 'Scala Extensions for reactor-core'
                 packaging 'jar'
                 // optionally artifactId can be defined here
-                description 'A scala adapter for Reactor Flux and Mono so that the code can be fluently used in Scala'
+                description 'A scala extensions for Reactor Flux and Mono so that the code can be fluently used in Scala'
                 url 'https://github.com/reactor/reactor-scala-extensions'
 
                 scm {
