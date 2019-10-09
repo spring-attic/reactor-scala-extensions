@@ -1155,5 +1155,12 @@ class SMonoAsyncTest extends AsyncFreeSpec {
       }
       }
     }
+    ".toFuture should convert this mono to future with void return" in {
+      val future: Future[Int] = SMono.empty[Unit].toFuture.map(_ => 1)
+      future map { v => {
+        assert(v == 1)
+      }
+      }
+    }
   }
 }
