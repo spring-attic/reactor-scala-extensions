@@ -1300,8 +1300,8 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] with ScalaCo
   final def toFuture: Future[T] = {
     val promise = Promise[T]()
     coreMono.toFuture.handle[Unit]((value: T, throwable: Throwable) => {
-      Option(value).foreach(v => promise.complete(Try(v)))
-      Option(throwable).foreach(t => promise.failure(t))
+      if (throwable == null) promise.complete(Success(value))
+      else promise.failure(throwable)
       ()
     })
     promise.future
