@@ -5,7 +5,7 @@ import java.util
 import java.util.concurrent.Callable
 import java.util.function.{BiFunction, Function, Supplier}
 import java.util.logging.Level
-import java.util.{Collection => JCollection, List => JList, Map => JMap}
+import java.util.{Comparator, Collection => JCollection, List => JList, Map => JMap}
 
 import org.reactivestreams.{Publisher, Subscriber}
 import reactor.core.publisher.FluxSink.OverflowStrategy
@@ -747,6 +747,9 @@ object SFlux {
     if(delayError) new ReactiveSFlux[I](JFlux.mergeDelayError(prefetch, sources: _*))
     else new ReactiveSFlux[I](JFlux.merge(prefetch, sources: _*))
   }
+
+  def mergeOrdered[I <: Comparable[I]](sources: Seq[Publisher[_ <: I]], prefetch: Int = Queues.SMALL_BUFFER_SIZE, comparator: Comparator[I] = Comparator.naturalOrder[I]()) =
+    new ReactiveSFlux[I](JFlux.mergeOrdered(prefetch: Int, comparator, sources: _*))
 
   def mergeSequentialPublisher[T](sources: Publisher[_ <: Publisher[T]], delayError: Boolean = false, maxConcurrency: Int = SMALL_BUFFER_SIZE, prefetch: Int = XS_BUFFER_SIZE): SFlux[T] =
     new ReactiveSFlux[T](

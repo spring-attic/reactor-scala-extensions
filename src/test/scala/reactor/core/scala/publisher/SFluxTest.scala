@@ -3,6 +3,7 @@ package reactor.core.scala.publisher
 import java.io._
 import java.nio.file.Files
 import java.util
+import java.util.Comparator
 import java.util.concurrent.Callable
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger, AtomicLong, AtomicReference}
 import java.util.function.{Consumer, Predicate}
@@ -236,7 +237,7 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
     }
 
     ".merge" - {
-      "with publisher of publisher should merge the underlying publisher" in {
+      "with sequence of publisher should merge the underlying publisher" in {
         StepVerifier.withVirtualTime(() => {
           val sFlux1 = SFlux.just(1, 2, 3, 4, 5).delayElements(5 seconds)
           val sFlux2 = SFlux.just(10, 20, 30, 40, 50).delayElements(5 seconds).delaySubscription(2500 millisecond)
@@ -245,7 +246,7 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
           .expectNext(1, 10, 2, 20, 3, 30, 4, 40, 5, 50)
           .verifyComplete()
       }
-      "with publisher of publisher and prefetch should merge the underlying publisher" in {
+      "with sequence of publisher and prefetch should merge the underlying publisher" in {
         StepVerifier.withVirtualTime(() => {
           val sFlux1 = SFlux.just(1, 2, 3, 4, 5).delayElements(5 seconds)
           val sFlux2 = SFlux.just(10, 20, 30, 40, 50).delayElements(5 seconds).delaySubscription(2500 millisecond)
@@ -254,13 +255,43 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
           .expectNext(1, 10, 2, 20, 3, 30, 4, 40, 5, 50)
           .verifyComplete()
       }
-      "with publisher of publisher and prefetch and delayError should merge the underlying publisher" in {
+      "with sequence of publisher and prefetch and delayError should merge the underlying publisher" in {
         StepVerifier.withVirtualTime(() => {
           val sFlux1 = SFlux.just(1, 2, 3, 4, 5).delayElements(5 seconds)
           val sFlux2 = SFlux.just(10, 20, 30, 40, 50).delayElements(5 seconds).delaySubscription(2500 millisecond)
           SFlux.merge(Seq(sFlux1, sFlux2), 2, true)
         }).thenAwait(30 seconds)
           .expectNext(1, 10, 2, 20, 3, 30, 4, 40, 5, 50)
+          .verifyComplete()
+      }
+    }
+
+    ".mergeOrdered" - {
+      "with sequence of publisher should merge the value in orderly fashion" in {
+        StepVerifier.withVirtualTime(() => {
+          val sFlux1 = SFlux.just[Integer](1, 20, 40, 60, 80).delayElements(5 seconds)
+          val sFlux2 = SFlux.just[Integer](10, 30, 50, 70).delayElements(5 seconds).delaySubscription(2500 millisecond)
+          SFlux.mergeOrdered(Seq(sFlux1, sFlux2))
+        }).thenAwait(30 seconds)
+          .expectNext(1, 10, 20, 30, 40, 50, 60, 70, 80)
+          .verifyComplete()
+      }
+      "with sequence of publisher and prefetch should merge the value in orderly fashion" in {
+        StepVerifier.withVirtualTime(() => {
+          val sFlux1 = SFlux.just[Integer](1, 20, 40, 60, 80).delayElements(5 seconds)
+          val sFlux2 = SFlux.just[Integer](10, 30, 50, 70).delayElements(5 seconds).delaySubscription(2500 millisecond)
+          SFlux.mergeOrdered(Seq(sFlux1, sFlux2), 2)
+        }).thenAwait(30 seconds)
+          .expectNext(1, 10, 20, 30, 40, 50, 60, 70, 80)
+          .verifyComplete()
+      }
+      "with sequence of publisher and prefetch and Comparable should merge the value in orderly fashion" in {
+        StepVerifier.withVirtualTime(() => {
+          val sFlux1 = SFlux.just[Integer](1, 20, 40, 60, 80).delayElements(5 seconds)
+          val sFlux2 = SFlux.just[Integer](10, 30, 50, 70).delayElements(5 seconds).delaySubscription(2500 millisecond)
+          SFlux.mergeOrdered(Seq(sFlux1, sFlux2), 5, Comparator.naturalOrder().reversed())
+        }).thenAwait(30 seconds)
+          .expectNext(10, 30, 50, 70, 1, 20, 40, 60, 80)//this is possibly a bug in reactor. Tracking https://github.com/reactor/reactor-core/issues/1918
           .verifyComplete()
       }
     }
