@@ -235,7 +235,19 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
       }
     }
 
-    ".mergeSequential" - {
+    ".merge" - {
+      "with publisher of publisher should merge the underlying publisher" in {
+        StepVerifier.withVirtualTime(() => {
+          val sFlux1 = SFlux.just(1, 2, 3, 4, 5).delayElements(5 seconds)
+          val sFlux2 = SFlux.just(10, 20, 30, 40, 50).delayElements(5 seconds).delaySubscription(2500 millisecond)
+          SFlux.merge(Seq(sFlux1, sFlux2))
+        }).thenAwait(30 seconds)
+          .expectNext(1, 10, 2, 20, 3, 30, 4, 40, 5, 50)
+          .verifyComplete()
+      }
+    }
+
+    ".mergeSequential*" - {
       "with publisher of publisher should merge the underlying publisher in sequence of publisher" in {
         StepVerifier.create(SFlux.mergeSequentialPublisher[Int](SFlux(SFlux(1, 2, 3, 4), SFlux(2, 3, 4))))
           .expectNext(1, 2, 3, 4, 2, 3, 4)

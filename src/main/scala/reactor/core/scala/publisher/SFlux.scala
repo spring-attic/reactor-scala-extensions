@@ -381,7 +381,19 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] with ScalaCo
     */
   final def defaultIfEmpty(defaultV: T): SFlux[T] = new ReactiveSFlux[T](coreFlux.defaultIfEmpty(defaultV))
 
-  final def delayElements(delay: Duration, timer: Scheduler = Schedulers.parallel()): SFlux[T] = new ReactiveSFlux[T](coreFlux.delayElements(delay, timer))
+  /**
+    * Delay each of this [[SFlux]] elements [[Subscriber.onNext]] signals)
+    * by a given <code>duration</code>. Signals are delayed and continue on an user-specified
+    * [[Scheduler]], but empty sequences or immediate error signals are not delayed.
+    *
+    * <p>
+    * <img class="marble" src="../../doc-files/marbles/delayElements.svg" alt="">
+    *
+    * @param delay period to delay each [[Subscriber.onNext]] signal
+    * @param timer a time-capable [[Scheduler]] instance to delay each signal on
+    * @return a delayed [[SFlux]]
+    */
+  final def delayElements(delay: Duration, timer: Scheduler = Schedulers.parallel()) = new ReactiveSFlux[T](coreFlux.delayElements(delay, timer))
 
   final def delaySequence(delay: Duration, timer: Scheduler = Schedulers.parallel()): SFlux[T] = new ReactiveSFlux[T](coreFlux.delaySequence(delay, timer))
 
@@ -729,6 +741,8 @@ object SFlux {
     new ReactiveSFlux[Long](JFlux.interval(delay, period).map((l: JLong) => Long2long(l)))
 
   def just[T](data: T*): SFlux[T] = apply[T](data: _*)
+
+  def merge[I](sources: Seq[Publisher[_ <: I]]) = new ReactiveSFlux[I](JFlux.merge(sources: _*))
 
   def mergeSequentialPublisher[T](sources: Publisher[_ <: Publisher[T]], delayError: Boolean = false, maxConcurrency: Int = SMALL_BUFFER_SIZE, prefetch: Int = XS_BUFFER_SIZE): SFlux[T] =
     new ReactiveSFlux[T](
