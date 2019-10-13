@@ -15,6 +15,7 @@ import reactor.core.scala.publisher.PimpMyPublisher._
 import reactor.core.scheduler.{Scheduler, Schedulers}
 import reactor.core.{Disposable, Scannable => JScannable}
 import reactor.util.Logger
+import reactor.util.concurrent.Queues
 import reactor.util.concurrent.Queues.{SMALL_BUFFER_SIZE, XS_BUFFER_SIZE}
 import reactor.util.function.{Tuple2, Tuple3, Tuple4, Tuple5, Tuple6}
 
@@ -742,7 +743,7 @@ object SFlux {
 
   def just[T](data: T*): SFlux[T] = apply[T](data: _*)
 
-  def merge[I](sources: Seq[Publisher[_ <: I]]) = new ReactiveSFlux[I](JFlux.merge(sources: _*))
+  def merge[I](sources: Seq[Publisher[_ <: I]], prefetch: Int = Queues.XS_BUFFER_SIZE) = new ReactiveSFlux[I](JFlux.merge(prefetch, sources: _*))
 
   def mergeSequentialPublisher[T](sources: Publisher[_ <: Publisher[T]], delayError: Boolean = false, maxConcurrency: Int = SMALL_BUFFER_SIZE, prefetch: Int = XS_BUFFER_SIZE): SFlux[T] =
     new ReactiveSFlux[T](
