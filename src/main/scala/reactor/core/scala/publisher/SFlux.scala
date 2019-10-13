@@ -327,8 +327,8 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] with ScalaCo
     * @return the assembly marked [[SFlux]].
     */
   //  TODO: how to test?
-  final def checkpoint(description: Option[String] = None, forceStackTrace: Option[Boolean]): SFlux[T] = (description, forceStackTrace) match {
-    case (None, None) => new ReactiveSFlux[T](coreFlux.checkpoint())
+  final def checkpoint(description: Option[String] = None, forceStackTrace: Option[Boolean] = None): SFlux[T] = (description, forceStackTrace) match {
+    case (None, _) => new ReactiveSFlux[T](coreFlux.checkpoint())
     case (Some(desc), Some(force)) => new ReactiveSFlux[T](coreFlux.checkpoint(desc, force))
     case (Some(desc), _) => new ReactiveSFlux[T](coreFlux.checkpoint(desc, false))
   }
@@ -730,7 +730,7 @@ object SFlux {
 
   def just[T](data: T*): SFlux[T] = apply[T](data: _*)
 
-  def mergeSequentialPublisher[T](sources: Publisher[Publisher[T]], delayError: Boolean = false, maxConcurrency: Int = SMALL_BUFFER_SIZE, prefetch: Int = XS_BUFFER_SIZE): SFlux[T] =
+  def mergeSequentialPublisher[T](sources: Publisher[_ <: Publisher[T]], delayError: Boolean = false, maxConcurrency: Int = SMALL_BUFFER_SIZE, prefetch: Int = XS_BUFFER_SIZE): SFlux[T] =
     new ReactiveSFlux[T](
       if (delayError) JFlux.mergeSequentialDelayError[T](sources, maxConcurrency, prefetch)
       else JFlux.mergeSequential[T](sources, maxConcurrency, prefetch)

@@ -251,6 +251,12 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
           .expectNext(1, 2, 3, 2, 3, 4)
           .verifyComplete()
       }
+      "should compile properly" in {
+        val iterators: Iterable[SFlux[String]] = for (_ <- 0 to 4000) yield SFlux.interval(5 seconds).map(_.toString)
+        val publishers: SFlux[SFlux[String]] = SFlux.just(iterators).flatMapIterable(identity)
+        noException should be thrownBy SFlux.mergeSequentialPublisher(publishers)
+      }
+
       "with varargs of publishers should merge the underlying publisher in sequence of publisher" in {
         StepVerifier.create[Int](SFlux.mergeSequential[Int](Seq(SFlux(1, 2, 3), SFlux(2, 3, 4))))
           .expectNext(1, 2, 3, 2, 3, 4)
