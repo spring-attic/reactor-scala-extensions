@@ -1469,13 +1469,7 @@ object SMono extends ScalaConverters {
 
   def justOrEmpty[T](data: Option[_ <: T]): SMono[T] = JMono.justOrEmpty[T](data).asScala
 
-  def justOrEmpty[T](data: Any): SMono[T] = {
-    (data match {
-      case o: Option[T] => JMono.justOrEmpty[T](o)
-      case other: T => JMono.justOrEmpty[T](other)
-      case null => JMono.empty[T]()
-    }).asScala
-  }
+  def justOrEmpty[T](data: T): SMono[T] = JMono.justOrEmpty(data).asScala
 
   def never[T]: SMono[T] = JMono.never[T]().asScala
 
@@ -1485,7 +1479,7 @@ object SMono extends ScalaConverters {
   /**
     * Create a [[SMono]] emitting the [[Context]] available on subscribe.
     * If no Context is available, the mono will simply emit the
-    * [[Context.empty() empty Context].
+    * [[Context.empty() empty Context]].
     *
     * <p>
     * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/justorempty.png" alt="">
