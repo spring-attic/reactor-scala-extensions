@@ -1292,7 +1292,7 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] with ScalaCo
     * onError.
     *
     * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/tofuture.png" alt="">
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/reactor-core/src/main/java/reactor/core/publisher/doc-files/marbles/toFuture.svg" alt="">
     * <p>
     *
     * @return a [[Future]]
