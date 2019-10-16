@@ -291,7 +291,7 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
           val sFlux2 = SFlux.just[Integer](10, 30, 50, 70).delayElements(5 seconds).delaySubscription(2500 millisecond)
           SFlux.mergeOrdered(Seq(sFlux1, sFlux2), 5, Comparator.naturalOrder().reversed())
         }).thenAwait(30 seconds)
-          .expectNext(10, 30, 50, 70, 1, 20, 40, 60, 80)//this is possibly a bug in reactor. Tracking https://github.com/reactor/reactor-core/issues/1918
+          .expectNext(10, 30, 50, 70, 1, 20, 40, 60, 80)
           .verifyComplete()
       }
     }

@@ -748,6 +748,24 @@ object SFlux {
     else new ReactiveSFlux[I](JFlux.merge(prefetch, sources: _*))
   }
 
+  /**
+    * Merge data from provided [[Publisher]] sequences into an ordered merged sequence,
+    * by picking the smallest values from each source (as defined by the provided
+    * [[Comparator]]). This is not a [[SFlux.sort(Ordering)]], as it doesn't consider
+    * the whole of each sequences.
+    * <p>
+    * Instead, this operator considers only one value from each source and picks the
+    * smallest of all these values, then replenishes the slot for that picked source.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/reactor-core/src/main/java/reactor/core/publisher/doc-files/marbles/mergeOrdered.svg" alt="">
+    *
+    * @param prefetch   the number of elements to prefetch from each source (avoiding too
+    *                   many small requests to the source when picking)
+    * @param comparator the [[Comparator]] to use to find the smallest value
+    * @param sources [[Publisher]] sources to merge
+    * @tparam I the merged type
+    * @return a merged [[SFlux]] that , subscribing early but keeping the original ordering
+    */
   def mergeOrdered[I <: Comparable[I]](sources: Seq[Publisher[_ <: I]], prefetch: Int = Queues.SMALL_BUFFER_SIZE, comparator: Comparator[I] = Comparator.naturalOrder[I]()) =
     new ReactiveSFlux[I](JFlux.mergeOrdered(prefetch: Int, comparator, sources: _*))
 
