@@ -743,10 +743,26 @@ object SFlux {
 
   def just[T](data: T*): SFlux[T] = apply[T](data: _*)
 
-  def merge[I](sources: Seq[Publisher[_ <: I]], prefetch: Int = Queues.XS_BUFFER_SIZE, delayError: Boolean = false): ReactiveSFlux[I] = {
-    if(delayError) new ReactiveSFlux[I](JFlux.mergeDelayError(prefetch, sources: _*))
-    else new ReactiveSFlux[I](JFlux.merge(prefetch, sources: _*))
-  }
+  /**
+    * Merge data from [[Publisher]] sequences contained in an array / vararg
+    * into an interleaved merged sequence. Unlike [[SFlux.concat(Publisher) concat]],
+    * sources are subscribed to eagerly.
+    * <p>
+    * <img class="marble" src="https://github.com/reactor/reactor-core/tree/master/reactor-core/src/main/java/reactor/core/publisher/doc-files/marbles//mergeFixedSources.svg" alt="">
+    * <p>
+    * Note that merge is tailored to work with asynchronous sources or finite sources. When dealing with
+    * an infinite source that doesn't already publish on a dedicated Scheduler, you must isolate that source
+    * in its own Scheduler, as merge would otherwise attempt to drain it before subscribing to
+    * another source.
+    *
+    * @param sources the array of [[Publisher]] sources to merge
+    * @param prefetch the inner source request size
+    * @param delayError This parameter will delay any error until after the rest of the merge backlog has been processed.
+    * @tparam I The source type of the data sequence
+    * @return a fresh Reactive [[SFlux]] publisher ready to be subscribed
+    */
+  def merge[I](sources: Seq[Publisher[_ <: I]], prefetch: Int = Queues.XS_BUFFER_SIZE, delayError: Boolean = false): ReactiveSFlux[I] = if(delayError) new ReactiveSFlux[I](JFlux.mergeDelayError(prefetch, sources: _*))
+  else new ReactiveSFlux[I](JFlux.merge(prefetch, sources: _*))
 
   /**
     * Merge data from provided [[Publisher]] sequences into an ordered merged sequence,
