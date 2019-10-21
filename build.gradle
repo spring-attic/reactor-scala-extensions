@@ -243,6 +243,7 @@ testScoverage {
 
 signing {
     required { isReleaseVersion }
+    useGpgCmd()
     sign configurations.archives
 //    sign publishing.publications.MyPublication
 }
