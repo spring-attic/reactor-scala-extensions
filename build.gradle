@@ -9,7 +9,7 @@ apply plugin: 'org.scoverage'
 apply plugin: 'io.codearte.nexus-staging'
 apply plugin: 'org.owasp.dependencycheck'
 apply plugin: 'com.github.ben-manes.versions'
-apply plugin: 'com.jfrog.bintray'
+//apply plugin: 'com.jfrog.bintray'
 apply plugin: 'maven-publish'
 
 repositories {
@@ -50,7 +50,7 @@ buildscript {
         classpath 'io.codearte.gradle.nexus:gradle-nexus-staging-plugin:0.11.0'
         classpath 'org.owasp:dependency-check-gradle:3.3.1'
         classpath 'com.github.ben-manes:gradle-versions-plugin:0.20.0'
-        classpath "com.jfrog.bintray.gradle:gradle-bintray-plugin:1.8.4"
+//        classpath "com.jfrog.bintray.gradle:gradle-bintray-plugin:1.8.4"
     }
 }
 
@@ -118,9 +118,10 @@ artifacts {
 
 ext.sonatypeUsername = hasProperty("ossrhUsername") ? ossrhUsername : System.getenv("ossrhUsername")
 ext.sonatypePassword = hasProperty("ossrhPassword") ? ossrhPassword : System.getenv("ossrhPassword")
-ext.bintrayUsername = hasProperty("bintrayUser") ? bintrayUser : System.getenv("ossrhUsername")
-ext.bintrayKey = hasProperty("bintrayApiKey") ? bintrayApiKey : System.getenv("ossrhPassword")
+//ext.bintrayUsername = hasProperty("bintrayUser") ? bintrayUser : System.getenv("ossrhUsername")
+//ext.bintrayKey = hasProperty("bintrayApiKey") ? bintrayApiKey : System.getenv("ossrhPassword")
 
+/*
 bintray {
     user = "$bintrayUsername"
     key = "$bintrayKey"
@@ -135,6 +136,7 @@ bintray {
         }
     }
 }
+*/
 
 publishing {
     publications {
@@ -214,9 +216,9 @@ uploadArchives {
         }
     }
 }
-bintrayUpload.onlyIf {isReleaseVersion}
+//bintrayUpload.onlyIf {isReleaseVersion}
 afterReleaseBuild.dependsOn uploadArchives
-uploadArchives.dependsOn bintrayUpload
+//uploadArchives.dependsOn bintrayUpload
 
 ScalaCompileOptions.metaClass.daemonServer = true
 ScalaCompileOptions.metaClass.fork = true
