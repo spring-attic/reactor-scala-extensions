@@ -243,6 +243,10 @@ testScoverage {
     maxParallelForks = 1
 }
 
+tasks.withType(Sign) {
+    onlyIf { isReleaseVersion }
+}
+
 signing {
     required { isReleaseVersion }
     useGpgCmd()
