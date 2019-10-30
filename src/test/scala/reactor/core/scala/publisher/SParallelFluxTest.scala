@@ -1,12 +1,12 @@
 package reactor.core.scala.publisher
 
-import org.mockito.scalatest.IdiomaticMockito
+import org.mockito.Mockito.{spy, times, verify}
 import org.scalatest.{FreeSpec, Matchers}
 import reactor.core.publisher.{Flux => JFlux, ParallelFlux => JParallelFlux}
 import reactor.core.scheduler.Schedulers
 import reactor.test.StepVerifier
 
-class SParallelFluxTest extends FreeSpec with Matchers with IdiomaticMockito {
+class SParallelFluxTest extends FreeSpec with Matchers {
   "SParallelFlux" - {
     val data = Seq(1, 2, 3)
     val flux = SFlux.just[Int](data: _*)
@@ -81,7 +81,7 @@ class SParallelFluxTest extends FreeSpec with Matchers with IdiomaticMockito {
         .expectNextMatches((i: Int) => data.contains(i))
         .verifyComplete()
 
-      scheduler.createWorker() wasCalled twice
+      verify(scheduler, times(2)).createWorker()
     }
   }
 }
