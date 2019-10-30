@@ -17,7 +17,7 @@ ext {
     bytebuddyVersion    = "1.7.9"
     findBugsVersion     = "3.0.2"
     logbackVersion      = "1.3.0-alpha4"
-    mockitoVersion      = "2.21.0"
+    mockitoScalaVersion = "1.7.0"
     pegdownVersion      = "1.6.0"
     reactorVersion      = "3.2.9.RELEASE"
     scalaLoggingVersion = "3.9.0"
@@ -28,7 +28,7 @@ ext {
 ext.libraries = [
         findbugs            : "com.google.code.findbugs:jsr305:$findBugsVersion",
         logback             : "ch.qos.logback:logback-classic:$logbackVersion",
-        mockitoInline       : "org.mockito:mockito-inline:$mockitoVersion",
+        mockitoScala        : "org.mockito:mockito-scala-scalatest_$baseScalaVersion:$mockitoScalaVersion",
         pegdown             : "org.pegdown:pegdown:$pegdownVersion",
         reactorCore         : "io.projectreactor:reactor-core:$reactorVersion",
         reactorTest         : "io.projectreactor:reactor-test:$reactorVersion",

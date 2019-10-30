@@ -3,8 +3,7 @@ package reactor.core.scala.publisher
 import java.util.concurrent._
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger, AtomicLong, AtomicReference}
 
-import org.mockito.Mockito.spy
-import org.mockito.{ArgumentMatchers, Mockito}
+import org.mockito.scalatest.IdiomaticMockito
 import org.reactivestreams.Subscription
 import org.scalatest.{AsyncFreeSpec, FreeSpec, Matchers}
 import reactor.core.Disposable
@@ -23,7 +22,7 @@ import scala.language.postfixOps
 import scala.math.ScalaNumber
 import scala.util.{Failure, Random, Success, Try}
 
-class SMonoTest extends FreeSpec with Matchers with TestSupport {
+class SMonoTest extends FreeSpec with Matchers with TestSupport with IdiomaticMockito {
   private val randomValue = Random.nextLong()
 
   "SMono" - {
@@ -411,7 +410,7 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport {
     ".cancelOn should cancel the subscriber on a particular scheduler" in {
       val jMono = spy(JMono.just(1))
       new ReactiveSMono[Int](jMono).cancelOn(Schedulers.immediate())
-      Mockito.verify(jMono).cancelOn(ArgumentMatchers.any[Scheduler]())
+      jMono.cancelOn(any[Scheduler]) was called
     }
 
     ".compose should defer creating the target mono type" in {

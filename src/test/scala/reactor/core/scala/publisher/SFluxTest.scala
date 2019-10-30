@@ -8,14 +8,14 @@ import java.util.concurrent.Callable
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger, AtomicLong, AtomicReference}
 import java.util.function.{Consumer, Predicate}
 
-import org.mockito.ArgumentMatchers
-import org.mockito.Mockito.{spy, verify}
+import org.mockito.scalatest.IdiomaticMockito
 import org.reactivestreams.Subscription
 import org.scalatest.prop.TableDrivenPropertyChecks
 import org.scalatest.{FreeSpec, Matchers}
 import reactor.core.publisher.BufferOverflowStrategy.DROP_LATEST
 import reactor.core.publisher.{Flux => JFlux, _}
 import reactor.core.scala.Scannable
+import reactor.core.scala.publisher.ScalaConverters._
 import reactor.core.scheduler.Schedulers
 import reactor.test.StepVerifier
 import reactor.test.scheduler.VirtualTimeScheduler
@@ -30,9 +30,8 @@ import scala.language.postfixOps
 import scala.math.Ordering.IntOrdering
 import scala.math.ScalaNumber
 import scala.util.{Failure, Try}
-import ScalaConverters._
 
-class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks with TestSupport {
+class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks with TestSupport with IdiomaticMockito {
   "SFlux" - {
     ".apply should return a proper SFlux when provided a Publisher" in {
       StepVerifier.create(SFlux(JFlux.just(1,2,3)))
@@ -1536,31 +1535,31 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
         val jFlux = spy(JFlux.just(1, 2, 3))
         val flux = SFlux.fromPublisher(jFlux)
         flux.onBackpressureBuffer()
-        verify(jFlux).onBackpressureBuffer()
+        jFlux.onBackpressureBuffer() was called
       }
       "with maxSize should call the underlying method" in {
         val jFlux = spy(JFlux.just(1, 2, 3))
         val flux = SFlux.fromPublisher(jFlux)
         flux.onBackpressureBuffer(5)
-        verify(jFlux).onBackpressureBuffer(5)
+        jFlux.onBackpressureBuffer(5) was called
       }
       "with maxSize and onOverflow handler" in {
         val jFlux = spy(JFlux.just(1, 2, 3))
         val flux = SFlux.fromPublisher(jFlux)
         flux.onBackpressureBuffer(5, _ => ())
-        verify(jFlux).onBackpressureBuffer(ArgumentMatchers.eq(5), ArgumentMatchers.any(classOf[Consumer[Int]]))
+        jFlux.onBackpressureBuffer(eqTo(5), any[Consumer[Int]]) was called
       }
       "with maxSize and overflow strategy" in {
         val jFlux = spy(JFlux.just(1, 2, 3))
         val flux = SFlux.fromPublisher(jFlux)
         flux.onBackpressureBuffer(5, DROP_LATEST)
-        verify(jFlux).onBackpressureBuffer(5, DROP_LATEST)
+        jFlux.onBackpressureBuffer(5, DROP_LATEST) was called
       }
       "with maxSize, overflow handler and overflow strategy" in {
         val jFlux = spy(JFlux.just(1, 2, 3))
         val flux = SFlux.fromPublisher(jFlux)
         flux.onBackpressureBuffer(5, _ => (), DROP_LATEST)
-        verify(jFlux).onBackpressureBuffer(ArgumentMatchers.eq(5), ArgumentMatchers.any(classOf[Consumer[Int]]), ArgumentMatchers.eq(DROP_LATEST))
+        jFlux.onBackpressureBuffer(eqTo(5), any[Consumer[Int]], eqTo(DROP_LATEST)) was called
       }
     }
 
@@ -1569,26 +1568,26 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
       val flux = SFlux.fromPublisher(jFlux)
       "without consumer" in {
         flux.onBackpressureDrop()
-        verify(jFlux).onBackpressureDrop()
+        jFlux.onBackpressureDrop() was called
       }
       "with consumer" in {
         flux.onBackpressureDrop(_ => ())
-        verify(jFlux).onBackpressureDrop(ArgumentMatchers.any(classOf[Consumer[Int]]))
+        jFlux.onBackpressureDrop(any[Consumer[Int]]) was called
       }
     }
 
     ".onBackpressureError" in {
-      val jFlux = spy(JFlux.just(1, 2, 3))
+      val jFlux = spy(JFlux.just(1, 2, 3), true)
       val flux = SFlux.fromPublisher(jFlux)
       flux.onBackpressureError()
-      verify(jFlux).onBackpressureError()
+      jFlux.onBackpressureError() was called
     }
 
     ".onBackpressureLatest" in {
       val jFlux = spy(JFlux.just(1, 2, 3))
       val flux = SFlux.fromPublisher(jFlux)
       flux.onBackpressureLatest()
-      verify(jFlux).onBackpressureLatest()
+      jFlux.onBackpressureLatest() was called
     }
 
     ".onErrorMap" - {

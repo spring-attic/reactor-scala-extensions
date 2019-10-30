@@ -27,7 +27,7 @@ dependencies {
     testCompile libraries.scalatest
     testRuntime libraries.pegdown
     testCompile libraries.reactorTest
-    testCompile libraries.mockitoInline
+    testCompile libraries.mockitoScala
     testCompile libraries.scalaLogging
     testRuntime libraries.logback
     scoverage libraries.scoveragePlugin, libraries.scoverageRuntime
@@ -61,7 +61,7 @@ targetCompatibility = "1.8"
 
 if (!project.parent) {
     apply plugin: 'net.researchgate.release'
-    final svs = ['2.12.7', '2.11.12', '2.13.0-M3']
+    final svs = ['2.12.9', '2.11.12', '2.13.0-M3']
 
     for (sv in svs) {
         String scalaVersionInDot = sv.replaceAll("_", ".")
