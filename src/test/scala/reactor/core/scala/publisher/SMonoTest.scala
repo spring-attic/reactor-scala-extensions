@@ -419,6 +419,11 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport {
         .expectNext("1")
         .verifyComplete()
     }
+    ".transformDeferred should defer creating the target mono type" in {
+      StepVerifier.create(SMono.just(1).transformDeferred[String](m => SFlux.fromPublisher(m.map(_.toString))))
+        .expectNext("1")
+        .verifyComplete()
+    }
 
     ".concatWith should concatenate mono with another source" in {
       StepVerifier.create(SMono.just(1).concatWith(SMono.just(2)))

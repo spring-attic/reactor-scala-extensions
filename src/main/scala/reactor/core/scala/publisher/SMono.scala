@@ -183,20 +183,23 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] with ScalaCo
     * target [[SMono]] type. A transformation will occur for each
     * [[org.reactivestreams.Subscriber]].
     *
-    * `flux.compose(SMono::fromPublisher).subscribe()`
+    * `mono.transformDeferred(SMono::fromPublisher).subscribe()`
     *
-    * @param transformer the function to immediately map this [[SMono]] into a target [[SMono]]
+    * @param transformer the function to lazily map this [[SMono]] into a target [[SMono]]
     *                    instance.
     * @tparam V the item type in the returned [[org.reactivestreams.Publisher]]
     * @return a new [[SMono]]
     * @see [[SMono.as]] for a loose conversion to an arbitrary type
     */
-  final def compose[V](transformer: SMono[T] => Publisher[V]): SMono[V] = {
+  final def transformDeferred[V](transformer: SMono[T] => Publisher[V]): SMono[V] = {
     val transformerFunction = new Function[JMono[T], Publisher[V]] {
       override def apply(t: JMono[T]): Publisher[V] = transformer(SMono.this)
     }
-    coreMono.compose(transformerFunction).asScala
+    coreMono.transformDeferred(transformerFunction).asScala
   }
+
+  @deprecated("will be removed, use transformDeferred() instead", since="reactor-scala-extensions 0.5.0")
+  final def compose[V](transformer: SMono[T] => Publisher[V]): SMono[V] = transformDeferred(transformer)
 
   /**
     * Concatenate emissions of this [[SMono]] with the provided [[Publisher]]
@@ -324,6 +327,7 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] with ScalaCo
     * @param afterTerminate the callback to call after [[org.reactivestreams.Subscriber.onNext]], [[org.reactivestreams.Subscriber.onComplete]] without preceding [[org.reactivestreams.Subscriber.onNext]] or [[org.reactivestreams.Subscriber.onError]]
     * @return a new [[SMono]]
     */
+  @deprecated("prefer using `doAfterTerminate` or `doFinally`. will be removed", since="reactor-scala-extensions 0.5.0")
   final def doAfterSuccessOrError(afterTerminate: Try[_ <: T] => Unit): SMono[T] = {
     val biConsumer = (t: T, u: Throwable) => Option(t) match {
       case Some(s) => afterTerminate(Success(s))
