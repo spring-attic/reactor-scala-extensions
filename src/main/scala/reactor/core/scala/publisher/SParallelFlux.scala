@@ -125,7 +125,7 @@ class SParallelFlux[T] private(private val jParallelFlux: JParallelFlux[T]) exte
                         case (Some(fn), Some(fe), None, Some(fs)) => jParallelFlux.subscribe(fn, fe, null, fs)
                         case (Some(fn), Some(fe), None, None) => jParallelFlux.subscribe(fn, fe)
                         case (Some(fn), None, Some(fe), Some(fs)) => jParallelFlux.subscribe(fn, null, fe, fs)
-                        case (Some(fn), None, Some(fe), None) => jParallelFlux.subscribe(fn, null, fe, null)
+                        case (Some(fn), None, Some(fe), None) => jParallelFlux.subscribe(fn, null, fe)
                         case (Some(fn), None, None, Some(fs)) => jParallelFlux.subscribe(fn, null, null, fs)
                         case (Some(fn), None, None, None) => jParallelFlux.subscribe(fn)
                         case (None, Some(fe), Some(fc), Some(fs)) => jParallelFlux.subscribe(null, fe, fc, fs)
@@ -133,7 +133,7 @@ class SParallelFlux[T] private(private val jParallelFlux: JParallelFlux[T]) exte
                         case (None, Some(fe), None, Some(fs)) => jParallelFlux.subscribe(null, fe, null, fs)
                         case (None, Some(fe), None, None) => jParallelFlux.subscribe(null, fe)
                         case (None, None, Some(fc), Some(fs)) => jParallelFlux.subscribe(null, null, fc, fs)
-                        case (None, None, Some(fc), None) => jParallelFlux.subscribe(null, null, fc, null)
+                        case (None, None, Some(fc), None) => jParallelFlux.subscribe(null, null, fc)
                         case (None, None, None, Some(fs)) => jParallelFlux.subscribe(null, null, null, fs)
                         case (None, None, None, None) => jParallelFlux.subscribe()
                       }
