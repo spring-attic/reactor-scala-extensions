@@ -18,6 +18,7 @@ import reactor.util.function.{Tuple2, Tuple3, Tuple4, Tuple5, Tuple6}
 import scala.collection.JavaConverters._
 import scala.concurrent.duration.Duration
 import scala.concurrent.{ExecutionContext, Future, Promise}
+import scala.reflect.ClassTag
 import scala.util.{Failure, Success, Try}
 
 /**
@@ -137,7 +138,19 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] with ScalaCo
     * @param clazz the target type to cast to
     * @return a casted [[SMono]]
     */
+  @deprecated("Use the other cast signature instead", "reactor-scala-extensions 0.5.0")
   final def cast[E](clazz: Class[E]): SMono[E] = coreMono.cast(clazz).asScala
+
+  /**
+    * Cast the current [[SMono]] produced type into a target produced type.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/cast1.png" alt="">
+    *
+    * @tparam E the [[SMono]] output type
+    * @return a casted [[SMono]]
+    */
+  final def cast[E](implicit classTag: ClassTag[E]): SMono[E] = coreMono.cast(classTag.runtimeClass.asInstanceOf[Class[E]]).asScala
 
   /**
     * Turn this [[SMono]] into a hot source and cache last emitted signals for further
@@ -170,20 +183,23 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] with ScalaCo
     * target [[SMono]] type. A transformation will occur for each
     * [[org.reactivestreams.Subscriber]].
     *
-    * `flux.compose(SMono::fromPublisher).subscribe()`
+    * `mono.transformDeferred(SMono::fromPublisher).subscribe()`
     *
-    * @param transformer the function to immediately map this [[SMono]] into a target [[SMono]]
+    * @param transformer the function to lazily map this [[SMono]] into a target [[SMono]]
     *                    instance.
     * @tparam V the item type in the returned [[org.reactivestreams.Publisher]]
     * @return a new [[SMono]]
     * @see [[SMono.as]] for a loose conversion to an arbitrary type
     */
-  final def compose[V](transformer: SMono[T] => Publisher[V]): SMono[V] = {
+  final def transformDeferred[V](transformer: SMono[T] => Publisher[V]): SMono[V] = {
     val transformerFunction = new Function[JMono[T], Publisher[V]] {
       override def apply(t: JMono[T]): Publisher[V] = transformer(SMono.this)
     }
-    coreMono.compose(transformerFunction).asScala
+    coreMono.transformDeferred(transformerFunction).asScala
   }
+
+  @deprecated("will be removed, use transformDeferred() instead", since="reactor-scala-extensions 0.5.0")
+  final def compose[V](transformer: SMono[T] => Publisher[V]): SMono[V] = transformDeferred(transformer)
 
   /**
     * Concatenate emissions of this [[SMono]] with the provided [[Publisher]]
@@ -311,6 +327,7 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] with ScalaCo
     * @param afterTerminate the callback to call after [[org.reactivestreams.Subscriber.onNext]], [[org.reactivestreams.Subscriber.onComplete]] without preceding [[org.reactivestreams.Subscriber.onNext]] or [[org.reactivestreams.Subscriber.onError]]
     * @return a new [[SMono]]
     */
+  @deprecated("prefer using `doAfterTerminate` or `doFinally`. will be removed", since="reactor-scala-extensions 0.5.0")
   final def doAfterSuccessOrError(afterTerminate: Try[_ <: T] => Unit): SMono[T] = {
     val biConsumer = (t: T, u: Throwable) => Option(t) match {
       case Some(s) => afterTerminate(Success(s))
@@ -756,7 +773,23 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] with ScalaCo
     * @param clazz the [[Class]] type to test values against
     * @return a new [[SMono]] reduced to items converted to the matched type
     */
+  @deprecated("Use the other ofType signature instead", "reactor-scala-extensions 0.5.0")
   final def ofType[U](clazz: Class[U]): SMono[U] = coreMono.ofType[U](clazz).asScala
+
+
+  /**
+    * Evaluate the accepted value against the given [[Class]] type. If the
+    * predicate test succeeds, the value is
+    * passed into the new [[SMono]]. If the predicate test fails, the value is
+    * ignored.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/filter.png" alt="">
+    *
+    * @tparam U the [[Class]] type to test values against
+    * @return a new [[SMono]] reduced to items converted to the matched type
+    */
+  final def ofType[U](implicit classTag: ClassTag[U]): SMono[U] = coreMono.ofType[U](classTag.runtimeClass.asInstanceOf[Class[U]]).asScala
 
   /**
     * Transform the error emitted by this [[SMono]] by applying a function.
@@ -1263,7 +1296,7 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] with ScalaCo
     * onError.
     *
     * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/tofuture.png" alt="">
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/reactor-core/src/main/java/reactor/core/publisher/doc-files/marbles/toFuture.svg" alt="">
     * <p>
     *
     * @return a [[Future]]
@@ -1271,8 +1304,10 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] with ScalaCo
   final def toFuture: Future[T] = {
     val promise = Promise[T]()
     coreMono.toFuture.handle[Unit]((value: T, throwable: Throwable) => {
-      Option(value).foreach(v => promise.complete(Try(v)))
-      Option(throwable).foreach(t => promise.failure(t))
+      Option(throwable) match {
+        case Some(_) => promise.failure(throwable)
+        case None => promise.complete(Success(value))
+      }
       ()
     })
     promise.future
@@ -1436,13 +1471,7 @@ object SMono extends ScalaConverters {
 
   def justOrEmpty[T](data: Option[_ <: T]): SMono[T] = JMono.justOrEmpty[T](data).asScala
 
-  def justOrEmpty[T](data: Any): SMono[T] = {
-    (data match {
-      case o: Option[T] => JMono.justOrEmpty[T](o)
-      case other: T => JMono.justOrEmpty[T](other)
-      case null => JMono.empty[T]()
-    }).asScala
-  }
+  def justOrEmpty[T](data: T): SMono[T] = JMono.justOrEmpty(data).asScala
 
   def never[T]: SMono[T] = JMono.never[T]().asScala
 
@@ -1452,7 +1481,7 @@ object SMono extends ScalaConverters {
   /**
     * Create a [[SMono]] emitting the [[Context]] available on subscribe.
     * If no Context is available, the mono will simply emit the
-    * [[Context.empty() empty Context].
+    * [[Context.empty() empty Context]].
     *
     * <p>
     * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/justorempty.png" alt="">

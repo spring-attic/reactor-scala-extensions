@@ -3,6 +3,7 @@ package reactor.core.scala.publisher
 import java.io._
 import java.nio.file.Files
 import java.util
+import java.util.Comparator
 import java.util.concurrent.Callable
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger, AtomicLong, AtomicReference}
 import java.util.function.{Consumer, Predicate}
@@ -33,7 +34,13 @@ import ScalaConverters._
 
 class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks with TestSupport {
   "SFlux" - {
-    ".apply should return a proper SFlux" in {
+    ".apply should return a proper SFlux when provided a Publisher" in {
+      StepVerifier.create(SFlux(JFlux.just(1,2,3)))
+        .expectNext(1,2,3)
+        .verifyComplete()
+    }
+
+    ".apply should return a proper SFlux when provided a list of elements" in {
       StepVerifier.create(SFlux(1, 2, 3))
         .expectNext(1, 2, 3)
         .verifyComplete()
@@ -229,7 +236,67 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
       }
     }
 
-    ".mergeSequential" - {
+    ".merge" - {
+      "with sequence of publisher should merge the underlying publisher" in {
+        StepVerifier.withVirtualTime(() => {
+          val sFlux1 = SFlux.just(1, 2, 3, 4, 5).delayElements(5 seconds)
+          val sFlux2 = SFlux.just(10, 20, 30, 40, 50).delayElements(5 seconds).delaySubscription(2500 millisecond)
+          SFlux.merge(Seq(sFlux1, sFlux2))
+        }).thenAwait(30 seconds)
+          .expectNext(1, 10, 2, 20, 3, 30, 4, 40, 5, 50)
+          .verifyComplete()
+      }
+      "with sequence of publisher and prefetch should merge the underlying publisher" in {
+        StepVerifier.withVirtualTime(() => {
+          val sFlux1 = SFlux.just(1, 2, 3, 4, 5).delayElements(5 seconds)
+          val sFlux2 = SFlux.just(10, 20, 30, 40, 50).delayElements(5 seconds).delaySubscription(2500 millisecond)
+          SFlux.merge(Seq(sFlux1, sFlux2), 2)
+        }).thenAwait(30 seconds)
+          .expectNext(1, 10, 2, 20, 3, 30, 4, 40, 5, 50)
+          .verifyComplete()
+      }
+      "with sequence of publisher and prefetch and delayError should merge the underlying publisher" in {
+        StepVerifier.withVirtualTime(() => {
+          val sFlux1 = SFlux.just(1, 2, 3, 4, 5).delayElements(5 seconds)
+          val sFlux2 = SFlux.just(10, 20, 30, 40, 50).delayElements(5 seconds).delaySubscription(2500 millisecond)
+          SFlux.merge(Seq(sFlux1, sFlux2), 2, true)
+        }).thenAwait(30 seconds)
+          .expectNext(1, 10, 2, 20, 3, 30, 4, 40, 5, 50)
+          .verifyComplete()
+      }
+    }
+
+    ".mergeOrdered" - {
+      "with sequence of publisher should merge the value in orderly fashion" in {
+        StepVerifier.withVirtualTime(() => {
+          val sFlux1 = SFlux.just[Integer](1, 20, 40, 60, 80).delayElements(5 seconds)
+          val sFlux2 = SFlux.just[Integer](10, 30, 50, 70).delayElements(5 seconds).delaySubscription(2500 millisecond)
+          SFlux.mergeOrdered(Seq(sFlux1, sFlux2))
+        }).thenAwait(30 seconds)
+          .expectNext(1, 10, 20, 30, 40, 50, 60, 70, 80)
+          .verifyComplete()
+      }
+      "with sequence of publisher and prefetch should merge the value in orderly fashion" in {
+        StepVerifier.withVirtualTime(() => {
+          val sFlux1 = SFlux.just[Integer](1, 20, 40, 60, 80).delayElements(5 seconds)
+          val sFlux2 = SFlux.just[Integer](10, 30, 50, 70).delayElements(5 seconds).delaySubscription(2500 millisecond)
+          SFlux.mergeOrdered(Seq(sFlux1, sFlux2), 2)
+        }).thenAwait(30 seconds)
+          .expectNext(1, 10, 20, 30, 40, 50, 60, 70, 80)
+          .verifyComplete()
+      }
+      "with sequence of publisher and prefetch and Comparable should merge the value in orderly fashion" in {
+        StepVerifier.withVirtualTime(() => {
+          val sFlux1 = SFlux.just[Integer](1, 20, 40, 60, 80).delayElements(5 seconds)
+          val sFlux2 = SFlux.just[Integer](10, 30, 50, 70).delayElements(5 seconds).delaySubscription(2500 millisecond)
+          SFlux.mergeOrdered(Seq(sFlux1, sFlux2), 5, Comparator.naturalOrder().reversed())
+        }).thenAwait(30 seconds)
+          .expectNext(10, 30, 50, 70, 1, 20, 40, 60, 80)
+          .verifyComplete()
+      }
+    }
+
+    ".mergeSequential*" - {
       "with publisher of publisher should merge the underlying publisher in sequence of publisher" in {
         StepVerifier.create(SFlux.mergeSequentialPublisher[Int](SFlux(SFlux(1, 2, 3, 4), SFlux(2, 3, 4))))
           .expectNext(1, 2, 3, 4, 2, 3, 4)
@@ -245,6 +312,12 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
           .expectNext(1, 2, 3, 2, 3, 4)
           .verifyComplete()
       }
+      "should compile properly" in {
+        val iterators: Iterable[SFlux[String]] = for (_ <- 0 to 4000) yield SFlux.interval(5 seconds).map(_.toString)
+        val publishers: SFlux[SFlux[String]] = SFlux.just(iterators).flatMapIterable(identity)
+        noException should be thrownBy SFlux.mergeSequentialPublisher(publishers)
+      }
+
       "with varargs of publishers should merge the underlying publisher in sequence of publisher" in {
         StepVerifier.create[Int](SFlux.mergeSequential[Int](Seq(SFlux(1, 2, 3), SFlux(2, 3, 4))))
           .expectNext(1, 2, 3, 2, 3, 4)
@@ -767,6 +840,11 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
         .expectNext(1)
         .verifyComplete()
     }
+    ".transformDeferred should defer transformation of this flux to another publisher" in {
+      StepVerifier.create(SFlux.just(1, 2, 3).transformDeferred(SMono.fromPublisher))
+        .expectNext(1)
+        .verifyComplete()
+    }
 
     ".concatMap" - {
       "with mapper should map the element sequentially" in {
@@ -1171,6 +1249,41 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
       }
       "with delayError should respect whether error be delayed after current merge backlog" in {
         StepVerifier.create(SFlux.just(1, 2, 3).flatMapSequential(i => {
+          if (i == 2) SFlux.raiseError[Int](new RuntimeException("just an error"))
+          else SFlux.just(i * 2, i * 3)
+        }, 2, 2, delayError = true))
+          .expectNext(2, 3, 6, 9)
+          .verifyError(classOf[RuntimeException])
+      }
+    }
+
+    ".flatMap(Function,Int,Int)" - {
+      "should transform items emitted by this flux into publishers then flatten them in the order they complete" in {
+        StepVerifier.withVirtualTime(() =>
+            SFlux.just(2, 3, 1)
+                 .flatMap(i => SFlux.just(i * 2, i * 3).delaySequence(5-i seconds)))
+          .thenAwait(2 seconds)
+          .expectNext(6, 9)
+          .thenAwait(1 second)
+          .expectNext(4, 6)
+          .thenAwait(1 second)
+          .expectNext(2, 3)
+          .verifyComplete()
+      }
+      "with limited maxConcurrency, should further delay an element that would have otherwise returned sooner" in {
+        StepVerifier.withVirtualTime(() =>
+            SFlux.just(2, 1, 3)
+                 .flatMap(i => SFlux.just(i * 2, i * 3).delaySequence(5-i seconds), 2))
+          .thenAwait(3 seconds)
+          .expectNext(4, 6)
+          .thenAwait(1 second)
+          .expectNext(2, 3)
+          .thenAwait(1 second)
+          .expectNext(6, 9)
+          .verifyComplete()
+      }
+      "with delayError should respect whether error be delayed after current merge backlog" in {
+        StepVerifier.create(SFlux.just(1, 2, 3).flatMap(i => {
           if (i == 2) SFlux.raiseError[Int](new RuntimeException("just an error"))
           else SFlux.just(i * 2, i * 3)
         }, 2, 2, delayError = true))

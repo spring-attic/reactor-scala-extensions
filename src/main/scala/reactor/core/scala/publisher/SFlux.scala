@@ -5,7 +5,7 @@ import java.util
 import java.util.concurrent.Callable
 import java.util.function.{BiFunction, Function, Supplier}
 import java.util.logging.Level
-import java.util.{Collection => JCollection, List => JList, Map => JMap}
+import java.util.{Comparator, Collection => JCollection, List => JList, Map => JMap}
 
 import org.reactivestreams.{Publisher, Subscriber}
 import reactor.core.publisher.FluxSink.OverflowStrategy
@@ -29,10 +29,51 @@ import scala.reflect.ClassTag
 trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] with ScalaConverters {
   self =>
 
+  /**
+    *
+    * Emit a single boolean true if all values of this sequence match
+    * the given predicate.
+    * <p>
+    * The implementation uses short-circuit logic and completes with false if
+    * the predicate doesn't match a value.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/all.png" alt="">
+    *
+    * @param predicate the predicate to match all emitted items
+    * @return a [[SMono]] of all evaluations
+    */
   final def all(predicate: T => Boolean): SMono[Boolean] = new ReactiveSMono[Boolean](coreFlux.all(predicate).map((b: JBoolean) => Boolean2boolean(b)))
 
+  /**
+    * Emit a single boolean true if any of the values of this [[SFlux]] sequence match
+    * the predicate.
+    * <p>
+    * The implementation uses short-circuit logic and completes with true if
+    * the predicate matches a value.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/any.png" alt="">
+    *
+    * @param predicate predicate tested upon values
+    * @return a new [[SFlux]] with <code>true</code> if any value satisfies a predicate and <code>false</code>
+    *         otherwise
+    *
+    */
   final def any(predicate: T => Boolean): SMono[Boolean] = new ReactiveSMono[Boolean](coreFlux.any(predicate).map((b: JBoolean) => Boolean2boolean(b)))
 
+  /**
+    * Immediately apply the given transformation to this [[SFlux]] in order to generate a target type.
+    *
+    * `flux.as(Mono::from).subscribe()`
+    *
+    * @param transformer the [[Function1]] to immediately map this [[SFlux]]
+    *                    into a target type
+    *                    instance.
+    * @tparam P the returned type
+    * @return a an instance of P
+    * @see [[SFlux.compose]] for a bounded conversion to [[Publisher]]
+    */
   final def as[P](transformer: SFlux[T] => P): P = {
     coreFlux.as[P](new Function[JFlux[T], P] {
       override def apply(t: JFlux[T]): P = transformer(SFlux.fromPublisher(t))
@@ -41,16 +82,56 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] with ScalaCo
 
   final def asJava(): JFlux[T] = coreFlux
 
+  /**
+    * Blocks until the upstream signals its first value or completes.
+    *
+    * @return the [[Some]] value or [[None]]
+    */
   final def blockFirst(timeout: Duration = Duration.Inf): Option[T] = timeout match {
     case _: Infinite => Option(coreFlux.blockFirst())
     case t => Option(coreFlux.blockFirst(t))
   }
 
+  /**
+    * Blocks until the upstream completes and return the last emitted value.
+    *
+    * @param timeout max duration timeout to wait for.
+    * @return the last [[Some value]] or [[None]]
+    */
   final def blockLast(timeout: Duration = Duration.Inf): Option[T] = timeout match {
     case _: Infinite => Option(coreFlux.blockLast())
     case t => Option(coreFlux.blockLast(t))
   }
 
+  /**
+    * Collect incoming values into multiple [[mutable.Seq]] that will be pushed into
+    * the returned [[SFlux]] when the
+    * given max size is reached or onComplete is received. A new container
+    * [[mutable.Seq]] will be created every given
+    * skip count.
+    * <p>
+    * When Skip > Max Size : dropping buffers
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/buffersizeskip.png"
+    * alt="">
+    * <p>
+    * When Skip < Max Size : overlapping buffers
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/buffersizeskipover.png"
+    * alt="">
+    * <p>
+    * When Skip == Max Size : exact buffers
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/buffersize.png"
+    * alt="">
+    *
+    * @param skip           the number of items to skip before creating a new bucket
+    * @param maxSize        the max collected size
+    * @param bufferSupplier the collection to use for each data segment
+    * @tparam C the supplied [[mutable.Seq]] type
+    * @return a microbatched [[SFlux]] of possibly overlapped or gapped
+    *         [[mutable.Seq]]
+    */
   final def buffer[C >: mutable.Buffer[T]](maxSize: Int = Int.MaxValue, bufferSupplier: () => C = () => mutable.ListBuffer.empty[T])(implicit skip: Int = maxSize): SFlux[Seq[T]] = {
     new ReactiveSFlux[Seq[T]](coreFlux.buffer(maxSize, skip, new Supplier[JList[T]] {
       override def get(): JList[T] = {
@@ -62,6 +143,17 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] with ScalaCo
   final def bufferTimeSpan(timespan: Duration, timer: Scheduler = Schedulers.parallel())(timeshift: Duration = timespan): SFlux[Seq[T]] =
     new ReactiveSFlux[Seq[T]](coreFlux.buffer(timespan, timeshift, timer).map((l: JList[T]) => l.asScala.toSeq))
 
+  /**
+    * Collect incoming values into multiple [[Seq]] delimited by the given [[Publisher]] signals.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/bufferboundary.png"
+    * alt="">
+    *
+    * @param other          the other [[Publisher]]  to subscribe to for emitting and recycling receiving bucket
+    * @param bufferSupplier the collection to use for each data segment
+    * @tparam C the supplied [[Seq]] type
+    * @return a microbatched [[SFlux]] of [[Seq]] delimited by a [[Publisher]]
+    */
   final def bufferPublisher[C >: mutable.Buffer[T]](other: Publisher[_], bufferSupplier: () => C = () => mutable.ListBuffer.empty[T]): SFlux[Seq[T]] =
     new ReactiveSFlux[Seq[T]](coreFlux.buffer(other, new Supplier[JList[T]] {
       override def get(): JList[T] = {
@@ -69,6 +161,19 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] with ScalaCo
       }
     }).map((l: JList[T]) => l.asScala.toSeq))
 
+  /**
+    * Collect incoming values into a [[Seq]] that will be pushed into the returned [[SFlux]] every timespan OR
+    * maxSize items.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/buffertimespansize.png"
+    * alt="">
+    *
+    * @param maxSize        the max collected size
+    * @param timespan       the timeout to use to release a buffered list
+    * @param bufferSupplier the collection to use for each data segment
+    * @tparam C the supplied [[Seq]] type
+    * @return a microbatched [[SFlux]] of [[Seq]] delimited by given size or a given period timeout
+    */
   final def bufferTimeout[C >: mutable.Buffer[T]](maxSize: Int, timespan: Duration, timer: Scheduler = Schedulers.parallel(), bufferSupplier: () => C = () => mutable.ListBuffer.empty[T]): SFlux[Seq[T]] = {
     new ReactiveSFlux[Seq[T]](coreFlux.bufferTimeout(maxSize, timespan, timer, new Supplier[JList[T]] {
       override def get(): JList[T] = {
@@ -77,8 +182,57 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] with ScalaCo
     }).map((l: JList[T]) => l.asScala.toSeq))
   }
 
+  /**
+    * Collect incoming values into multiple [[Seq]] that will be pushed into
+    * the returned [[SFlux]] each time the given predicate returns true. Note that
+    * the buffer into which the element that triggers the predicate to return true
+    * (and thus closes a buffer) is included depends on the `cutBefore` parameter:
+    * set it to true to include the boundary element in the newly opened buffer, false to
+    * include it in the closed buffer (as in [[SFlux.bufferUntil]]).
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/buffersize.png"
+    * alt="">
+    * <p>
+    * On completion, if the latest buffer is non-empty and has not been closed it is
+    * emitted. However, such a "partial" buffer isn't emitted in case of onError
+    * termination.
+    *
+    * @param predicate a predicate that triggers the next buffer when it becomes true.
+    * @param cutBefore set to true to include the triggering element in the new buffer rather than the old.
+    * @return a microbatched [[SFlux]] of [[Seq]]
+    */
   final def bufferUntil(predicate: T => Boolean, cutBefore: Boolean = false): SFlux[Seq[T]] = new ReactiveSFlux[Seq[T]](coreFlux.bufferUntil(predicate, cutBefore).map((l: JList[T]) => l.asScala.toSeq))
 
+  /**
+    * Collect incoming values into multiple [[Seq]] delimited by the given [[Publisher]] signals. Each [[Seq]]
+    * bucket will last until the mapped [[Publisher]] receiving the boundary signal emits, thus releasing the
+    * bucket to the returned [[SFlux]].
+    * <p>
+    * When Open signal is strictly not overlapping Close signal : dropping buffers
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/bufferopenclose.png"
+    * alt="">
+    * <p>
+    * When Open signal is strictly more frequent than Close signal : overlapping buffers
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/bufferopencloseover.png"
+    * alt="">
+    * <p>
+    * When Open signal is exactly coordinated with Close signal : exact buffers
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/bufferboundary.png"
+    * alt="">
+    *
+    * @param bucketOpening  a [[Publisher]] to subscribe to for creating new receiving bucket signals.
+    * @param closeSelector  a [[Publisher]] factory provided the opening signal and returning a [[Publisher]] to
+    *                       subscribe to for emitting relative bucket.
+    * @param bufferSupplier the collection to use for each data segment
+    * @tparam U the element type of the bucket-opening sequence
+    * @tparam V the element type of the bucket-closing sequence
+    * @tparam C the supplied [[Seq]] type
+    * @return a microbatched [[SFlux]] of [[Seq]] delimited by an opening [[Publisher]] and a relative
+    *         closing [[Publisher]]
+    */
   final def bufferWhen[U, V, C >: mutable.Buffer[T]](bucketOpening: Publisher[U], closeSelector: U => Publisher[V], bufferSupplier: () => C = () => mutable.ListBuffer.empty[T]): SFlux[Seq[T]] =
     new ReactiveSFlux[Seq[T]](coreFlux.bufferWhen(bucketOpening, closeSelector, new Supplier[JList[T]] {
       override def get(): JList[T] = {
@@ -86,8 +240,38 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] with ScalaCo
       }
     }).map((l: JList[T]) => l.asScala.toSeq))
 
+  /**
+    * Collect incoming values into multiple [[Seq]] that will be pushed into
+    * the returned [[SFlux]]. Each buffer continues aggregating values while the
+    * given predicate returns true, and a new buffer is created as soon as the
+    * predicate returns false... Note that the element that triggers the predicate
+    * to return false (and thus closes a buffer) is NOT included in any emitted buffer.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/buffersize.png"
+    * alt="">
+    * <p>
+    * On completion, if the latest buffer is non-empty and has not been closed it is
+    * emitted. However, such a "partial" buffer isn't emitted in case of onError
+    * termination.
+    *
+    * @param predicate a predicate that triggers the next buffer when it becomes false.
+    * @return a microbatched [[SFlux]] of [[Seq]]
+    */
   final def bufferWhile(predicate: T => Boolean): SFlux[Seq[T]] = new ReactiveSFlux[Seq[T]](coreFlux.bufferWhile(predicate).map((l: JList[T]) => l.asScala.toSeq))
 
+  /**
+    * Turn this [[SFlux]] into a hot source and cache last emitted signals for further
+    * [[Subscriber]]. Will retain up to the given history size  with per-item expiry
+    * timeout.
+    * <p>
+    * <p>
+    * <img width="500" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/cache.png"
+    * alt="">
+    *
+    * @param history number of events retained in history excluding complete and error
+    * @param ttl     Time-to-live for each cached item.
+    * @return a replaying [[SFlux]]
+    */
   final def cache(history: Int = Int.MaxValue, ttl: Duration = Duration.Inf): SFlux[T] = {
     ttl match {
       case _: Duration.Infinite => new ReactiveSFlux[T](coreFlux.cache(history))
@@ -95,7 +279,60 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] with ScalaCo
     }
   }
 
+  /**
+    * Prepare this [[SFlux]] so that subscribers will cancel from it on a
+    * specified
+    * [[Scheduler]].
+    *
+    * @param scheduler the [[Scheduler]] to signal cancel  on
+    * @return a scheduled cancel [[SFlux]]
+    */
+  //  TODO: how to test this?
+  final def cancelOn(scheduler: Scheduler): SFlux[T] = new ReactiveSFlux[T](coreFlux.cancelOn(scheduler))
+
+  /**
+    * Cast the current [[SFlux]] produced type into a target produced type.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/cast.png" alt="">
+    *
+    * @tparam E the [[SFlux]] output type
+    * @return a casted [[SFlux]]
+    */
   final def cast[E](implicit classTag: ClassTag[E]): SFlux[E] = new ReactiveSFlux[E](coreFlux.cast(classTag.runtimeClass.asInstanceOf[Class[E]]))
+
+  /**
+    * Activate assembly tracing or the lighter assembly marking depending on the
+    * <code>forceStackTrace</code> option.
+    * <p>
+    * By setting the <code>forceStackTrace</code> parameter to `true`, activate assembly
+    * tracing for this particular [[SFlux]] and give it a description that
+    * will be reflected in the assembly traceback in case of an error upstream of the
+    * checkpoint. Note that unlike [[SFlux.checkpoint(Option[String])]], this will incur
+    * the cost of an exception stack trace creation. The description could for
+    * example be a meaningful name for the assembled flux or a wider correlation ID,
+    * since the stack trace will always provide enough information to locate where this
+    * Flux was assembled.
+    * <p>
+    * By setting <code>forceStackTrace</code> to `false`, behaves like
+    * [[SFlux.checkpoint(Option[String])]] and is subject to the same caveat in choosing the
+    * description.
+    * <p>
+    * It should be placed towards the end of the reactive chain, as errors
+    * triggered downstream of it cannot be observed and augmented with assembly marker.
+    *
+    * @param description     a description (must be unique enough if forceStackTrace is set
+    *                        to false).
+    * @param forceStackTrace false to make a light checkpoint without a stacktrace, true
+    *                        to use a stack trace.
+    * @return the assembly marked [[SFlux]].
+    */
+  //  TODO: how to test?
+  final def checkpoint(description: Option[String] = None, forceStackTrace: Option[Boolean] = None): SFlux[T] = (description, forceStackTrace) match {
+    case (None, _) => new ReactiveSFlux[T](coreFlux.checkpoint())
+    case (Some(desc), Some(force)) => new ReactiveSFlux[T](coreFlux.checkpoint(desc, force))
+    case (Some(desc), _) => new ReactiveSFlux[T](coreFlux.checkpoint(desc, false))
+  }
 
   final def collectSeq(): SMono[Seq[T]] = new ReactiveSMono[Seq[T]](coreFlux.collectList().map((l: JList[T]) => l.asScala.toSeq))
 
@@ -118,7 +355,10 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] with ScalaCo
 
   final def collectSortedSeq(ordering: Ordering[T] = None.orNull): SMono[Seq[T]] = new ReactiveSMono[Seq[T]](coreFlux.collectSortedList(ordering).map((l: JList[T]) => l.asScala.toSeq))
 
+  @deprecated("will be removed, use transformDeferred() instead", since="reactor-scala-extensions 0.5.0")
   final def compose[V](transformer: SFlux[T] => Publisher[V]): SFlux[V] = new ReactiveSFlux[V](coreFlux.compose[V](transformer))
+
+  final def transformDeferred[V](transformer: SFlux[T] => Publisher[V]): SFlux[V] = new ReactiveSFlux[V](coreFlux.transformDeferred[V](transformer))
 
   final def concatMapDelayError[V](mapper: T => Publisher[_ <: V], delayUntilEnd: Boolean = false, prefetch: Int = XS_BUFFER_SIZE): SFlux[V] =
     new ReactiveSFlux[V](coreFlux.concatMapDelayError[V](mapper, delayUntilEnd, prefetch))
@@ -145,7 +385,19 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] with ScalaCo
     */
   final def defaultIfEmpty(defaultV: T): SFlux[T] = new ReactiveSFlux[T](coreFlux.defaultIfEmpty(defaultV))
 
-  final def delayElements(delay: Duration, timer: Scheduler = Schedulers.parallel()): SFlux[T] = new ReactiveSFlux[T](coreFlux.delayElements(delay, timer))
+  /**
+    * Delay each of this [[SFlux]] elements [[Subscriber.onNext]] signals)
+    * by a given <code>duration</code>. Signals are delayed and continue on an user-specified
+    * [[Scheduler]], but empty sequences or immediate error signals are not delayed.
+    *
+    * <p>
+    * <img class="marble" src="../../doc-files/marbles/delayElements.svg" alt="">
+    *
+    * @param delay period to delay each [[Subscriber.onNext]] signal
+    * @param timer a time-capable [[Scheduler]] instance to delay each signal on
+    * @return a delayed [[SFlux]]
+    */
+  final def delayElements(delay: Duration, timer: Scheduler = Schedulers.parallel()) = new ReactiveSFlux[T](coreFlux.delayElements(delay, timer))
 
   final def delaySequence(delay: Duration, timer: Scheduler = Schedulers.parallel()): SFlux[T] = new ReactiveSFlux[T](coreFlux.delaySequence(delay, timer))
 
@@ -211,10 +463,13 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] with ScalaCo
   }, prefetch))
 
   final def flatMapSequential[R](mapper: T => Publisher[_ <: R], maxConcurrency: Int = SMALL_BUFFER_SIZE, prefetch: Int = XS_BUFFER_SIZE, delayError: Boolean = false): SFlux[R] =
-    SFlux.fromPublisher(
-    if (!delayError) coreFlux.flatMapSequential[R](mapper, maxConcurrency, prefetch)
-    else coreFlux.flatMapSequentialDelayError[R](mapper, maxConcurrency, prefetch)
-    )
+    if (!delayError) SFlux.fromPublisher(coreFlux.flatMapSequential[R](mapper, maxConcurrency, prefetch))
+    else SFlux.fromPublisher(coreFlux.flatMapSequentialDelayError[R](mapper, maxConcurrency, prefetch))
+
+  final def flatMap[R](mapper: T => Publisher[_ <: R], maxConcurrency: Int = SMALL_BUFFER_SIZE, prefetch: Int = XS_BUFFER_SIZE, delayError: Boolean = false): SFlux[R] =
+    if (!delayError) SFlux.fromPublisher(coreFlux.flatMap[R](mapper, maxConcurrency, prefetch))
+    else SFlux.fromPublisher(coreFlux.flatMapDelayError[R](mapper, maxConcurrency, prefetch))
+
 
   final def groupBy[K](keyMapper: T => K): SFlux[GroupedFlux[K, T]] =
     groupBy(keyMapper, identity)
@@ -439,6 +694,8 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] with ScalaCo
 }
 
 object SFlux {
+  def apply[T](source: Publisher[_ <: T]): SFlux[T] = SFlux.fromPublisher[T](source)
+
   def apply[T](elements: T*): SFlux[T] = SFlux.fromIterable(elements)
 
   def combineLatest[T1, T2](p1: Publisher[T1], p2: Publisher[T2]): SFlux[(T1, T2)] =
@@ -490,7 +747,49 @@ object SFlux {
 
   def just[T](data: T*): SFlux[T] = apply[T](data: _*)
 
-  def mergeSequentialPublisher[T](sources: Publisher[Publisher[T]], delayError: Boolean = false, maxConcurrency: Int = SMALL_BUFFER_SIZE, prefetch: Int = XS_BUFFER_SIZE): SFlux[T] =
+  /**
+    * Merge data from [[Publisher]] sequences contained in an array / vararg
+    * into an interleaved merged sequence. Unlike [[SFlux.concat(Publisher) concat]],
+    * sources are subscribed to eagerly.
+    * <p>
+    * <img class="marble" src="https://github.com/reactor/reactor-core/tree/master/reactor-core/src/main/java/reactor/core/publisher/doc-files/marbles//mergeFixedSources.svg" alt="">
+    * <p>
+    * Note that merge is tailored to work with asynchronous sources or finite sources. When dealing with
+    * an infinite source that doesn't already publish on a dedicated Scheduler, you must isolate that source
+    * in its own Scheduler, as merge would otherwise attempt to drain it before subscribing to
+    * another source.
+    *
+    * @param sources the array of [[Publisher]] sources to merge
+    * @param prefetch the inner source request size
+    * @param delayError This parameter will delay any error until after the rest of the merge backlog has been processed.
+    * @tparam I The source type of the data sequence
+    * @return a fresh Reactive [[SFlux]] publisher ready to be subscribed
+    */
+  def merge[I](sources: Seq[Publisher[_ <: I]], prefetch: Int = Queues.XS_BUFFER_SIZE, delayError: Boolean = false): ReactiveSFlux[I] = if(delayError) new ReactiveSFlux[I](JFlux.mergeDelayError(prefetch, sources: _*))
+  else new ReactiveSFlux[I](JFlux.merge(prefetch, sources: _*))
+
+  /**
+    * Merge data from provided [[Publisher]] sequences into an ordered merged sequence,
+    * by picking the smallest values from each source (as defined by the provided
+    * [[Comparator]]). This is not a [[SFlux.sort(Ordering)]], as it doesn't consider
+    * the whole of each sequences.
+    * <p>
+    * Instead, this operator considers only one value from each source and picks the
+    * smallest of all these values, then replenishes the slot for that picked source.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/reactor-core/src/main/java/reactor/core/publisher/doc-files/marbles/mergeOrdered.svg" alt="">
+    *
+    * @param prefetch   the number of elements to prefetch from each source (avoiding too
+    *                   many small requests to the source when picking)
+    * @param comparator the [[Comparator]] to use to find the smallest value
+    * @param sources [[Publisher]] sources to merge
+    * @tparam I the merged type
+    * @return a merged [[SFlux]] that , subscribing early but keeping the original ordering
+    */
+  def mergeOrdered[I <: Comparable[I]](sources: Seq[Publisher[_ <: I]], prefetch: Int = Queues.SMALL_BUFFER_SIZE, comparator: Comparator[I] = Comparator.naturalOrder[I]()) =
+    new ReactiveSFlux[I](JFlux.mergeOrdered(prefetch: Int, comparator, sources: _*))
+
+  def mergeSequentialPublisher[T](sources: Publisher[_ <: Publisher[T]], delayError: Boolean = false, maxConcurrency: Int = SMALL_BUFFER_SIZE, prefetch: Int = XS_BUFFER_SIZE): SFlux[T] =
     new ReactiveSFlux[T](
       if (delayError) JFlux.mergeSequentialDelayError[T](sources, maxConcurrency, prefetch)
       else JFlux.mergeSequential[T](sources, maxConcurrency, prefetch)

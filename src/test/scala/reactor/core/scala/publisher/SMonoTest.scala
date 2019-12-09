@@ -364,8 +364,12 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport {
       }
     }
 
+    ".cast (deprecated) should cast the underlying value" in {
+      val number = SMono.just(BigDecimal("123")).cast(classOf[ScalaNumber]).block()
+      number shouldBe a[ScalaNumber]
+    }
     ".cast should cast the underlying value" in {
-      val number = just(BigDecimal("123")).cast(classOf[ScalaNumber]).block()
+      val number = SMono.just(BigDecimal("123")).cast[ScalaNumber].block()
       number shouldBe a[ScalaNumber]
     }
 
@@ -412,6 +416,11 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport {
 
     ".compose should defer creating the target mono type" in {
       StepVerifier.create(just(1).compose[String](m => SFlux.fromPublisher(m.map(_.toString))))
+        .expectNext("1")
+        .verifyComplete()
+    }
+    ".transformDeferred should defer creating the target mono type" in {
+      StepVerifier.create(SMono.just(1).transformDeferred[String](m => SFlux.fromPublisher(m.map(_.toString))))
         .expectNext("1")
         .verifyComplete()
     }
@@ -804,7 +813,7 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport {
         .verifyComplete()
     }
 
-    ".ofType should" - {
+    ".ofType (deprecated) should" - {
       "convert the Mono value type to the provided type if it can be casted" in {
         StepVerifier.create(just(BigDecimal("1")).ofType(classOf[ScalaNumber]))
           .expectNextCount(1)
@@ -812,6 +821,17 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport {
       }
       "ignore the Mono value if it can't be casted" in {
         StepVerifier.create(just(1).ofType(classOf[String]))
+          .verifyComplete()
+      }
+    }
+    ".ofType should" - {
+      "convert the Mono value type to the provided type if it can be casted" in {
+        StepVerifier.create(SMono.just(BigDecimal("1")).ofType[ScalaNumber])
+          .expectNextCount(1)
+          .verifyComplete()
+      }
+      "ignore the Mono value if it can't be casted" in {
+        StepVerifier.create(SMono.just(1).ofType[String])
           .verifyComplete()
       }
     }
@@ -1135,6 +1155,13 @@ class SMonoAsyncTest extends AsyncFreeSpec {
   "SMono" - {
     ".toFuture should convert this mono to future" in {
       val future: Future[Int] = just(1).toFuture
+      future map { v => {
+        assert(v == 1)
+      }
+      }
+    }
+    ".toFuture should convert this mono to future with void return" in {
+      val future: Future[Int] = SMono.empty[Unit].toFuture.map(_ => 1)
       future map { v => {
         assert(v == 1)
       }
