@@ -383,14 +383,14 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] with ScalaCo
   final def defaultIfEmpty(defaultV: T): SFlux[T] = new ReactiveSFlux[T](coreFlux.defaultIfEmpty(defaultV))
 
   /**
-    * Delay each of this [[SFlux]] elements [[Subscriber.onNext]] signals)
+    * Delay each of this [[SFlux]] elements [[Subscriber#onNext]] signals)
     * by a given <code>duration</code>. Signals are delayed and continue on an user-specified
     * [[Scheduler]], but empty sequences or immediate error signals are not delayed.
     *
     * <p>
     * <img class="marble" src="../../doc-files/marbles/delayElements.svg" alt="">
     *
-    * @param delay period to delay each [[Subscriber.onNext]] signal
+    * @param delay period to delay each [[Subscriber#onNext]] signal
     * @param timer a time-capable [[Scheduler]] instance to delay each signal on
     * @return a delayed [[SFlux]]
     */
