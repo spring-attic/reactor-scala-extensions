@@ -812,7 +812,7 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
         val map = mutable.HashMap[Int, util.Collection[Int]]()
         StepVerifier.create(SFlux.just(1, 2, 3, 4, 5, 6, 7, 8, 9, 10).collectMultimap(i => i % 3, i => i + 6, () => map))
           .expectNextMatches((m: Map[Int, Traversable[Int]]) => {
-            m shouldBe map.mapValues(vs => vs.toArray().toSeq)
+            m shouldBe map.mapValues(vs => vs.toArray().toSeq).toMap
             m shouldBe Map((0, Seq(9, 12, 15)), (1, Seq(7, 10, 13, 16)), (2, Seq(8, 11, 14)))
             true
           })
