@@ -19,7 +19,7 @@ import reactor.util.concurrent.Queues
 import reactor.util.concurrent.Queues.{SMALL_BUFFER_SIZE, XS_BUFFER_SIZE}
 import reactor.util.function.{Tuple2, Tuple3, Tuple4, Tuple5, Tuple6}
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.collection.mutable
 import scala.concurrent.duration.Duration
 import scala.concurrent.duration.Duration.Infinite
@@ -104,10 +104,10 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] with ScalaCo
   }
 
   /**
-    * Collect incoming values into multiple [[mutable.Seq]] that will be pushed into
+    * Collect incoming values into multiple [[Seq]] that will be pushed into
     * the returned [[SFlux]] when the
     * given max size is reached or onComplete is received. A new container
-    * [[mutable.Seq]] will be created every given
+    * [[Seq]] will be created every given
     * skip count.
     * <p>
     * When Skip > Max Size : dropping buffers
@@ -128,20 +128,20 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] with ScalaCo
     * @param skip           the number of items to skip before creating a new bucket
     * @param maxSize        the max collected size
     * @param bufferSupplier the collection to use for each data segment
-    * @tparam C the supplied [[mutable.Seq]] type
+    * @tparam C the supplied [[Seq]] type
     * @return a microbatched [[SFlux]] of possibly overlapped or gapped
-    *         [[mutable.Seq]]
+    *         [[Seq]]
     */
   final def buffer[C >: mutable.Buffer[T]](maxSize: Int = Int.MaxValue, bufferSupplier: () => C = () => mutable.ListBuffer.empty[T])(implicit skip: Int = maxSize): SFlux[Seq[T]] = {
     new ReactiveSFlux[Seq[T]](coreFlux.buffer(maxSize, skip, new Supplier[JList[T]] {
       override def get(): JList[T] = {
         bufferSupplier().asInstanceOf[mutable.Buffer[T]].asJava
       }
-    }).map((l: JList[T]) => l.asScala))
+    }).map((l: JList[T]) => l.asScala.toSeq))
   }
 
   final def bufferTimeSpan(timespan: Duration, timer: Scheduler = Schedulers.parallel())(timeshift: Duration = timespan): SFlux[Seq[T]] =
-    new ReactiveSFlux[Seq[T]](coreFlux.buffer(timespan, timeshift, timer).map((l: JList[T]) => l.asScala))
+    new ReactiveSFlux[Seq[T]](coreFlux.buffer(timespan, timeshift, timer).map((l: JList[T]) => l.asScala.toSeq))
 
   /**
     * Collect incoming values into multiple [[Seq]] delimited by the given [[Publisher]] signals.
@@ -179,7 +179,7 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] with ScalaCo
       override def get(): JList[T] = {
         bufferSupplier().asInstanceOf[mutable.Buffer[T]].asJava
       }
-    }).map((l: JList[T]) => l.asScala))
+    }).map((l: JList[T]) => l.asScala.toSeq))
   }
 
   /**
@@ -201,7 +201,7 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] with ScalaCo
     * @param cutBefore set to true to include the triggering element in the new buffer rather than the old.
     * @return a microbatched [[SFlux]] of [[Seq]]
     */
-  final def bufferUntil(predicate: T => Boolean, cutBefore: Boolean = false): SFlux[Seq[T]] = new ReactiveSFlux[Seq[T]](coreFlux.bufferUntil(predicate, cutBefore).map((l: JList[T]) => l.asScala))
+  final def bufferUntil(predicate: T => Boolean, cutBefore: Boolean = false): SFlux[Seq[T]] = new ReactiveSFlux[Seq[T]](coreFlux.bufferUntil(predicate, cutBefore).map((l: JList[T]) => l.asScala.toSeq))
 
   /**
     * Collect incoming values into multiple [[Seq]] delimited by the given [[Publisher]] signals. Each [[Seq]]
@@ -238,7 +238,7 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] with ScalaCo
       override def get(): JList[T] = {
         bufferSupplier().asInstanceOf[mutable.Buffer[T]].asJava
       }
-    }).map((l: JList[T]) => l.asScala))
+    }).map((l: JList[T]) => l.asScala.toSeq))
 
   /**
     * Collect incoming values into multiple [[Seq]] that will be pushed into
@@ -257,7 +257,7 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] with ScalaCo
     * @param predicate a predicate that triggers the next buffer when it becomes false.
     * @return a microbatched [[SFlux]] of [[Seq]]
     */
-  final def bufferWhile(predicate: T => Boolean): SFlux[Seq[T]] = new ReactiveSFlux[Seq[T]](coreFlux.bufferWhile(predicate).map((l: JList[T]) => l.asScala))
+  final def bufferWhile(predicate: T => Boolean): SFlux[Seq[T]] = new ReactiveSFlux[Seq[T]](coreFlux.bufferWhile(predicate).map((l: JList[T]) => l.asScala.toSeq))
 
   /**
     * Turn this [[SFlux]] into a hot source and cache last emitted signals for further
@@ -334,7 +334,7 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] with ScalaCo
     case (Some(desc), _) => new ReactiveSFlux[T](coreFlux.checkpoint(desc, false))
   }
 
-  final def collectSeq(): SMono[Seq[T]] = new ReactiveSMono[Seq[T]](coreFlux.collectList().map((l: JList[T]) => l.asScala))
+  final def collectSeq(): SMono[Seq[T]] = new ReactiveSMono[Seq[T]](coreFlux.collectList().map((l: JList[T]) => l.asScala.toSeq))
 
   final def collectMap[K](keyExtractor: T => K): SMono[Map[K, T]] = collectMap[K, T](keyExtractor, (t: T) => t)
 
@@ -351,9 +351,9 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] with ScalaCo
         override def get(): util.Map[K, util.Collection[V]] = {
           mapSupplier().asJava
         }
-      }).map((m: JMap[K, JCollection[V]]) => m.asScala.toMap.mapValues((vs: JCollection[V]) => vs.asScala.toSeq)))
+      }).map((m: JMap[K, JCollection[V]]) => m.asScala.mapValues((vs: JCollection[V]) => vs.asScala.toSeq).toMap))
 
-  final def collectSortedSeq(ordering: Ordering[T] = None.orNull): SMono[Seq[T]] = new ReactiveSMono[Seq[T]](coreFlux.collectSortedList(ordering).map((l: JList[T]) => l.asScala))
+  final def collectSortedSeq(ordering: Ordering[T] = None.orNull): SMono[Seq[T]] = new ReactiveSMono[Seq[T]](coreFlux.collectSortedList(ordering).map((l: JList[T]) => l.asScala.toSeq))
 
   @deprecated("will be removed, use transformDeferred() instead", since="reactor-scala-extensions 0.5.0")
   final def compose[V](transformer: SFlux[T] => Publisher[V]): SFlux[V] = new ReactiveSFlux[V](coreFlux.compose[V](transformer))
@@ -386,14 +386,14 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] with ScalaCo
   final def defaultIfEmpty(defaultV: T): SFlux[T] = new ReactiveSFlux[T](coreFlux.defaultIfEmpty(defaultV))
 
   /**
-    * Delay each of this [[SFlux]] elements [[Subscriber.onNext]] signals)
+    * Delay each of this [[SFlux]] elements [[Subscriber#onNext]] signals)
     * by a given <code>duration</code>. Signals are delayed and continue on an user-specified
     * [[Scheduler]], but empty sequences or immediate error signals are not delayed.
     *
     * <p>
     * <img class="marble" src="../../doc-files/marbles/delayElements.svg" alt="">
     *
-    * @param delay period to delay each [[Subscriber.onNext]] signal
+    * @param delay period to delay each [[Subscriber#onNext]] signal
     * @param timer a time-capable [[Scheduler]] instance to delay each signal on
     * @return a delayed [[SFlux]]
     */

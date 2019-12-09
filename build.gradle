@@ -15,13 +15,18 @@ apply plugin: 'maven-publish'
 repositories {
     mavenCentral()
 }
-
+configurations {
+    scalaAnt
+}
 dependencies {
+    scalaAnt 'com.sandinh:scala-ant_2.13:2.13.1'
+
     zinc "com.typesafe.zinc:zinc:0.3.15"
 
     compile libraries.scalaLibrary
     compile libraries.reactorCore
     compile libraries.findbugs
+    compile libraries.scalaCollCompat
 
 //    test dependencies
     testCompile libraries.scalatest
@@ -32,7 +37,9 @@ dependencies {
     testRuntime libraries.logback
     scoverage libraries.scoveragePlugin, libraries.scoverageRuntime
 }
-
+scaladoc {
+    scalaClasspath += baseScalaVersion == "2.13"? configurations.scalaAnt : layout.files()
+}
 buildscript {
     apply from: file('versions.gradle')
     repositories {
@@ -61,7 +68,7 @@ targetCompatibility = "1.8"
 
 if (!project.parent) {
     apply plugin: 'net.researchgate.release'
-    final svs = ['2.12.10', '2.11.12', '2.13.0-M3']
+    final svs = ['2.12.10', '2.11.12', '2.13.1']
 
     for (sv in svs) {
         String scalaVersionInDot = sv.replaceAll("_", ".")
