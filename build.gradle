@@ -22,6 +22,7 @@ dependencies {
     compile libraries.scalaLibrary
     compile libraries.reactorCore
     compile libraries.findbugs
+    compile libraries.scalaCollCompat
 
 //    test dependencies
     testCompile libraries.scalatest

@@ -6,7 +6,7 @@ import reactor.core.Disposable
 import reactor.core.Scannable.Attr
 import reactor.core.publisher.{FluxSink, FluxProcessor => JFluxProcessor, UnicastProcessor => JUnicastProcessor}
 import reactor.core.scala.Scannable
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 /**
   * A base processor that exposes [[SFlux]] API for [[org.reactivestreams.Processor]].

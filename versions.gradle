@@ -24,11 +24,13 @@ ext {
     pegdownVersion      = "1.6.0"
     reactorVersion      = "3.3.1.RELEASE"
     scalaLoggingVersion = "3.9.2"
-    scalatestVersion    = "3.0.8"
-    scoverageVersion    = "1.4.0"
+    scalatestVersion    = "3.0.8" //3.1.0
+    scoverageVersion    = "1.4.1"
+    scalaCollCompatVersion = "2.1.2"
 }
 
 ext.libraries = [
+        scalaCollCompat     : "org.scala-lang.modules:scala-collection-compat_$baseScalaVersion:$scalaCollCompatVersion",
         findbugs            : "com.google.code.findbugs:jsr305:$findBugsVersion",
         logback             : "ch.qos.logback:logback-classic:$logbackVersion",
         mockitoInline       : "org.mockito:mockito-inline:$mockitoVersion",
