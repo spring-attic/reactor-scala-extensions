@@ -35,7 +35,7 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport {
     }
 
     ".defer should create a Mono with deferred Mono" in {
-      StepVerifier.create(SMono.defer(() => SMono.just(randomValue)))
+      StepVerifier.create(SMono.defer(() => just(randomValue)))
         .expectNext(randomValue)
         .expectComplete()
         .verify()
@@ -69,7 +69,7 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport {
 
     ".firstEmitter" - {
       "with varargs should create mono that emit the first item" in {
-        StepVerifier.withVirtualTime(() => SMono.firstEmitter(SMono.just(1).delaySubscription(3 seconds), SMono.just(2).delaySubscription(2 seconds)))
+        StepVerifier.withVirtualTime(() => SMono.firstEmitter(just(1).delaySubscription(3 seconds), just(2).delaySubscription(2 seconds)))
           .thenAwait(3 seconds)
           .expectNext(2)
           .verifyComplete()
@@ -123,13 +123,13 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport {
     }
 
     ".ignoreElements should ignore all elements from a publisher and just react on completion signal" in {
-      StepVerifier.create(SMono.ignoreElements(SMono.just(randomValue)))
+      StepVerifier.create(SMono.ignoreElements(just(randomValue)))
         .expectComplete()
         .verify()
     }
 
     ".just should emit the specified item" in {
-      StepVerifier.create(SMono.just(randomValue))
+      StepVerifier.create(just(randomValue))
         .expectNext(randomValue)
         .verifyComplete()
     }
@@ -172,7 +172,7 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport {
 
     ".name should give name to this sequence" in {
       val name = "one two three four"
-      val scannable: Scannable = Scannable.from(Option(SMono.just(randomValue).name(name)))
+      val scannable: Scannable = Scannable.from(Option(just(randomValue).name(name)))
       scannable.name shouldBe name
     }
 
@@ -208,10 +208,10 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport {
         "of publisher of unit should return when all of the sources has fulfilled" in {
           val completed = new ConcurrentHashMap[String, Boolean]()
           val mono = SMono.when(Iterable(
-            SMono.just[Unit]({
+            just[Unit]({
               completed.put("first", true)
             }),
-            SMono.just[Unit]({
+            just[Unit]({
               completed.put("second", true)
             })
           ))
@@ -240,31 +240,31 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport {
 
     ".zipDelayError" - {
       "with p1 and p2 should merge when both Monos are fulfilled" in {
-        StepVerifier.create(SMono.zipDelayError(SMono.just(1), SMono.just("one")))
+        StepVerifier.create(SMono.zipDelayError(just(1), just("one")))
           .expectNext((1, "one"))
           .verifyComplete()
       }
 
       "with p1, p2 and p3 should merge when all Monos are fulfilled" in {
-        StepVerifier.create(SMono.zipDelayError(SMono.just(1), SMono.just("one"), SMono.just(1L)))
+        StepVerifier.create(SMono.zipDelayError(just(1), just("one"), just(1L)))
           .expectNext((1, "one", 1L))
           .verifyComplete()
       }
 
       "with p1, p2, p3 and p4 should merge when all Monos are fulfilled" in {
-        StepVerifier.create(SMono.zipDelayError(SMono.just(1), SMono.just(2), SMono.just(3), SMono.just(4)))
+        StepVerifier.create(SMono.zipDelayError(just(1), just(2), just(3), just(4)))
           .expectNext((1, 2, 3, 4))
           .verifyComplete()
       }
 
       "with p1, p2, p3, p4 and p5 should merge when all Monos are fulfilled" in {
-        StepVerifier.create(SMono.zipDelayError(SMono.just(1), SMono.just(2), SMono.just(3), SMono.just(4), SMono.just(5)))
+        StepVerifier.create(SMono.zipDelayError(just(1), just(2), just(3), just(4), just(5)))
           .expectNext((1, 2, 3, 4, 5))
           .verifyComplete()
       }
 
       "with p1, p2, p3, p4, p5 and p6 should merge when all Monos are fulfilled" in {
-        StepVerifier.create(SMono.zipDelayError(SMono.just(1), SMono.just(2), SMono.just(3), SMono.just(4), SMono.just(5), SMono.just(6)))
+        StepVerifier.create(SMono.zipDelayError(just(1), just(2), just(3), just(4), just(5), just(6)))
           .expectNext((1, 2, 3, 4, 5, 6))
           .verifyComplete()
       }
@@ -273,10 +273,10 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport {
         "of publisher of unit should return when all of the sources has fulfilled" in {
           val completed = new ConcurrentHashMap[String, Boolean]()
           val mono = SMono.whenDelayError(Iterable(
-            SMono.just[Unit]({
+            just[Unit]({
               completed.put("first", true)
             }),
-            SMono.just[Unit]({
+            just[Unit]({
               completed.put("second", true)
             })
           ))
@@ -287,7 +287,7 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport {
         }
 
         "of combinator function and monos should emit the value after combined by combinator function" in {
-          StepVerifier.create(SMono.zipDelayError((values: Array[Any]) => s"${values(0).toString}-${values(1).toString}", SMono.just(1), SMono.just("one")))
+          StepVerifier.create(SMono.zipDelayError((values: Array[Any]) => s"${values(0).toString}-${values(1).toString}", just(1), just("one")))
             .expectNext("1-one")
             .verifyComplete()
         }
@@ -297,13 +297,13 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport {
     ".zip" - {
       val combinator: Array[AnyRef] => String = { datas => datas.map(_.toString).foldLeft("") { (acc, v) => if (acc.isEmpty) v else s"$acc-$v" } }
       "with combinator function and varargs of mono should fullfill when all Monos are fulfilled" in {
-        val mono = SMono.zip(combinator, SMono.just(1), SMono.just(2))
+        val mono = SMono.zip(combinator, just(1), just(2))
         StepVerifier.create(mono)
           .expectNext("1-2")
           .verifyComplete()
       }
       "with combinator function and Iterable of mono should fulfill when all Monos are fulfilled" in {
-        val mono = SMono.zip(Iterable(SMono.just(1), SMono.just("2")), combinator)
+        val mono = SMono.zip(Iterable(just(1), just("2")), combinator)
         StepVerifier.create(mono)
           .expectNext("1-2")
           .verifyComplete()
@@ -312,13 +312,13 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport {
 
     ".and" - {
       "should combine this mono and the other" in {
-        StepVerifier.create(SMono.just(1) and SMono.just(2))
+        StepVerifier.create(just(1) and just(2))
           .verifyComplete()
       }
     }
 
     ".as should transform the Mono to whatever the transformer function is provided" in {
-      val mono = SMono.just(randomValue)
+      val mono = just(randomValue)
 
       StepVerifier.create(mono.as(m => SFlux.fromPublisher(m)))
         .expectNext(randomValue)
@@ -326,7 +326,7 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport {
     }
 
     ".asJava should convert to java" in {
-      SMono.just(randomValue).asJava() shouldBe a[JMono[_]]
+      just(randomValue).asJava() shouldBe a[JMono[_]]
     }
 
     ".asScala should transform Mono to SMono" in {
@@ -335,17 +335,17 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport {
 
     ".block" - {
       "should block the mono to get the value" in {
-        SMono.just(randomValue).block() shouldBe randomValue
+        just(randomValue).block() shouldBe randomValue
       }
       "with duration should block the mono up to the duration" in {
-        SMono.just(randomValue).block(10 seconds) shouldBe randomValue
+        just(randomValue).block(10 seconds) shouldBe randomValue
       }
     }
 
     ".blockOption" - {
       "without duration" - {
         "should block the mono to get value" in {
-          SMono.just(randomValue).blockOption() shouldBe Some(randomValue)
+          just(randomValue).blockOption() shouldBe Some(randomValue)
         }
         "should return None if mono is empty" in {
           SMono.empty.blockOption() shouldBe None
@@ -353,10 +353,10 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport {
       }
       "with duration" - {
         "should block the mono up to the duration" in {
-          SMono.just(randomValue).blockOption(10 seconds) shouldBe Some(randomValue)
+          just(randomValue).blockOption(10 seconds) shouldBe Some(randomValue)
         }
         "shouldBlock the mono up to the duration and return None" in {
-          StepVerifier.withVirtualTime(() => SMono.just(SMono.empty.blockOption(10 seconds)))
+          StepVerifier.withVirtualTime(() => just(SMono.empty.blockOption(10 seconds)))
             .thenAwait(10 seconds)
             .expectNext(None)
             .verifyComplete()
@@ -415,7 +415,7 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport {
     }
 
     ".compose should defer creating the target mono type" in {
-      StepVerifier.create(SMono.just(1).compose[String](m => SFlux.fromPublisher(m.map(_.toString))))
+      StepVerifier.create(just(1).compose[String](m => SFlux.fromPublisher(m.map(_.toString))))
         .expectNext("1")
         .verifyComplete()
     }
@@ -426,14 +426,14 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport {
     }
 
     ".concatWith should concatenate mono with another source" in {
-      StepVerifier.create(SMono.just(1).concatWith(SMono.just(2)))
+      StepVerifier.create(just(1).concatWith(just(2)))
         .expectNext(1)
         .expectNext(2)
         .verifyComplete()
     }
 
     "++ should concatenate mono with another source" in {
-      StepVerifier.create(SMono.just(1) ++ SMono.just(2))
+      StepVerifier.create(just(1) ++ just(2))
         .expectNext(1)
         .expectNext(2)
         .verifyComplete()
@@ -447,13 +447,13 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport {
 
     ".delayElement" - {
       "should delay the element" in {
-        StepVerifier.withVirtualTime(() => SMono.just(randomValue).delayElement(5 seconds))
+        StepVerifier.withVirtualTime(() => just(randomValue).delayElement(5 seconds))
           .thenAwait(5 seconds)
           .expectNext(randomValue)
           .verifyComplete()
       }
       "with timer should delay using timer" in {
-        StepVerifier.withVirtualTime(() => SMono.just(randomValue).delayElement(5 seconds, Schedulers.immediate()))
+        StepVerifier.withVirtualTime(() => just(randomValue).delayElement(5 seconds, Schedulers.immediate()))
           .thenAwait(5 seconds)
           .expectNext(randomValue)
           .verifyComplete()
@@ -462,19 +462,19 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport {
 
     ".delaySubscription" - {
       "with delay duration should delay subscription as long as the provided duration" in {
-        StepVerifier.withVirtualTime(() => SMono.just(1).delaySubscription(1 hour))
+        StepVerifier.withVirtualTime(() => just(1).delaySubscription(1 hour))
           .thenAwait(1 hour)
           .expectNext(1)
           .verifyComplete()
       }
       "with delay duration and scheduler should delay subscription as long as the provided duration" in {
-        StepVerifier.withVirtualTime(() => SMono.just(1).delaySubscription(1 hour, Schedulers.single()))
+        StepVerifier.withVirtualTime(() => just(1).delaySubscription(1 hour, Schedulers.single()))
           .thenAwait(1 hour)
           .expectNext(1)
           .verifyComplete()
       }
       "with another publisher should delay the current subscription until the other publisher completes" in {
-        StepVerifier.withVirtualTime(() => SMono.just(1).delaySubscription(SMono.just("one").delaySubscription(1 hour)))
+        StepVerifier.withVirtualTime(() => just(1).delaySubscription(just("one").delaySubscription(1 hour)))
           .thenAwait(1 hour)
           .expectNext(1)
           .verifyComplete()
@@ -483,28 +483,28 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport {
     }
 
     ".delayUntil should delay until the other provider terminate" in {
-      StepVerifier.withVirtualTime(() => SMono.just(randomValue).delayUntil(_ => SFlux.just(1, 2).delayElements(2 seconds)))
+      StepVerifier.withVirtualTime(() => just(randomValue).delayUntil(_ => SFlux.just(1, 2).delayElements(2 seconds)))
         .thenAwait(4 seconds)
         .expectNext(randomValue)
         .verifyComplete()
     }
 
     ".dematerialize should dematerialize the underlying mono" in {
-      StepVerifier.create(SMono.just(Signal.next(randomValue)).dematerialize())
+      StepVerifier.create(just(Signal.next(randomValue)).dematerialize())
         .expectNext(randomValue)
         .verifyComplete()
     }
 
     ".doAfterSuccessOrError should call the callback function after the mono is terminated" in {
       val atomicBoolean = new AtomicBoolean(false)
-      StepVerifier.create(SMono.just(randomValue)
+      StepVerifier.create(just(randomValue)
         .doAfterSuccessOrError { t =>
           atomicBoolean.compareAndSet(false, true) shouldBe true
           t shouldBe Success(randomValue)
         })
         .expectNext(randomValue)
         .verifyComplete()
-      atomicBoolean shouldBe 'get
+      atomicBoolean shouldBe Symbol("get")
       val exception = new RuntimeException
       StepVerifier.create(SMono.raiseError[Long](exception)
         .doAfterSuccessOrError { t =>
@@ -518,19 +518,19 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport {
 
     ".doAfterTerminate should call the callback function after the mono is terminated" in {
       val atomicBoolean = new AtomicBoolean(false)
-      StepVerifier.create(SMono.just(randomValue).doAfterTerminate(() => atomicBoolean.compareAndSet(false, true)))
+      StepVerifier.create(just(randomValue).doAfterTerminate(() => atomicBoolean.compareAndSet(false, true)))
         .expectNext(randomValue)
         .verifyComplete()
-      atomicBoolean shouldBe 'get
+      atomicBoolean shouldBe Symbol("get")
     }
 
     ".doFinally should call the callback" in {
       val atomicBoolean = new AtomicBoolean(false)
-      StepVerifier.create(SMono.just(randomValue)
+      StepVerifier.create(just(randomValue)
         .doFinally(_ => atomicBoolean.compareAndSet(false, true) shouldBe true))
         .expectNext(randomValue)
         .verifyComplete()
-      atomicBoolean shouldBe 'get
+      atomicBoolean shouldBe Symbol("get")
     }
 
     ".doOnCancel should call the callback function when the subscription is cancelled" in {
@@ -550,12 +550,12 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport {
         override def hookOnNext(value: Long): Unit = ()
       })
       subscriptionReference.get().cancel()
-      atomicBoolean shouldBe 'get
+      atomicBoolean shouldBe Symbol("get")
     }
 
     ".doOnNext should call the callback function when the mono emit data successfully" in {
       val atomicLong = new AtomicLong()
-      StepVerifier.create(SMono.just(randomValue)
+      StepVerifier.create(just(randomValue)
         .doOnNext(t => atomicLong.compareAndSet(0, t)))
         .expectNext(randomValue)
         .verifyComplete()
@@ -567,7 +567,7 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport {
       StepVerifier.create(SMono.empty[Int]
         .doOnSuccess(_ => atomicBoolean.compareAndSet(false, true) shouldBe true))
         .verifyComplete()
-      atomicBoolean shouldBe 'get
+      atomicBoolean shouldBe Symbol("get")
     }
 
     ".doOnError" - {
@@ -577,13 +577,13 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport {
           .doOnError(_ => atomicBoolean.compareAndSet(false, true) shouldBe true))
           .expectError(classOf[RuntimeException])
           .verify()
-        atomicBoolean shouldBe 'get
+        atomicBoolean shouldBe Symbol("get")
       }
     }
 
     ".doOnRequest should call the callback function when subscriber request data" in {
       val atomicLong = new AtomicLong(0)
-      SMono.just(randomValue)
+      just(randomValue)
         .doOnRequest(l => atomicLong.compareAndSet(0, l)).subscribe(new BaseSubscriber[Long] {
         override def hookOnSubscribe(subscription: Subscription): Unit = {
           subscription.request(1)
@@ -597,16 +597,16 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport {
 
     ".doOnSubscribe should call the callback function when the mono is subscribed" in {
       val atomicBoolean = new AtomicBoolean(false)
-      StepVerifier.create(SMono.just(randomValue)
+      StepVerifier.create(just(randomValue)
         .doOnSubscribe(_ => atomicBoolean.compareAndSet(false, true)))
         .expectNextCount(1)
         .verifyComplete()
-      atomicBoolean shouldBe 'get
+      atomicBoolean shouldBe Symbol("get")
     }
 
     ".doOnTerminate should do something on terminate" in {
       val atomicLong = new AtomicLong()
-      StepVerifier.create(SMono.just(randomValue).doOnTerminate { () => atomicLong.set(randomValue) })
+      StepVerifier.create(just(randomValue).doOnTerminate { () => atomicLong.set(randomValue) })
         .expectNext(randomValue)
         .expectComplete()
         .verify()
@@ -615,7 +615,7 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport {
 
     ".elapsed" - {
       "should provide the time elapse when this mono emit value" in {
-        StepVerifier.withVirtualTime(scalaSupplierSMonoR2JavaSupplierJMonoR(() => SMono.just[Long](randomValue).delaySubscription(1 second).elapsed()), 1)
+        StepVerifier.withVirtualTime(() => just(randomValue).delaySubscription(1 second).elapsed(), 1)
           .thenAwait(1 second)
           .expectNextMatches((t: (Long, Long)) => t match {
             case (time, data) => time >= 1000 && data == randomValue
@@ -624,7 +624,7 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport {
       }
       "with TimedScheduler should provide the time elapsed using the provided scheduler when this mono emit value" in {
         val virtualTimeScheduler = VirtualTimeScheduler.getOrSet()
-        StepVerifier.create(SMono.just(randomValue)
+        StepVerifier.create(just(randomValue)
           .delaySubscription(1 second, virtualTimeScheduler)
           .elapsed(virtualTimeScheduler), 1)
           .`then`(() => virtualTimeScheduler.advanceTimeBy(1 second))
@@ -637,12 +637,12 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport {
 
     ".expandDeep" - {
       "should expand the mono" in {
-        StepVerifier.create(SMono.just("a").expandDeep(s => SMono.just(s"$s$s")).take(3))
+        StepVerifier.create(just("a").expandDeep(s => just(s"$s$s")).take(3))
           .expectNext("a", "aa", "aaaa")
           .verifyComplete()
       }
       "with capacity hint should expand the mono" in {
-        StepVerifier.create(SMono.just("a").expandDeep(s => SMono.just(s"$s$s"), 10).take(3))
+        StepVerifier.create(just("a").expandDeep(s => just(s"$s$s"), 10).take(3))
           .expectNext("a", "aa", "aaaa")
           .verifyComplete()
       }
@@ -650,25 +650,25 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport {
 
     ".expand" - {
       "should expand the mono" in {
-        StepVerifier.create(SMono.just("a").expand(s => SMono.just(s"$s$s")).take(3))
+        StepVerifier.create(just("a").expand(s => just(s"$s$s")).take(3))
           .expectNext("a", "aa", "aaaa")
           .verifyComplete()
       }
       "with capacity hint should expand the mono" in {
-        StepVerifier.create(SMono.just("a").expand(s => SMono.just(s"$s$s"), 10).take(3))
+        StepVerifier.create(just("a").expand(s => just(s"$s$s"), 10).take(3))
           .expectNext("a", "aa", "aaaa")
           .verifyComplete()
       }
     }
 
     ".filter should filter the value of mono where it pass the provided predicate" in {
-      StepVerifier.create(SMono.just(10)
+      StepVerifier.create(just(10)
         .filter(i => i < 10))
         .verifyComplete()
     }
 
     ".filterWhen should replay the value of mono if the first item emitted by the test is true" in {
-      StepVerifier.create(SMono.just(10).filterWhen((i: Int) => SMono.just(i % 2 == 0)))
+      StepVerifier.create(just(10).filterWhen((i: Int) => just(i % 2 == 0)))
         .expectNext(10)
         .verifyComplete()
     }
@@ -681,16 +681,16 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport {
 
     ".flatMapMany" - {
       "with a single mapper should flatmap the value mapped by the provided mapper" in {
-        StepVerifier.create(SMono.just(1).flatMapMany(i => SFlux.just(i, i * 2)))
+        StepVerifier.create(just(1).flatMapMany(i => SFlux.just(i, i * 2)))
           .expectNext(1, 2)
           .verifyComplete()
       }
       "with mapperOnNext, mapperOnError and mapperOnComplete should mapped each individual event into values emitted by flux" in {
-        StepVerifier.create(SMono.just(1)
+        StepVerifier.create(just(1)
           .flatMapMany(
-            _ => SMono.just("one"),
-            _ => SMono.just("error"),
-            () => SMono.just("complete")
+            _ => just("one"),
+            _ => just("error"),
+            () => just("complete")
           ))
           .expectNext("one", "complete")
           .verifyComplete()
@@ -698,13 +698,13 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport {
     }
 
     ".flatMapIterable should flatmap the value mapped by the provided mapper" in {
-      StepVerifier.create(SMono.just("one").flatMapIterable(str => str.toCharArray))
+      StepVerifier.create(just("one").flatMapIterable(str => str.toCharArray))
         .expectNext('o', 'n', 'e')
         .verifyComplete()
     }
 
     ".flux should convert this mono into a flux" in {
-      val flux = SMono.just(randomValue).flux()
+      val flux = just(randomValue).flux()
       StepVerifier.create(flux)
         .expectNext(randomValue)
         .verifyComplete()
@@ -713,7 +713,7 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport {
 
     ".hasElement should convert to another Mono that emit" - {
       "true if it has element" in {
-        StepVerifier.create(SMono.just(1).hasElement)
+        StepVerifier.create(just(1).hasElement)
           .expectNext(true)
           .verifyComplete()
       }
@@ -725,7 +725,7 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport {
     }
 
     ".handle should handle onNext, onError and onComplete" in {
-      StepVerifier.create(SMono.just(randomValue)
+      StepVerifier.create(just(randomValue)
         .handle((_: Long, s: SynchronousSink[String]) => {
           s.next("One")
           s.complete()
@@ -735,12 +735,12 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport {
     }
 
     ".ignoreElement should only emit termination event" in {
-      StepVerifier.create(SMono.just(randomValue).ignoreElement)
+      StepVerifier.create(just(randomValue).ignoreElement)
         .verifyComplete()
     }
 
     ".map should map the type of Mono from T to R" in {
-      StepVerifier.create(SMono.just(randomValue).map(_.toString))
+      StepVerifier.create(just(randomValue).map(_.toString))
         .expectNext(randomValue.toString)
         .expectComplete()
         .verify()
@@ -802,25 +802,25 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport {
     }
 
     ".materialize should convert the mono into a mono that emit its signal" in {
-      StepVerifier.create(SMono.just(randomValue).materialize())
+      StepVerifier.create(just(randomValue).materialize())
         .expectNext(Signal.next(randomValue))
         .verifyComplete()
     }
 
     ".mergeWith should convert this mono to flux with value emitted from this mono followed by the other" in {
-      StepVerifier.create(SMono.just(1).mergeWith(SMono.just(2)))
+      StepVerifier.create(just(1).mergeWith(just(2)))
         .expectNext(1, 2)
         .verifyComplete()
     }
 
     ".ofType (deprecated) should" - {
       "convert the Mono value type to the provided type if it can be casted" in {
-        StepVerifier.create(SMono.just(BigDecimal("1")).ofType(classOf[ScalaNumber]))
+        StepVerifier.create(just(BigDecimal("1")).ofType(classOf[ScalaNumber]))
           .expectNextCount(1)
           .verifyComplete()
       }
       "ignore the Mono value if it can't be casted" in {
-        StepVerifier.create(SMono.just(1).ofType(classOf[String]))
+        StepVerifier.create(just(1).ofType(classOf[String]))
           .verifyComplete()
       }
     }
@@ -847,26 +847,26 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport {
 
     ".onErrorResume" - {
       "will fallback to the provided value when error happens" in {
-        StepVerifier.create(SMono.raiseError(new RuntimeException()).onErrorResume(_ => SMono.just(-1)))
+        StepVerifier.create(SMono.raiseError(new RuntimeException()).onErrorResume(_ => just(-1)))
           .expectNext(-1)
           .verifyComplete()
       }
       "with class type and fallback function will fallback to the provided value when the exception is of provided type" in {
         StepVerifier.create(SMono.raiseError(new RuntimeException()).onErrorResume {
-          case _: Exception => SMono.just(-1)
+          case _: Exception => just(-1)
         })
           .expectNext(-1)
           .verifyComplete()
 
         StepVerifier.create(SMono.raiseError(new Exception()).onErrorResume {
-          case _: RuntimeException => SMono.just(-1)
+          case _: RuntimeException => just(-1)
         })
           .expectError(classOf[Exception])
           .verify()
       }
       "with predicate and fallback function will fallback to the provided value when the predicate returns true" in {
         StepVerifier.create(SMono.raiseError(new RuntimeException("fallback")).onErrorResume {
-          case t if t.getMessage == "fallback" => SMono.just(-1)
+          case t if t.getMessage == "fallback" => just(-1)
         })
           .expectNext(-1)
           .verifyComplete()
@@ -874,14 +874,14 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport {
     }
 
     ".or should return Mono that emit the value between the two Monos that is emited first" in {
-      StepVerifier.create(SMono.delay(5 seconds).or(SMono.just(2)))
+      StepVerifier.create(SMono.delay(5 seconds).or(just(2)))
         .expectNext(2)
         .verifyComplete()
     }
 
     ".publish should share and may transform it and consume it as many times as necessary without causing" +
       "multiple subscription" in {
-      val mono = SMono.just(randomValue).publish[String](ml => ml.map(l => l.toString))
+      val mono = just(randomValue).publish[String](ml => ml.map(l => l.toString))
 
       val counter = new AtomicLong()
 
@@ -900,13 +900,13 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport {
 
     ".repeat" - {
       "should return flux that repeat the value from this mono" in {
-        StepVerifier.create(SMono.just(randomValue).repeat().take(3))
+        StepVerifier.create(just(randomValue).repeat().take(3))
           .expectNext(randomValue, randomValue, randomValue)
           .verifyComplete()
       }
       "with boolean predicate should repeat the value from this mono as long as the predicate returns true" in {
         val counter = new AtomicLong()
-        val flux = SMono.just(randomValue)
+        val flux = just(randomValue)
           .repeat(predicate = () => counter.get() < 3)
         val buffer = new LinkedBlockingQueue[Long]()
         val latch = new CountDownLatch(1)
@@ -927,7 +927,7 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport {
 
       }
       "with number of repeat should repeat value from this value as many as the provided parameter" in {
-        StepVerifier.create(SMono.just(randomValue).repeat(5))
+        StepVerifier.create(just(randomValue).repeat(5))
           //          this is a bug in https://github.com/reactor/reactor-core/issues/1252. It should only be 5 in total
           .expectNext(randomValue, randomValue, randomValue, randomValue, randomValue, randomValue)
           .verifyComplete()
@@ -935,7 +935,7 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport {
       "with number of repeat and predicate should repeat value from this value as many as provided parameter and as" +
         "long as the predicate returns true" in {
         val counter = new AtomicLong()
-        val flux = SMono.just(randomValue).repeat(5, () => counter.get() < 3)
+        val flux = just(randomValue).repeat(5, () => counter.get() < 3)
         val buffer = new LinkedBlockingQueue[Long]()
         val latch = new CountDownLatch(1)
         flux.subscribe(new BaseSubscriber[Long] {
@@ -956,7 +956,7 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport {
     }
 
     ".repeatWhen should emit the value of this mono accompanied by the publisher" in {
-      StepVerifier.create(SMono.just(randomValue).repeatWhen((_: SFlux[Long]) => SFlux.just[Long](10, 20)))
+      StepVerifier.create(just(randomValue).repeatWhen((_: SFlux[Long]) => SFlux.just[Long](10, 20)))
         .expectNext(randomValue, randomValue, randomValue)
         .verifyComplete()
     }
@@ -970,7 +970,7 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport {
 
     ".single" - {
       "should enforce the existence of element" in {
-        StepVerifier.create(SMono.just(randomValue).single())
+        StepVerifier.create(just(randomValue).single())
           .expectNext(randomValue)
           .verifyComplete()
       }
@@ -983,12 +983,12 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport {
 
     ".subscribe" - {
       "without parameter should return Disposable" in {
-        val x = SMono.just(randomValue).subscribe()
+        val x = just(randomValue).subscribe()
         x shouldBe a[Disposable]
       }
       "with consumer should invoke the consumer" in {
         val counter = new CountDownLatch(1)
-        val disposable = SMono.just(randomValue).subscribe(_ => counter.countDown())
+        val disposable = just(randomValue).subscribe(_ => counter.countDown())
         disposable shouldBe a[Disposable]
         counter.await(1, TimeUnit.SECONDS) shouldBe true
       }
@@ -1000,13 +1000,13 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport {
       }
       "with consumer, error consumer and completeConsumer should invoke the completeConsumer when it's complete" in {
         val counter = new CountDownLatch(2)
-        val disposable = SMono.just(randomValue).subscribe(_ => counter.countDown(), _ => (), counter.countDown())
+        val disposable = just(randomValue).subscribe(_ => counter.countDown(), _ => (), counter.countDown())
         disposable shouldBe a[Disposable]
         counter.await(1, TimeUnit.SECONDS) shouldBe true
       }
       "with consumer, error consumer, completeConsumer and subscriptionConsumer should invoke the subscriptionConsumer when there is subscription" in {
         val counter = new CountDownLatch(3)
-        val disposable = SMono.just(randomValue).subscribe(_ => counter.countDown(), _ => (), counter.countDown(), s => {
+        val disposable = just(randomValue).subscribe(_ => counter.countDown(), _ => (), counter.countDown(), s => {
           s.request(1)
           counter.countDown()
         })
@@ -1017,7 +1017,7 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport {
 
     ".subscribeContext should pass context properly" in {
       val key = "message"
-      val r: SMono[String] = SMono.just("Hello")
+      val r: SMono[String] = just("Hello")
           .flatMap(s => SMono.subscribeContext()
           .map(ctx => s"$s ${ctx.get(key)}"))
           .subscriberContext(ctx => ctx.put(key, "World"))
@@ -1026,7 +1026,7 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport {
           .expectNext("Hello World")
           .verifyComplete()
 
-      StepVerifier.create(SMono.just(1).map(i => i + 10),
+      StepVerifier.create(just(1).map(i => i + 10),
         StepVerifierOptions.create().withInitialContext(Context.of("foo", "bar")))
         .expectAccessibleContext()
         .contains("foo", "bar")
@@ -1036,13 +1036,13 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport {
     }
 
     ".switchIfEmpty with alternative will emit the value from alternative Mono when this mono is empty" in {
-      StepVerifier.create(SMono.empty.switchIfEmpty(SMono.just(-1)))
+      StepVerifier.create(SMono.empty.switchIfEmpty(just(-1)))
         .expectNext(-1)
         .verifyComplete()
     }
 
     ".tag should tag the Mono and accessible from Scannable" in {
-      val mono = SMono.just(randomValue).tag("integer", "one, two, three")
+      val mono = just(randomValue).tag("integer", "one, two, three")
       Scannable.from(Option(mono)).tags shouldBe Stream("integer" -> "one, two, three")
     }
 
@@ -1060,18 +1060,18 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport {
     }
 
     ".takeUntilOther should complete if the companion publisher emit any signal first" in {
-      StepVerifier.withVirtualTime(() => SMono.delay(10 seconds).takeUntilOther(SMono.just("a")))
+      StepVerifier.withVirtualTime(() => SMono.delay(10 seconds).takeUntilOther(just("a")))
         .verifyComplete()
     }
 
     ".then" - {
       "without parameter should only replays complete and error signals from this mono" in {
-        StepVerifier.create(SMono.just(randomValue).`then`())
+        StepVerifier.create(just(randomValue).`then`())
           .verifyComplete()
       }
       "with other mono should ignore element from this mono and transform its completion signal into emission and " +
         "completion signal of the provided mono" in {
-        StepVerifier.create(SMono.just(randomValue).`then`(SMono.just("1")))
+        StepVerifier.create(just(randomValue).`then`(just("1")))
           .expectNext("1")
           .verifyComplete()
       }
@@ -1079,7 +1079,7 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport {
 
     ".thenEmpty should complete this mono then for a supplied publisher to also complete" in {
       val latch = new CountDownLatch(1)
-      val mono = SMono.just(randomValue)
+      val mono = just(randomValue)
         .doOnSuccess(_ => latch.countDown())
         .thenEmpty(SMono.empty)
       StepVerifier.create(mono)
@@ -1090,7 +1090,7 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport {
     ".thenMany should ignore the element from this mono and transform the completion signal into a Flux that will emit " +
       "from the provided publisher when the publisher is provided " - {
       "directly" in {
-        StepVerifier.create(SMono.just(randomValue).thenMany(SFlux.just(1, 2, 3)))
+        StepVerifier.create(just(randomValue).thenMany(SFlux.just(1, 2, 3)))
           .expectNext(1, 2, 3)
           .verifyComplete()
       }
@@ -1104,7 +1104,7 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport {
           .verify()
       }
       "should fallback to the provided mono if the value doesn't arrive in given duration" in {
-        StepVerifier.withVirtualTime(() => SMono.delay(10 seconds).timeout(5 seconds, Option(SMono.just(1L))))
+        StepVerifier.withVirtualTime(() => SMono.delay(10 seconds).timeout(5 seconds, Option(just(1L))))
           .thenAwait(5 seconds)
           .expectNext(1)
           .verifyComplete()
@@ -1117,13 +1117,13 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport {
           .verify()
       }
       "should raise TimeoutException if this mono has not emit value when the provided publisher has emit value" in {
-        val mono = SMono.delay(10 seconds).timeoutWhen(SMono.just("whatever"))
+        val mono = SMono.delay(10 seconds).timeoutWhen(just("whatever"))
         StepVerifier.create(mono)
           .expectError(classOf[TimeoutException])
           .verify()
       }
       "should fallback to the provided fallback mono if this mono does not emit value when the provided publisher emits value" in {
-        val mono = SMono.delay(10 seconds).timeoutWhen(SMono.just("whatever"), Option(SMono.just(-1L)))
+        val mono = SMono.delay(10 seconds).timeoutWhen(just("whatever"), Option(just(-1L)))
         StepVerifier.create(mono)
           .expectNext(-1)
           .verifyComplete()
@@ -1131,7 +1131,7 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport {
       "with timeout, fallback and timer should fallback to the given mono if the item does not arrive before a given period" in {
         val timer = VirtualTimeScheduler.getOrSet()
         StepVerifier.create(SMono.delay(10 seconds, timer)
-          .timeout(5 seconds, Option(SMono.just(-1)), timer), 1)
+          .timeout(5 seconds, Option(just(-1)), timer), 1)
           .`then`(() => timer.advanceTimeBy(5 seconds))
           .expectNext(-1)
           .verifyComplete()
@@ -1139,7 +1139,7 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport {
     }
 
     ".transform should transform this mono in order to generate a target mono" in {
-      StepVerifier.create(SMono.just(randomValue).transform(ml => SMono.just(ml.block().toString)))
+      StepVerifier.create(just(randomValue).transform(ml => just(ml.block().toString)))
         .expectNext(randomValue.toString)
         .verifyComplete()
     }
@@ -1154,7 +1154,7 @@ class SMonoTest extends FreeSpec with Matchers with TestSupport {
 class SMonoAsyncTest extends AsyncFreeSpec {
   "SMono" - {
     ".toFuture should convert this mono to future" in {
-      val future: Future[Int] = SMono.just(1).toFuture
+      val future: Future[Int] = just(1).toFuture
       future map { v => {
         assert(v == 1)
       }

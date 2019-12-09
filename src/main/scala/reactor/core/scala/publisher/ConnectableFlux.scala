@@ -77,7 +77,7 @@ class ConnectableFlux[T]private (private val jConnectableFlux: JConnectableFlux[
     *
     * @return a reference counting [[SFlux]]
     */
-  final def refCount() = SFlux.fromPublisher(jConnectableFlux.refCount())
+  final def refCount(): SFlux[T] = SFlux.fromPublisher(jConnectableFlux.refCount())
 
   /**
     * Connects to the upstream source when the given number of [[org.reactivestreams.Subscriber]] subscribes and disconnects
@@ -89,7 +89,7 @@ class ConnectableFlux[T]private (private val jConnectableFlux: JConnectableFlux[
     * @param minSubscribers the number of subscribers expected to subscribe before connection
     * @return a reference counting [[SFlux]]
     */
-  final def refCount(minSubscribers: Int) = SFlux.fromPublisher(jConnectableFlux.refCount(minSubscribers))
+  final def refCount(minSubscribers: Int): SFlux[T] = SFlux.fromPublisher(jConnectableFlux.refCount(minSubscribers))
 
   /**
     * Connects to the upstream source when the given number of [[org.reactivestreams.Subscriber]] subscribes.
@@ -122,7 +122,7 @@ class ConnectableFlux[T]private (private val jConnectableFlux: JConnectableFlux[
     * @param gracePeriod    the [[Duration]] for which to wait for new subscribers before actually
     *                                   disconnecting when all subscribers have cancelled.
     * @param scheduler the [[Scheduler]] on which to run timeouts
-    * @return a reference counting [[reactor.core.publisher.Flux]] with a grace period for disconnection
+    * @return a reference counting [[SFlux]] with a grace period for disconnection
     */
   final def refCount(minSubscribers: Int, gracePeriod: Duration, scheduler: Scheduler): SFlux[T] = SFlux.fromPublisher(jConnectableFlux.refCount(minSubscribers, gracePeriod, scheduler))
 

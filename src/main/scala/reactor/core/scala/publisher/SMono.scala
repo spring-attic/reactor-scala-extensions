@@ -1418,9 +1418,7 @@ object SMono extends ScalaConverters {
     */
   def create[T](callback: MonoSink[T] => Unit): SMono[T] = JMono.create[T](callback).asScala
 
-  def defer[T](supplier: () => SMono[T]): SMono[T] = JMono.defer[T](new Supplier[JMono[_ <: T]] {
-    override def get(): JMono[_ <: T] = supplier().asJava()
-  }).asScala
+  def defer[T](supplier: () => SMono[T]): SMono[T] = SMono.fromPublisher(JMono.defer[T](() => supplier().asJava()))
 
   def delay(duration: Duration, timer: Scheduler = Schedulers.parallel()): SMono[Long] = new ReactiveSMono[Long](JMono.delay(duration, timer))
 

@@ -546,6 +546,8 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] with ScalaCo
 
   final def onErrorReturn(fallbackValue: T, predicate: Throwable => Boolean = (_: Throwable ) => true): SFlux[T] = SFlux.fromPublisher(coreFlux.onErrorReturn(predicate, fallbackValue))
 
+  final def or(other: Publisher[_ <: T]): SFlux[T] = SFlux.fromPublisher(coreFlux.or(other))
+
   /**
     * Prepare to consume this [[SFlux]] on number of 'rails' matching number of CPU
     * in round-robin fashion.
@@ -553,11 +555,11 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] with ScalaCo
     * <p>
     * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/parallel.png" alt="">
     *
+    * @param parallelism the number of parallel rails
+    * @param prefetch    the number of values to prefetch from the source
     * @return a new [[SParallelFlux]] instance
     */
-  final def parallel(parallelism: Int = Runtime.getRuntime.availableProcessors): SParallelFlux[T] = SParallelFlux(coreFlux.parallel(parallelism))
-
-  final def or(other: Publisher[_ <: T]): SFlux[T] = SFlux.fromPublisher(coreFlux.or(other))
+  final def parallel(parallelism: Int = Runtime.getRuntime.availableProcessors(), prefetch: Int = Queues.SMALL_BUFFER_SIZE) = SParallelFlux(coreFlux.parallel(parallelism, prefetch))
 
   final def publishNext(): SMono[T] = SMono.fromPublisher(coreFlux.publishNext())
 
@@ -644,7 +646,6 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] with ScalaCo
   final def switchIfEmpty(alternate: Publisher[_ <: T]): SFlux[T] = coreFlux.switchIfEmpty(alternate).asScala
 
   final def switchMap[V](fn: T => Publisher[_ <: V], prefetch: Int = XS_BUFFER_SIZE): SFlux[V] = coreFlux.switchMap[V](fn, prefetch).asScala
-
 
   final def tag(key: String, value: String): SFlux[T] = coreFlux.tag(key, value).asScala
 
