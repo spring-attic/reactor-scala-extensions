@@ -1,5 +1,5 @@
 if (!hasProperty('scalaVersion')) {
-    ext.scalaVersion = ext.defaultScala_2_13_Version
+    ext.scalaVersion = '2.13.1'
 }
 
 def scalaVersionMatch = scalaVersion =~ /^(\d+\.\d+)\.\d+$/

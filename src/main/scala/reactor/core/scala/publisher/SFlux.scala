@@ -351,7 +351,11 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] with ScalaCo
         override def get(): util.Map[K, util.Collection[V]] = {
           mapSupplier().asJava
         }
+<<<<<<< HEAD
       }).map((m: JMap[K, JCollection[V]]) => m.asScala.toMap.view.mapValues((vs: JCollection[V]) => vs.asScala.toSeq).toMap))
+=======
+      }).map((m: JMap[K, JCollection[V]]) => m.asScala.mapValues((vs: JCollection[V]) => vs.asScala.toSeq).toMap))
+>>>>>>> d3db11c... fix compile error on scala 2.13 caused by mapValues now return a MapView instead of a Map
 
   final def collectSortedSeq(ordering: Ordering[T] = None.orNull): SMono[Seq[T]] = new ReactiveSMono[Seq[T]](coreFlux.collectSortedList(ordering).map((l: JList[T]) => l.asScala.toSeq))
 
