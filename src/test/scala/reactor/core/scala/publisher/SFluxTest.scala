@@ -839,6 +839,11 @@ class SFluxTest extends FreeSpec with Matchers with TableDrivenPropertyChecks wi
         .expectNext(1)
         .verifyComplete()
     }
+    ".transformDeferred should defer transformation of this flux to another publisher" in {
+      StepVerifier.create(SFlux.just(1, 2, 3).transformDeferred(SMono.fromPublisher))
+        .expectNext(1)
+        .verifyComplete()
+    }
 
     ".concatMap" - {
       "with mapper should map the element sequentially" in {
