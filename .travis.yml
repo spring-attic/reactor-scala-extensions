@@ -35,6 +35,7 @@ script:
 before_cache:
   - rm -f  $HOME/.gradle/caches/modules-2/modules-2.lock
   - rm -fr $HOME/.gradle/caches/*/plugin-resolution/
+  - rm -f $HOME/.gradle/caches/*/executionHistory/executionHistory.lock
 cache:
   directories:
     - $HOME/.gradle/caches/
