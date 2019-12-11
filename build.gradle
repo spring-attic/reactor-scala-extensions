@@ -6,7 +6,7 @@ plugins {
     id "com.github.maiflai.scalatest" version "0.25"
     id "signing"
     id "maven"
-    id "org.scoverage" version "2.5.0"
+    id "org.scoverage" version "4.0.1"
     id "io.codearte.nexus-staging" version "0.21.1"
     id "org.owasp.dependencycheck" version "5.2.4"
     id "com.github.ben-manes.versions" version "0.27.0"
@@ -40,7 +40,6 @@ dependencies {
     testCompile libraries.mockitoInline
     testCompile libraries.scalaLogging
     testRuntime libraries.logback
-    scoverage libraries.scoveragePlugin, libraries.scoverageRuntime
 }
 scaladoc {
     scalaClasspath += baseScalaVersion == "2.13"? configurations.scalaAnt : layout.files()
@@ -228,10 +227,6 @@ release {
 }
 
 test {
-    maxParallelForks = 1
-}
-
-testScoverage {
     maxParallelForks = 1
 }
 

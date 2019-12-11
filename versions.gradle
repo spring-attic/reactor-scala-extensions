@@ -18,7 +18,6 @@ ext {
     reactorVersion      = "3.3.1.RELEASE"
     scalaLoggingVersion = "3.9.2"
     scalatestVersion    = "3.0.8" //3.1.0
-    scoverageVersion    = "1.4.1"
     scalaCollCompatVersion = "2.1.2"
 }
 
@@ -33,6 +32,4 @@ ext.libraries = [
         scalaLibrary        : "org.scala-lang:scala-library:$scalaVersion",
         scalaLogging        : "com.typesafe.scala-logging:scala-logging_$baseScalaVersion:$scalaLoggingVersion",
         scalatest           : "org.scalatest:scalatest_$baseScalaVersion:$scalatestVersion",
-        scoveragePlugin     : "org.scoverage:scalac-scoverage-plugin_$baseScalaVersion:$scoverageVersion",
-        scoverageRuntime    : "org.scoverage:scalac-scoverage-runtime_$baseScalaVersion:$scoverageVersion"
 ]
