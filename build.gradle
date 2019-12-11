@@ -1,16 +1,21 @@
+buildscript {
+    apply from: file('versions.gradle')
+}
+plugins {
+    id "scala"
+    id "com.github.maiflai.scalatest" version "0.25"
+    id "signing"
+    id "maven"
+    id "org.scoverage" version "2.5.0"
+    id "io.codearte.nexus-staging" version "0.11.0"
+    id "org.owasp.dependencycheck" version "3.3.1"
+    id "com.github.ben-manes.versions" version "0.20.0"
+//    id "com.jfrog.bintray" version "1.8.4"
+    id "maven-publish"
+    id "net.researchgate.release" version "2.7.0" apply false
+}
 group 'io.projectreactor'
 description = 'A scala extension for Reactor Flux and Mono'
-
-apply plugin: 'scala'
-apply plugin: "com.github.maiflai.scalatest"
-apply plugin: 'signing'
-apply plugin: 'maven'
-apply plugin: 'org.scoverage'
-apply plugin: 'io.codearte.nexus-staging'
-apply plugin: 'org.owasp.dependencycheck'
-apply plugin: 'com.github.ben-manes.versions'
-//apply plugin: 'com.jfrog.bintray'
-apply plugin: 'maven-publish'
 
 repositories {
     mavenCentral()
@@ -39,26 +44,6 @@ dependencies {
 }
 scaladoc {
     scalaClasspath += baseScalaVersion == "2.13"? configurations.scalaAnt : layout.files()
-}
-buildscript {
-    apply from: file('versions.gradle')
-    repositories {
-        maven {
-            url "https://plugins.gradle.org/m2/"
-        }
-        mavenCentral()
-        jcenter()
-    }
-
-    dependencies {
-        classpath "gradle.plugin.com.github.maiflai:gradle-scalatest:0.25"
-        classpath "gradle.plugin.org.scoverage:gradle-scoverage:2.5.0"
-        classpath 'net.researchgate:gradle-release:2.7.0'
-        classpath 'io.codearte.gradle.nexus:gradle-nexus-staging-plugin:0.11.0'
-        classpath 'org.owasp:dependency-check-gradle:3.3.1'
-        classpath 'com.github.ben-manes:gradle-versions-plugin:0.20.0'
-//        classpath "com.jfrog.bintray.gradle:gradle-bintray-plugin:1.8.4"
-    }
 }
 
 dependencyCheck {
