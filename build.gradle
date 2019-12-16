@@ -54,19 +54,25 @@ if (!project.parent) {
     apply plugin: 'net.researchgate.release'
     final svs = ['2.12.10', '2.11.12', '2.13.1']
 
-    for (sv in svs) {
+    svs.eachWithIndex { sv, i ->
         String scalaVersionInDot = sv.replaceAll("_", ".")
 
         tasks.create(name: "build_$sv", type: GradleBuild) {
+            buildName = "build_${sv}"
             buildFile = './build.gradle'
             tasks = ['build']
             startParameter.projectProperties = [scalaVersion: "${scalaVersionInDot}"]
+            //don't run parallel build tasks
+            mustRunAfter svs.take(i).collect{"build_${it}"}
         }
 
         tasks.create(name: "uploadArchives_${sv}", type: GradleBuild) {
+            buildName = "uploadArchives_${sv}"
             buildFile = './build.gradle'
             tasks = ['uploadArchives']
             startParameter.projectProperties = [scalaVersion: "${scalaVersionInDot}"]
+            //don't run parallel uploadArchives tasks
+            mustRunAfter svs.take(i).collect{"uploadArchives_${it}"}
         }
     }
 
