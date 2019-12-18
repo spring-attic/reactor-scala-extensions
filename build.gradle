@@ -29,17 +29,17 @@ dependencies {
     zinc "com.typesafe.zinc:zinc:0.3.15"
 
     implementation libraries.scalaLibrary
-    compile libraries.reactorCore
-    compile libraries.findbugs
-    compile libraries.scalaCollCompat
+    implementation libraries.reactorCore
+    implementation libraries.findbugs
+    implementation libraries.scalaCollCompat
 
 //    test dependencies
     testImplementation libraries.scalatest
     testRuntimeOnly libraries.pegdown
-    testCompile libraries.reactorTest
-    testCompile libraries.mockitoInline
-    testCompile libraries.scalaLogging
-    testRuntime libraries.logback
+    testImplementation libraries.reactorTest
+    testImplementation libraries.mockitoInline
+    testImplementation libraries.scalaLogging
+    testRuntimeOnly libraries.logback
 }
 scaladoc {
     scalaClasspath += baseScalaVersion == "2.13"? configurations.scalaAnt : layout.files()
