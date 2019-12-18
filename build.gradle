@@ -90,7 +90,7 @@ if (!project.parent) {
     }
 
     project.createReleaseTag.dependsOn {
-        project.uploadArchives_"${svs.last()}"
+        project.uploadArchives_"${svs.last}"
     }
 }
 archivesBaseName = "${rootProject.name}_$baseScalaVersion"
