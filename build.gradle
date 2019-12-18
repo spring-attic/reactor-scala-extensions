@@ -90,6 +90,10 @@ if (!project.parent) {
     }
 
     project.createReleaseTag.dependsOn {
+        project.uploadArchivesAll
+    }
+
+    project.updateVersion.dependsOn {
         "uploadArchives_${svs.last()}"
     }
 }
