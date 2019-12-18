@@ -52,7 +52,7 @@ targetCompatibility = "1.8"
 
 if (!project.parent) {
     apply plugin: 'net.researchgate.release'
-    final svs = ['2.12.9', '2.11.12', '2.13.1']
+    final svs = ['2.13.1', '2.12.9', '2.11.12']
 
     svs.eachWithIndex { sv, i ->
         String scalaVersionInDot = sv.replaceAll("_", ".")
@@ -63,7 +63,7 @@ if (!project.parent) {
             tasks = ['build']
             startParameter.projectProperties = [scalaVersion: "${scalaVersionInDot}"]
             //don't run parallel build tasks
-            mustRunAfter svs.take(i).collect{"build_${it}"}
+//            mustRunAfter svs.take(i).collect{"build_${it}"}
         }
 
         tasks.create(name: "uploadArchives_${sv}", type: GradleBuild) {
@@ -72,7 +72,7 @@ if (!project.parent) {
             tasks = ['uploadArchives']
             startParameter.projectProperties = [scalaVersion: "${scalaVersionInDot}"]
             //don't run parallel uploadArchives tasks
-            mustRunAfter svs.take(i).collect{"uploadArchives_${it}"}
+//            mustRunAfter svs.take(i).collect{"uploadArchives_${it}"}
         }
     }
 
