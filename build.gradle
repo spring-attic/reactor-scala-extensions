@@ -52,7 +52,7 @@ targetCompatibility = "1.8"
 
 if (!project.parent) {
     apply plugin: 'net.researchgate.release'
-    final svs = ['2.12.10', '2.11.12', '2.13.1']
+    final svs = ['2.12.9', '2.11.12', '2.13.1']
 
     svs.eachWithIndex { sv, i ->
         String scalaVersionInDot = sv.replaceAll("_", ".")
