@@ -35,7 +35,6 @@ dependencies {
 
 //    test dependencies
     testImplementation libraries.scalatest
-    testRuntimeOnly libraries.pegdown
     testImplementation libraries.reactorTest
     testImplementation libraries.mockitoInline
     testImplementation libraries.scalaLogging
@@ -238,6 +237,7 @@ release {
 
 test {
     maxParallelForks = 1
+    reports.html.enabled = false
 }
 
 tasks.withType(Sign) {
