@@ -10,7 +10,7 @@ plugins {
     id "io.codearte.nexus-staging" version "0.21.1"
     id "org.owasp.dependencycheck" version "5.2.4"
     id "com.github.ben-manes.versions" version "0.27.0"
-//    id "com.jfrog.bintray" version "1.8.4"
+    id "com.jfrog.bintray" version "1.8.4"
     id "maven-publish"
     id "net.researchgate.release" version "2.8.1" apply false
 }
@@ -118,10 +118,9 @@ artifacts {
 
 ext.sonatypeUsername = hasProperty("ossrhUsername") ? ossrhUsername : System.getenv("ossrhUsername")
 ext.sonatypePassword = hasProperty("ossrhPassword") ? ossrhPassword : System.getenv("ossrhPassword")
-//ext.bintrayUsername = hasProperty("bintrayUser") ? bintrayUser : System.getenv("ossrhUsername")
-//ext.bintrayKey = hasProperty("bintrayApiKey") ? bintrayApiKey : System.getenv("ossrhPassword")
+ext.bintrayUsername = hasProperty("bintrayUser") ? bintrayUser : System.getenv("ossrhUsername")
+ext.bintrayKey = hasProperty("bintrayApiKey") ? bintrayApiKey : System.getenv("ossrhPassword")
 
-/*
 bintray {
     user = "$bintrayUsername"
     key = "$bintrayKey"
@@ -136,7 +135,6 @@ bintray {
         }
     }
 }
-*/
 
 publishing {
     publications {
@@ -216,9 +214,9 @@ uploadArchives {
         }
     }
 }
-//bintrayUpload.onlyIf {isReleaseVersion}
+bintrayUpload.onlyIf {isReleaseVersion}
 afterReleaseBuild.dependsOn uploadArchives
-//uploadArchives.dependsOn bintrayUpload
+uploadArchives.dependsOn bintrayUpload
 
 ScalaCompileOptions.metaClass.daemonServer = true
 ScalaCompileOptions.metaClass.fork = true
