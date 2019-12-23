@@ -2,7 +2,8 @@ package reactor.core.scala.scheduler
 
 import java.util.concurrent.{Executors, ThreadFactory}
 
-import org.scalatest.{FreeSpec, Matchers}
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 import reactor.core.scala.publisher.SMono
 import reactor.test.StepVerifier
 
@@ -11,7 +12,7 @@ import scala.concurrent.ExecutionContext
 /**
   * Created by winarto on 1/26/17.
   */
-class ExecutionContextSchedulerTest extends FreeSpec with Matchers {
+class ExecutionContextSchedulerTest extends AnyFreeSpec with Matchers {
   "ExecutionContextScheduler" - {
     "should create a Scheduler using provided ExecutionContext" - {
       "on Mono" in {
