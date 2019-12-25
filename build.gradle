@@ -5,7 +5,7 @@ plugins {
     id "scala"
     id "com.github.maiflai.scalatest" version "0.25"
     id "signing"
-    id "maven"
+//    id "maven"
     id "org.scoverage" version "4.0.1"
     id "io.codearte.nexus-staging" version "0.21.1"
     id "org.owasp.dependencycheck" version "5.2.4"
@@ -13,6 +13,7 @@ plugins {
 //    id "com.jfrog.bintray" version "1.8.4"
     id "maven-publish"
     id "net.researchgate.release" version "2.8.1" apply false
+    id "java-library"
 }
 group 'io.projectreactor'
 description = 'A scala extension for Project Reactor Flux and Mono'
@@ -149,12 +150,12 @@ publishing {
             artifactId "${project.archivesBaseName}"
             version "${project.version}"
             pom {
-                name = "reactor-scala-extensions"
-                description = "Reactor Scala Extensions"
+                name = "Scala Extensions for reactor-core"
+                description = "A scala extensions for Project Reactor Flux and Mono so that the code can be fluently used in Scala"
                 url = "https://github.com/reactor/reactor-scala-extensions"
                 licenses {
                     license {
-                        name = "Apache License"
+                        name = "Apache License, Version 2.0, January 2004"
                         url = "https://github.com/reactor/reactor-scala-extensions/blob/master/LICENSE"
                     }
                 }
@@ -173,8 +174,16 @@ publishing {
             }
         }
     }
+    repositories {
+        maven {
+            def releasesRepoUrl = "https://oss.sonatype.org/service/local/staging/deploy/maven2"
+            def snapshotsRepoUrl = "https://oss.sonatype.org/content/repositories/snapshots"
+            url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
+        }
+    }
 }
 
+/*
 uploadArchives {
     repositories {
         mavenDeployer {
@@ -217,6 +226,7 @@ uploadArchives {
         }
     }
 }
+*/
 //bintrayUpload.onlyIf {isReleaseVersion}
 afterReleaseBuild.dependsOn uploadArchives
 //uploadArchives.dependsOn bintrayUpload
@@ -248,6 +258,12 @@ tasks.withType(Sign) {
 signing {
     required { isReleaseVersion }
     useGpgCmd()
-    sign configurations.archives
-//    sign publishing.publications.MyPublication
+//    sign configurations.archives
+    sign publishing.publications.MyPublication
+}
+
+javadoc {
+    if(JavaVersion.current().isJava9Compatible()) {
+        options.addBooleanOption('html5', true)
+    }
 }
