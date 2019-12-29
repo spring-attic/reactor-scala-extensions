@@ -17,6 +17,16 @@ trait SFluxLike[T, Self[U] <: SFluxLike[U, Self]] extends ScalaConverters {
 
   final def concatMap[V](mapper: T => Publisher[_ <: V], prefetch: Int = XS_BUFFER_SIZE): SFlux[V] = new ReactiveSFlux[V](coreFlux.concatMap[V](mapper, prefetch))
 
+  /**
+    * Concatenate emissions of this [[SFlux]] with the provided [[Publisher]] (no interleave).
+    * <p>
+    * <img class="marble" src="https://github.com/reactor/reactor-core/tree/master/reactor-core/src/main/java/reactor/core/publisher/doc-files/marbles/concatWithForFlux.svg" alt="">
+    *
+    * @param other the [[Publisher]] sequence to concat after this [[SFlux]]
+    * @return a concatenated [[SFlux]]
+    */
+  final def concatWith(other: Publisher[_ <: T]): SFlux[T] = SFlux.fromPublisher(coreFlux.concatWith(other))
+
   private[publisher] def coreFlux: JFlux[T]
 
   private def defaultToFluxError[U](t: Throwable): SFlux[U] = SFlux.raiseError(t)
@@ -83,4 +93,11 @@ trait SFluxLike[T, Self[U] <: SFluxLike[U, Self]] extends ScalaConverters {
     doOnSubscribe(_ => subscriptionTime = scheduler.now(TimeUnit.MILLISECONDS))
       .map(t => (t, scheduler.now(TimeUnit.MILLISECONDS) - subscriptionTime))
   }
+
+  /**
+    * Alias for [[SFlux.concatWith]]
+    * @param other the other [[Publisher]] sequence to concat after this [[SFlux]]
+    * @return a concatenated [[SFlux]]
+    */
+  final def ++(other: Publisher[_ <: T]): SFlux[T] = concatWith(other)
 }

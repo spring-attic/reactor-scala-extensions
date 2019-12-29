@@ -202,21 +202,6 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] with ScalaCo
   final def compose[V](transformer: SMono[T] => Publisher[V]): SMono[V] = transformDeferred(transformer)
 
   /**
-    * Concatenate emissions of this [[SMono]] with the provided [[Publisher]]
-    * (no interleave).
-    * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/concat1.png" alt="">
-    *
-    * @param other the [[Publisher]] sequence to concat after this [[SFlux]]
-    * @return a concatenated [[SFlux]]
-    */
-  final def concatWith(other: Publisher[T]): SFlux[T] = coreMono.concatWith(other).asScala
-
-  final def ++(other: Publisher[T]): SFlux[T] = concatWith(other)
-
-  private[publisher] def coreMono: JMono[T]
-
-  /**
     * Provide a default unique value if this mono is completed without any data
     *
     * <p>
@@ -1580,10 +1565,4 @@ object SMono extends ScalaConverters {
     new ReactiveSMono[R](JMono.zip(monos.map(_.asJava()).asJava, new Function[Array[Object], R] {
       override def apply(t: Array[Object]) = combinator(t.map { v => Option(v): Option[AnyRef] }.filterNot(_.isEmpty).map(_.getOrElse(None.orNull)))
     }))
-}
-
-private[publisher] class ReactiveSMono[T](publisher: Publisher[T]) extends SMono[T] with Scannable {
-  override private[publisher] def coreMono: JMono[T] = JMono.from[T](publisher)
-
-  override private[scala] def jScannable: JScannable = JScannable.from(coreMono)
 }

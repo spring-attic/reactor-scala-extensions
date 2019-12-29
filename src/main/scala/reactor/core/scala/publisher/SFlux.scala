@@ -8,21 +8,20 @@ import java.util.logging.Level
 import java.util.{Comparator, Collection => JCollection, List => JList, Map => JMap}
 
 import org.reactivestreams.{Publisher, Subscriber}
+import reactor.core.Disposable
 import reactor.core.publisher.FluxSink.OverflowStrategy
 import reactor.core.publisher.{BufferOverflowStrategy, FluxSink, Signal, SignalType, SynchronousSink, Flux => JFlux, GroupedFlux => JGroupedFlux}
-import reactor.core.scala.Scannable
 import reactor.core.scala.publisher.PimpMyPublisher._
 import reactor.core.scheduler.{Scheduler, Schedulers}
-import reactor.core.{Disposable, Scannable => JScannable}
 import reactor.util.Logger
 import reactor.util.concurrent.Queues
 import reactor.util.concurrent.Queues.{SMALL_BUFFER_SIZE, XS_BUFFER_SIZE}
 import reactor.util.function.{Tuple2, Tuple3, Tuple4, Tuple5, Tuple6}
 
-import scala.jdk.CollectionConverters._
 import scala.collection.mutable
 import scala.concurrent.duration.Duration
 import scala.concurrent.duration.Duration.Infinite
+import scala.jdk.CollectionConverters._
 import scala.language.postfixOps
 import scala.reflect.ClassTag
 
@@ -367,24 +366,6 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] with ScalaCo
     new ReactiveSFlux[R](coreFlux.concatMapIterable(new Function[T, JIterable[R]] {
       override def apply(t: T): JIterable[R] = mapper(t)
     }, prefetch))
-
-  /**
-    * Concatenate emissions of this [[SFlux]] with the provided [[Publisher]] (no interleave).
-    * <p>
-    * <img class="marble" src="https://github.com/reactor/reactor-core/tree/master/reactor-core/src/main/java/reactor/core/publisher/doc-files/marbles/concatWithForFlux.svg" alt="">
-    *
-    * @param other the [[Publisher]] sequence to concat after this [[SFlux]]
-    * @return a concatenated [[SFlux]]
-    */
-  final def concatWith(other: Publisher[_ <: T]): SFlux[T] = SFlux.fromPublisher(coreFlux.concatWith(other))
-
-  /**
-    * Alias for [[SFlux.concatWith]]
-    * @param other the other [[Publisher]] sequence to concat after this [[SFlux]]
-    * @return a concatenated [[SFlux]]
-    */
-  final def ++(other: Publisher[_ <: T]): SFlux[T] = concatWith(other)
-
 
   private[publisher] def coreFlux: JFlux[T]
 
@@ -877,8 +858,4 @@ object SFlux {
     new ReactiveSFlux[O](JFlux.zip[I, O](combinator, prefetch, sources: _*))
 }
 
-private[publisher] class ReactiveSFlux[T](publisher: Publisher[T]) extends SFlux[T] with Scannable {
-  override private[publisher] val coreFlux: JFlux[T] = JFlux.from(publisher)
 
-  override val jScannable: JScannable = JScannable.from(coreFlux)
-}
