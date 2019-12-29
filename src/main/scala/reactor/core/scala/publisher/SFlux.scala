@@ -368,7 +368,23 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] with ScalaCo
       override def apply(t: T): JIterable[R] = mapper(t)
     }, prefetch))
 
+  /**
+    * Concatenate emissions of this [[SFlux]] with the provided [[Publisher]] (no interleave).
+    * <p>
+    * <img class="marble" src="https://github.com/reactor/reactor-core/tree/master/reactor-core/src/main/java/reactor/core/publisher/doc-files/marbles/concatWithForFlux.svg" alt="">
+    *
+    * @param other the [[Publisher]] sequence to concat after this [[SFlux]]
+    * @return a concatenated [[SFlux]]
+    */
   final def concatWith(other: Publisher[_ <: T]): SFlux[T] = SFlux.fromPublisher(coreFlux.concatWith(other))
+
+  /**
+    * Alias for [[SFlux.concatWith]]
+    * @param other the other [[Publisher]] sequence to concat after this [[SFlux]]
+    * @return a concatenated [[SFlux]]
+    */
+  final def ++(other: Publisher[_ <: T]): SFlux[T] = concatWith(other)
+
 
   private[publisher] def coreFlux: JFlux[T]
 
@@ -391,7 +407,7 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] with ScalaCo
     * [[Scheduler]], but empty sequences or immediate error signals are not delayed.
     *
     * <p>
-    * <img class="marble" src="../../doc-files/marbles/delayElements.svg" alt="">
+    * <img class="marble" src="https://github.com/reactor/reactor-core/tree/master/reactor-core/src/main/java/reactor/core/publisher/doc-files/marbles/delayElements.svg" alt="">
     *
     * @param delay period to delay each [[Subscriber#onNext]] signal
     * @param timer a time-capable [[Scheduler]] instance to delay each signal on

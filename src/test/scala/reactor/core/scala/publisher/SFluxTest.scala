@@ -891,6 +891,12 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
         .verifyComplete()
     }
 
+    "++ should concatenate mono with another source" in {
+      StepVerifier.create(SFlux.just(1) ++ SFlux.just(2, 3))
+        .expectNext(1, 2, 3)
+        .verifyComplete()
+    }
+
     ".count should return Mono which emit the number of value in this flux" in {
       StepVerifier.create(SFlux.just(10, 9, 8).count())
         .expectNext(3)
