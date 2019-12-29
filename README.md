@@ -13,14 +13,14 @@ This will force Scala code to use anonymous class which turns ugly.
 
 So instead of
 
-    val mono = SMono.just(1)
+    val mono = Mono.just(1)
                    .map(new java.util.function.Function[Int, String] {
                        def apply(t: Int): String = t.toString
                    })
                    
 it becomes
 
-    val mono = Mono.just(1).map(_.toString)
+    val mono = SMono.just(1).map(_.toString)
 
 This extension will also return scala's `scala.collection.immutable.Stream` instead of Java's `java.util.stream.Stream`
 and `scala.concurrent.Future` instead of `java.util.concurrent.CompletableFuture`
