@@ -13,7 +13,7 @@ This will force Scala code to use anonymous class which turns ugly.
 
 So instead of
 
-    val mono = Mono.just(1)
+    val mono = SMono.just(1)
                    .map(new java.util.function.Function[Int, String] {
                        def apply(t: Int): String = t.toString
                    })
