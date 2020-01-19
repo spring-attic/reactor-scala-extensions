@@ -16,7 +16,7 @@ ext {
     mockitoInlineVersion = "3.2.4"
     mockitoVersion      = "1.10.2"
     pegdownVersion      = "1.6.0"
-    reactorVersion      = "3.3.1.RELEASE"
+    reactorVersion      = "3.3.2.RELEASE"
     scalaLoggingVersion = "3.9.2"
     scalatestVersion    = "3.1.0" //3.1.0
     scalaCollCompatVersion = "2.1.3"
