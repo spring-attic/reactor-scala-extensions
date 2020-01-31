@@ -198,7 +198,7 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] with ScalaCo
     coreMono.transformDeferred(transformerFunction).asScala
   }
 
-  @deprecated("will be removed, use transformDeferred() instead", since="reactor-scala-extensions 0.5.0")
+  @deprecated("will be removed, use transformDeferred() instead", since="reactor-scala-extensions 0.5.0 reactor-core 3.3.0")
   final def compose[V](transformer: SMono[T] => Publisher[V]): SMono[V] = transformDeferred(transformer)
 
   /**
@@ -312,7 +312,7 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] with ScalaCo
     * @param afterTerminate the callback to call after [[org.reactivestreams.Subscriber.onNext]], [[org.reactivestreams.Subscriber.onComplete]] without preceding [[org.reactivestreams.Subscriber.onNext]] or [[org.reactivestreams.Subscriber.onError]]
     * @return a new [[SMono]]
     */
-  @deprecated("prefer using `doAfterTerminate` or `doFinally`. will be removed", since="reactor-scala-extensions 0.5.0")
+  @deprecated("prefer using `doAfterTerminate` or `doFinally`. will be removed", since="reactor-scala-extensions 0.5.0, reactor-core 3.3.0")
   final def doAfterSuccessOrError(afterTerminate: Try[_ <: T] => Unit): SMono[T] = {
     val biConsumer = (t: T, u: Throwable) => Option(t) match {
       case Some(s) => afterTerminate(Success(s))
