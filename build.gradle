@@ -30,7 +30,6 @@ dependencies {
 
     implementation libraries.scalaLibrary
     implementation libraries.reactorCore
-    implementation libraries.findbugs
     implementation libraries.scalaCollCompat
 
 //    test dependencies
