@@ -11,7 +11,7 @@ if (scalaVersionMatch.find()) {
 
 ext {
     bytebuddyVersion    = "1.10.8"
-    logbackVersion      = "1.3.0-alpha5" //alpha5
+    logbackVersion      = "1.3.0-alpha5" //this is only used in testRuntimeOnly. DO NOT USE THIS IN NON TEST
     mockitoInlineVersion = "3.3.0"
     mockitoVersion      = "1.11.3"
     reactorVersion      = "3.3.3.RELEASE"
