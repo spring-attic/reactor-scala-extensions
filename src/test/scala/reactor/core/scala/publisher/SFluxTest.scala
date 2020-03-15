@@ -1837,7 +1837,7 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
           .verify()
       }
       "with default value should return the default value if the flux is empty" in {
-        StepVerifier.create(SFlux.empty[Int].single(Option(2)))
+        StepVerifier.create(SFlux.empty.single(Option(2)))
           .expectNext(2)
           .verifyComplete()
       }
@@ -1927,7 +1927,7 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
     }
 
     ".switchIfEmpty should switch if the current flux is empty" in {
-      StepVerifier.create(SFlux.empty[Int].switchIfEmpty(SFlux.just[Int](10, 20, 30)))
+      StepVerifier.create(SFlux.empty.switchIfEmpty(SFlux.just(10, 20, 30)))
         .expectNext(10, 20, 30)
         .verifyComplete()
     }
@@ -2058,8 +2058,8 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
       "with batchSize should transform this flux into iterable" in {
         SFlux.just(1, 2, 3).toIterable(1).toList shouldBe Iterable(1, 2, 3)
       }
-      "with batchSize and queue supplier should transform this flux into interable" in {
-        SFlux.just(1, 2, 3).toIterable(1, Option(Queues.get[Int](1))).toList shouldBe Iterable(1, 2, 3)
+      "with batchSize and queue supplier should transform this flux into iterable" in {
+        SFlux.just(1, 2, 3).toIterable(1, Option(Queues.get(1))).toList shouldBe Iterable(1, 2, 3)
       }
     }
 
