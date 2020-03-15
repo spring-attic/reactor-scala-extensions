@@ -583,7 +583,7 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] with ScalaCo
 
   final def scan[A >: T](initial: A, accumulator: (A, A) => A): SFlux[A] = coreFlux.scan(initial, accumulator).asScala
 
-  final def scanWith[A](initial: () => A, accumulator: (A, T) => A): SFlux[A] = coreFlux.scanWith(initial, accumulator).asScala
+  final def scanWith[A >: T](initial: () => A, accumulator: (A, T) => A): SFlux[A] = coreFlux.scanWith(initial, accumulator).asScala
 
   final def single(defaultValue: Option[T] = None): SMono[T] = {
     (defaultValue map { coreFlux.single(_) } getOrElse {coreFlux.single()}).asScala

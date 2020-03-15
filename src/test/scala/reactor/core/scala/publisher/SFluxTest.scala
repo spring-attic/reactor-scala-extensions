@@ -1820,7 +1820,7 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
     }
 
     ".scanWith should scan with initial value" in {
-      StepVerifier.create(SFlux.just(1, 2, 3, 4).scanWith[Int](() => 2, { (a, b) => a * b }))
+      StepVerifier.create(SFlux.just(1, 2, 3, 4).scanWith(() => 2, { (a, b) => a * b }))
         .expectNext(2, 2, 4, 12, 48)
         .verifyComplete()
     }
