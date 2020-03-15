@@ -89,7 +89,7 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
 
     ".concatDelayError" - {
       "with varargs of publishers should concatenate all sources emitted from parents" in {
-        val flux = SFlux.concatDelayError[Int](Mono.just(1), Mono.just(2), Mono.just(3))
+        val flux = SFlux.concatDelayError(Mono.just(1), Mono.just(2), Mono.just(3))
         StepVerifier.create(flux)
           .expectNext(1, 2, 3)
           .verifyComplete()
@@ -97,7 +97,7 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
     }
 
     ".create should create a flux" in {
-      val flux = SFlux.create[Int]((emitter: FluxSink[Int]) => {
+      val flux = SFlux.create((emitter: FluxSink[Int]) => {
         emitter.next(1)
         emitter.complete()
       })
@@ -121,7 +121,7 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
 
     ".firstEmitter" - {
       "with varargs of publisher should create Flux based on the publisher that emit first onNext or onComplete or onError" in {
-        val flux: SFlux[Long] = SFlux.firstEmitter(SMono.delay(Duration("10 seconds")), SMono.just[Long](1L))
+        val flux: SFlux[Long] = SFlux.firstEmitter(SMono.delay(Duration("10 seconds")), SMono.just(1L))
         StepVerifier.create(flux)
           .expectNext(1)
           .verifyComplete()
@@ -163,7 +163,7 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
           flush()
           close()
         }
-        val flux = SFlux.generate[Int, BufferedReader](
+        val flux = SFlux.generate(
           (reader: BufferedReader, sink: SynchronousSink[Int]) => {
             Option(reader.readLine()).filterNot(_.isEmpty).map(_.toInt) match {
               case Some(x) => sink.next(x)
@@ -229,7 +229,7 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
           .verifyComplete()
       }
       "with one element should emit value from provided data" in {
-        val flux = SFlux.just[Int](1)
+        val flux = SFlux.just(1)
         StepVerifier.create(flux)
           .expectNext(1)
           .verifyComplete()
