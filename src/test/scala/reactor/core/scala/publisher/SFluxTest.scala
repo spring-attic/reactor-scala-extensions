@@ -1306,6 +1306,13 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
       }
     }
 
+    ".fold should apply a binary operator to an initial value and all element of the source" in {
+      val mono = SFlux.just(1, 2, 3).foldLeft(0)((acc: Int, el: Int) => acc + el)
+      StepVerifier.create(mono)
+        .expectNext(6)
+        .verifyComplete()
+    }
+
     ".foldLeft should apply a binary operator to an initial value and all element of the source" in {
       val mono = SFlux.just(1, 2, 3).foldLeft(0)((acc: Int, el: Int) => acc + el)
       StepVerifier.create(mono)
@@ -1687,7 +1694,7 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
           .verifyComplete()
       }
       "with initial value should aggregate the values with initial one" in {
-        StepVerifier.create(SFlux.just(1, 2, 3).reduce[String]("0", (agg, v) => s"$agg-${v.toString}"))
+        StepVerifier.create(SFlux.just(1, 2, 3).reduce("0")((agg, v) => s"$agg-${v.toString}"))
           .expectNext("0-1-2-3")
           .verifyComplete()
       }
