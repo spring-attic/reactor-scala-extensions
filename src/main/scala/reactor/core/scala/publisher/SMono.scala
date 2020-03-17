@@ -1536,6 +1536,20 @@ object SMono extends ScalaConverters {
     JMono.zipDelayError[T1, T2, T3, T4, T5, T6](p1.coreMono, p2.coreMono, p3.coreMono, p4.coreMono, p5.coreMono, p6.coreMono).map((t: Tuple6[T1, T2, T3, T4, T5, T6]) => tupleSix2ScalaTuple6(t))
   )
 
+  /**
+    * Aggregate given publishers into a new [[SMono]] that will be
+    * fulfilled when all of the given <code>sources</code> have completed. If any Publisher
+    * terminates without value, the returned sequence will be terminated immediately and
+    * pending results cancelled. Errors from the sources are delayed.
+    * If several Publishers error, the exceptions are combined (as suppressed exceptions on a root exception).
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/reactor-core/src/main/java/reactor/core/publisher/doc-files/marbles/whenDelayError.svg" alt="">
+    * <p>
+    *
+    * @param sources The sources to use.
+    * @return a [[SMono]].
+    */
   def whenDelayError(sources: Iterable[_ <: Publisher[_] with MapablePublisher[_]]): SMono[Unit] = new ReactiveSMono[Unit](
     JMono.whenDelayError(sources.map(s => s.map((_: Any) => None.orNull: Void)).asJava).map((_: Void) => ())
   )

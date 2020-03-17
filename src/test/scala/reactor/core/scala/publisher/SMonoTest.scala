@@ -276,12 +276,14 @@ class SMonoTest extends AnyFreeSpec with Matchers with TestSupport with Idiomati
       "with iterable" - {
         "of publisher of unit should return when all of the sources has fulfilled" in {
           val completed = new ConcurrentHashMap[String, Boolean]()
-          val mono = SMono.whenDelayError(Iterable(
+          val mono: SMono[Unit] = SMono.whenDelayError(Iterable(
             just({
               completed.put("first", true)
+              1
             }),
             just({
               completed.put("second", true)
+              2
             })
           ))
           StepVerifier.create(mono)
