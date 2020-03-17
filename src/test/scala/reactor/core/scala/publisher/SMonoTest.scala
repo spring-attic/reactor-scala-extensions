@@ -5,7 +5,7 @@ import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger, AtomicLong, At
 
 import org.mockito.{ArgumentMatchersSugar, IdiomaticMockito}
 import org.reactivestreams.Subscription
-import org.scalatest.freespec.{AnyFreeSpec, AsyncFreeSpec}
+import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 import reactor.core.Disposable
 import reactor.core.publisher.{BaseSubscriber, Signal, SynchronousSink, Mono => JMono}
@@ -99,7 +99,7 @@ class SMonoTest extends AnyFreeSpec with Matchers with TestSupport with Idiomati
 
       "a future should result Mono that will return the value from the future object" in {
         import scala.concurrent.ExecutionContext.Implicits.global
-        StepVerifier.create(SMono.fromFuture(Future[Long] {
+        StepVerifier.create(SMono.fromFuture(Future {
           randomValue
         }))
           .expectNext(randomValue)
@@ -183,13 +183,13 @@ class SMonoTest extends AnyFreeSpec with Matchers with TestSupport with Idiomati
           .verifyComplete()
       }
       "emit true when both publisher emit the same value according to the isEqual function" in {
-        val mono = SMono.sequenceEqual[Int](just(10), just(100), (t1: Int, t2: Int) => t1 % 10 == t2 % 10)
+        val mono = SMono.sequenceEqual(just(10), just(100), (t1: Int, t2: Int) => t1 % 10 == t2 % 10)
         StepVerifier.create(mono)
           .expectNext(true)
           .verifyComplete()
       }
       "emit true when both publisher emit the same value according to the isEqual function with bufferSize" in {
-        val mono = SMono.sequenceEqual[Int](just(10), just(100), (t1: Int, t2: Int) => t1 % 10 == t2 % 10, 2)
+        val mono = SMono.sequenceEqual(just(10), just(100), (t1: Int, t2: Int) => t1 % 10 == t2 % 10, 2)
         StepVerifier.create(mono)
           .expectNext(true)
           .verifyComplete()
@@ -208,11 +208,13 @@ class SMonoTest extends AnyFreeSpec with Matchers with TestSupport with Idiomati
         "of publisher of unit should return when all of the sources has fulfilled" in {
           val completed = new ConcurrentHashMap[String, Boolean]()
           val mono = SMono.when(Iterable(
-            just[Unit]({
+            just({
               completed.put("first", true)
+              ()
             }),
-            just[Unit]({
+            just({
               completed.put("second", true)
+              ()
             })
           ))
           StepVerifier.create(mono)
@@ -224,11 +226,13 @@ class SMonoTest extends AnyFreeSpec with Matchers with TestSupport with Idiomati
 
       "with varargs of publisher should return when all of the resources has fulfilled" in {
         val completed = new ConcurrentHashMap[String, Boolean]()
-        val sources = Seq(just[Unit]({
+        val sources = Seq(just({
           completed.put("first", true)
+          ()
         }),
           just[Unit]({
             completed.put("second", true)
+            ()
           })
         )
         StepVerifier.create(SMono.when(sources.toArray: _*))
@@ -258,7 +262,7 @@ class SMonoTest extends AnyFreeSpec with Matchers with TestSupport with Idiomati
       }
 
       "with p1, p2, p3, p4 and p5 should merge when all Monos are fulfilled" in {
-        StepVerifier.create(SMono.zipDelayError(just[Int](1), just(2), just(3), just(4), just(5)))
+        StepVerifier.create(SMono.zipDelayError(just(1), just(2), just(3), just(4), just(5)))
           .expectNext((1, 2, 3, 4, 5))
           .verifyComplete()
       }
@@ -273,10 +277,10 @@ class SMonoTest extends AnyFreeSpec with Matchers with TestSupport with Idiomati
         "of publisher of unit should return when all of the sources has fulfilled" in {
           val completed = new ConcurrentHashMap[String, Boolean]()
           val mono = SMono.whenDelayError(Iterable(
-            just[Unit]({
+            just({
               completed.put("first", true)
             }),
-            just[Unit]({
+            just({
               completed.put("second", true)
             })
           ))
@@ -414,13 +418,13 @@ class SMonoTest extends AnyFreeSpec with Matchers with TestSupport with Idiomati
       jMono.cancelOn(any[Scheduler]) was called
     }
 
-    ".compose should defer creating the target mono type" in {
+    ".compose (deprecated) should defer creating the target mono type" in {
       StepVerifier.create(just(1).compose[String](m => SFlux.fromPublisher(m.map(_.toString))))
         .expectNext("1")
         .verifyComplete()
     }
     ".transformDeferred should defer creating the target mono type" in {
-      StepVerifier.create(SMono.just(1).transformDeferred[String](m => SFlux.fromPublisher(m.map(_.toString))))
+      StepVerifier.create(SMono.just(1).transformDeferred(m => SFlux.fromPublisher(m.map(_.toString))))
         .expectNext("1")
         .verifyComplete()
     }
@@ -440,7 +444,7 @@ class SMonoTest extends AnyFreeSpec with Matchers with TestSupport with Idiomati
     }
 
     ".defaultIfEmpty should use the provided default value if the mono is empty" in {
-      StepVerifier.create(SMono.empty[Int].defaultIfEmpty(-1))
+      StepVerifier.create(SMono.empty.defaultIfEmpty(-1))
         .expectNext(-1)
         .verifyComplete()
     }
@@ -495,7 +499,7 @@ class SMonoTest extends AnyFreeSpec with Matchers with TestSupport with Idiomati
         .verifyComplete()
     }
 
-    ".doAfterSuccessOrError should call the callback function after the mono is terminated" in {
+    ".doAfterSuccessOrError (deprecated) should call the callback function after the mono is terminated" in {
       val atomicBoolean = new AtomicBoolean(false)
       StepVerifier.create(just(randomValue)
         .doAfterSuccessOrError { t =>
