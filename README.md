@@ -4,6 +4,8 @@
 [![Download](https://api.bintray.com/packages/sinwe/io.projectreactor/reactor-scala-extensions_2.12/images/download.svg) ](https://bintray.com/sinwe/io.projectreactor/reactor-scala-extensions_2.12/_latestVersion)
 [![Build Status](https://travis-ci.org/reactor/reactor-scala-extensions.svg?branch=master)](https://travis-ci.org/reactor/reactor-scala-extensions)
 [![codecov](https://codecov.io/gh/reactor/reactor-scala-extensions/branch/master/graph/badge.svg)](https://codecov.io/gh/reactor/reactor-scala-extensions)
+[![Average time to resolve an issue](http://isitmaintained.com/badge/resolution/reactor/reactor-scala-extensions.svg)](http://isitmaintained.com/project/reactor/reactor-scala-extensions "Average time to resolve an issue")
+[![Percentage of issues still open](http://isitmaintained.com/badge/open/reactor/reactor-scala-extensions.svg)](http://isitmaintained.com/project/reactor/reactor-scala-extensions "Percentage of issues still open")
                             
 This project is a Scala extension for [reactor-core](https://github.com/reactor/reactor-core).
 
