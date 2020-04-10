@@ -1,6 +1,7 @@
 language: java
 os: linux
 jdk:
+  - openjdk14
   - openjdk11
   - openjdk8
 env:
