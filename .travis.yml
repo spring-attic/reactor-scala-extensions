@@ -4,8 +4,10 @@ jdk:
   - openjdk14
   - openjdk11
   - openjdk8
+  - oraclejdk8
 
 scala:
+  - 2.11.12
   - 2.12.10
   - 2.13.1
 
