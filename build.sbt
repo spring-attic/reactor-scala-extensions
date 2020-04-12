@@ -43,3 +43,8 @@ Compile / doc / scalacOptions ++= Seq(
 	"-no-link-warnings"
 )
 autoAPIMappings := true
+
+// SCoverage
+coverageEnabled := true
+coverageMinimum := 80.74
+coverageFailOnMinimum := true
