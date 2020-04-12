@@ -16,9 +16,9 @@ env:
 script:
   - |
     if [[ "$TRAVIS_JDK_VERSION" == "openjdk11" && "$TRAVIS_SCALA_VERSION" == "2.12.10" ]]; then
-      sbt clean coverage test coverageReport
+      sbt ++$TRAVIS_SCALA_VERSION clean coverage test coverageReport
     else
-      sbt clean test
+      sbt ++$TRAVIS_SCALA_VERSION clean test
     fi
 after_success:
   - |
@@ -29,7 +29,7 @@ after_success:
 deploy:
   provider: script
   cleanup: false
-  script: sbt +publishSigned
+  script: sbt ++$TRAVIS_SCALA_VERSION publishSigned
   on:
     jdk: openjdk11
 
