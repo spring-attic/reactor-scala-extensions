@@ -21,20 +21,11 @@ script:
     else
       sbt ++$TRAVIS_SCALA_VERSION clean test
     fi
-#after_success:
-#  - |
-#    if [[ "$TRAVIS_JDK_VERSION" == "openjdk11" && "$TRAVIS_SCALA_VERSION" == "2.12.10" ]]; then
-#      bash <(curl -s https://codecov.io/bash) || echo "Codecov did not collect coverage reports"
-#    fi
-
-deploy:
-  provider: script
-  cleanup: false
-  script: curl -s https://codecov.io/bash || echo "Codecov did not collect coverage reports"
-  on:
-    jdk: openjdk11
-    scala: 2.12.10
-    branch: sbt_build
+after_success:
+  - |
+    if [[ "$TRAVIS_JDK_VERSION" == "openjdk11" && "$TRAVIS_SCALA_VERSION" == "2.12.10" ]]; then
+      bash <(curl -s https://codecov.io/bash) || echo "Codecov did not collect coverage reports"
+    fi
 
 before_cache:
   - rm -fv $HOME/.ivy2/.sbt.ivy.lock
