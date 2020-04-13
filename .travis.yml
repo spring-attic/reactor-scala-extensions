@@ -33,6 +33,7 @@ deploy:
   script: sbt ++$TRAVIS_SCALA_VERSION publishSigned
   on:
     jdk: openjdk11
+    branch: sbt_build
 
 before_cache:
   - rm -fv $HOME/.ivy2/.sbt.ivy.lock
