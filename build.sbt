@@ -45,6 +45,6 @@ Compile / doc / scalacOptions ++= Seq(
 autoAPIMappings := true
 
 // SCoverage
-coverageEnabled := true
+//coverageEnabled := true
 coverageMinimum := 80.74
 coverageFailOnMinimum := true
