@@ -30,7 +30,7 @@ script:
 deploy:
   provider: script
   cleanup: false
-  script: bash <(curl -s https://codecov.io/bash) || echo "Codecov did not collect coverage reports"
+  script: curl -s https://codecov.io/bash || echo "Codecov did not collect coverage reports"
   on:
     jdk: openjdk11
     scala: 2.12.10
