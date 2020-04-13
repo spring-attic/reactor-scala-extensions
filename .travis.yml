@@ -29,8 +29,8 @@ after_success:
 
 deploy:
   provider: script
-  cleanup: false
-  script: sbt ++$TRAVIS_SCALA_VERSION clean publishSigned
+  cleanup: true
+  script: sbt ++$TRAVIS_SCALA_VERSION publishSigned
   on:
     jdk: openjdk11
     branch: sbt_build
