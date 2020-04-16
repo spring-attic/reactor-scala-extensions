@@ -1320,7 +1320,6 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
         .verifyComplete()
     }
 
-/*
     ".groupBy" - {
       "with keyMapper should group the flux by the key mapper" in {
         val oddBuffer = ListBuffer.empty[Int]
@@ -1330,15 +1329,15 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
           case even: Int if even % 2 == 0 => "even"
           case _: Int => "odd"
         })
-          .expectNextMatches(new Predicate[GroupedFlux[String, Int]] {
-            override def test(t: GroupedFlux[String, Int]): Boolean = {
-              t.subscribe(Option((x: Int) => oddBuffer append x))
+          .expectNextMatches(new Predicate[SGroupedFlux[String, Int]] {
+            override def test(t: SGroupedFlux[String, Int]): Boolean = {
+              t.subscribe(x => oddBuffer append x)
               t.key() == "odd"
             }
           })
-          .expectNextMatches(new Predicate[GroupedFlux[String, Int]] {
-            override def test(t: GroupedFlux[String, Int]): Boolean = {
-              t.subscribe(Option((x: Int) => evenBuffer append x))
+          .expectNextMatches(new Predicate[SGroupedFlux[String, Int]] {
+            override def test(t: SGroupedFlux[String, Int]): Boolean = {
+              t.subscribe(x => evenBuffer append x)
               t.key() == "even"
             }
           })
@@ -1355,15 +1354,15 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
           case even: Int if even % 2 == 0 => "even"
           case _: Int => "odd"
         }: Int => String, identity, 6))
-          .expectNextMatches(new Predicate[GroupedFlux[String, Int]] {
-            override def test(t: GroupedFlux[String, Int]): Boolean = {
-              t.subscribe(Option((x: Int) => oddBuffer append x))
+          .expectNextMatches(new Predicate[SGroupedFlux[String, Int]] {
+            override def test(t: SGroupedFlux[String, Int]): Boolean = {
+              t.subscribe(x => oddBuffer append x)
               t.key() == "odd"
             }
           })
-          .expectNextMatches(new Predicate[GroupedFlux[String, Int]] {
-            override def test(t: GroupedFlux[String, Int]): Boolean = {
-              t.subscribe(Option((x: Int) => evenBuffer append x))
+          .expectNextMatches(new Predicate[SGroupedFlux[String, Int]] {
+            override def test(t: SGroupedFlux[String, Int]): Boolean = {
+              t.subscribe(x => evenBuffer append x)
               t.key() == "even"
             }
           })
@@ -1381,15 +1380,15 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
           case even: Int if even % 2 == 0 => "even"
           case _: Int => "odd"
         }: Int => String, (i => i.toString): Int => String))
-          .expectNextMatches(new Predicate[GroupedFlux[String, String]] {
-            override def test(t: GroupedFlux[String, String]): Boolean = {
-              t.subscribe(Option((x: String) => oddBuffer append x))
+          .expectNextMatches(new Predicate[SGroupedFlux[String, String]] {
+            override def test(t: SGroupedFlux[String, String]): Boolean = {
+              t.subscribe(x => oddBuffer append x)
               t.key() == "odd"
             }
           })
-          .expectNextMatches(new Predicate[GroupedFlux[String, String]] {
-            override def test(t: GroupedFlux[String, String]): Boolean = {
-              t.subscribe(Option((x: String) => evenBuffer append x))
+          .expectNextMatches(new Predicate[SGroupedFlux[String, String]] {
+            override def test(t: SGroupedFlux[String, String]): Boolean = {
+              t.subscribe(x => evenBuffer append x)
               t.key() == "even"
             }
           })
@@ -1407,15 +1406,15 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
           case even: Int if even % 2 == 0 => "even"
           case _: Int => "odd"
         }: Int => String, (i => i.toString): Int => String, 6))
-          .expectNextMatches(new Predicate[GroupedFlux[String, String]] {
-            override def test(t: GroupedFlux[String, String]): Boolean = {
-              t.subscribe(Option((x: String) => oddBuffer append x))
+          .expectNextMatches(new Predicate[SGroupedFlux[String, String]] {
+            override def test(t: SGroupedFlux[String, String]): Boolean = {
+              t.subscribe(x => oddBuffer append x)
               t.key() == "odd"
             }
           })
-          .expectNextMatches(new Predicate[GroupedFlux[String, String]] {
-            override def test(t: GroupedFlux[String, String]): Boolean = {
-              t.subscribe(Option((x: String) => evenBuffer append x))
+          .expectNextMatches(new Predicate[SGroupedFlux[String, String]] {
+            override def test(t: SGroupedFlux[String, String]): Boolean = {
+              t.subscribe(x => evenBuffer append x)
               t.key() == "even"
             }
           })
@@ -1425,7 +1424,6 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
         evenBuffer shouldBe Seq("2", "4", "6")
       }
     }
-*/
 
     ".handle should handle the values" in {
       val buffer = ListBuffer.empty[Int]

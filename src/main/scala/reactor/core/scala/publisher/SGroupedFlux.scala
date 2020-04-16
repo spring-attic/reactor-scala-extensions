@@ -8,7 +8,7 @@ import reactor.core.publisher.{GroupedFlux => JGroupedFlux}
   * @tparam K the key type
   * @tparam V the value type
   */
-class GroupedFlux[K, V]private(private val jGroupedFlux: JGroupedFlux[K, V]) extends SFlux[V] {
+class SGroupedFlux[K, V]private(private val jGroupedFlux: JGroupedFlux[K, V]) extends SFlux[V] {
 
   /**
     * Return defined identifier
@@ -16,9 +16,9 @@ class GroupedFlux[K, V]private(private val jGroupedFlux: JGroupedFlux[K, V]) ext
     */
   def key(): K = jGroupedFlux.key()
 
-  override private[publisher] def coreFlux = jGroupedFlux
+  override private[publisher] def coreFlux: JGroupedFlux[K, V] = jGroupedFlux
 }
 
-object GroupedFlux {
-  def apply[K, V](jGroupFlux: JGroupedFlux[K, V]) = new GroupedFlux[K, V](jGroupFlux)
+object SGroupedFlux {
+  def apply[K, V](jGroupFlux: JGroupedFlux[K, V]) = new SGroupedFlux[K, V](jGroupFlux)
 }

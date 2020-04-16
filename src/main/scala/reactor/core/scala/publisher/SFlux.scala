@@ -468,12 +468,35 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] with ScalaCo
     else SFlux.fromPublisher(coreFlux.flatMapDelayError[R](mapper, maxConcurrency, prefetch))
 
 
-  final def groupBy[K](keyMapper: T => K): SFlux[GroupedFlux[K, T]] =
-    groupBy(keyMapper, identity)
+  final def groupBy[K](keyMapper: T => K): SFlux[SGroupedFlux[K, T]] = groupBy(keyMapper, identity)
 
-  final def groupBy[K, V](keyMapper: T => K, valueMapper: T => V, prefetch: Int = SMALL_BUFFER_SIZE): SFlux[GroupedFlux[K, V]] = {
+  /**
+    * Divide this sequence into dynamically created [[SFlux]] (or groups) for each
+    * unique key, as produced by the provided [[Function1 keyMapper]]. Source elements
+    * are also mapped to a different value using the [[Function1 valueMapper]]. Note that
+    * groupBy works best with a low cardinality of groups, so chose your keyMapper
+    * function accordingly.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.3.4.RELEASE/src/docs/marble/groupByWithKeyMapperAndValueMapper.svg" alt="">
+    *
+    * <p>
+    * The groups need to be drained and consumed downstream for groupBy to work correctly.
+    * Notably when the criteria produces a large amount of groups, it can lead to hanging
+    * if the groups are not suitably consumed downstream (eg. due to a {@code flatMap}
+    * with a {@code maxConcurrency} parameter that is set too low).
+    *
+    * @param keyMapper   the key mapping function that evaluates an incoming data and returns a key.
+    * @param valueMapper the value mapping function that evaluates which data to extract for re-routing.
+    * @param prefetch    the number of values to prefetch from the source
+    * @tparam K the key type extracted from each value of this sequence
+    * @tparam V the value type extracted from each value of this sequence
+    * @return a [[SFlux]] of [[SGroupedFlux]] grouped sequences
+    *
+    */
+  final def groupBy[K, V](keyMapper: T => K, valueMapper: T => V, prefetch: Int = SMALL_BUFFER_SIZE): SFlux[SGroupedFlux[K, V]] = {
     val jFluxOfGroupedFlux: JFlux[JGroupedFlux[K, V]] = coreFlux.groupBy(keyMapper, valueMapper, prefetch)
-    new ReactiveSFlux[GroupedFlux[K, V]](jFluxOfGroupedFlux.map((jg: JGroupedFlux[K, V]) => GroupedFlux(jg)))
+    new ReactiveSFlux[SGroupedFlux[K, V]](jFluxOfGroupedFlux.map((jg: JGroupedFlux[K, V]) => SGroupedFlux(jg)))
   }
 
   final def handle[R](handler: (T, SynchronousSink[R]) => Unit): SFlux[R] = SFlux.fromPublisher(coreFlux.handle[R](handler))
@@ -627,9 +650,22 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] with ScalaCo
     * @param completeConsumer the consumer to invoke on complete signal
     * @return a new [[Disposable]] to dispose the [[org.reactivestreams.Subscription]]
     */
-  final def subscribe(consumer: Option[T => Unit] = None,
+  final def subscribe(consumer: T => Unit,
                       errorConsumer: Option[Throwable => Unit] = None,
-                      completeConsumer: Option[Runnable] = None): Disposable = coreFlux.subscribe(consumer.orNull[T => Unit], errorConsumer.orNull[Throwable => Unit], completeConsumer.orNull)
+                      completeConsumer: Option[Runnable] = None): Disposable = coreFlux.subscribe(consumer, errorConsumer.orNull[Throwable => Unit], completeConsumer.orNull)
+
+  /**
+    * Subscribe to this [[SFlux]] and request unbounded demand.
+    * <p>
+    * This version doesn't specify any consumption behavior for the events from the
+    * chain, especially no error handling, so other variants should usually be preferred.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/subscribeIgoringAllSignalsForFlux.svg" alt="">
+    *
+    * @return a new [[Disposable]] that can be used to cancel the underlying [[org.reactivestreams.Subscription]]
+    */
+  final def subscribe(): Disposable = coreFlux.subscribe()
 
   /**
     * Provide an alternative if this sequence is completed without any data

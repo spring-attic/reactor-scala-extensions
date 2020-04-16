@@ -11,8 +11,6 @@ import scala.language.implicitConversions
   */
 object PimpMyPublisher {
 
-  implicit def jfluxToFlux[T](jflux: JFlux[T]): SFlux[T] = SFlux.fromPublisher(jflux)
-
   implicit def fluxToJFlux[T](flux: SFlux[T]): JFlux[T] = flux.asJava()
 
   implicit def jMonoToMono[T](jMono: JMono[T]): SMono[T] = SMono.fromPublisher(jMono)
