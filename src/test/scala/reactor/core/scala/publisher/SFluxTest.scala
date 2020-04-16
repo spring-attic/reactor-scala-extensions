@@ -1945,6 +1945,13 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
       }
     }
 
+    ".switchOnNext should switch on the next publisher" in {
+      val sFlux = SFlux.switchOnNext(SFlux.just(SFlux.just("A", "B", "C"), SFlux.just("a", "b", "c"), SMono.just("1")))
+      StepVerifier.create(sFlux)
+        .expectNext("A", "B", "C", "a", "b", "c", "1")
+        .verifyComplete()
+    }
+
     ".tag should tag the Flux and accessible from Scannable" in {
       val flux = SFlux.just(1, 2, 3).tag("integer", "one, two, three")
       Scannable.from(Option(flux)).tags shouldBe Stream("integer" -> "one, two, three")

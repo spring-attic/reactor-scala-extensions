@@ -25,6 +25,11 @@ import scala.jdk.CollectionConverters._
 import scala.language.postfixOps
 import scala.reflect.ClassTag
 
+/**
+  * @define marblePrefix https://raw.githubusercontent.com/reactor/reactor-core/master/reactor-core/src/main/java/reactor/core/publisher
+  * @tparam T data type for the value emitted by this [[SFlux]]
+  */
+
 trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] with ScalaConverters {
   self =>
 
@@ -388,7 +393,7 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] with ScalaCo
     * [[Scheduler]], but empty sequences or immediate error signals are not delayed.
     *
     * <p>
-    * <img class="marble" src="https://github.com/reactor/reactor-core/tree/master/reactor-core/src/main/java/reactor/core/publisher/doc-files/marbles/delayElements.svg" alt="">
+    * <img class="marble" src="$marblePrefix/doc-files/marbles/delayElements.svg" alt="">
     *
     * @param delay period to delay each [[Subscriber#onNext]] signal
     * @param timer a time-capable [[Scheduler]] instance to delay each signal on
@@ -478,7 +483,7 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] with ScalaCo
     * function accordingly.
     *
     * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.3.4.RELEASE/src/docs/marble/groupByWithKeyMapperAndValueMapper.svg" alt="">
+    * <img class="marble" src="$marblePrefix/doc-files/marbles/groupByWithKeyMapperAndValueMapper.svg" alt="">
     *
     * <p>
     * The groups need to be drained and consumed downstream for groupBy to work correctly.
@@ -661,7 +666,7 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] with ScalaCo
     * chain, especially no error handling, so other variants should usually be preferred.
     *
     * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/subscribeIgoringAllSignalsForFlux.svg" alt="">
+    * <img class="marble" src="$marblePrefix/doc-files/marbles/subscribeIgoringAllSignalsForFlux.svg" alt="">
     *
     * @return a new [[Disposable]] that can be used to cancel the underlying [[org.reactivestreams.Subscription]]
     */
@@ -785,7 +790,7 @@ object SFlux {
     * into an interleaved merged sequence. Unlike [[SFlux.concat(Publisher) concat]],
     * sources are subscribed to eagerly.
     * <p>
-    * <img class="marble" src="https://github.com/reactor/reactor-core/tree/master/reactor-core/src/main/java/reactor/core/publisher/doc-files/marbles//mergeFixedSources.svg" alt="">
+    * <img class="marble" src="$marblePrefix/doc-files/marbles/mergeFixedSources.svg" alt="">
     * <p>
     * Note that merge is tailored to work with asynchronous sources or finite sources. When dealing with
     * an infinite source that doesn't already publish on a dedicated Scheduler, you must isolate that source
@@ -851,15 +856,15 @@ object SFlux {
     * Build a [[reactor.core.publisher.FluxProcessor]] whose data are emitted by the most recent emitted [[Publisher]]. The
     * [[SFlux]] will complete once both the publishers source and the last switched to [[Publisher]] have completed.
     * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/switchonnext.png"
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/reactor-core/src/main/java/reactor/core/publisher/doc-files/marbles/switchOnNext.svg"
     * alt="">
     *
-    * @param mergedPublishers The { @link Publisher} of switching [[Publisher]] to subscribe to.
+    * @param mergedPublishers The [[Publisher]] of switching [[Publisher]] to subscribe to.
     * @tparam T the produced type
     * @return a [[reactor.core.publisher.FluxProcessor]] accepting publishers and producing T
     */
   //  TODO: How to test these switchOnNext?
-  def switchOnNext[T](mergedPublishers: Publisher[Publisher[_ <: T]]): SFlux[T] = SFlux.fromPublisher(JFlux.switchOnNext[T](mergedPublishers))
+  def switchOnNext[T](mergedPublishers: Publisher[_ <: Publisher[_ <: T]]): SFlux[T] = SFlux.fromPublisher(JFlux.switchOnNext[T](mergedPublishers))
 
   def using[T, D](resourceSupplier: () => D, sourceSupplier: D => Publisher[_ <: T], resourceCleanup: D => Unit, eager: Boolean = false): SFlux[T] =
     new ReactiveSFlux[T](JFlux.using[T, D](resourceSupplier, sourceSupplier, resourceCleanup, eager))
