@@ -698,8 +698,52 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] with ScalaCo
     */
   final def sampleFirst(timespan: Duration): SFlux[T] = coreFlux.sampleFirst(timespan).asScala
 
+  /**
+    * Reduce this [[SFlux]] values with an accumulator [[Function2]] and
+    * also emit the intermediate results of this function.
+    * <p>
+    * Unlike [[SFlux.scan(Anyref, Function2)]], this operator doesn't take an initial value
+    * but treats the first [[SFlux]] value as initial value.
+    * <br>
+    * The accumulation works as follows:
+    * <pre><code>
+    * result[0] = source[0]
+    * result[1] = accumulator(result[0], source[1])
+    * result[2] = accumulator(result[1], source[2])
+    * result[3] = accumulator(result[2], source[3])
+    * ...
+    * </code></pre>
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/reactor-core/src/main/java/reactor/core/publisher/doc-files/marbles/scanWithSameReturnType.svg" alt="">
+    *
+    * @param accumulator the accumulating [[Function2]]
+    * @return an accumulating [[SFlux]]
+    */
   final def scan(accumulator: (T, T) => T): SFlux[T] = coreFlux.scan(accumulator).asScala
 
+  /**
+    * Reduce this [[SFlux]] values with an accumulator [[Function2]] and
+    * also emit the intermediate results of this function.
+    * <p>
+    * The accumulation works as follows:
+    * <pre><code>
+    * result[0] = initialValue;
+    * result[1] = accumulator(result[0], source[0])
+    * result[2] = accumulator(result[1], source[1])
+    * result[3] = accumulator(result[2], source[2])
+    * ...
+    * </code></pre>
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/reactor-core/src/main/java/reactor/core/publisher/doc-files/marbles/scan.svg" alt="">
+    *
+    * @param initial     the initial leftmost argument to pass to the reduce function
+    * @param accumulator the accumulating [[Function2]]
+    * @param < A> the accumulated type
+    * @return an accumulating [[SFlux]] starting with initial state
+    *
+    */
   final def scan[A >: T](initial: => A)(accumulator: (A, A) => A): SFlux[A] = coreFlux.scanWith(() => initial, accumulator).asScala
 
 //  final def scanWith[A >: T](initial: () => A, accumulator: (A, T) => A): SFlux[A] = coreFlux.scanWith(initial, accumulator).asScala
