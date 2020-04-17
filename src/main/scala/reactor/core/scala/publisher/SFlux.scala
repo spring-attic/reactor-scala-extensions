@@ -669,8 +669,33 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] with ScalaCo
     */
   final def retryWhen(retry: Retry): SFlux[T] = coreFlux.retryWhen(retry).asScala
 
+  /**
+    * Sample this [[SFlux]] by periodically emitting an item corresponding to that
+    * [[SFlux]] latest emitted value within the periodical time window.
+    * Note that if some elements are emitted quicker than the timespan just before source
+    * completion, the last of these elements will be emitted along with the onComplete
+    * signal.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/reactor-core/src/main/java/reactor/core/publisher/doc-files/marbles/sampleAtRegularInterval.svg" alt="">
+    *
+    * @reactor.discard This operator discards elements that are not part of the sampling.
+    * @param timespan the duration of the window after which to emit the latest observed item
+    * @return a [[SFlux]] sampled to the last item seen over each periodic window
+    */
   final def sample(timespan: Duration): SFlux[T] = coreFlux.sample(timespan).asScala
 
+  /**
+    * Repeatedly take a value from this [[SFlux]] then skip the values that follow
+    * within a given duration.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/reactor-core/src/main/java/reactor/core/publisher/doc-files/marbles/sampleFirstAtRegularInterval.svg" alt="">
+    *
+    * @reactor.discard This operator discards elements that are not part of the sampling.
+    * @param timespan the duration during which to skip values after each sample
+    * @return a [[SFlux]] sampled to the first item of each duration-based window
+    */
   final def sampleFirst(timespan: Duration): SFlux[T] = coreFlux.sampleFirst(timespan).asScala
 
   final def scan(accumulator: (T, T) => T): SFlux[T] = coreFlux.scan(accumulator).asScala
