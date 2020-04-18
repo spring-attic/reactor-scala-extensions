@@ -740,7 +740,7 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] with ScalaCo
     *
     * @param initial     the initial leftmost argument to pass to the reduce function
     * @param accumulator the accumulating [[Function2]]
-    * @param < A> the accumulated type
+    * @tparam A the accumulated type
     * @return an accumulating [[SFlux]] starting with initial state
     *
     */
