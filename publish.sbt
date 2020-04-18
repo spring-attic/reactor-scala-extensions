@@ -18,7 +18,7 @@ ThisBuild / developers := List(
 )
 
 ThisBuild / description := "A scala extensions for Project Reactor Flux and Mono so that the code can be fluently used in Scala"
-ThisBuild / licenses := List("Apache License, Version 2.0, January 2004" -> new URL("https://www.apache.org/licenses/LICENSE-2.0.html"))
+ThisBuild / licenses := List("Apache-2.0" -> new URL("https://www.apache.org/licenses/LICENSE-2.0.html"))
 ThisBuild / homepage := Some(url("https://github.com/reactor/reactor-scala-extensions"))
 
 // Remove all additional repository other than Maven Central from POM
