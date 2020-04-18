@@ -6,3 +6,6 @@ releaseVersionBump := sbtrelease.Version.Bump.Next
 
 // sign released version
 releasePublishArtifactsAction := PgpKeys.publishSigned.value
+
+//Whether to use staging on bintray
+bintrayReleaseOnPublish in ThisBuild := false
