@@ -600,6 +600,32 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] with ScalaCo
     */
   final def parallel(parallelism: Int = Runtime.getRuntime.availableProcessors(), prefetch: Int = Queues.SMALL_BUFFER_SIZE) = SParallelFlux(coreFlux.parallel(parallelism, prefetch))
 
+  /**
+    * Prepare a [[ConnectableSFlux]] which shares this [[SFlux]] sequence and
+    * dispatches values to subscribers in a backpressure-aware manner. This will
+    * effectively turn any type of sequence into a hot sequence.
+    * <p>
+    * Backpressure will be coordinated on [[org.reactivestreams.Subscription.request]] and if any
+    * [[Subscriber]] is missing demand (requested = 0), multicast will pause
+    * pushing/pulling.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/reactor-core/src/main/java/reactor/core/publisher/doc-files/marbles/publish.svg" alt="">
+    *
+    * @param prefetch bounded requested demand
+    * @return a new [[ConnectableSFlux]]
+    */
+  final def publish(prefetch: Int = Queues.SMALL_BUFFER_SIZE): ConnectableSFlux[T] = coreFlux.publish(prefetch).asScala
+
+  /**
+    * Prepare a [[SMono]] which shares this [[SFlux]] sequence and dispatches the
+    * first observed item to subscribers in a backpressure-aware manner.
+    * This will effectively turn any type of sequence into a hot sequence when the first
+    * [[Subscriber]] subscribes.
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/reactor-core/src/main/java/reactor/core/publisher/doc-files/marbles/publishNext.svg" alt="">
+    *
+    * @return a new [[SMono]]
+    */
   final def publishNext(): SMono[T] = SMono.fromPublisher(coreFlux.publishNext())
 
   final def reduce(aggregator: (T, T) => T): SMono[T] = coreFlux.reduce(aggregator).asScala
