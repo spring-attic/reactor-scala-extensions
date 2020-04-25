@@ -10,9 +10,11 @@ import java.util.function.{Consumer, Predicate}
 
 import org.mockito.{ArgumentMatchersSugar, IdiomaticMockito}
 import org.reactivestreams.Subscription
+import org.scalatest.concurrent.{Eventually, PatienceConfiguration}
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.prop.TableDrivenPropertyChecks
+import org.scalatest.time.{Seconds, Span}
 import reactor.core.publisher.BufferOverflowStrategy.DROP_LATEST
 import reactor.core.publisher.{Flux => JFlux, _}
 import reactor.core.scala.Scannable
@@ -33,7 +35,11 @@ import scala.math.Ordering.IntOrdering
 import scala.math.ScalaNumber
 import scala.util.{Failure, Try}
 
-class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks with TestSupport with IdiomaticMockito with ArgumentMatchersSugar {
+class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks with TestSupport with IdiomaticMockito with ArgumentMatchersSugar
+  with PatienceConfiguration with Eventually {
+
+  implicit override def patienceConfig: PatienceConfig = PatienceConfig(Span(2, Seconds))
+
   "SFlux" - {
     ".apply should return a proper SFlux when provided a Publisher" in {
       StepVerifier.create(SFlux(JFlux.just(1,2,3)))
@@ -1678,6 +1684,20 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
       StepVerifier.create(SFlux.just(10, 20, 30).or(SFlux.just(1, 2, 3).delayElements(1 second)))
         .expectNext(10, 20, 30)
         .verifyComplete()
+    }
+
+    ".publish" - {
+      "without transformer should produce connectable flux" in {
+        val buffer = mutable.ListBuffer.empty[Int]
+        val base = SFlux.just(1, 2, 3, 4, 5).delayElements(1 second).publish().autoConnect()
+        base.subscribe()
+        Thread.sleep(1000)
+        base.subscribe(i => buffer += i)
+        eventually {
+          buffer.size should be >= 1
+          buffer should not contain (1)
+        }
+      }
     }
 
     ".publishNext should make this flux a hot mono" in {
