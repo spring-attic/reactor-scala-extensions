@@ -13,8 +13,6 @@ object PimpMyPublisher {
 
   implicit def fluxToJFlux[T](flux: SFlux[T]): JFlux[T] = flux.asJava()
 
-  implicit def jMonoToMono[T](jMono: JMono[T]): SMono[T] = SMono.fromPublisher(jMono)
-
   implicit def monoToJMono[T](mono: SMono[T]): JMono[T] = mono.asJava()
 
   implicit def jFluxJLong2FluxLong(jFluxLong: JFlux[JLong]): SFlux[Long] = SFlux.fromPublisher(jFluxLong.map(Long2long(_: JLong)))
