@@ -9,46 +9,20 @@ import scala.concurrent.duration.Duration
 class ConnectableSFlux[T]private(private val connectableFlux: ConnectableFlux[T]) extends SFlux[T] {
 
   /**
-    * Connects this [[ConnectableSFlux]] to the upstream source when the first [[org.reactivestreams.Subscriber]]
-    * subscribes.
-    *
-    * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/autoconnect.png" alt="">
-    *
-    * @return a [[SFlux]] that connects to the upstream source when the first [[org.reactivestreams.Subscriber]] subscribes
-    */
-  final def autoConnect(): SFlux[T] = SFlux.fromPublisher(connectableFlux.autoConnect())
-
-  /**
-    * Connects this [[ConnectableSFlux]] to the upstream source when the specified amount of
-    * [[org.reactivestreams.Subscriber]] subscribes.
-    * <p>
-    * Subscribing and immediately unsubscribing Subscribers also contribute the the subscription count
-    * that triggers the connection.
-    *
-    * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/autoconnect.png" alt="">
-    *
-    * @param minSubscribers the minimum number of subscribers
-    * @return a [[SFlux]] that connects to the upstream source when the given amount of Subscribers subscribe
-    */
-  final def autoConnect(minSubscribers: Int): SFlux[T] = SFlux.fromPublisher(connectableFlux.autoConnect(minSubscribers))
-
-  /**
     * Connects this [[ConnectableSFlux]] to the upstream source when the specified amount of
     * [[org.reactivestreams.Subscriber]] subscribes and calls the supplied consumer with a runnable that allows disconnecting.
     *
-    * @param minSubscribers the minimum number of subscribers
-    * @param cancelSupport  the consumer that will receive the [[Disposable]] that allows disconnecting
+    * @param minSubscribers the minimum number of subscribers. Default is 1
+    * @param cancelSupport  the consumer that will receive the [[Disposable]] that allows disconnecting. Default is do nothing
     *
     *                                                                  <p>
     *                                                                  <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/autoconnect.png" alt="">
     * @return a { @link Flux} that connects to the upstream source when the given amount of subscribers subscribed
     */
-  final def autoConnect(minSubscribers: Int, cancelSupport: Disposable => Unit): SFlux[T] = SFlux.fromPublisher(connectableFlux.autoConnect(minSubscribers, cancelSupport))
+  final def autoConnect(minSubscribers: Int = 1, cancelSupport: Disposable => Unit = _ => ()): SFlux[T] = SFlux.fromPublisher(connectableFlux.autoConnect(minSubscribers, cancelSupport))
 
   /**
-    * Connect this [[ConnectableSFlux]] to its source and return a [[Runnable]] that
+    * Connect this [[ConnectableSFlux]] to its source and return a [[Disposable]] that
     * can be used for disconnecting.
     *
     * @return the [[Disposable]] that allows disconnecting the connection after.
