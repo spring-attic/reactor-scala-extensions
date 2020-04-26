@@ -549,6 +549,20 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] with ScalaCo
     */
   final def log(category: String = None.orNull[String]): SFlux[T] = SFlux.fromPublisher(coreFlux.log(category))
 
+  /**
+    * Transform the items emitted by this [[SFlux]] by applying a synchronous function
+    * to each item.
+    * <p>
+    * <img class="marble" src="doc-files/marbles/mapForFlux.svg" alt="">
+    *
+    * @param mapper the synchronous transforming [[Function1]]
+    * @tparam V the transformed type
+    * @reactor.errorMode This operator supports { @link #onErrorContinue(BiConsumer) resuming on errors}
+    *                                                   (including when fusion is enabled). Exceptions thrown by the mapper then cause the
+    *                                                   source value to be dropped and a new element ({ @code request(1)}) being requested
+    *                                                                                                         from upstream.
+    * @return a transformed { @link Flux}
+    */
   override final def map[V](mapper: T => V): SFlux[V] = SFlux.fromPublisher(coreFlux.map[V](mapper))
 
   final def materialize(): SFlux[Signal[T]] = SFlux.fromPublisher(coreFlux.materialize())
