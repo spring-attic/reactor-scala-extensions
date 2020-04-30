@@ -1,6 +1,6 @@
 
 // Defining dependencies
-val reactorVersion = "3.3.4.RELEASE"
+val reactorVersion = "3.3.5.RELEASE"
 val reactorCore = "io.projectreactor" % "reactor-core" % reactorVersion
 val scalaCollCompat = "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.4"
 //test libraries
