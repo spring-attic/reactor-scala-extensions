@@ -549,6 +549,20 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] with ScalaCo
     */
   final def log(category: String = None.orNull[String]): SFlux[T] = SFlux.fromPublisher(coreFlux.log(category))
 
+  /**
+    * Transform the items emitted by this [[SFlux]] by applying a synchronous function
+    * to each item.
+    * <p>
+    * <img class="marble" src="doc-files/marbles/mapForFlux.svg" alt="">
+    *
+    * @param mapper the synchronous transforming [[Function1]]
+    * @tparam V the transformed type
+    * @reactor.errorMode This operator supports { @link #onErrorContinue(BiConsumer) resuming on errors}
+    *                                                   (including when fusion is enabled). Exceptions thrown by the mapper then cause the
+    *                                                   source value to be dropped and a new element ({ @code request(1)}) being requested
+    *                                                                                                         from upstream.
+    * @return a transformed { @link Flux}
+    */
   override final def map[V](mapper: T => V): SFlux[V] = SFlux.fromPublisher(coreFlux.map[V](mapper))
 
   final def materialize(): SFlux[Signal[T]] = SFlux.fromPublisher(coreFlux.materialize())
@@ -766,13 +780,11 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] with ScalaCo
     *
     * @param initial     the initial leftmost argument to pass to the reduce function
     * @param accumulator the accumulating [[Function2]]
-    * @param < A> the accumulated type
+    * @tparam A the accumulated type
     * @return an accumulating [[SFlux]] starting with initial state
     *
     */
   final def scan[A >: T](initial: => A)(accumulator: (A, A) => A): SFlux[A] = coreFlux.scanWith(() => initial, accumulator).asScala
-
-//  final def scanWith[A >: T](initial: () => A, accumulator: (A, T) => A): SFlux[A] = coreFlux.scanWith(initial, accumulator).asScala
 
   final def single(defaultValue: Option[T] = None): SMono[T] = {
     (defaultValue map { coreFlux.single(_) } getOrElse {coreFlux.single()}).asScala
@@ -796,6 +808,15 @@ trait SFlux[T] extends SFluxLike[T, SFlux] with MapablePublisher[T] with ScalaCo
 
   final def startWith(values: T*): SFlux[T] = coreFlux.startWith(values: _*).asScala
 
+  /**
+    * Prepend the given [[Publisher]] sequence to this [[SFlux]] sequence.
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/reactor-core/src/main/java/reactor/core/publisher/doc-files/marbles/startWithPublisher.svg" alt="">
+    *
+    * @param publisher the Publisher whose values to prepend
+    * @return a new [[SFlux]] prefixed with the given [[Publisher]] sequence
+    */
   final def startWith(publisher: Publisher[_ <: T]): SFlux[T] = coreFlux.startWith(publisher).asScala
 
   override def subscribe(s: Subscriber[_ >: T]): Unit = coreFlux.subscribe(s)

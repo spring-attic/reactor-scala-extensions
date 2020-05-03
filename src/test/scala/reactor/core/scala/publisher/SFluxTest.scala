@@ -38,7 +38,7 @@ import scala.util.{Failure, Try}
 class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks with TestSupport with IdiomaticMockito with ArgumentMatchersSugar
   with PatienceConfiguration with Eventually {
 
-  implicit override def patienceConfig: PatienceConfig = PatienceConfig(Span(2, Seconds))
+  implicit override def patienceConfig: PatienceConfig = PatienceConfig(Span(3, Seconds))
 
   "SFlux" - {
     ".apply should return a proper SFlux when provided a Publisher" in {
@@ -1694,8 +1694,8 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
         Thread.sleep(1000)
         base.subscribe(i => buffer += i)
         eventually {
-          buffer.size should be >= 1
-          buffer should not contain (1)
+          buffer.size should be > 1
+          buffer should not contain 1
         }
       }
     }
