@@ -16,6 +16,7 @@ import reactor.core.scheduler.{Scheduler, Schedulers}
 import reactor.util.Logger
 import reactor.util.concurrent.Queues
 import reactor.util.concurrent.Queues.{SMALL_BUFFER_SIZE, XS_BUFFER_SIZE}
+import reactor.util.context.Context
 import reactor.util.function.{Tuple2, Tuple3, Tuple4, Tuple5, Tuple6}
 import reactor.util.retry.Retry
 
@@ -942,7 +943,40 @@ object SFlux {
 
   def create[T](emitter: FluxSink[T] => Unit, backPressure: FluxSink.OverflowStrategy = OverflowStrategy.BUFFER): SFlux[T] = new ReactiveSFlux[T](JFlux.create(emitter, backPressure))
 
-  def defer[T](f: => SFlux[T]): SFlux[T] = new ReactiveSFlux[T](JFlux.defer(() => f))
+  /**
+    * Lazily supply a [[Publisher]] every time a [[org.reactivestreams.Subscription]] is made on the
+    * resulting [[SFlux]], so the actual source instantiation is deferred until each
+    * subscribe and the [[Supplier]] can create a subscriber-specific instance.
+    * If the supplier doesn't generate a new instance however, this operator will
+    * effectively behave like [[SFlux.from(Publisher)]]
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/reactor-core/src/main/java/reactor/core/publisher/doc-files/marbles/deferForFlux.svg" alt="">
+    *
+    * @param f the [[{Publisher]] [[Supplier]] to call on subscribe
+    * @tparam T      the type of values passing through the [[SFlux]]
+    * @return a deferred [[SFlux]]
+    * @see [[SFlux.deferWithContext(Function)]]
+    */
+  def defer[T](f: => Publisher[T]): SFlux[T] = new ReactiveSFlux[T](JFlux.defer(() => f))
+
+  /**
+    * Lazily supply a [[Publisher]] every time a [[org.reactivestreams.Subscription]] is made on the
+    * resulting [[SFlux]], so the actual source instantiation is deferred until each
+    * subscribe and the [[Function1]] can create a subscriber-specific instance.
+    * This operator behaves the same way as [[SFlux.defer(Supplier)]],
+    * but accepts a [[Function1]] that will receive the current [[Context]] as an argument.
+    * If the supplier doesn't generate a new instance however, this operator will
+    * effectively behave like [[SFlux.from(Publisher)]].
+    *
+    * <p>
+    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/reactor-core/src/main/java/reactor/core/publisher/doc-files/marbles/deferForFlux.svg" alt="">
+    *
+    * @param supplier the [[Publisher]] [[Function1]] to call on subscribe
+    * @tparam T      the type of values passing through the [[SFlux]]
+    * @return a deferred [[SFlux]]
+    */
+  def deferWithContext[T](supplier: Context => Publisher[T]): ReactiveSFlux[T] = new ReactiveSFlux[T](JFlux.deferWithContext(supplier))
 
   def empty[T]: SFlux[T] = new ReactiveSFlux(JFlux.empty[T]())
 

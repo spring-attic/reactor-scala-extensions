@@ -121,6 +121,14 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
         .verifyComplete()
     }
 
+    ".deferWithContext should create a flux with context" in { //TODO: How to verify against a Context?
+      StepVerifier.create(SFlux.deferWithContext(context => {
+        SFlux.just(1, 2, 3).doOnNext(i => context.put("data", i))
+      }))
+        .expectNext(1, 2, 3)
+        .verifyComplete()
+    }
+
     ".empty should return an empty SFlux" in {
       StepVerifier.create(SFlux.empty)
         .verifyComplete()
