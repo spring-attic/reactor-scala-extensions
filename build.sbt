@@ -6,7 +6,7 @@ val scalaCollCompat = "org.scala-lang.modules" %% "scala-collection-compat" % "2
 //test libraries
 val mockitoInline = "org.mockito" % "mockito-inline" % "3.3.0" % "test"
 val mockitoScala = "org.mockito" %% "mockito-scala" % "1.11.3" % "test"
-val scalatest = "org.scalatest" %% "scalatest" % "3.1.1" % "test"
+val scalatest = "org.scalatest" %% "scalatest" % "3.1.2" % "test"
 val reactorTest = "io.projectreactor" % "reactor-test" % reactorVersion % "test"
 
 //Scala versions for cross compiling
