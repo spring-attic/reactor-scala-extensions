@@ -2,11 +2,11 @@
 // Defining dependencies
 val reactorVersion = "3.3.5.RELEASE"
 val reactorCore = "io.projectreactor" % "reactor-core" % reactorVersion
-val scalaCollCompat = "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.4"
+val scalaCollCompat = "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.6"
 //test libraries
-val mockitoInline = "org.mockito" % "mockito-inline" % "3.3.0" % "test"
-val mockitoScala = "org.mockito" %% "mockito-scala" % "1.11.3" % "test"
-val scalatest = "org.scalatest" %% "scalatest" % "3.1.2" % "test"
+val mockitoInline = "org.mockito" % "mockito-inline" % "3.3.3" % "test"
+val mockitoScala = "org.mockito" %% "mockito-scala" % "1.14.3" % "test"
+val scalaTest = "org.scalatest" %% "scalatest" % "3.1.2" % "test"
 val reactorTest = "io.projectreactor" % "reactor-test" % reactorVersion % "test"
 
 //Scala versions for cross compiling
@@ -24,7 +24,7 @@ lazy val root = (project in file("."))
 		libraryDependencies += reactorCore,
 		libraryDependencies += scalaCollCompat,
 		libraryDependencies += mockitoScala,
-		libraryDependencies += scalatest,
+		libraryDependencies += scalaTest,
 		libraryDependencies += reactorTest,
 		libraryDependencies += mockitoInline
 	)
