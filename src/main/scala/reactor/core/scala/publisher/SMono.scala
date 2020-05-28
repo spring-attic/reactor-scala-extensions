@@ -1257,7 +1257,7 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] with ScalaCo
     *                              come before a [[Publisher]] signals
     *
     */
-  final def timeoutWhen[U](firstTimeout: Publisher[U], fallback: Option[SMono[_ <: T]] = None, timer: Scheduler = Schedulers.parallel()): SMono[T] = {
+  final def timeoutWhen[U](firstTimeout: Publisher[U], fallback: Option[SMono[_ <: T]] = None): SMono[T] = {
     val x = fallback.map((sm: SMono[_ <: T]) => coreMono.timeout[U](firstTimeout, sm.coreMono))
       .getOrElse(coreMono.timeout[U](firstTimeout))
     new ReactiveSMono[T](x)
