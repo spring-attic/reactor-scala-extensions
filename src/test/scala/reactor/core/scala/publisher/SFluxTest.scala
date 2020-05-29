@@ -1526,6 +1526,11 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
         .expectNext(1, 2, 3, 4, 5, 6)
         .verifyComplete()
     }
+    
+    ".metrics should be a nop since Micrometer is not on the classpath" in {
+      val flux = JFlux.just("plain", "awesome")
+      flux.asScala.metrics.coreFlux shouldBe theSameInstanceAs(flux)
+    }
 
     ".min" - {
       "of numbers should emit the lowest value of ordering" in {
