@@ -112,13 +112,13 @@ package object publisher {
 
   implicit def scalaFunctionTToMonoR2JavaFunctionTToJMonoR[T, R](function: T => SMono[R]): Function[T, JMono[_ <: R]] = {
     new Function[T, JMono[_ <: R]] {
-      override def apply(t: T): JMono[R] = function(t).asJava()
+      override def apply(t: T): JMono[_ <: R] = function(t).asJava()
     }
   }
 
-  implicit def scalaSupplierSMonoR2JavaSupplierJMonoR[R](supplier: () => SMono[R]): Supplier[JMono[R]] = {
-    new Supplier[JMono[R]] {
-      override def get(): JMono[R] = supplier().asJava()
+  implicit def scalaSupplierSMonoR2JavaSupplierJMonoR[R](supplier: () => SMono[R]): Supplier[JMono[_ <: R]] = {
+    new Supplier[JMono[_ <: R]] {
+      override def get(): JMono[_ <: R] = supplier().asJava()
     }
   }
 

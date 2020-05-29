@@ -6,7 +6,7 @@ import reactor.core.scheduler.Scheduler
 
 import scala.concurrent.duration.Duration
 
-class ConnectableSFlux[T]private(private val connectableFlux: ConnectableFlux[T]) extends SFlux[T] {
+class ConnectableSFlux[+T]private(private val connectableFlux: ConnectableFlux[_ <: T]) extends SFlux[T] {
 
   /**
     * Connects this [[ConnectableSFlux]] to the upstream source when the specified amount of
@@ -100,7 +100,7 @@ class ConnectableSFlux[T]private(private val connectableFlux: ConnectableFlux[T]
     */
   final def refCount(minSubscribers: Int, gracePeriod: Duration, scheduler: Scheduler): SFlux[T] = SFlux.fromPublisher(connectableFlux.refCount(minSubscribers, gracePeriod, scheduler))
 
-  override private[publisher] def coreFlux: ConnectableFlux[T] = connectableFlux
+  override private[publisher] def coreFlux: ConnectableFlux[_ <: T] = connectableFlux
 }
 
 object ConnectableSFlux {

@@ -9,7 +9,9 @@ import reactor.core.publisher.{ParallelFlux => JParallelFlux}
 import reactor.core.scheduler.Scheduler
 import reactor.util.concurrent.Queues
 
-class SParallelFlux[T] private(private val jParallelFlux: JParallelFlux[T]) extends Publisher[T] with ScalaConverters {
+import scala.annotation.unchecked.uncheckedVariance
+
+class SParallelFlux[+T] private(private val jParallelFlux: JParallelFlux[_ <: T]) extends Publisher[T @uncheckedVariance] with ScalaConverters {
 
   /**
     * Perform a fluent transformation to a value via a converter function which receives
@@ -19,7 +21,7 @@ class SParallelFlux[T] private(private val jParallelFlux: JParallelFlux[T]) exte
     * @param converter the converter function from [[SParallelFlux]] to some type
     * @return the value returned by the converter function
     */
-  final def as[U](converter: SParallelFlux[T] => U): U = jParallelFlux.as((t: JParallelFlux[T]) => converter(SParallelFlux(t)))
+  final def as[U](converter: SParallelFlux[T] => U): U = jParallelFlux.as((t: JParallelFlux[_ <: T]) => converter(SParallelFlux(t)))
 
   /**
     * Filters the source values on each 'rail'.
@@ -30,7 +32,7 @@ class SParallelFlux[T] private(private val jParallelFlux: JParallelFlux[T]) exte
     *                  value
     * @return the new [[SParallelFlux]] instance
     */
-  final def filter(predicate: SPredicate[T]) = SParallelFlux(jParallelFlux.filter(predicate))
+  final def filter[U >: T](predicate: SPredicate[U]): SParallelFlux[U] = SParallelFlux(jParallelFlux.filter(predicate))
 
   /**
     * Maps the source values on each 'rail' to another value.
@@ -55,7 +57,10 @@ class SParallelFlux[T] private(private val jParallelFlux: JParallelFlux[T]) exte
     * @return the new Mono instance emitting the reduced value or empty if the
     *         [[SParallelFlux]] was empty
     */
-  final def reduce(reducer: (T, T) => T):SMono[T] = jParallelFlux.reduce(reducer).asScala
+  final def reduce[U >: T](reducer: (U, U) => U): SMono[U] = {
+    def r[P <: T](v1: U, v2: U): P = reducer(v1, v2).asInstanceOf[P]
+    jParallelFlux.reduce(r).asScala
+  }
 
   /**
     * Reduces all values within a 'rail' to a single value (with a possibly different
@@ -71,7 +76,7 @@ class SParallelFlux[T] private(private val jParallelFlux: JParallelFlux[T]) exte
     *                        value supplied) with a current source value.
     * @return the new [[SParallelFlux]] instance
     */
-  final def reduce[R](initialSupplier: () => R, reducer: (R, T) => R) = SParallelFlux(jParallelFlux.reduce[R](initialSupplier, reducer))
+  final def reduce[R](initialSupplier: () => R, reducer: (R, T) => R): SParallelFlux[R] = SParallelFlux(jParallelFlux.reduce[R](initialSupplier, reducer))
 
   /**
     * Specifies where each 'rail' will observe its incoming values with possibly
@@ -146,7 +151,7 @@ class SParallelFlux[T] private(private val jParallelFlux: JParallelFlux[T]) exte
     */
   override def subscribe(s: Subscriber[_ >: T]): Unit = jParallelFlux.subscribe(s)
 
-  def asJava: JParallelFlux[T] = jParallelFlux
+  def asJava: JParallelFlux[_ <: T] = jParallelFlux
 }
 
 object SParallelFlux {

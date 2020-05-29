@@ -45,8 +45,7 @@ import scala.util.{Failure, Success, Try}
   * @tparam T the type of the single value of this class
   * @see [[SFlux]]
   */
-trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] with ScalaConverters {
-  self =>
+trait SMono[+T] extends SMonoLike[T] with MapablePublisher[T] with ScalaConverters {
 
   /**
     * Join the termination signals from this mono and another source into the returned
@@ -85,7 +84,7 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] with ScalaCo
     *
     * @return [[reactor.core.publisher.Mono]]
     */
-  final def asJava(): JMono[T] = coreMono
+  final def asJava(): JMono[_ <: T] = coreMono
 
   /**
     * Block until a next signal is received, will return null if onComplete, T if onNext, throw a
@@ -192,10 +191,7 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] with ScalaCo
     * @see [[SMono.as]] for a loose conversion to an arbitrary type
     */
   final def transformDeferred[V](transformer: SMono[T] => Publisher[V]): SMono[V] = {
-    val transformerFunction = new Function[JMono[T], Publisher[V]] {
-      override def apply(t: JMono[T]): Publisher[V] = transformer(SMono.this)
-    }
-    coreMono.transformDeferred(transformerFunction).asScala
+    coreMono.transformDeferred((_: JMono[_ <: T])=> transformer(SMono.this)).asScala
   }
 
   @deprecated("will be removed, use transformDeferred() instead", since="reactor-scala-extensions 0.5.0 reactor-core 3.3.0")
@@ -212,7 +208,10 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] with ScalaCo
     * @return a new [[SMono]]
     * @see [[SFlux.defaultIfEmpty]]
     */
-  final def defaultIfEmpty(defaultV: T): SMono[T] = coreMono.defaultIfEmpty(defaultV).asScala
+  final def defaultIfEmpty[U >: T](defaultV: U): SMono[U] = {
+    def adapt[P <: T](value: U): P = value.asInstanceOf[P]
+    coreMono.defaultIfEmpty(adapt(defaultV)).asScala
+  }
 
   /**
     * Delay this [[SMono]] element ([[Subscriber.onNext]] signal) by a given
@@ -244,7 +243,7 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] with ScalaCo
     * @return a delayed [[SMono]]
     *
     */
-  final def delaySubscription(delay: Duration, timer: Scheduler = Schedulers.parallel()): SMono[T] = new ReactiveSMono[T](coreMono.delaySubscription(delay, timer))
+  final def delaySubscription(delay: Duration, timer: Scheduler = Schedulers.parallel()): SMono[T] = new ReactiveSMono(coreMono.delaySubscription(delay, timer))
 
   /**
     * Delay the subscription to this [[SMono]] until another [[Publisher]]
@@ -259,7 +258,7 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] with ScalaCo
     * @return a delayed [[SMono]]
     *
     */
-  final def delaySubscription[U](subscriptionDelay: Publisher[U]): SMono[T] = new ReactiveSMono[T](coreMono.delaySubscription(subscriptionDelay))
+  final def delaySubscription[U](subscriptionDelay: Publisher[U]): SMono[T] = new ReactiveSMono(coreMono.delaySubscription(subscriptionDelay))
 
   /**
     * Subscribe to this [[SMono]] and another [[Publisher]] that is generated from
@@ -452,7 +451,10 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] with ScalaCo
     * @param scheduler the [[Scheduler]] to read time from. Defaulted to [[Schedulers.parallel()]]
     * @return a transforming [[SMono]] that emits a tuple of time elapsed in milliseconds and matching data
     */
-  final def elapsed(scheduler: Scheduler = Schedulers.parallel()): SMono[(Long, T)] = new ReactiveSMono[(Long, T)](coreMono.elapsed().map((t: Tuple2[JLong, T]) => javaTupleLongAndT2ScalaTupleLongAndT[T](t)))
+  final def elapsed(scheduler: Scheduler = Schedulers.parallel()): SMono[(Long, T)] = {
+    new ReactiveSMono(coreMono.elapsed())
+      .map((t: Tuple2[JLong, _ <: T]) => javaTupleLongAndT2ScalaTupleLongAndT(t))
+  }
 
   /**
     * Recursively expand elements into a graph and emit all the resulting element,
@@ -488,7 +490,10 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] with ScalaCo
     *                     elements per level of recursion.
     * @return this Mono expanded depth-first to a [[SFlux]]
     */
-  final def expandDeep(expander: T => Publisher[_ <: T], capacityHint: Int = SMALL_BUFFER_SIZE): SFlux[T] = coreMono.expandDeep(expander, capacityHint).asScala
+  final def expandDeep[U >: T](expander: T => Publisher[U], capacityHint: Int = SMALL_BUFFER_SIZE): SFlux[U] = {
+    coreMono.expandDeep(expander.asInstanceOf[T=> Publisher[Nothing]], capacityHint)
+      .asScala
+  }
 
   /**
     * Recursively expand elements into a graph and emit all the resulting element using
@@ -524,7 +529,10 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] with ScalaCo
     *                     elements per level of recursion.
     * @return this Mono expanded breadth-first to a [[SFlux]]
     */
-  final def expand(expander: T => Publisher[_ <: T], capacityHint: Int = SMALL_BUFFER_SIZE): SFlux[T] = coreMono.expand(expander, capacityHint).asScala
+  final def expand[U >: T](expander: T => Publisher[U], capacityHint: Int = SMALL_BUFFER_SIZE): SFlux[U] = {
+    coreMono.expand(expander.asInstanceOf[T => Publisher[Nothing]], capacityHint)
+      .asScala
+  }
 
   /**
     * Test the result if any of this [[SMono]] and replay it if predicate returns true.
@@ -723,7 +731,7 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] with ScalaCo
     * @return a [[SMono]] of materialized [[Signal]]
     * @see [[SMono.dematerialize()]]
     */
-  final def materialize(): SMono[Signal[T]] = coreMono.materialize().asScala
+  final def materialize(): SMono[Signal[_ <: T]] = coreMono.materialize().asScala
 
   /**
     * Merge emissions of this [[SMono]] with the provided [[Publisher]].
@@ -735,7 +743,10 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] with ScalaCo
     * @param other the other [[Publisher]] to merge with
     * @return a new [[SFlux]] as the sequence is not guaranteed to be at most 1
     */
-  final def mergeWith(other: Publisher[_ <: T]): SFlux[T] = coreMono.mergeWith(other).asScala
+  final def mergeWith[U >: T](other: Publisher[U]): SFlux[U] = {
+    coreMono.mergeWith(other.asInstanceOf[Publisher[Nothing]])
+      .asScala
+  }
 
   /**
     * Give a name to this sequence, which can be retrieved using [[Scannable.name()]]
@@ -790,7 +801,7 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] with ScalaCo
 
   private def defaultToMonoError[U](t: Throwable): SMono[U] = SMono.raiseError[U](t)
 
-  final def onErrorRecover[U <: T](pf: PartialFunction[Throwable, U]): SMono[T] = {
+  final def onErrorRecover[U >: T](pf: PartialFunction[Throwable, U]): SMono[U] = {
     def recover(t: Throwable): SMono[U] = pf.andThen(u => SMono.just(u)).applyOrElse(t, defaultToMonoError)
 
     onErrorResume(recover)
@@ -807,11 +818,9 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] with ScalaCo
     * @return an alternating [[SMono]] on source onError
     * @see [[SFlux.onErrorResume]]
     */
-  final def onErrorResume(fallback: Throwable => SMono[_ <: T]): SMono[T] = {
-    val fallbackFunction = new Function[Throwable, JMono[_ <: T]] {
-      override def apply(t: Throwable): JMono[_ <: T] = fallback(t).coreMono
-    }
-    coreMono.onErrorResume(fallbackFunction).asScala
+  final def onErrorResume[U >: T](fallback: Throwable => SMono[U]): SMono[U] = {
+    val f: Function[Throwable, JMono[_ <: U]] = (t: Throwable)=> fallback(t).coreMono
+    coreMono.onErrorResume(f.asInstanceOf[Function[Throwable, Nothing]]).asScala
   }
 
   /**
@@ -835,7 +844,9 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] with ScalaCo
     * @return a new [[SFlux]]
     * @see [[SMono.firstEmitter()]]
     */
-  final def or(other: SMono[_ <: T]): SMono[T] = coreMono.or(other.coreMono).asScala
+  final def or[U >: T](other: SMono[U]): SMono[U] = {
+    coreMono.or(other.asJava.asInstanceOf[JMono[Nothing]]).asScala
+  }
 
   /**
     * Shares a [[SMono]] for the duration of a function that may transform it and
@@ -846,11 +857,10 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] with ScalaCo
     * @tparam R the output value type
     * @return a new [[SMono]]
     */
-  final def publish[R](transform: SMono[T] => SMono[R]): SMono[R] = {
-    val transformFunction = new Function[JMono[T], JMono[R]] {
-      override def apply(t: JMono[T]): JMono[R] = transform(SMono.this).coreMono
-    }
-    coreMono.publish[R](transformFunction).asScala
+  final def publish[R](transform: SMono[_ <: T] => SMono[R]): SMono[R] = {
+    val f: Function[JMono[_ <: T], JMono[_ <:R]] = (t: JMono[_ <: T]) => transform(SMono.this).coreMono
+
+    coreMono.publish[R](f).asScala
   }
 
   /**
@@ -1131,7 +1141,9 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] with ScalaCo
     * @return an alternating [[SMono]] on source onComplete without elements
     * @see [[SFlux.switchIfEmpty]]
     */
-  final def switchIfEmpty(alternate: SMono[_ <: T]): SMono[T] = coreMono.switchIfEmpty(alternate.coreMono).asScala
+  final def switchIfEmpty[U >: T](alternate: SMono[U]): SMono[U] = {
+    coreMono.switchIfEmpty(alternate.coreMono.asInstanceOf[JMono[Nothing]]).asScala
+  }
 
   /**
     * Tag this mono with a key/value pair. These can be retrieved as a [[Stream]] of
@@ -1210,7 +1222,7 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] with ScalaCo
     * @return a new [[SMono]] completing when both publishers have completed in
     *                       sequence
     */
-  final def thenEmpty(other: MapablePublisher[Unit]): SMono[Unit] = new ReactiveSMono[Unit]((coreMono: JMono[T]).thenEmpty(other).map((_: Void) => ()))
+  final def thenEmpty(other: MapablePublisher[Unit]): SMono[Unit] = new ReactiveSMono[Unit]((coreMono: JMono[_ <: T]).thenEmpty(other).map((_: Void) => ()))
 
   /**
     * Ignore element from this mono and transform the completion signal into a
@@ -1239,8 +1251,9 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] with ScalaCo
     * @param timer a time-capable [[Scheduler]] instance to run on
     * @return an expirable [[SMono]] with a fallback [[SMono]]
     */
-  final def timeout(timeout: Duration, fallback: Option[SMono[_ <: T]] = None, timer: Scheduler = Schedulers.parallel()): SMono[T] =
-    coreMono.timeout(timeout, fallback.map(_.coreMono).orNull[JMono[_ <: T]], timer).asScala
+  final def timeout[U >: T](timeout: Duration, fallback: Option[SMono[U]] = None, timer: Scheduler = Schedulers.parallel()): SMono[U] = {
+    coreMono.timeout(timeout, fallback.map(_.coreMono.asInstanceOf[JMono[Nothing]]).orNull, timer).asScala
+  }
 
   /**
     * Switch to a fallback [[Publisher]] in case the  item from this {@link Mono} has
@@ -1257,10 +1270,10 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] with ScalaCo
     *                              come before a [[Publisher]] signals
     *
     */
-  final def timeoutWhen[U](firstTimeout: Publisher[U], fallback: Option[SMono[_ <: T]] = None): SMono[T] = {
-    val x = fallback.map((sm: SMono[_ <: T]) => coreMono.timeout[U](firstTimeout, sm.coreMono))
-      .getOrElse(coreMono.timeout[U](firstTimeout))
-    new ReactiveSMono[T](x)
+  final def timeoutWhen[U >: T, V](firstTimeout: Publisher[V], fallback: Option[SMono[U]] = None): SMono[U] = {
+    val x = fallback.map((sm: SMono[U]) => coreMono.timeout[V](firstTimeout, sm.coreMono.asInstanceOf[JMono[Nothing]]))
+      .getOrElse(coreMono.timeout[V](firstTimeout))
+    new ReactiveSMono(x)
   }
 
   /**
@@ -1274,7 +1287,9 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] with ScalaCo
     * @return a timestamped [[SMono]]
     */
   //  How to test this?
-  final def timestamp(scheduler: Scheduler = Schedulers.parallel()): SMono[(Long, T)] = new ReactiveSMono[(Long, T)](coreMono.timestamp(scheduler).map((t2: Tuple2[JLong, T]) => (Long2long(t2.getT1), t2.getT2)))
+  final def timestamp(scheduler: Scheduler = Schedulers.parallel()): SMono[(Long, _ <: T)] = {
+    new ReactiveSMono[(Long, _ <: T)](coreMono.timestamp(scheduler).map((t2: Tuple2[JLong, _ <: T]) => (Long2long(t2.getT1), t2.getT2)))
+  }
 
   /**
     * Transform this [[SMono]] into a [[Future]] completing on onNext or onComplete and failing on
@@ -1313,7 +1328,7 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] with ScalaCo
     * @see [[SMono.compose]] for deferred composition of [[SMono]] for each [[Subscriber]]
     * @see [[SMono.as]] for a loose conversion to an arbitrary type
     */
-  final def transform[V](transformer: SMono[T] => Publisher[V]): SMono[V] = coreMono.transform[V]((_: JMono[T]) => transformer(SMono.this)).asScala
+  final def transform[V](transformer: SMono[T] => Publisher[V]): SMono[V] = coreMono.transform[V]((_: JMono[_ <: T]) => transformer(SMono.this)).asScala
 
 }
 
