@@ -163,6 +163,11 @@ class SMonoTest extends AnyFreeSpec with Matchers with TestSupport with Idiomati
         }
       }
     }
+    
+    ".metrics should be a nop since Micrometer is not on the classpath" in {
+      val mono = JMono.just("plain awesome")
+      mono.asScala.metrics.coreMono shouldBe theSameInstanceAs(mono)
+    }
 
     ".never will never signal any data, error or completion signal" in {
       StepVerifier.create(SMono.never)

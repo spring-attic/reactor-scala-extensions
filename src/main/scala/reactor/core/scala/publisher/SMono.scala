@@ -738,8 +738,19 @@ trait SMono[T] extends SMonoLike[T, SMono] with MapablePublisher[T] with ScalaCo
   final def mergeWith(other: Publisher[_ <: T]): SFlux[T] = coreMono.mergeWith(other).asScala
 
   /**
-    * Give a name to this sequence, which can be retrieved using [[Scannable.name()]]
-    * as long as this is the first reachable [[Scannable.parents()]].
+    * Activate metrics for this sequence, provided there is an instrumentation facade
+    * on the classpath (otherwise this method is a pure no-op).
+    * <p>
+    * Metrics are gathered on [[Subscriber]] events, and it is recommended to also
+    * [[name]] (and optionally [[tag]]) the sequence.
+    *
+    * @return an instrumented [[SMono]]
+    */
+  final def metrics: SMono[T] = SMono.fromPublisher(coreMono.metrics())
+
+  /**
+    * Give a name to this sequence, which can be retrieved using [[Scannable.name]]
+    * as long as this is the first reachable [[Scannable.parents]].
     *
     * @param name a name for the sequence
     * @return the same sequence, but bearing a name
