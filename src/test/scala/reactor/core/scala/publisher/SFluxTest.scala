@@ -8,6 +8,8 @@ import java.util.concurrent.Callable
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger, AtomicLong, AtomicReference}
 import java.util.function.{Consumer, Predicate}
 
+import io.micrometer.core.instrument.Metrics
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import org.mockito.{ArgumentMatchersSugar, IdiomaticMockito}
 import org.reactivestreams.Subscription
 import org.scalatest.concurrent.{Eventually, PatienceConfiguration}
@@ -1527,9 +1529,22 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
         .verifyComplete()
     }
     
-    ".metrics should be a nop since Micrometer is not on the classpath" in {
-      val flux = JFlux.just("plain", "awesome")
-      flux.asScala.metrics.coreFlux shouldBe theSameInstanceAs(flux)
+    ".metrics should enable Micrometer metrics" in {
+      val registry = new SimpleMeterRegistry
+      Metrics.globalRegistry add registry
+      try {
+        StepVerifier.create(
+          SFlux.just("plain", "awesome")
+               .name("SFluxTest")
+               .metrics
+        ).expectNext("plain", "awesome")
+         .verifyComplete()
+        
+        registry.find("reactor.onNext.delay")
+                .tag("flow","SFluxTest")
+                .timer.count shouldEqual 2d
+      }
+      finally Metrics.globalRegistry remove registry
     }
 
     ".min" - {
