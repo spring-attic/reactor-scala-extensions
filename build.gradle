@@ -35,6 +35,7 @@ dependencies {
 //    test dependencies
     testImplementation libraries.scalatest
     testImplementation libraries.reactorTest
+    testImplementation libraries.micrometer
     testImplementation libraries.mockitoInline
     testImplementation libraries.mockitoScala
     testImplementation libraries.scalaLogging

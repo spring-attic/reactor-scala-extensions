@@ -4,6 +4,7 @@ val reactorVersion = "3.3.5.RELEASE"
 val reactorCore = "io.projectreactor" % "reactor-core" % reactorVersion
 val scalaCollCompat = "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.6"
 //test libraries
+val micrometer = "io.micrometer" % "micrometer-core" % "1.5.1" % "test"
 val mockitoInline = "org.mockito" % "mockito-inline" % "3.3.3" % "test"
 val mockitoScala = "org.mockito" %% "mockito-scala" % "1.14.3" % "test"
 val scalaTest = "org.scalatest" %% "scalatest" % "3.1.2" % "test"
@@ -23,6 +24,7 @@ lazy val root = (project in file("."))
 		name := "reactor-scala-extensions",
 		libraryDependencies += reactorCore,
 		libraryDependencies += scalaCollCompat,
+		libraryDependencies += micrometer,
 		libraryDependencies += mockitoScala,
 		libraryDependencies += scalaTest,
 		libraryDependencies += reactorTest,

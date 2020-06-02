@@ -4,6 +4,8 @@ import java.util.concurrent._
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger, AtomicLong, AtomicReference}
 import java.util.function.Supplier
 
+import io.micrometer.core.instrument.Metrics
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import org.mockito.{ArgumentMatchersSugar, IdiomaticMockito}
 import org.reactivestreams.{Publisher, Subscription}
 import org.scalatest.freespec.AnyFreeSpec
@@ -168,6 +170,24 @@ class SMonoTest extends AnyFreeSpec with Matchers with TestSupport with Idiomati
             .verify()
         }
       }
+    }
+    
+    ".metrics should enable Micrometer metrics" in {
+      val registry = new SimpleMeterRegistry
+      Metrics.globalRegistry add registry
+      try {
+        StepVerifier.create(
+          SMono.just("plain awesome")
+               .name("SMonoTest")
+               .metrics
+        ).expectNext("plain awesome")
+         .verifyComplete()
+        
+        registry.find("reactor.flow.duration")
+                .tag("flow","SMonoTest")
+                .timer.count shouldEqual 1d
+      }
+      finally Metrics.globalRegistry remove registry
     }
 
     ".never will never signal any data, error or completion signal" in {

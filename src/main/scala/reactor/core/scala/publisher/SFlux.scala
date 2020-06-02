@@ -596,6 +596,17 @@ trait SFlux[+T] extends SFluxLike[T] with MapablePublisher[T] with ScalaConverte
 
   final def mergeWith[U >: T](other: Publisher[U]): SFlux[U] = SFlux.fromPublisher(coreFlux.mergeWith(other.asInstanceOf[Publisher[Nothing]]))
 
+  /**
+  * Activate metrics for this sequence, provided there is an instrumentation facade
+  * on the classpath (otherwise this method is a pure no-op).
+  * <p>
+  * Metrics are gathered on [[Subscriber]] events, and it is recommended to also
+  * [[name]] (and optionally [[tag]]) the sequence.
+  *
+  * @return an instrumented [[SFlux]]
+  */
+  final def metrics: SFlux[T] = SFlux.fromPublisher(coreFlux.metrics())
+
   final def name(name: String): SFlux[T] = SFlux.fromPublisher(coreFlux.name(name))
 
   final def next(): SMono[T] = SMono.fromPublisher(coreFlux.next())
