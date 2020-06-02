@@ -1,7 +1,7 @@
 package reactor.core.scala.publisher
 
 import java.util
-import java.util.function.Supplier
+import java.util.function.{BiFunction, Supplier}
 
 import org.reactivestreams.{Publisher, Subscriber, Subscription}
 import reactor.core.Disposable
@@ -58,7 +58,9 @@ class SParallelFlux[+T] private(private val jParallelFlux: JParallelFlux[_ <: T]
     *         [[SParallelFlux]] was empty
     */
   final def reduce[U >: T](reducer: (U, U) => U): SMono[U] = {
-    def r[P <: T](v1: U, v2: U): P = reducer(v1, v2).asInstanceOf[P]
+    def r[P <: T]: BiFunction[P, P, P] = new BiFunction[P, P, P] {
+      override def apply(v1: P, v2: P): P = reducer(v1, v2).asInstanceOf[P]
+    }
     jParallelFlux.reduce(r).asScala
   }
 

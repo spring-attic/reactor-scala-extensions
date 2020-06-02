@@ -40,7 +40,7 @@ trait SFluxLike[+T] extends ScalaConverters {
 
   final def foldLeft[R](initial: R)(binaryOps: (R, T) => R): SMono[R] = reduce[R](initial)(binaryOps)
 
-  final def head: SMono[T] = take(1).as(f=>SMono.fromPublisher[T](f))
+  final def head: SMono[T] = coreFlux.next.asScala
 
   final def max[R >: T](implicit ev: Ordering[R]): SMono[Option[R]] = foldLeft(None: Option[R]) { (acc: Option[R], el: T) => {
     acc map (a => ev.max(a, el)) orElse Option(el)
@@ -64,7 +64,11 @@ trait SFluxLike[+T] extends ScalaConverters {
   }
 
   final def onErrorResume[U >: T](fallback: Throwable => Publisher[U]): SFlux[U] = {
-    coreFlux.onErrorResume((t)=>fallback(t).asInstanceOf[Publisher[Nothing]]).asScala
+    def f[P <: T]: Function[Throwable, Publisher[P]] = new Function[Throwable, Publisher[P]] {
+      override def apply(t: Throwable): Publisher[P] = fallback(t).asInstanceOf[Publisher[P]]
+    }
+
+    coreFlux.onErrorResume(f).asScala
   }
 
   final def reduce[A](initial: A)(accumulator: (A, T) => A): SMono[A] = coreFlux.reduce[A](initial, accumulator).asScala

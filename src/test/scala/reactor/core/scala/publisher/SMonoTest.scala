@@ -2,9 +2,10 @@ package reactor.core.scala.publisher
 
 import java.util.concurrent._
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger, AtomicLong, AtomicReference}
+import java.util.function.Supplier
 
 import org.mockito.{ArgumentMatchersSugar, IdiomaticMockito}
-import org.reactivestreams.Subscription
+import org.reactivestreams.{Publisher, Subscription}
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 import reactor.core.Disposable
@@ -26,6 +27,10 @@ import scala.util.{Failure, Random, Success, Try}
 class SMonoTest extends AnyFreeSpec with Matchers with TestSupport with IdiomaticMockito with ArgumentMatchersSugar {
   private val randomValue = Random.nextLong()
 
+  private def supplier[T](supply: => SMono[T]) = new Supplier[SMono[T]] {
+    def get(): SMono[T] = supply
+  }
+
   "SMono" - {
     ".create should create a Mono" in {
       StepVerifier.create(SMono.create[Long](monoSink => monoSink.success(randomValue)))
@@ -43,7 +48,7 @@ class SMonoTest extends AnyFreeSpec with Matchers with TestSupport with Idiomati
 
     ".delay should create a Mono with the first element delayed according to the provided" - {
       "duration" in {
-        StepVerifier.withVirtualTime(() => SMono.delay(5 days))
+        StepVerifier.withVirtualTime(supplier[Long](SMono.delay(5 days)))
           .thenAwait(5 days)
           .expectNextCount(1)
           .expectComplete()
@@ -69,7 +74,8 @@ class SMonoTest extends AnyFreeSpec with Matchers with TestSupport with Idiomati
 
     ".firstEmitter" - {
       "with varargs should create mono that emit the first item" in {
-        StepVerifier.withVirtualTime(() => SMono.firstEmitter(just(1).delaySubscription(3 seconds), just(2).delaySubscription(2 seconds)))
+        StepVerifier.withVirtualTime(supplier[Int](
+            SMono.firstEmitter(just(1).delaySubscription(3 seconds), just(2).delaySubscription(2 seconds))))
           .thenAwait(3 seconds)
           .expectNext(2)
           .verifyComplete()
@@ -362,7 +368,8 @@ class SMonoTest extends AnyFreeSpec with Matchers with TestSupport with Idiomati
           just(randomValue).blockOption(10 seconds) shouldBe Some(randomValue)
         }
         "shouldBlock the mono up to the duration and return None" in {
-          StepVerifier.withVirtualTime(() => just(SMono.empty.blockOption(10 seconds)))
+          StepVerifier.withVirtualTime(supplier[Option[Unit]](
+               just(SMono.empty.blockOption(10 seconds))))
             .thenAwait(10 seconds)
             .expectNext(None)
             .verifyComplete()
@@ -453,13 +460,13 @@ class SMonoTest extends AnyFreeSpec with Matchers with TestSupport with Idiomati
 
     ".delayElement" - {
       "should delay the element" in {
-        StepVerifier.withVirtualTime(() => just(randomValue).delayElement(5 seconds))
+        StepVerifier.withVirtualTime(supplier[Long](just(randomValue).delayElement(5 seconds)))
           .thenAwait(5 seconds)
           .expectNext(randomValue)
           .verifyComplete()
       }
       "with timer should delay using timer" in {
-        StepVerifier.withVirtualTime(() => just(randomValue).delayElement(5 seconds, Schedulers.immediate()))
+        StepVerifier.withVirtualTime(supplier[Long](just(randomValue).delayElement(5 seconds, Schedulers.immediate())))
           .thenAwait(5 seconds)
           .expectNext(randomValue)
           .verifyComplete()
@@ -468,19 +475,19 @@ class SMonoTest extends AnyFreeSpec with Matchers with TestSupport with Idiomati
 
     ".delaySubscription" - {
       "with delay duration should delay subscription as long as the provided duration" in {
-        StepVerifier.withVirtualTime(() => just(1).delaySubscription(1 hour))
+        StepVerifier.withVirtualTime(supplier[Int](just(1).delaySubscription(1 hour)))
           .thenAwait(1 hour)
           .expectNext(1)
           .verifyComplete()
       }
       "with delay duration and scheduler should delay subscription as long as the provided duration" in {
-        StepVerifier.withVirtualTime(() => just(1).delaySubscription(1 hour, Schedulers.single()))
+        StepVerifier.withVirtualTime(supplier[Int](just(1).delaySubscription(1 hour, Schedulers.single())))
           .thenAwait(1 hour)
           .expectNext(1)
           .verifyComplete()
       }
       "with another publisher should delay the current subscription until the other publisher completes" in {
-        StepVerifier.withVirtualTime(() => just(1).delaySubscription(just("one").delaySubscription(1 hour)))
+        StepVerifier.withVirtualTime(supplier[Int](just(1).delaySubscription(just("one").delaySubscription(1 hour))))
           .thenAwait(1 hour)
           .expectNext(1)
           .verifyComplete()
@@ -489,7 +496,7 @@ class SMonoTest extends AnyFreeSpec with Matchers with TestSupport with Idiomati
     }
 
     ".delayUntil should delay until the other provider terminate" in {
-      StepVerifier.withVirtualTime(() => just(randomValue).delayUntil(_ => SFlux.just(1, 2).delayElements(2 seconds)))
+      StepVerifier.withVirtualTime(supplier[Long](just(randomValue).delayUntil(_ => SFlux.just(1, 2).delayElements(2 seconds))))
         .thenAwait(4 seconds)
         .expectNext(randomValue)
         .verifyComplete()
@@ -621,7 +628,7 @@ class SMonoTest extends AnyFreeSpec with Matchers with TestSupport with Idiomati
 
     ".elapsed" - {
       "should provide the time elapse when this mono emit value" in {
-        StepVerifier.withVirtualTime(() => just(randomValue).delaySubscription(1 second).elapsed(), 1)
+        StepVerifier.withVirtualTime(supplier[(Long, Long)](just(randomValue).delaySubscription(1 second).elapsed()))
           .thenAwait(1 second)
           .expectNextMatches((t: (Long, Long)) => t match {
             case (time, data) => time >= 1000 && data == randomValue
@@ -1054,19 +1061,19 @@ class SMonoTest extends AnyFreeSpec with Matchers with TestSupport with Idiomati
 
     ".take" - {
       "should complete after duration elapse" in {
-        StepVerifier.withVirtualTime(() => SMono.delay(10 seconds).take(5 seconds))
+        StepVerifier.withVirtualTime(supplier[Long](SMono.delay(10 seconds).take(5 seconds)))
           .thenAwait(5 seconds)
           .verifyComplete()
       }
       "with duration and scheduler should complete after duration elapse" in {
-        StepVerifier.withVirtualTime(() => SMono.delay(10 seconds).take(5 seconds, Schedulers.parallel()))
+        StepVerifier.withVirtualTime(supplier[Long](SMono.delay(10 seconds).take(5 seconds, Schedulers.parallel())))
           .thenAwait(5 seconds)
           .verifyComplete()
       }
     }
 
     ".takeUntilOther should complete if the companion publisher emit any signal first" in {
-      StepVerifier.withVirtualTime(() => SMono.delay(10 seconds).takeUntilOther(just("a")))
+      StepVerifier.withVirtualTime(supplier[Long](SMono.delay(10 seconds).takeUntilOther(just("a"))))
         .verifyComplete()
     }
 
@@ -1104,20 +1111,20 @@ class SMonoTest extends AnyFreeSpec with Matchers with TestSupport with Idiomati
 
     ".timeout" - {
       "should raise TimeoutException after duration elapse" in {
-        StepVerifier.withVirtualTime(() => SMono.delay(10 seconds).timeout(5 seconds))
+        StepVerifier.withVirtualTime(supplier[Long](SMono.delay(10 seconds).timeout(5 seconds)))
           .thenAwait(5 seconds)
           .expectError(classOf[TimeoutException])
           .verify()
       }
       "should fallback to the provided mono if the value doesn't arrive in given duration" in {
-        StepVerifier.withVirtualTime(() => SMono.delay(10 seconds).timeout(5 seconds, Option(just(1L))))
+        StepVerifier.withVirtualTime(supplier[Long](SMono.delay(10 seconds).timeout(5 seconds, Option(just(1L)))))
           .thenAwait(5 seconds)
           .expectNext(1)
           .verifyComplete()
       }
       "with timeout and timer should signal TimeoutException if the item does not arrive before a given period" in {
         val timer = VirtualTimeScheduler.getOrSet()
-        StepVerifier.withVirtualTime(() => SMono.delay(10 seconds).timeout(5 seconds, timer = timer), () => timer, 1)
+        StepVerifier.withVirtualTime(supplier[Long](SMono.delay(10 seconds).timeout(5 seconds, timer = timer)), () => timer, 1)
           .thenAwait(5 seconds)
           .expectError(classOf[TimeoutException])
           .verify()
