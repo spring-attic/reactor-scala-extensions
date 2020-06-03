@@ -15,6 +15,7 @@ import reactor.core.publisher.{BaseSubscriber, Signal, SynchronousSink, Mono => 
 import reactor.core.scala.Scannable
 import reactor.core.scala.publisher.SMono.just
 import reactor.core.scala.publisher.ScalaConverters._
+import reactor.core.scala.publisher.model.TestSupport
 import reactor.core.scheduler.{Scheduler, Schedulers}
 import reactor.test.scheduler.VirtualTimeScheduler
 import reactor.test.{StepVerifier, StepVerifierOptions}

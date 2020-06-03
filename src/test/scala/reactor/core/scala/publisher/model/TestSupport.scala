@@ -1,4 +1,4 @@
-package reactor.core.scala.publisher
+package reactor.core.scala.publisher.model
 
 trait TestSupport {
   sealed trait Vehicle

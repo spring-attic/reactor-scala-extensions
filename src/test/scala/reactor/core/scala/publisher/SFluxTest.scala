@@ -21,6 +21,7 @@ import reactor.core.publisher.BufferOverflowStrategy.DROP_LATEST
 import reactor.core.publisher.{Flux => JFlux, _}
 import reactor.core.scala.Scannable
 import reactor.core.scala.publisher.ScalaConverters._
+import reactor.core.scala.publisher.model.TestSupport
 import reactor.core.scheduler.Schedulers
 import reactor.test.StepVerifier
 import reactor.test.scheduler.VirtualTimeScheduler
