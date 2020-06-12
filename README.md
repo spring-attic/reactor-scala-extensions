@@ -6,7 +6,7 @@
 ![](https://github.com/reactor/reactor-scala-extensions/workflows/Scala%20CI/badge.svg)
 [![codecov](https://codecov.io/gh/reactor/reactor-scala-extensions/branch/master/graph/badge.svg)](https://codecov.io/gh/reactor/reactor-scala-extensions)
 [![Average time to resolve an issue](http://isitmaintained.com/badge/resolution/reactor/reactor-scala-extensions.svg)](http://isitmaintained.com/project/reactor/reactor-scala-extensions "Average time to resolve an issue")
-[![Percentage of issues still open](http://isitmaintained.com/badge/open/reactor/reactor-scala-extensions.svg)](http://isitmaintained.com/project/reactor/reactor-scala-extensions "Percentage of issues still open")
+[![Percentage of issues still open](http://isitmaintained.com/badge/open/reactor/reactor-scala-extensions.svg)](http://isitmaintained.com/project/reactor/reactor-scala-extensions "Percentage of issues still open") [![Join the chat at https://gitter.im/reactor/reactor-scala-extensions](https://badges.gitter.im/reactor/reactor-scala-extensions.svg)](https://gitter.im/reactor/reactor-scala-extensions?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
                             
 This project is a Scala extension for [reactor-core](https://github.com/reactor/reactor-core).
 
