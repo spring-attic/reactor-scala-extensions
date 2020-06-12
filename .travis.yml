@@ -7,7 +7,7 @@ jdk:
 
 scala:
   - 2.11.12
-  - 2.12.10
+  - 2.12.11
   - 2.13.1
 
 env:
@@ -16,14 +16,14 @@ env:
     - secure: MlwQtz4tO1mmNmPE2PIxYI552puyQpQa690C6ZOldvL0zGhw5mgj5JD8G4I4RmuaNev7mpdnBecoTEg6q2pxPTHQEgQmHVX5X7SPf1Loyes35AWzscGhWVwFdOF6ZqccB8PUZrUZ2CAD83JjG39/PGk5bxqwBNFkeFBQrGYhDuL5caqJ9/MTfKHM/NoR66ygigscnsfb8qwtS1wpSJ5LbFrC2KFzGfDXuP5bjkz9PZdQrS8c7nC63KcdeENpqwdrWWzrw3hf0uSh3xEZp7SziDZ0wMOX6lmIIzRjmlJIPF4BD9MsDiPqhmwJk4MdvKtWAzKJTnGxmygNLVw7YKnqULnWjsOmNfraHGEkqSE/DCccsjAIzYP0vD7V+JgXOk5JLvwLGff3VW9457f2pAMWJgliL9r136DKLMvxiMpXgFp3BkZHsc80Ve1G9nqgGMqp1zrCgE78mqQJ5AFQczfTZOXNsjLkGYgs38k7aLiCAm8p9ZHYBo4DZiaPKc/K2XkBmTP+2KuHpwXGUbnvfFFoHuwV1iDh+CeEo1N4UZrhwPCXTNaJKYQCQ8d7u2Vvt27Ido+IfvSnKvBlHMkpmzAdyF5dhT3jR0xEartpMw8MmUnKVxanJitfLME1qInf7INhFkkRECj9yFpFA1kCM+dszxdEEaBmD0D004xd0rU4Y3c=
 script:
   - |
-    if [[ "$TRAVIS_JDK_VERSION" == "openjdk11" && "$TRAVIS_SCALA_VERSION" == "2.12.10" ]]; then
+    if [[ "$TRAVIS_JDK_VERSION" == "openjdk11" && "$TRAVIS_SCALA_VERSION" == "2.12.11" ]]; then
       sbt ++$TRAVIS_SCALA_VERSION clean coverage test coverageReport
     else
       sbt ++$TRAVIS_SCALA_VERSION clean test
     fi
 after_success:
   - |
-    if [[ "$TRAVIS_JDK_VERSION" == "openjdk11" && "$TRAVIS_SCALA_VERSION" == "2.12.10" ]]; then
+    if [[ "$TRAVIS_JDK_VERSION" == "openjdk11" && "$TRAVIS_SCALA_VERSION" == "2.12.11" ]]; then
       bash <(curl -s https://codecov.io/bash) || echo "Codecov did not collect coverage reports"
     fi
 
