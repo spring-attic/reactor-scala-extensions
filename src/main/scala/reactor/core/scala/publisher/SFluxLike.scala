@@ -36,18 +36,22 @@ trait SFluxLike[+T] extends ScalaConverters {
 
   final def flatten[S](implicit ev: T <:< SFlux[S]): SFlux[S] = concatMap[S](x => ev(x), XS_BUFFER_SIZE)
 
-  final def fold[R](initial: R)(binaryOps: (R, T) => R): SMono[R] = reduce(initial)(binaryOps)
+  final def fold[R](initial: R)(binaryOps: (R, T) => R): SMono[R] = {
+    coreFlux.reduce(initial, binaryOps).asScala
+  }
 
-  final def foldLeft[R](initial: R)(binaryOps: (R, T) => R): SMono[R] = reduce[R](initial)(binaryOps)
+  final def foldWith[R](initial: => R)(binaryOps: (R, T) => R): SMono[R] = {
+    coreFlux.reduceWith(()=> initial, binaryOps).asScala
+  }
 
   final def head: SMono[T] = coreFlux.next.asScala
 
-  final def max[R >: T](implicit ev: Ordering[R]): SMono[Option[R]] = foldLeft(None: Option[R]) { (acc: Option[R], el: T) => {
+  final def max[R >: T](implicit ev: Ordering[R]): SMono[Option[R]] = fold(None: Option[R]) { (acc: Option[R], el: T) => {
     acc map (a => ev.max(a, el)) orElse Option(el)
   }
   }
 
-  final def min[R >: T](implicit ev: Ordering[R]): SMono[Option[R]] = foldLeft(None: Option[R]) { (acc: Option[R], el: T) => {
+  final def min[R >: T](implicit ev: Ordering[R]): SMono[Option[R]] = fold(None: Option[R]) { (acc: Option[R], el: T) => {
     acc map (a => ev.min(a, el)) orElse Option(el)
   }
   }
@@ -71,13 +75,11 @@ trait SFluxLike[+T] extends ScalaConverters {
     coreFlux.onErrorResume(f).asScala
   }
 
-  final def reduce[A](initial: A)(accumulator: (A, T) => A): SMono[A] = coreFlux.reduce[A](initial, accumulator).asScala
-
   final def skip(skipped: Long): SFlux[T] = coreFlux.skip(skipped).asScala
 
   final def sum[R >: T](implicit R: Numeric[R]): SMono[R] = {
     import R._
-    foldLeft(R.zero) { (acc: R, el: T) => acc + el }
+    fold(R.zero) { (acc: R, el: T) => acc + el }
   }
 
   /**
