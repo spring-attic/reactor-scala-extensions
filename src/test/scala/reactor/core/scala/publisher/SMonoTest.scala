@@ -472,6 +472,12 @@ class SMonoTest extends AnyFreeSpec with Matchers with TestSupport with Idiomati
         .verifyComplete()
     }
 
+    "- should subtract element in this SMono with the element from the other SMono" in {
+      StepVerifier.create(just(11) - just(7))
+        .expectNext(4)
+        .verifyComplete()
+    }
+
     "* should multiply element in this SMono and element from the other SMono" in {
       StepVerifier.create(just(9) * just(8))
         .expectNext(72)

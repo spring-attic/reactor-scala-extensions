@@ -41,6 +41,17 @@ trait SMonoLike[+T] extends ScalaConverters {
   final def +[R >: T](other: SMono[R])(implicit R: Numeric[R]): SMono[R] = concatWith(other).sum
 
   /**
+    * Subtract element in this [[SMono]] with the element of the other one
+    * @param other The other eleent
+    * @tparam R [[Numeric]]
+    * @return [[SMono]] containing the result of subtraction.
+    */
+  final def -[R >: T](other: SMono[R])(implicit R: Numeric[R]): SMono[R] = {
+    import R._
+    concatWith(other).reduce((a, b) => a - b)
+  }
+
+  /**
     * Multiply element of this [[SMono]] with element of the other one.
     * @param other The other element
     * @tparam R [[Numeric]]
