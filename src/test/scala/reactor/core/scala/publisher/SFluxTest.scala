@@ -1720,6 +1720,12 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
         .verifyComplete()
     }
 
+    ".product should multiply up all values at onComplete it emits the total, given the source that emit numeric values" in {
+      StepVerifier.create(SFlux.just(5, 4, 3, 2).product)
+        .expectNext(120)
+        .verifyComplete()
+    }
+
     ".publish" - {
       "without transformer should produce connectable flux" in {
         val buffer = mutable.ListBuffer.empty[Int]
