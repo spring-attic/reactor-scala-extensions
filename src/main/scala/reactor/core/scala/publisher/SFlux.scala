@@ -692,6 +692,11 @@ trait SFlux[+T] extends SFluxLike[T] with MapablePublisher[T] with ScalaConverte
     coreFlux.reduce(r).asScala
   }
 
+  @deprecated("Use foldWith instead")
+  final def reduceWith[A](initial: () => A, accumulator: (A, T) => A): SMono[A] = {
+    foldWith(initial())(accumulator(_, _))
+  }
+
   final def repeat(numRepeat: Long = Long.MaxValue, predicate: () => Boolean = () => true): SFlux[T] = coreFlux.repeat(numRepeat, predicate).asScala
 
   final def retry(numRetries: Long = Long.MaxValue, retryMatcher: Throwable => Boolean = (_: Throwable) => true): SFlux[T] = coreFlux.retry(numRetries, retryMatcher).asScala
