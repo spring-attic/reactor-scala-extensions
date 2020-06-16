@@ -466,9 +466,15 @@ class SMonoTest extends AnyFreeSpec with Matchers with TestSupport with Idiomati
         .verifyComplete()
     }
 
-    "+ should sum up element in this SMono and element from thi other SMono" in {
+    "+ should sum up element in this SMono and element from the other SMono" in {
       StepVerifier.create(just(9) + just(8))
         .expectNext(17)
+        .verifyComplete()
+    }
+
+    "* should multiply element in this SMono and element from the other SMono" in {
+      StepVerifier.create(just(9) * just(8))
+        .expectNext(72)
         .verifyComplete()
     }
 
