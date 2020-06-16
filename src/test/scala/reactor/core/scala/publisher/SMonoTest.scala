@@ -7,7 +7,7 @@ import java.util.function.Supplier
 import io.micrometer.core.instrument.Metrics
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import org.mockito.{ArgumentMatchersSugar, IdiomaticMockito}
-import org.reactivestreams.{Publisher, Subscription}
+import org.reactivestreams.Subscription
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 import reactor.core.Disposable
@@ -463,6 +463,12 @@ class SMonoTest extends AnyFreeSpec with Matchers with TestSupport with Idiomati
       StepVerifier.create(just(1).concatWith(just(2)))
         .expectNext(1)
         .expectNext(2)
+        .verifyComplete()
+    }
+
+    "+ should sum up element in this SMono and element from thi other SMono" in {
+      StepVerifier.create(just(9) + just(8))
+        .expectNext(17)
         .verifyComplete()
     }
 
