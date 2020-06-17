@@ -75,11 +75,23 @@ trait SFluxLike[+T] extends ScalaConverters {
     coreFlux.onErrorResume(f).asScala
   }
 
+  /**
+    * Multiple all element within this [[SFlux]] given the type element is [[Numeric]]
+    * @tparam R [[Numeric]]
+    * @return [[SMono]] with the result of all element multiplied.
+    */
+  final def product[R >: T](implicit R: Numeric[R]): SMono[R] = {
+    import R._
+    fold(one)(_ * _)
+  }
+
+  final def reduce[A](initial: A)(accumulator: (A, T) => A): SMono[A] = coreFlux.reduce[A](initial, accumulator).asScala
+
   final def skip(skipped: Long): SFlux[T] = coreFlux.skip(skipped).asScala
 
   final def sum[R >: T](implicit R: Numeric[R]): SMono[R] = {
     import R._
-    fold(R.zero) { (acc: R, el: T) => acc + el }
+    fold(zero)(_ + _ )
   }
 
   /**
