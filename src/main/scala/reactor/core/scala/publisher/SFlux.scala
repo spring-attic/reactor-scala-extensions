@@ -692,7 +692,10 @@ trait SFlux[+T] extends SFluxLike[T] with MapablePublisher[T] with ScalaConverte
     coreFlux.reduce(r).asScala
   }
 
-  final def reduceWith[A](initial: () => A, accumulator: (A, T) => A): SMono[A] = coreFlux.reduceWith[A](initial, accumulator).asScala
+  @deprecated("Use foldWith instead")
+  final def reduceWith[A](initial: () => A, accumulator: (A, T) => A): SMono[A] = {
+    foldWith(initial())(accumulator(_, _))
+  }
 
   final def repeat(numRepeat: Long = Long.MaxValue, predicate: () => Boolean = () => true): SFlux[T] = coreFlux.repeat(numRepeat, predicate).asScala
 
@@ -831,13 +834,40 @@ trait SFlux[+T] extends SFluxLike[T] with MapablePublisher[T] with ScalaConverte
     * <p>
     * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/reactor-core/src/main/java/reactor/core/publisher/doc-files/marbles/scan.svg" alt="">
     *
-    * @param initial     the initial leftmost argument to pass to the reduce function
-    * @param accumulator the accumulating [[Function2]]
+    * @param initial the initial value
     * @tparam A the accumulated type
     * @return an accumulating [[SFlux]] starting with initial state
     *
     */
-  final def scan[A >: T](initial: => A)(accumulator: (A, A) => A): SFlux[A] = coreFlux.scanWith(() => initial, accumulator).asScala
+  final def scan[A](initial: A)(accumulator: (A, T) => A): SFlux[A] = {
+    coreFlux.scan(initial, accumulator).asScala
+  }
+
+  /**
+   * Reduce this [[SFlux]] values with an accumulator [[Function2]] and
+   * also emit the intermediate results of this function.
+   * <p>
+   * The accumulation works as follows:
+   * <pre><code>
+   * result[0] = initialValue;
+   * result[1] = accumulator(result[0], source[0])
+   * result[2] = accumulator(result[1], source[1])
+   * result[3] = accumulator(result[2], source[2])
+   * ...
+   * </code></pre>
+   *
+   * <p>
+   * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/reactor-core/src/main/java/reactor/core/publisher/doc-files/marbles/scan.svg" alt="">
+   *
+   * @param initial the initial value computation
+   * @param accumulator the accumulating [[Function2]]
+   * @tparam A the accumulated type
+   * @return an accumulating [[SFlux]] starting with initial state
+   *
+   */
+  final def scanWith[A](initial: => A)(accumulator: (A, T) => A): SFlux[A] = {
+    coreFlux.scanWith(()=> initial, accumulator).asScala
+  }
 
   final def single[U >: T](defaultValue: Option[U] = None): SMono[U] = {
     def adapt[P <: T](value: U): P = value.asInstanceOf[P]

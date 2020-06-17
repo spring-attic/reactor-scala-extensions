@@ -1325,16 +1325,16 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
     }
 
     ".fold should apply a binary operator to an initial value and all element of the source" in {
-      val mono = SFlux.just(1, 2, 3).foldLeft(0)((acc: Int, el: Int) => acc + el)
+      val mono = SFlux.just(1, 2, 3).fold("0")((acc, el) => acc + el)
       StepVerifier.create(mono)
-        .expectNext(6)
+        .expectNext("0123")
         .verifyComplete()
     }
 
-    ".foldLeft should apply a binary operator to an initial value and all element of the source" in {
-      val mono = SFlux.just(1, 2, 3).foldLeft(0)((acc: Int, el: Int) => acc + el)
+    ".foldWith should apply a binary operator to an initial value computation and all element of the source" in {
+      val mono = SFlux.just(1, 2, 3).foldWith("0")((acc, el) => acc + el)
       StepVerifier.create(mono)
-        .expectNext(6)
+        .expectNext("0123")
         .verifyComplete()
     }
 
@@ -1752,17 +1752,6 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
           .expectNext(6)
           .verifyComplete()
       }
-      "with initial value should aggregate the values with initial one" in {
-        StepVerifier.create(SFlux.just(1, 2, 3).reduce("0")((agg, v) => s"$agg-${v.toString}"))
-          .expectNext("0-1-2-3")
-          .verifyComplete()
-      }
-    }
-
-    ".reduceWith should aggregate the values with initial one" in {
-      StepVerifier.create(SFlux.just(1, 2, 3).reduceWith[String](() => "0", (agg, v) => s"$agg-${v.toString}"))
-        .expectNext("0-1-2-3")
-        .verifyComplete()
     }
 
     ".repeat" - {
@@ -1886,27 +1875,22 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
           .verifyComplete()
       }
       "with initial value should scan with provided initial value" in {
-        val flux = SFlux.just(1, 2, 3, 4).scan(2){ (a: Int, b: Int) => a * b }
+        val flux = SFlux.just(1, 2, 3, 4).scan("0"){(a, b) => a + b }
         StepVerifier.create(flux)
-          .expectNext(2, 2, 4, 12, 48)
+          .expectNext("0", "01", "012", "0123", "01234")
           .verifyComplete()
       }
-
-      "with initial value should be able to call scan without the generic type" in {
-        val flux = SFlux.just("item1", "item2").scan("prefix"){(a, b) => a+b}
+      "with initial value computation should scan with provided initial value" in {
+        val initials = mutable.Queue("a", "b")
+        val flux = SFlux.just(1, 2, 3, 4).scanWith(initials.dequeue()){(a, b) => a + b }
         StepVerifier.create(flux)
-          .expectNext("prefix", "prefixitem1", "prefixitem1item2")
+          .expectNext("a", "a1", "a12", "a123", "a1234")
+          .verifyComplete()
+        StepVerifier.create(flux)
+          .expectNext("b", "b1", "b12", "b123", "b1234")
           .verifyComplete()
       }
     }
-
-/*
-    ".scanWith should scan with initial value" in {
-      StepVerifier.create(SFlux.just(1, 2, 3, 4).scanWith(() => 2, { (a, b) => a * b }))
-        .expectNext(2, 2, 4, 12, 48)
-        .verifyComplete()
-    }
-*/
 
     ".single" - {
       "should return a mono" in {
