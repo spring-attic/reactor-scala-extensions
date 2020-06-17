@@ -47,5 +47,5 @@ autoAPIMappings := true
 
 // SCoverage
 //coverageEnabled := true
-coverageMinimum := 82.68
+coverageMinimum := 82.83
 coverageFailOnMinimum := true
