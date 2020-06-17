@@ -1496,6 +1496,16 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
       }
     }
 
+    ".log should call the underlying method" in {
+      val jFlux = JFlux.just(1, 2, 3)
+      val spiedJFlux = spy(jFlux)
+      val sFlux = spiedJFlux.asScala
+      StepVerifier.create(sFlux.log("abc"))
+        .expectNext(1, 2, 3)
+        .verifyComplete()
+      spiedJFlux.log("abc") was called
+    }
+
     ".map should map the type of Flux from T to R" in {
       StepVerifier.create(SFlux.just(1, 2, 3).map(_.toString))
         .expectNext("1", "2", "3")
