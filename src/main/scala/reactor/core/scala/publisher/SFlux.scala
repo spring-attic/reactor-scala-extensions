@@ -80,9 +80,7 @@ trait SFlux[+T] extends SFluxLike[T] with MapablePublisher[T] with ScalaConverte
     * @see [[SFlux.compose]] for a bounded conversion to [[Publisher]]
     */
   final def as[U >: T, P](transformer: SFlux[U] => P): P = {
-    coreFlux.as[P](new Function[JFlux[_ <: T], P] {
-      override def apply(t: JFlux[_ <: T]): P = transformer(SFlux.fromPublisher(t))
-    })
+    coreFlux.as[P]((t: JFlux[_ <: T]) => transformer(SFlux.fromPublisher(t)))
   }
 
   final def asJava(): JFlux[_ <: T] = coreFlux
@@ -376,9 +374,7 @@ trait SFlux[+T] extends SFluxLike[T] with MapablePublisher[T] with ScalaConverte
     new ReactiveSFlux[V](coreFlux.concatMapDelayError[V](mapper, delayUntilEnd, prefetch))
 
   final def concatMapIterable[R](mapper: T => Iterable[_ <: R], prefetch: Int = XS_BUFFER_SIZE): SFlux[R] =
-    new ReactiveSFlux[R](coreFlux.concatMapIterable(new Function[T, JIterable[R]] {
-      override def apply(t: T): JIterable[R] = mapper(t)
-    }, prefetch))
+    new ReactiveSFlux[R](coreFlux.concatMapIterable((t: T) => mapper(t): JIterable[R], prefetch))
 
   private[publisher] def coreFlux: JFlux[_ <: T]
 
@@ -480,9 +476,7 @@ trait SFlux[+T] extends SFluxLike[T] with MapablePublisher[T] with ScalaConverte
                        mapperOnError: Throwable => Publisher[_ <: R],
                        mapperOnComplete: () => Publisher[_ <: R]): SFlux[R] = SFlux.fromPublisher(coreFlux.flatMap[R](mapperOnNext, mapperOnError, mapperOnComplete))
 
-  final def flatMapIterable[R](mapper: T => Iterable[_ <: R], prefetch: Int = SMALL_BUFFER_SIZE): SFlux[R] = SFlux.fromPublisher(coreFlux.flatMapIterable(new Function[T, JIterable[R]] {
-    override def apply(t: T): JIterable[R] = mapper(t)
-  }, prefetch))
+  final def flatMapIterable[R](mapper: T => Iterable[_ <: R], prefetch: Int = SMALL_BUFFER_SIZE): SFlux[R] = SFlux.fromPublisher(coreFlux.flatMapIterable((t: T) => mapper(t): JIterable[R], prefetch))
 
   final def flatMapSequential[R](mapper: T => Publisher[_ <: R], maxConcurrency: Int = SMALL_BUFFER_SIZE, prefetch: Int = XS_BUFFER_SIZE, delayError: Boolean = false): SFlux[R] =
     if (!delayError) SFlux.fromPublisher(coreFlux.flatMapSequential[R](mapper, maxConcurrency, prefetch))
@@ -552,9 +546,7 @@ trait SFlux[+T] extends SFluxLike[T] with MapablePublisher[T] with ScalaConverte
 
   final def index(): SFlux[(Long, T)] = index[(Long, T)]((x, y) => (x, y))
 
-  final def index[I](indexMapper: (Long, T) => I): SFlux[I] = new ReactiveSFlux[I](coreFlux.index[I](new BiFunction[JLong, T, I] {
-    override def apply(t: JLong, u: T) = indexMapper(Long2long(t), u)
-  }))
+  final def index[I](indexMapper: (Long, T) => I): SFlux[I] = new ReactiveSFlux[I](coreFlux.index[I]((t: JLong, u: T) => indexMapper(Long2long(t), u)))
 
   final def last[U >: T](defaultValue: Option[U] = None): SMono[U] = {
     def adapt[P <: T](value: U): P = value.asInstanceOf[P]
@@ -686,9 +678,7 @@ trait SFlux[+T] extends SFluxLike[T] with MapablePublisher[T] with ScalaConverte
   final def publishNext(): SMono[T] = SMono.fromPublisher(coreFlux.publishNext())
 
   final def reduce[U >: T](aggregator: (U, U) => U): SMono[U] = {
-    def r[P <: T]: BiFunction[P, P, P] = new BiFunction[P, P, P] {
-      override def apply(v1: P, v2: P): P = aggregator(v1, v2).asInstanceOf[P]
-    }
+    def r[P <: T]: BiFunction[P, P, P] = (v1: P, v2: P) => aggregator(v1, v2).asInstanceOf[P]
     coreFlux.reduce(r).asScala
   }
 
@@ -812,9 +802,7 @@ trait SFlux[+T] extends SFluxLike[T] with MapablePublisher[T] with ScalaConverte
     * @return an accumulating [[SFlux]]
     */
   final def scan[U >: T](accumulator: (U, U) => U): SFlux[U] = {
-    def s[P <: T]: BiFunction[P, P, P] = new BiFunction[P, P, P] {
-     override def apply(v1: P, v2: P): P = accumulator(v1, v2).asInstanceOf[P]
-    }
+    def s[P <: T]: BiFunction[P, P, P] = (v1: P, v2: P) => accumulator(v1, v2).asInstanceOf[P]
     coreFlux.scan(s).asScala
   }
 

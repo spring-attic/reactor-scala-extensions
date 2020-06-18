@@ -58,9 +58,7 @@ class SParallelFlux[+T] private(private val jParallelFlux: JParallelFlux[_ <: T]
     *         [[SParallelFlux]] was empty
     */
   final def reduce[U >: T](reducer: (U, U) => U): SMono[U] = {
-    def r[P <: T]: BiFunction[P, P, P] = new BiFunction[P, P, P] {
-      override def apply(v1: P, v2: P): P = reducer(v1, v2).asInstanceOf[P]
-    }
+    def r[P <: T]: BiFunction[P, P, P] = (v1: P, v2: P) => reducer(v1, v2).asInstanceOf[P]
     jParallelFlux.reduce(r).asScala
   }
 
@@ -184,5 +182,5 @@ object SParallelFlux {
     * @param publishers the array of publishers
     * @return the [[SParallelFlux]] instance
     */
-  def fromPublishers[T](publishers: Publisher[T]*) = SParallelFlux(JParallelFlux.from(publishers: _*))
+  def fromPublishers[T](publishers: Publisher[T]*): SParallelFlux[T] = SParallelFlux(JParallelFlux.from(publishers: _*))
 }
