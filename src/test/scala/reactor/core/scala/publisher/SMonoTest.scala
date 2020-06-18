@@ -669,9 +669,9 @@ class SMonoTest extends AnyFreeSpec with Matchers with TestSupport with Idiomati
       "should provide the time elapse when this mono emit value" in {
         StepVerifier.withVirtualTime(supplier[(Long, Long)](just(randomValue).delaySubscription(1 second).elapsed()))
           .thenAwait(1 second)
-          .expectNextMatches((t: (Long, Long)) => t match {
+          .expectNextMatches {
             case (time, data) => time >= 1000 && data == randomValue
-          })
+          }
           .verifyComplete()
       }
       "with TimedScheduler should provide the time elapsed using the provided scheduler when this mono emit value" in {
@@ -680,9 +680,9 @@ class SMonoTest extends AnyFreeSpec with Matchers with TestSupport with Idiomati
           .delaySubscription(1 second, virtualTimeScheduler)
           .elapsed(virtualTimeScheduler), 1)
           .`then`(() => virtualTimeScheduler.advanceTimeBy(1 second))
-          .expectNextMatches((t: (Long, Long)) => t match {
+          .expectNextMatches {
             case (time, data) => time >= 1000 && data == randomValue
-          })
+          }
           .verifyComplete()
       }
     }

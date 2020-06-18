@@ -6,7 +6,7 @@ import java.util
 import java.util.Comparator
 import java.util.concurrent.Callable
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger, AtomicLong, AtomicReference}
-import java.util.function.{Consumer, Predicate}
+import java.util.function.Consumer
 
 import io.micrometer.core.instrument.Metrics
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
@@ -1135,21 +1135,15 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
       "should provide the time elapse when this mono emit value" in {
         StepVerifier.withVirtualTime(() => SFlux.just(1, 2, 3).delaySubscription(1 second).delayElements(1 second).elapsed(), 3)
           .thenAwait(4 seconds)
-          .expectNextMatches(new Predicate[(Long, Int)] {
-            override def test(t: (Long, Int)): Boolean = t match {
-              case (time, data) => time >= 1000 && data == 1
-            }
-          })
-          .expectNextMatches(new Predicate[(Long, Int)] {
-            override def test(t: (Long, Int)): Boolean = t match {
-              case (time, data) => time >= 1000 && data == 2
-            }
-          })
-          .expectNextMatches(new Predicate[(Long, Int)] {
-            override def test(t: (Long, Int)): Boolean = t match {
-              case (time, data) => time >= 1000 && data == 3
-            }
-          })
+          .expectNextMatches {
+            case (time, data) => time >= 1000 && data == 1
+          }
+          .expectNextMatches {
+            case (time, data) => time >= 1000 && data == 2
+          }
+          .expectNextMatches {
+            case (time, data) => time >= 1000 && data == 3
+          }
           .verifyComplete()
       }
       "with Scheduler should provide the time elapsed using the provided scheduler when this mono emit value" in {
@@ -1159,21 +1153,15 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
           .delayElements(1 second, virtualTimeScheduler)
           .elapsed(virtualTimeScheduler), 3)
           .`then`(() => virtualTimeScheduler.advanceTimeBy(4 seconds))
-          .expectNextMatches(new Predicate[(Long, Int)] {
-            override def test(t: (Long, Int)): Boolean = t match {
-              case (time, data) => time >= 1000 && data == 1
-            }
-          })
-          .expectNextMatches(new Predicate[(Long, Int)] {
-            override def test(t: (Long, Int)): Boolean = t match {
-              case (time, data) => time >= 1000 && data == 2
-            }
-          })
-          .expectNextMatches(new Predicate[(Long, Int)] {
-            override def test(t: (Long, Int)): Boolean = t match {
-              case (time, data) => time >= 1000 && data == 3
-            }
-          })
+          .expectNextMatches {
+            case (time, data) => time >= 1000 && data == 1
+          }
+          .expectNextMatches {
+            case (time, data) => time >= 1000 && data == 2
+          }
+          .expectNextMatches {
+            case (time, data) => time >= 1000 && data == 3
+          }
           .verifyComplete()
       }
     }
@@ -1347,17 +1335,13 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
           case even: Int if even % 2 == 0 => "even"
           case _: Int => "odd"
         })
-          .expectNextMatches(new Predicate[SGroupedFlux[String, _ <: Int]] {
-            override def test(t: SGroupedFlux[String, _ <: Int]): Boolean = {
-              t.subscribe(x => oddBuffer append x)
-              t.key() == "odd"
-            }
+          .expectNextMatches((t: SGroupedFlux[String, _ <: Int]) => {
+            t.subscribe(x => oddBuffer append x)
+            t.key() == "odd"
           })
-          .expectNextMatches(new Predicate[SGroupedFlux[String, _ <: Int]] {
-            override def test(t: SGroupedFlux[String, _ <: Int]): Boolean = {
-              t.subscribe(x => evenBuffer append x)
-              t.key() == "even"
-            }
+          .expectNextMatches((t: SGroupedFlux[String, _ <: Int]) => {
+            t.subscribe(x => evenBuffer append x)
+            t.key() == "even"
           })
           .verifyComplete()
 
@@ -1372,17 +1356,13 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
           case even: Int if even % 2 == 0 => "even"
           case _: Int => "odd"
         }: Int => String, identity, 6))
-          .expectNextMatches(new Predicate[SGroupedFlux[String, Int]] {
-            override def test(t: SGroupedFlux[String, Int]): Boolean = {
-              t.subscribe(x => oddBuffer append x)
-              t.key() == "odd"
-            }
+          .expectNextMatches((t: SGroupedFlux[String, Int]) => {
+            t.subscribe(x => oddBuffer append x)
+            t.key() == "odd"
           })
-          .expectNextMatches(new Predicate[SGroupedFlux[String, Int]] {
-            override def test(t: SGroupedFlux[String, Int]): Boolean = {
-              t.subscribe(x => evenBuffer append x)
-              t.key() == "even"
-            }
+          .expectNextMatches((t: SGroupedFlux[String, Int]) => {
+            t.subscribe(x => evenBuffer append x)
+            t.key() == "even"
           })
           .verifyComplete()
 
@@ -1398,17 +1378,13 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
           case even: Int if even % 2 == 0 => "even"
           case _: Int => "odd"
         }: Int => String, (i => i.toString): Int => String))
-          .expectNextMatches(new Predicate[SGroupedFlux[String, String]] {
-            override def test(t: SGroupedFlux[String, String]): Boolean = {
-              t.subscribe(x => oddBuffer append x)
-              t.key() == "odd"
-            }
+          .expectNextMatches((t: SGroupedFlux[String, String]) => {
+            t.subscribe(x => oddBuffer append x)
+            t.key() == "odd"
           })
-          .expectNextMatches(new Predicate[SGroupedFlux[String, String]] {
-            override def test(t: SGroupedFlux[String, String]): Boolean = {
-              t.subscribe(x => evenBuffer append x)
-              t.key() == "even"
-            }
+          .expectNextMatches((t: SGroupedFlux[String, String]) => {
+            t.subscribe(x => evenBuffer append x)
+            t.key() == "even"
           })
           .verifyComplete()
 
@@ -1424,17 +1400,13 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
           case even: Int if even % 2 == 0 => "even"
           case _: Int => "odd"
         }: Int => String, (i => i.toString): Int => String, 6))
-          .expectNextMatches(new Predicate[SGroupedFlux[String, String]] {
-            override def test(t: SGroupedFlux[String, String]): Boolean = {
-              t.subscribe(x => oddBuffer append x)
-              t.key() == "odd"
-            }
+          .expectNextMatches((t: SGroupedFlux[String, String]) => {
+            t.subscribe(x => oddBuffer append x)
+            t.key() == "odd"
           })
-          .expectNextMatches(new Predicate[SGroupedFlux[String, String]] {
-            override def test(t: SGroupedFlux[String, String]): Boolean = {
-              t.subscribe(x => evenBuffer append x)
-              t.key() == "even"
-            }
+          .expectNextMatches((t: SGroupedFlux[String, String]) => {
+            t.subscribe(x => evenBuffer append x)
+            t.key() == "even"
           })
           .verifyComplete()
 

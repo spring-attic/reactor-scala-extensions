@@ -12,9 +12,9 @@ import scala.language.higherKinds
 
 trait SFluxLike[+T] extends ScalaConverters {
 
-  final def collect[E](containerSupplier: () => E, collector: (E, T) => Unit): SMono[E] = new ReactiveSMono[E](coreFlux.collect(containerSupplier, collector: JBiConsumer[E, T]))
+  final def collect[E](containerSupplier: () => E, collector: (E, T) => Unit): SMono[E] = coreFlux.collect(containerSupplier, collector: JBiConsumer[E, T]).asScala
 
-  final def concatMap[V](mapper: T => Publisher[_ <: V], prefetch: Int = XS_BUFFER_SIZE): SFlux[V] = new ReactiveSFlux[V](coreFlux.concatMap[V](mapper, prefetch))
+  final def concatMap[V](mapper: T => Publisher[_ <: V], prefetch: Int = XS_BUFFER_SIZE): SFlux[V] = coreFlux.concatMap[V](mapper, prefetch).asScala
 
   /**
     * Concatenate emissions of this [[SFlux]] with the provided [[Publisher]] (no interleave).
@@ -30,7 +30,7 @@ trait SFluxLike[+T] extends ScalaConverters {
 
   private def defaultToFluxError[U](t: Throwable): SFlux[U] = SFlux.raiseError(t)
 
-  final def doOnSubscribe(onSubscribe: Subscription => Unit): SFlux[T] = new ReactiveSFlux(coreFlux.doOnSubscribe(onSubscribe).asScala)
+  final def doOnSubscribe(onSubscribe: Subscription => Unit): SFlux[T] = coreFlux.doOnSubscribe(onSubscribe).asScala
 
   final def drop(n: Long): SFlux[T] = skip(n)
 
@@ -68,9 +68,7 @@ trait SFluxLike[+T] extends ScalaConverters {
   }
 
   final def onErrorResume[U >: T](fallback: Throwable => Publisher[U]): SFlux[U] = {
-    def f[P <: T]: Function[Throwable, Publisher[P]] = new Function[Throwable, Publisher[P]] {
-      override def apply(t: Throwable): Publisher[P] = fallback(t).asInstanceOf[Publisher[P]]
-    }
+    def f[P <: T]: Function[Throwable, Publisher[P]] = (t: Throwable) => fallback(t).asInstanceOf[Publisher[P]]
 
     coreFlux.onErrorResume(f).asScala
   }
@@ -100,7 +98,7 @@ trait SFluxLike[+T] extends ScalaConverters {
     */
   final def tail: SFlux[T] = skip(1)
 
-  final def take(n: Long): SFlux[T] = new ReactiveSFlux(coreFlux.take(n))
+  final def take(n: Long): SFlux[T] = coreFlux.take(n).asScala
 
   final def zipWithTimeSinceSubscribe(): SFlux[(T, Long)] = {
     val scheduler = Schedulers.single()
