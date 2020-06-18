@@ -8,7 +8,6 @@ import java.util.logging.Level
 import org.reactivestreams.{Publisher, Subscriber, Subscription}
 import reactor.core.publisher.{MonoSink, Signal, SignalType, SynchronousSink, Flux => JFlux, Mono => JMono}
 import reactor.core.scala.Scannable
-import reactor.core.scala.publisher.PimpMyPublisher._
 import reactor.core.scheduler.{Scheduler, Schedulers}
 import reactor.core.{Disposable, Scannable => JScannable}
 import reactor.util.concurrent.Queues.SMALL_BUFFER_SIZE
@@ -20,6 +19,9 @@ import scala.concurrent.duration.Duration
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.reflect.ClassTag
 import scala.util.{Failure, Success, Try}
+
+import scala.language.implicitConversions
+
 
 /**
   * A Reactive Streams [[Publisher]] with basic rx operators that completes successfully by emitting an element, or
@@ -917,7 +919,7 @@ trait SMono[+T] extends SMonoLike[T] with MapablePublisher[T] with ScalaConverte
     */
   final def repeatWhen(whenFactory: SFlux[Long] => _ <: Publisher[_]): SFlux[T] = {
     val when = new Function[JFlux[JLong], Publisher[_]] {
-      override def apply(t: JFlux[JLong]): Publisher[_] = whenFactory(new ReactiveSFlux[Long](t))
+      override def apply(t: JFlux[JLong]): Publisher[_] = whenFactory(t.asScala.map(jl => Long2long(jl)))
     }
     coreMono.repeatWhen(when).asScala
   }
@@ -939,9 +941,9 @@ trait SMono[+T] extends SMonoLike[T] with MapablePublisher[T] with ScalaConverte
     */
   final def repeatWhenEmpty(repeatFactory: SFlux[Long] => Publisher[_], maxRepeat: Int = Int.MaxValue): SMono[T] = {
     val when = new Function[JFlux[JLong], Publisher[_]] {
-      override def apply(t: JFlux[JLong]): Publisher[_] = repeatFactory(new ReactiveSFlux[Long](t))
+      override def apply(t: JFlux[JLong]): Publisher[_] = repeatFactory(t.asScala.map(jl => Long2long(jl)))
     }
-    coreMono.repeatWhenEmpty(when).asScala
+    coreMono.repeatWhenEmpty(maxRepeat, when).asScala
   }
 
   /**
@@ -1431,7 +1433,7 @@ object SMono extends ScalaConverters {
 
   def defer[T](supplier: () => SMono[T]): SMono[T] = SMono.fromPublisher(JMono.defer[T](() => supplier().asJava()))
 
-  def delay(duration: Duration, timer: Scheduler = Schedulers.parallel()): SMono[Long] = new ReactiveSMono[Long](JMono.delay(duration, timer))
+  def delay(duration: Duration, timer: Scheduler = Schedulers.parallel()): SMono[Long] = JMono.delay(duration, timer).asScala.map(jl => Long2long(jl))
 
   def empty[T]: SMono[T] = JMono.empty[T]().asScala
 

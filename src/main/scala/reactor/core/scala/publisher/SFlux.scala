@@ -11,7 +11,6 @@ import org.reactivestreams.{Publisher, Subscriber}
 import reactor.core.Disposable
 import reactor.core.publisher.FluxSink.OverflowStrategy
 import reactor.core.publisher.{BufferOverflowStrategy, FluxSink, Signal, SignalType, SynchronousSink, Flux => JFlux, GroupedFlux => JGroupedFlux}
-import reactor.core.scala.publisher.PimpMyPublisher._
 import reactor.core.scheduler.{Scheduler, Schedulers}
 import reactor.util.Logger
 import reactor.util.concurrent.Queues
@@ -378,7 +377,7 @@ trait SFlux[+T] extends SFluxLike[T] with MapablePublisher[T] with ScalaConverte
 
   private[publisher] def coreFlux: JFlux[_ <: T]
 
-  final def count(): SMono[Long] = new ReactiveSMono[Long](coreFlux.count())
+  final def count(): SMono[Long] = coreFlux.count().asScala.map(jl => Long2long(jl))
 
   /**
     * Provide a default unique value if this sequence is completed without any data
