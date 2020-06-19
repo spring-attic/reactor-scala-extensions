@@ -28,7 +28,7 @@ trait SFluxLike[+T] extends ScalaConverters {
 
   private[publisher] def coreFlux: JFlux[_ <: T]
 
-  private def defaultToFluxError[U](t: Throwable): SFlux[U] = SFlux.raiseError(t)
+  private def defaultToFluxError[U](t: Throwable): SFlux[U] = SFlux.error(t)
 
   final def doOnSubscribe(onSubscribe: Subscription => Unit): SFlux[T] = coreFlux.doOnSubscribe(onSubscribe).asScala
 

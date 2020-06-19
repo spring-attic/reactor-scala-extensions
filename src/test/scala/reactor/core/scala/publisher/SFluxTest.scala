@@ -387,9 +387,14 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
 
     ".raiseError" - {
       "with throwable and whenRequest flag should" - {
+        ".error should create Flux that emit error" in {
+          StepVerifier.create(SFlux.error(new RuntimeException("runtime error")))
+            .expectError(classOf[RuntimeException])
+            .verify()
+        }
         "emit onError during onSubscribe if the flag is false" in {
           val flag = new AtomicBoolean(false)
-          val flux = SFlux.raiseError(new RuntimeException("Error message"))
+          val flux = SFlux.error(new RuntimeException("Error message"), whenRequested = false)
             .doOnRequest(_ => flag.compareAndSet(false, true))
           Try(flux.subscribe(new BaseSubscriber[Long] {
             override def hookOnSubscribe(subscription: Subscription): Unit = {
@@ -402,7 +407,7 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
         }
         "emit onError during onRequest if the flag is true" in {
           val flag = new AtomicBoolean(false)
-          val flux = SFlux.raiseError(new RuntimeException(), whenRequested = true)
+          val flux = SFlux.error(new RuntimeException(), whenRequested = true)
             .doOnRequest(_ => flag.compareAndSet(false, true))
           Try(flux.subscribe(new BaseSubscriber[Long] {
             override def hookOnSubscribe(subscription: Subscription): Unit = {
@@ -880,7 +885,7 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
     ".concatMapDelayError" - {
       "with mapper, delayUntilEnd and prefetch" in {
         val flux = SFlux.just(1, 2, 3).concatMapDelayError(i => {
-          if (i == 2) SFlux.raiseError[Int](new RuntimeException("runtime ex"))
+          if (i == 2) SFlux.error[Int](new RuntimeException("runtime ex"))
           else SFlux.just(i * 2, i * 3)
         }, delayUntilEnd = true, 2)
         StepVerifier.create(flux)
@@ -1063,14 +1068,14 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
     ".doOnError" - {
       "with callback function should call the callback function when the flux encounter error" in {
         val atomicBoolean = new AtomicBoolean(false)
-        StepVerifier.create(SFlux.raiseError(new RuntimeException())
+        StepVerifier.create(SFlux.error(new RuntimeException())
           .doOnError(_ => atomicBoolean.compareAndSet(false, true) shouldBe true))
           .expectError(classOf[RuntimeException])
           .verify()
       }
       "that check exception type should call the callback function when the flux encounter exception with the provided type" in {
         val atomicBoolean = new AtomicBoolean(false)
-        StepVerifier.create(SFlux.raiseError(new RuntimeException())
+        StepVerifier.create(SFlux.error(new RuntimeException())
           .doOnError { case _: RuntimeException => atomicBoolean.compareAndSet(false, true) shouldBe true })
           .expectError(classOf[RuntimeException])
       }
@@ -1261,7 +1266,7 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
       }
       "with delayError should respect whether error be delayed after current merge backlog" in {
         StepVerifier.create(SFlux.just(1, 2, 3).flatMapSequential(i => {
-          if (i == 2) SFlux.raiseError[Int](new RuntimeException("just an error"))
+          if (i == 2) SFlux.error[Int](new RuntimeException("just an error"))
           else SFlux.just(i * 2, i * 3)
         }, 2, 2, delayError = true))
           .expectNext(2, 3, 6, 9)
@@ -1296,7 +1301,7 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
       }
       "with delayError should respect whether error be delayed after current merge backlog" in {
         StepVerifier.create(SFlux.just(1, 2, 3).flatMap(i => {
-          if (i == 2) SFlux.raiseError[Int](new RuntimeException("just an error"))
+          if (i == 2) SFlux.error[Int](new RuntimeException("just an error"))
           else SFlux.just(i * 2, i * 3)
         }, 2, 2, delayError = true))
           .expectNext(2, 3, 6, 9)
@@ -1630,14 +1635,14 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
 
     ".onErrorMap" - {
       "with mapper should map the error" in {
-        StepVerifier.create(SFlux.raiseError[Int](new RuntimeException("runtime exception"))
+        StepVerifier.create(SFlux.error[Int](new RuntimeException("runtime exception"))
           .onErrorMap((t: Throwable) => new UnsupportedOperationException(t.getMessage)))
           .expectError(classOf[UnsupportedOperationException])
           .verify()
       }
 
       "with type and mapper should map the error if the error is of the provided type" in {
-        StepVerifier.create(SFlux.raiseError[Int](new RuntimeException("runtime ex"))
+        StepVerifier.create(SFlux.error[Int](new RuntimeException("runtime ex"))
           .onErrorMap { throwable: Throwable =>
             throwable match {
               case t: RuntimeException => new UnsupportedOperationException(t.getMessage)
@@ -1650,7 +1655,7 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
 
     ".onErrorRecover" - {
       "should recover with a Flux of element that has been recovered" in {
-        val convoy = SFlux.just[Vehicle](Sedan(1), Sedan(2)).concatWith(SFlux.raiseError[Vehicle](new RuntimeException("oops")))
+        val convoy = SFlux.just[Vehicle](Sedan(1), Sedan(2)).concatWith(SFlux.error[Vehicle](new RuntimeException("oops")))
           .onErrorRecover { case _ => Truck(5) }
         StepVerifier.create(convoy)
           .expectNext(Sedan(1), Sedan(2), Truck(5))
@@ -1660,7 +1665,7 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
 
     ".onErrorRecoverWith" - {
       "should recover with a Flux of element that is provided for recovery" in {
-        val convoy = SFlux.just[Vehicle](Sedan(1), Sedan(2)).concatWith(SFlux.raiseError[Vehicle](new RuntimeException("oops")))
+        val convoy = SFlux.just[Vehicle](Sedan(1), Sedan(2)).concatWith(SFlux.error[Vehicle](new RuntimeException("oops")))
           .onErrorRecoverWith { case _ => SFlux.just(Truck(5)) }
         StepVerifier.create(convoy)
           .expectNext(Sedan(1), Sedan(2), Truck(5))
@@ -1671,7 +1676,7 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
     ".onErrorResume" - {
       "should resume with a fallback publisher when error happen" in {
         StepVerifier.create(SFlux.just(1, 2)
-            .concatWith(SMono.raiseError[Int](new RuntimeException("exception")))
+            .concatWith(SMono.error[Int](new RuntimeException("exception")))
             .onErrorResume((_: Throwable) => SFlux.just(10, 20, 30)))
           .expectNext(1, 2, 10, 20, 30)
           .verifyComplete()
@@ -1681,7 +1686,7 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
     ".onErrorReturn" - {
       "should return the fallback value if error happen" in {
         StepVerifier.create(SFlux.just(1, 2)
-            .concatWith(SMono.raiseError[Int](new RuntimeException("exc")))
+            .concatWith(SMono.error[Int](new RuntimeException("exc")))
             .onErrorReturn(10))
           .expectNext(1, 2, 10)
           .verifyComplete()
@@ -1689,7 +1694,7 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
       "with predicate and fallbackValue should return the fallback value if the predicate is true" in {
         val predicate = (_: Throwable).isInstanceOf[RuntimeException]
         StepVerifier.create(SFlux.just(1, 2)
-            .concatWith(SMono.raiseError[Int](new RuntimeException("exc")))
+            .concatWith(SMono.error[Int](new RuntimeException("exc")))
             .onErrorReturn(10, predicate))
           .expectNext(1, 2, 10)
           .verifyComplete()
@@ -1777,7 +1782,7 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
     ".retry" - {
       "with numRetries will retry a number of times according to provided parameter" in {
         StepVerifier.create(SFlux.just(1, 2, 3)
-            .concatWith(SMono.raiseError[Int](new RuntimeException("ex")))
+            .concatWith(SMono.error[Int](new RuntimeException("ex")))
             .retry(3))
           .expectNext(1, 2, 3)
           .expectNext(1, 2, 3)
@@ -1789,7 +1794,7 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
       "with predicate will retry until the predicate returns false" in {
         val counter = new AtomicInteger(0)
         StepVerifier.create(SFlux.just(1, 2, 3)
-            .concatWith(SMono.raiseError[Int](new RuntimeException("ex")))
+            .concatWith(SMono.error[Int](new RuntimeException("ex")))
             .retry(retryMatcher = (_: Throwable) =>
               if (counter.getAndIncrement() > 0) false
               else true))
@@ -1801,7 +1806,7 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
       "with numRetries and predicate should retry as many as provided numRetries and predicate returns true" in {
         val counter = new AtomicInteger(0)
         val flux = SFlux.just(1, 2, 3)
-          .concatWith(SMono.raiseError[Int](new RuntimeException("ex")))
+          .concatWith(SMono.error[Int](new RuntimeException("ex")))
           .retry(3, { _ =>
             if (counter.getAndIncrement() > 5) false
             else true
@@ -1834,9 +1839,9 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
     ".retryWhen should retry according to the spec" in {
       val counter = new AtomicInteger(0)
       val sFlux = SFlux.just(1, 2, 3)
-        .concatWith(SMono.raiseError[Int](new RuntimeException("ex")))
+        .concatWith(SMono.error[Int](new RuntimeException("ex")))
         .retryWhen(SRetry.from(_ => {
-          if (counter.getAndIncrement() > 0) SMono.raiseError[Int](new RuntimeException("another ex"))
+          if (counter.getAndIncrement() > 0) SMono.error[Int](new RuntimeException("another ex"))
           else SMono.just(1)
         }))
       StepVerifier.create(sFlux)
