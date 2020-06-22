@@ -1718,7 +1718,7 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
         val buffer = mutable.ListBuffer.empty[Int]
         val base = SFlux.just(1, 2, 3, 4, 5).delayElements(1 second).publish().autoConnect()
         base.subscribe()
-        Thread.sleep(1000)
+        Thread.sleep(1200)
         base.subscribe(i => buffer += i)
         eventually {
           buffer.size should be > 1

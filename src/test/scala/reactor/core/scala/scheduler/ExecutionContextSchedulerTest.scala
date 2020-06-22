@@ -15,17 +15,6 @@ import scala.concurrent.ExecutionContext
 class ExecutionContextSchedulerTest extends AnyFreeSpec with Matchers {
   "ExecutionContextScheduler" - {
     "should create a Scheduler using provided ExecutionContext" - {
-      "on Mono" in {
-        val executionContext = ExecutionContext.fromExecutorService(Executors.newFixedThreadPool(1, new ThreadFactory {
-          override def newThread(r: Runnable): Thread = new Thread(r, "THREAD-NAME-MONO")
-        }))
-        val mono = SMono.just(1)
-          .subscribeOn(ExecutionContextScheduler(executionContext))
-          .doOnNext(i => Thread.currentThread().getName shouldBe "THREAD-NAME-MONO")
-        StepVerifier.create(mono)
-          .expectNext(1)
-          .verifyComplete()
-      }
       "on SMono" in {
         val executionContext = ExecutionContext.fromExecutorService(Executors.newFixedThreadPool(1, new ThreadFactory {
           override def newThread(r: Runnable): Thread = new Thread(r, "THREAD-NAME-SMONO")
