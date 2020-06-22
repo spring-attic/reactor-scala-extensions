@@ -1140,14 +1140,14 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
       "should provide the time elapse when this mono emit value" in {
         StepVerifier.withVirtualTime(() => SFlux.just(1, 2, 3).delaySubscription(1 second).delayElements(1 second).elapsed(), 3)
           .thenAwait(4 seconds)
-          .expectNextMatches {
-            case (time, data) => time >= 1000 && data == 1
+          .expectNextMatches{(timeAndDate: (Long, Int))=>
+            timeAndDate._1 >= 1000 && timeAndDate._2 == 1
           }
-          .expectNextMatches {
-            case (time, data) => time >= 1000 && data == 2
+          .expectNextMatches {(timeAndDate: (Long, Int))=>
+            timeAndDate._1 >= 1000 && timeAndDate._2 == 2
           }
-          .expectNextMatches {
-            case (time, data) => time >= 1000 && data == 3
+          .expectNextMatches {(timeAndDate: (Long, Int))=>
+            timeAndDate._1 >= 1000 && timeAndDate._2 == 3
           }
           .verifyComplete()
       }
@@ -1158,14 +1158,14 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
           .delayElements(1 second, virtualTimeScheduler)
           .elapsed(virtualTimeScheduler), 3)
           .`then`(() => virtualTimeScheduler.advanceTimeBy(4 seconds))
-          .expectNextMatches {
-            case (time, data) => time >= 1000 && data == 1
+          .expectNextMatches {(timeAndDate: (Long, Int))=>
+            timeAndDate._1 >= 1000 && timeAndDate._2 == 1
           }
-          .expectNextMatches {
-            case (time, data) => time >= 1000 && data == 2
+          .expectNextMatches {(timeAndDate: (Long, Int))=>
+            timeAndDate._1 >= 1000 && timeAndDate._2 == 2
           }
-          .expectNextMatches {
-            case (time, data) => time >= 1000 && data == 3
+          .expectNextMatches {(timeAndDate: (Long, Int))=>
+            timeAndDate._1 >= 1000 && timeAndDate._2 == 3
           }
           .verifyComplete()
       }
@@ -1718,7 +1718,7 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
         val buffer = mutable.ListBuffer.empty[Int]
         val base = SFlux.just(1, 2, 3, 4, 5).delayElements(1 second).publish().autoConnect()
         base.subscribe()
-        Thread.sleep(1000)
+        Thread.sleep(1300)
         base.subscribe(i => buffer += i)
         eventually {
           buffer.size should be > 1
