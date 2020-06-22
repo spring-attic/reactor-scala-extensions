@@ -230,6 +230,12 @@ class SMonoTest extends AnyFreeSpec with Matchers with TestSupport with Idiomati
         .verify()
     }
 
+    ".raiseError should create Mono that emit error" in {
+      StepVerifier.create(SMono.raiseError(new RuntimeException("runtime error")))
+        .expectError(classOf[RuntimeException])
+        .verify()
+    }
+
     ".when" - {
       "with iterable" - {
         "of publisher of unit should return when all of the sources has fulfilled" in {

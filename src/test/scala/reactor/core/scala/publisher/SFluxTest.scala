@@ -419,6 +419,11 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
           })) shouldBe a[Failure[_]]
           flag.get() shouldBe true
         }
+        ".raiseEerror should create Flux that emit error" in {
+          StepVerifier.create(SFlux.raiseError(new RuntimeException("runtime error")))
+            .expectError(classOf[RuntimeException])
+            .verify()
+        }
       }
     }
 
