@@ -10,21 +10,7 @@ import reactor.util.concurrent.Queues.XS_BUFFER_SIZE
 
 import scala.language.higherKinds
 
-trait SFluxLike[+T] extends ScalaConverters {
-
-  final def collect[E](containerSupplier: () => E, collector: (E, T) => Unit): SMono[E] = coreFlux.collect(containerSupplier, collector: JBiConsumer[E, T]).asScala
-
-  final def concatMap[V](mapper: T => Publisher[_ <: V], prefetch: Int = XS_BUFFER_SIZE): SFlux[V] = coreFlux.concatMap[V](mapper, prefetch).asScala
-
-  /**
-    * Concatenate emissions of this [[SFlux]] with the provided [[Publisher]] (no interleave).
-    * <p>
-    * <img class="marble" src="https://github.com/reactor/reactor-core/tree/master/reactor-core/src/main/java/reactor/core/publisher/doc-files/marbles/concatWithForFlux.svg" alt="">
-    *
-    * @param other the [[Publisher]] sequence to concat after this [[SFlux]]
-    * @return a concatenated [[SFlux]]
-    */
-  final def concatWith[U >: T](other: Publisher[U]): SFlux[U] = SFlux.fromPublisher(coreFlux.concatWith(other.asInstanceOf[Publisher[Nothing]]))
+trait SFluxLike[+T] extends ScalaConverters { self: SFlux[T] =>
 
   private[publisher] def coreFlux: JFlux[_ <: T]
 
@@ -85,8 +71,6 @@ trait SFluxLike[+T] extends ScalaConverters {
 
   final def reduce[A](initial: A)(accumulator: (A, T) => A): SMono[A] = coreFlux.reduce[A](initial, accumulator).asScala
 
-  final def skip(skipped: Long): SFlux[T] = coreFlux.skip(skipped).asScala
-
   final def sum[R >: T](implicit R: Numeric[R]): SMono[R] = {
     import R._
     fold(zero)(_ + _ )
@@ -97,8 +81,6 @@ trait SFluxLike[+T] extends ScalaConverters {
     * @return
     */
   final def tail: SFlux[T] = skip(1)
-
-  final def take(n: Long): SFlux[T] = coreFlux.take(n).asScala
 
   final def zipWithTimeSinceSubscribe(): SFlux[(T, Long)] = {
     val scheduler = Schedulers.single()
