@@ -1254,7 +1254,7 @@ object SFlux {
 
     override def coflatMap[A, B](fa: SFlux[A])(f: SFlux[A] => B): SFlux[B] = SFlux.just(f(fa))
 
-    override def bracketCase[A, B](acquire: SFlux[A])(use: A => SFlux[B])(release: (A, ExitCase[Throwable]) => SFlux[Unit]): SFlux[B] = acquire.bracketCase(use)((a, exitCase) => SFlux(release(a, exitCase)))
+    override def bracketCase[A, B](acquire: SFlux[A])(use: A => SFlux[B])(release: (A, ExitCase[Throwable]) => SFlux[Unit]): SFlux[B] = acquire.bracketCase(use)((a, exitCase) => release(a, exitCase))
   }
 }
 
