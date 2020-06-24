@@ -11,5 +11,10 @@ class SFluxApplicativeErrorTest extends AnyFreeSpec {
         .expectError(classOf[RuntimeException])
         .verify()
     }
+    "should handle error" in {
+      StepVerifier.create(SFlux.catsInstances.handleErrorWith(SFlux.error(new RuntimeException))(t => SFlux.just(123)))
+        .expectNext(123)
+        .verifyComplete()
+    }
   }
 }
