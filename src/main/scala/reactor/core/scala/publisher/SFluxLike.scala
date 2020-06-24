@@ -84,8 +84,6 @@ trait SFluxLike[+T] extends ScalaConverters { self: SFlux[T] =>
     fold(one)(_ * _)
   }
 
-  final def reduce[A](initial: A)(accumulator: (A, T) => A): SMono[A] = coreFlux.reduce[A](initial, accumulator).asScala
-
   final def sum[R >: T](implicit R: Numeric[R]): SMono[R] = {
     import R._
     fold(zero)(_ + _ )

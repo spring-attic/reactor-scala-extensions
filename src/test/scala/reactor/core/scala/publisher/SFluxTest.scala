@@ -1818,6 +1818,11 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
           .expectNext(6)
           .verifyComplete()
       }
+      "with initial values" in {
+        StepVerifier.create(SFlux.just(1, 2, 3).reduce(1)(_ + _))
+          .expectNext(7)
+          .verifyComplete()
+      }
     }
 
     ".reduceWith is deprecated and delegate the operation to fold" in {
