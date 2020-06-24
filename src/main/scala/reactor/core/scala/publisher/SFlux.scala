@@ -1169,10 +1169,8 @@ object SFlux {
 
   @deprecated("Use error(Throwable, Boolean) instead")
   def raiseError[T](exception: Throwable, whenRequested: Boolean = false): SFlux[T] = error(exception)
-
-  def error[T](exception: Throwable): SFlux[T] = new ReactiveSFlux[T](JFlux.error(exception))
-
-  def error[T](exception: Throwable, whenRequested: Boolean): SFlux[T] = new ReactiveSFlux[T](JFlux.error(exception, whenRequested))
+  
+  def error[T](exception: Throwable, whenRequested: Boolean = false): SFlux[T] = new ReactiveSFlux[T](JFlux.error(exception, whenRequested))
 
   def range(start: Int, count: Int): SFlux[Int] = new ReactiveSFlux[Int](JFlux.range(start, count).map((i: java.lang.Integer) => Integer2int(i)))
 
