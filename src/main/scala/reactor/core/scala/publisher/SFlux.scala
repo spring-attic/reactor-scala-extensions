@@ -1242,7 +1242,7 @@ object SFlux {
       }
     }
 
-    override def raiseError[A](e: Throwable): SFlux[A] = SFlux.raiseError(e)
+    override def raiseError[A](e: Throwable): SFlux[A] = SFlux.error(e)
 
     override def handleErrorWith[A](fa: SFlux[A])(f: Throwable => SFlux[A]): SFlux[A] = fa.onErrorResume(f)
 
