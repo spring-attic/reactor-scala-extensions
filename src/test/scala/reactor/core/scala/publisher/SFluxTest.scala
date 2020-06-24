@@ -8,6 +8,8 @@ import java.util.concurrent.Callable
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger, AtomicLong, AtomicReference}
 import java.util.function.Consumer
 
+import cats.effect.ExitCase
+import cats.effect.ExitCase.Error
 import io.micrometer.core.instrument.Metrics
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import org.mockito.{ArgumentMatchersSugar, IdiomaticMockito}
@@ -792,6 +794,13 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
     ".cast should cast the underlying value to a different type" in {
       val number = SFlux.just(BigDecimal("1"), BigDecimal("2"), BigDecimal("3")).cast[ScalaNumber].blockLast()
       number.get shouldBe a[ScalaNumber]
+    }
+
+    ".collect with partial function should map and filter the element" in {
+      val x = SFlux.just(1, 2 , 3, 4, 5).collect { case i if i % 2 == 1 => i}
+      StepVerifier.create(x)
+        .expectNext(1, 3, 5)
+        .verifyComplete()
     }
 
     ".collect should collect the value into the supplied container" in {
