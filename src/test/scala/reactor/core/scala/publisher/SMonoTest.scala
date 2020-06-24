@@ -224,6 +224,12 @@ class SMonoTest extends AnyFreeSpec with Matchers with TestSupport with Idiomati
       }
     }
 
+    ".error should create Mono that emit error" in {
+      StepVerifier.create(SMono.error(new RuntimeException("runtime error")))
+        .expectError(classOf[RuntimeException])
+        .verify()
+    }
+
     ".raiseError should create Mono that emit error" in {
       StepVerifier.create(SMono.raiseError(new RuntimeException("runtime error")))
         .expectError(classOf[RuntimeException])
@@ -558,7 +564,7 @@ class SMonoTest extends AnyFreeSpec with Matchers with TestSupport with Idiomati
         .verifyComplete()
       atomicBoolean shouldBe Symbol("get")
       val exception = new RuntimeException
-      StepVerifier.create(SMono.raiseError[Long](exception)
+      StepVerifier.create(SMono.error[Long](exception)
         .doAfterSuccessOrError { t =>
           atomicBoolean.compareAndSet(true, false) shouldBe true
           t shouldBe Failure(exception)
@@ -625,7 +631,7 @@ class SMonoTest extends AnyFreeSpec with Matchers with TestSupport with Idiomati
     ".doOnError" - {
       "with callback function should call the callback function when the mono encounter error" in {
         val atomicBoolean = new AtomicBoolean(false)
-        StepVerifier.create(SMono.raiseError(new RuntimeException())
+        StepVerifier.create(SMono.error(new RuntimeException())
           .doOnError(_ => atomicBoolean.compareAndSet(false, true) shouldBe true))
           .expectError(classOf[RuntimeException])
           .verify()
@@ -801,7 +807,7 @@ class SMonoTest extends AnyFreeSpec with Matchers with TestSupport with Idiomati
     ".mapError" - {
       class MyCustomException(val message: String) extends Exception(message)
       "with mapper should map the error to another error" in {
-        StepVerifier.create(SMono.raiseError[Int](new RuntimeException("runtimeException"))
+        StepVerifier.create(SMono.error[Int](new RuntimeException("runtimeException"))
           .onErrorMap { case t: Throwable => new MyCustomException(t.getMessage) })
           .expectErrorMatches((t: Throwable) => {
             t.getMessage shouldBe "runtimeException"
@@ -813,7 +819,7 @@ class SMonoTest extends AnyFreeSpec with Matchers with TestSupport with Idiomati
       }
       "with an error type and mapper should" - {
         "map the error to another type if the exception is according to the provided type" in {
-          StepVerifier.create(SMono.raiseError[Int](new RuntimeException("runtimeException"))
+          StepVerifier.create(SMono.error[Int](new RuntimeException("runtimeException"))
             .onErrorMap { case t: RuntimeException => new MyCustomException(t.getMessage) })
             .expectErrorMatches((t: Throwable) => {
               t.getMessage shouldBe "runtimeException"
@@ -824,7 +830,7 @@ class SMonoTest extends AnyFreeSpec with Matchers with TestSupport with Idiomati
             .verify()
         }
         "not map the error if the exception is not the type of provided exception class" in {
-          StepVerifier.create(SMono.raiseError[Int](new Exception("runtimeException"))
+          StepVerifier.create(SMono.error[Int](new Exception("runtimeException"))
             .onErrorMap {
               case t: RuntimeException => new MyCustomException(t.getMessage)
             })
@@ -839,13 +845,13 @@ class SMonoTest extends AnyFreeSpec with Matchers with TestSupport with Idiomati
       }
       "with a predicate and mapper should" - {
         "map the error to another type if the predicate returns true" in {
-          StepVerifier.create(SMono.raiseError[Int](new RuntimeException("should map"))
+          StepVerifier.create(SMono.error[Int](new RuntimeException("should map"))
             .onErrorMap { case t: Throwable if t.getMessage == "should map" => new MyCustomException(t.getMessage) })
             .expectError(classOf[MyCustomException])
             .verify()
         }
         "not map the error to another type if the predicate returns false" in {
-          StepVerifier.create(SMono.raiseError[Int](new RuntimeException("should not map"))
+          StepVerifier.create(SMono.error[Int](new RuntimeException("should not map"))
             .onErrorMap { case t: Throwable if t.getMessage == "should map" => new MyCustomException(t.getMessage) })
             .expectError(classOf[RuntimeException])
             .verify()
@@ -890,7 +896,7 @@ class SMonoTest extends AnyFreeSpec with Matchers with TestSupport with Idiomati
 
     ".onErrorRecover" - {
       "should recover with a Mono of element that has been recovered" in {
-        StepVerifier.create(SMono.raiseError(new RuntimeException("oops"))
+        StepVerifier.create(SMono.error(new RuntimeException("oops"))
           .onErrorRecover { case _ => Truck(5) })
           .expectNext(Truck(5))
           .verifyComplete()
@@ -899,25 +905,25 @@ class SMonoTest extends AnyFreeSpec with Matchers with TestSupport with Idiomati
 
     ".onErrorResume" - {
       "will fallback to the provided value when error happens" in {
-        StepVerifier.create(SMono.raiseError(new RuntimeException()).onErrorResume(_ => just(-1)))
+        StepVerifier.create(SMono.error(new RuntimeException()).onErrorResume(_ => just(-1)))
           .expectNext(-1)
           .verifyComplete()
       }
       "with class type and fallback function will fallback to the provided value when the exception is of provided type" in {
-        StepVerifier.create(SMono.raiseError(new RuntimeException()).onErrorResume {
+        StepVerifier.create(SMono.error(new RuntimeException()).onErrorResume {
           case _: Exception => just(-1)
         })
           .expectNext(-1)
           .verifyComplete()
 
-        StepVerifier.create(SMono.raiseError(new Exception()).onErrorResume {
+        StepVerifier.create(SMono.error(new Exception()).onErrorResume {
           case _: RuntimeException => just(-1)
         })
           .expectError(classOf[Exception])
           .verify()
       }
       "with predicate and fallback function will fallback to the provided value when the predicate returns true" in {
-        StepVerifier.create(SMono.raiseError(new RuntimeException("fallback")).onErrorResume {
+        StepVerifier.create(SMono.error(new RuntimeException("fallback")).onErrorResume {
           case t if t.getMessage == "fallback" => just(-1)
         })
           .expectNext(-1)
@@ -1046,7 +1052,7 @@ class SMonoTest extends AnyFreeSpec with Matchers with TestSupport with Idiomati
       }
       "with consumer and error consumer should invoke the error consumer when error happen" in {
         val counter = new CountDownLatch(1)
-        val disposable = SMono.raiseError[Any](new RuntimeException()).subscribe(_ => (), _ => counter.countDown())
+        val disposable = SMono.error[Any](new RuntimeException()).subscribe(_ => (), _ => counter.countDown())
         disposable shouldBe a[Disposable]
         counter.await(1, TimeUnit.SECONDS) shouldBe true
       }

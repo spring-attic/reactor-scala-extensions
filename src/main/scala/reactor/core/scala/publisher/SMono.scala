@@ -812,7 +812,7 @@ trait SMono[+T] extends SMonoLike[T] with MapablePublisher[T] with ScalaConverte
   final def onErrorMap(mapper: PartialFunction[Throwable, Throwable]): SMono[T] =
     coreMono.onErrorMap((t: Throwable) => if (mapper.isDefinedAt(t)) mapper(t) else t).asScala
 
-  private def defaultToMonoError[U](t: Throwable): SMono[U] = SMono.raiseError[U](t)
+  private def defaultToMonoError[U](t: Throwable): SMono[U] = SMono.error[U](t)
 
   final def onErrorRecover[U >: T](pf: PartialFunction[Throwable, U]): SMono[U] = {
     def recover(t: Throwable): SMono[U] = pf.andThen(u => SMono.just(u)).applyOrElse(t, defaultToMonoError)
@@ -1505,7 +1505,10 @@ object SMono extends ScalaConverters {
     */
   def subscribeContext(): SMono[Context] = JMono.subscriberContext().asScala
 
-  def raiseError[T](error: Throwable): SMono[T] = JMono.error[T](error).asScala
+  @deprecated("Use error(Throwable) instead")
+  def raiseError[T](exception: Throwable): SMono[T] = error(exception)
+
+  def error[T](exception: Throwable): SMono[T] = JMono.error[T](exception).asScala
 
   /**
     * Aggregate given void publishers into a new a `Mono` that will be

@@ -342,7 +342,21 @@ trait SFlux[+T] extends SFluxLike[T] with MapablePublisher[T] with ScalaConverte
     case (Some(desc), _) => new ReactiveSFlux(coreFlux.checkpoint(desc, false))
   }
 
+  final def collectReduce[E](containerSupplier: () => E, collector: (E, T) => Unit): SMono[E] = coreFlux.collect(containerSupplier, collector: JBiConsumer[E, T]).asScala
+
   final def collectSeq(): SMono[Seq[T]] = new ReactiveSMono[Seq[T]](coreFlux.collectList().map((l: JList[_ <: T]) => l.asScala.toSeq))
+
+  final def concatMap[V](mapper: T => Publisher[_ <: V], prefetch: Int = XS_BUFFER_SIZE): SFlux[V] = coreFlux.concatMap[V](mapper, prefetch).asScala
+
+  /**
+    * Concatenate emissions of this [[SFlux]] with the provided [[Publisher]] (no interleave).
+    * <p>
+    * <img class="marble" src="https://github.com/reactor/reactor-core/tree/master/reactor-core/src/main/java/reactor/core/publisher/doc-files/marbles/concatWithForFlux.svg" alt="">
+    *
+    * @param other the [[Publisher]] sequence to concat after this [[SFlux]]
+    * @return a concatenated [[SFlux]]
+    */
+  final def concatWith[U >: T](other: Publisher[U]): SFlux[U] = SFlux.fromPublisher(coreFlux.concatWith(other.asInstanceOf[Publisher[Nothing]]))
 
   final def collectMap[K](keyExtractor: T => K): SMono[Map[K, T]] = collectMap[K, T](keyExtractor, (t: T) => t)
 
@@ -866,6 +880,8 @@ trait SFlux[+T] extends SFluxLike[T] with MapablePublisher[T] with ScalaConverte
 
   final def singleOrEmpty(): SMono[T] = coreFlux.singleOrEmpty().asScala
 
+  final def skip(skipped: Long): SFlux[T] = coreFlux.skip(skipped).asScala
+
   final def skip(timespan: Duration, timer: Scheduler = Schedulers.parallel): SFlux[T] = coreFlux.skip(timespan, timer).asScala
 
   final def skipLast(n: Int): SFlux[T] = coreFlux.skipLast(n).asScala
@@ -950,6 +966,8 @@ trait SFlux[+T] extends SFluxLike[T] with MapablePublisher[T] with ScalaConverte
   final def switchMap[V](fn: T => Publisher[_ <: V], prefetch: Int = XS_BUFFER_SIZE): SFlux[V] = coreFlux.switchMap[V](fn, prefetch).asScala
 
   final def tag(key: String, value: String): SFlux[T] = coreFlux.tag(key, value).asScala
+
+  final def take(n: Long): SFlux[T] = coreFlux.take(n).asScala
 
   final def take(timespan: Duration, timer: Scheduler = Schedulers.parallel): SFlux[T] = coreFlux.take(timespan, timer).asScala
 
@@ -1151,7 +1169,10 @@ object SFlux {
 
   def push[T](emitter: FluxSink[T] => Unit, backPressure: FluxSink.OverflowStrategy = OverflowStrategy.BUFFER): SFlux[T] = new ReactiveSFlux[T](JFlux.push(emitter, backPressure))
 
-  def raiseError[T](e: Throwable, whenRequested: Boolean = false): SFlux[T] = new ReactiveSFlux[T](JFlux.error(e, whenRequested))
+  @deprecated("Use error(Throwable, Boolean) instead")
+  def raiseError[T](exception: Throwable, whenRequested: Boolean = false): SFlux[T] = error(exception, whenRequested)
+
+  def error[T](exception: Throwable, whenRequested: Boolean = false): SFlux[T] = new ReactiveSFlux[T](JFlux.error(exception, whenRequested))
 
   def range(start: Int, count: Int): SFlux[Int] = new ReactiveSFlux[Int](JFlux.range(start, count).map((i: java.lang.Integer) => Integer2int(i)))
 
