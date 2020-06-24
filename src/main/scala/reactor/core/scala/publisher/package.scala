@@ -9,11 +9,11 @@ import java.util.stream.{StreamSupport, Stream => JStream}
 import java.util.{Optional, Spliterator, Spliterators}
 
 import org.reactivestreams.Publisher
-import reactor.core.publisher.{Flux => JFlux, Mono => JMono}
+import reactor.core.publisher.{Flux => JFlux}
 import reactor.util.function.{Tuple2, Tuple3, Tuple4, Tuple5, Tuple6}
 
-import scala.jdk.CollectionConverters._
 import scala.concurrent.duration.Duration
+import scala.jdk.CollectionConverters._
 import scala.language.implicitConversions
 
 /**
@@ -95,9 +95,6 @@ package object publisher {
     }
   }
 
-
-  implicit def mappableJLong2MappableLong(mappableJLong: MapablePublisher[JLong]): MapablePublisher[Long] = mappableJLong.map(Long2long(_: JLong))
-
   implicit def fluxTToU2JFluxTToU[T, U](fluxTToU: SFlux[T] => U): Function[JFlux[T], U] = {
     new Function[JFlux[T], U] {
       override def apply(t: JFlux[T]): U = fluxTToU(SFlux.fromPublisher(t))
@@ -109,19 +106,7 @@ package object publisher {
       override def run(): Unit = runnable
     }
   }
-
-  implicit def scalaFunctionTToMonoR2JavaFunctionTToJMonoR[T, R](function: T => SMono[R]): Function[T, JMono[_ <: R]] = {
-    new Function[T, JMono[_ <: R]] {
-      override def apply(t: T): JMono[_ <: R] = function(t).asJava()
-    }
-  }
-
-  implicit def scalaSupplierSMonoR2JavaSupplierJMonoR[R](supplier: () => SMono[R]): Supplier[JMono[_ <: R]] = {
-    new Supplier[JMono[_ <: R]] {
-      override def get(): JMono[_ <: R] = supplier().asJava()
-    }
-  }
-
+  
   implicit def publisherUnit2PublisherVoid(publisher: MapablePublisher[Unit]): Publisher[Void] = {
     publisher.map[Void](_ => null: Void)
   }
