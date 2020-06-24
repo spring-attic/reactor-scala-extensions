@@ -9,6 +9,7 @@ val mockitoInline = "org.mockito" % "mockito-inline" % "3.3.3" % "test"
 val mockitoScala = "org.mockito" %% "mockito-scala" % "1.14.3" % "test"
 val scalaTest = "org.scalatest" %% "scalatest" % "3.1.2" % "test"
 val reactorTest = "io.projectreactor" % "reactor-test" % reactorVersion % "test"
+val catsEffect =  "org.typelevel" %% "cats-effect" % "2.1.3"
 
 //Scala versions for cross compiling
 lazy val scala212 = "2.12.11"
@@ -27,7 +28,8 @@ lazy val root = (project in file("."))
 		libraryDependencies += mockitoScala,
 		libraryDependencies += scalaTest,
 		libraryDependencies += reactorTest,
-		libraryDependencies += mockitoInline
+		libraryDependencies += mockitoInline,
+		libraryDependencies += catsEffect
 	)
 
 // Prevent test being executed in parallel as it may failed for the Scheduler and Virtual Scheduler

@@ -555,6 +555,71 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
       }
     }
 
+    ".bracket should always release all resources properly" in {
+      import java.io.PrintWriter
+      val files = (0 until 1) map(i => {
+        val path = Files.createTempFile(s"bracketCase-$i", ".tmp")
+        val file = path.toFile
+        new PrintWriter(file) { write(s"$i"); close() }
+        file
+      })
+      files.foreach(f => f.exists() shouldBe true)
+      val sf = SFlux.fromIterable(files)
+        .bracket(_ => SFlux.raiseError(new RuntimeException("Always throw exception")))(file => file.delete())
+      StepVerifier.create(sf)
+        .expectError(classOf[RuntimeException])
+        .verify()
+      files.foreach(f => f.exists() shouldBe false)
+    }
+
+    ".bracketCase" - {
+      "should release all resources properly" in {
+        import java.io.PrintWriter
+        val files = (0 until 5) map(i => {
+          val path = Files.createTempFile(s"bracketCase-$i", ".tmp")
+          val file = path.toFile
+          new PrintWriter(file) { write(s"$i"); close() }
+          file
+        })
+        files.foreach(f => f.exists() shouldBe true)
+        val sf = SFlux.fromIterable(files)
+          .bracketCase(f => {
+            val br = Source.fromFile(f)
+            val line = br.getLines().mkString
+            br.close()
+            SFlux.just(line)
+          })((file, _) => file.delete())
+        StepVerifier.create(sf)
+          .expectNext("0", "1", "2", "3", "4")
+          .verifyComplete()
+        files.foreach(f => f.exists() shouldBe false)
+      }
+
+      "should handle ExitCase.error" in {
+        import java.io.PrintWriter
+        val files = (0 until 5) map(i => {
+          val path = Files.createTempFile(s"bracketCase-$i", ".tmp")
+          val file = path.toFile
+          new PrintWriter(file) { write(s"$i"); close() }
+          file
+        })
+        files.foreach(f => f.exists() shouldBe true)
+        val sf = SFlux.fromIterable(files)
+          .bracketCase(_ => {
+            SFlux.raiseError(new RuntimeException("Always throw exception"))
+          })((file, exitCase) => {
+            exitCase match {
+              case Error(_) => ()
+              case _ => file.delete()
+            }
+          })
+        StepVerifier.create(sf)
+          .expectError(classOf[RuntimeException])
+          .verify()
+        files.foreach(f => f.exists() shouldBe true)
+      }
+    }
+
     ".buffer" - {
       "should buffer all element into a Seq" in {
         StepVerifier.create(SFlux.just(1, 2, 3).buffer())

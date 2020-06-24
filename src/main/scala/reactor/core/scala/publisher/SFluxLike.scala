@@ -3,14 +3,27 @@ package reactor.core.scala.publisher
 import java.util.concurrent.TimeUnit
 import java.util.function.Function
 
+import cats.effect.ExitCase
 import org.reactivestreams.{Publisher, Subscription}
 import reactor.core.publisher.{Flux => JFlux}
 import reactor.core.scheduler.Schedulers
 import reactor.util.concurrent.Queues.XS_BUFFER_SIZE
 
 import scala.language.higherKinds
+import scala.util.{Failure, Success, Try}
 
 trait SFluxLike[+T] extends ScalaConverters { self: SFlux[T] =>
+
+  final def bracket[R](use: T => SFlux[R])(release: T => Unit): SFlux[R] = bracketCase(use)((t, _) => release(t))
+
+  final def bracketCase[R](use: T => SFlux[R])(release: (T, ExitCase[Throwable]) => Unit): SFlux[R] = {
+    val f = (t: T) => (Try(use(t)) match {
+      case Success(value) => value.doOnComplete(() => release(t, ExitCase.Completed))
+      case Failure(exception) => SFlux.raiseError(exception).doOnComplete(() => release(t, ExitCase.error(exception)))
+    }).doOnError(ex => release(t, ExitCase.error(ex)))
+      .doOnCancel(() => release(t, ExitCase.canceled))
+    concatMap(f)
+  }
 
   final def collect[U](pf: PartialFunction[T, U]): SFlux[U] = coreFlux.filter((t: T) => pf.isDefinedAt(t)).map[U]((t: T) => pf.apply(t)).asScala
 
