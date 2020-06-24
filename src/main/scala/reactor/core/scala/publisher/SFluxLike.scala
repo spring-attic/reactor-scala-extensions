@@ -10,11 +10,14 @@ import reactor.util.concurrent.Queues.XS_BUFFER_SIZE
 
 import scala.language.higherKinds
 
-trait SFluxLike[+T] extends ScalaConverters {
+trait SFluxLike[+T] extends ScalaConverters { self: SFlux[T] =>
+
+  final def collect[U](pf: PartialFunction[T, U]): SFlux[U] = coreFlux.filter((t: T) => pf.isDefinedAt(t)).map[U]((t: T) => pf.apply(t)).asScala
 
   final def collect[E](containerSupplier: () => E, collector: (E, T) => Unit): SMono[E] = coreFlux.collect(containerSupplier, collector: JBiConsumer[E, T]).asScala
 
   final def concatMap[V](mapper: T => Publisher[_ <: V], prefetch: Int = XS_BUFFER_SIZE): SFlux[V] = coreFlux.concatMap[V](mapper, prefetch).asScala
+
 
   /**
     * Concatenate emissions of this [[SFlux]] with the provided [[Publisher]] (no interleave).
