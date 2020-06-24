@@ -7,6 +7,8 @@ import java.util.function.{BiFunction, Function, Supplier}
 import java.util.logging.Level
 import java.util.{Comparator, Collection => JCollection, List => JList, Map => JMap}
 
+import cats.effect.{Bracket, ExitCase}
+import cats.{CoflatMap, Functor, FunctorFilter, MonoidK}
 import org.reactivestreams.{Publisher, Subscriber}
 import reactor.core.Disposable
 import reactor.core.publisher.FluxSink.OverflowStrategy
@@ -1197,6 +1199,40 @@ object SFlux {
 
   def zipMap[I, O](combinator: Array[AnyRef] => O, sources: Seq[Publisher[_ <: I]], prefetch: Int = XS_BUFFER_SIZE): SFlux[O] =
     new ReactiveSFlux[O](JFlux.zip[I, O](combinator, prefetch, sources: _*))
+
+  implicit val catsInstances: CatsInstances = new CatsInstances
+
+  class CatsInstances extends MonoidK[SFlux] with Bracket[SFlux, Throwable] with FunctorFilter[SFlux] with CoflatMap[SFlux] {
+    override def empty[A]: SFlux[A] = SFlux.empty
+
+    override def combineK[A](x: SFlux[A], y: SFlux[A]): SFlux[A] = x ++ y
+
+    override def pure[A](x: A): SFlux[A] = SFlux.just(x)
+
+    override def ap[A, B](ff: SFlux[A => B])(fa: SFlux[A]): SFlux[B] = for (f <- ff; a <- fa) yield f(a)
+
+    override def flatMap[A, B](fa: SFlux[A])(f: A => SFlux[B]): SFlux[B] = fa.flatMap(f)
+
+    //TODO: This is not safe. It can blew stack overflow
+    override def tailRecM[A, B](a: A)(f: A => SFlux[Either[A, B]]): SFlux[B] = {
+      f(a) flatMap {
+        case Right(b) => SFlux.just(b)
+        case Left(nextA) => tailRecM(nextA)(f)
+      }
+    }
+
+    override def raiseError[A](e: Throwable): SFlux[A] = SFlux.raiseError(e)
+
+    override def handleErrorWith[A](fa: SFlux[A])(f: Throwable => SFlux[A]): SFlux[A] = fa.onErrorResume(f)
+
+    override def functor: Functor[SFlux] = this
+
+    override def mapFilter[A, B](fa: SFlux[A])(f: A => Option[B]): SFlux[B] = fa.map(f).collect { case Some(b) => b }
+
+    override def coflatMap[A, B](fa: SFlux[A])(f: SFlux[A] => B): SFlux[B] = SFlux.just(f(fa))
+
+    override def bracketCase[A, B](acquire: SFlux[A])(use: A => SFlux[B])(release: (A, ExitCase[Throwable]) => SFlux[Unit]): SFlux[B] = acquire.bracketCase(use)((a, exitCase) => SFlux(release(a, exitCase)))
+  }
 }
 
 
