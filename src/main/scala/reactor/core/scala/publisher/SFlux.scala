@@ -690,6 +690,8 @@ trait SFlux[+T] extends SFluxLike[T] with MapablePublisher[T] with ScalaConverte
     */
   final def publishNext(): SMono[T] = SMono.fromPublisher(coreFlux.publishNext())
 
+  final def reduce[A](initial: A)(accumulator: (A, T) => A): SMono[A] = coreFlux.reduce[A](initial, accumulator).asScala
+
   final def reduce[U >: T](aggregator: (U, U) => U): SMono[U] = {
     def r[P <: T]: BiFunction[P, P, P] = (v1: P, v2: P) => aggregator(v1, v2).asInstanceOf[P]
     coreFlux.reduce(r).asScala
