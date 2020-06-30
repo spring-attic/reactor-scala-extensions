@@ -12,14 +12,14 @@ import scala.language.implicitConversions
 trait Scannable {
   private[scala] def jScannable: JScannable
 
-  def actuals(): Stream[_ <: Scannable] = jScannable.actuals().iterator().asScala.map(js => js: Scannable).toStream
+  def actuals: Stream[_ <: Scannable] = jScannable.actuals().iterator().asScala.map(js => js: Scannable).toStream
 
-  def inners(): Stream[_ <: Scannable] = jScannable.inners().iterator().asScala.map(js => js: Scannable).toStream
+  def inners: Stream[_ <: Scannable] = jScannable.inners().iterator().asScala.map(js => js: Scannable).toStream
 
   def isScanAvailable: Boolean = jScannable.isScanAvailable
 
   /**
-    * Check this [[Scannable]] and its [[Scannable.parents()]] for a name an return the
+    * Check this [[Scannable]] and its [[Scannable.parents]] for a name an return the
     * first one that is reachable.
     *
     * @return the name of the first parent that has one defined (including this scannable)
@@ -80,7 +80,7 @@ trait Scannable {
   def scanOrDefault[T](key: Attr[T], defaultValue: T): T = jScannable.scanOrDefault(key, defaultValue)
 
   /**
-    * Visit this [[Scannable]] and its [[Scannable.parents()]] and stream all the
+    * Visit this [[Scannable]] and its [[Scannable.parents]] and stream all the
     * observed tags
     *
     * @return the stream of tags for this [[Scannable]] and its parents

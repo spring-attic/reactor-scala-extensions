@@ -41,5 +41,5 @@ object UnicastProcessor {
     * @tparam T the relayed type
     * @return a unicast [[FluxProcessor]]
     */
-  def create[T](): UnicastProcessor[T] = apply[T](JUnicastProcessor.create[T]())
+  def create[T]: UnicastProcessor[T] = apply[T](JUnicastProcessor.create[T]())
 }

@@ -14,7 +14,7 @@ class SGroupedFlux[K, V]private(private val jGroupedFlux: JGroupedFlux[K, V]) ex
     * Return defined identifier
     * @return defined identifier
     */
-  def key(): K = jGroupedFlux.key()
+  def key: K = jGroupedFlux.key()
 
   override private[publisher] def coreFlux: JGroupedFlux[K, V] = jGroupedFlux
 }
