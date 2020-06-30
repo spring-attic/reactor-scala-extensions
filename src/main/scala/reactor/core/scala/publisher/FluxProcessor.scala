@@ -33,7 +33,7 @@ trait FluxProcessor[IN, OUT] extends SFlux[OUT] with Processor[IN, OUT] with Dis
     *
     * @return processor buffer capacity if any or [[Int.MaxValue]]
     */
-  def bufferSize(): Int = jFluxProcessor.getBufferSize
+  def bufferSize: Int = jFluxProcessor.getBufferSize
 
   /**
     * Current error if any, default to [[None]]
@@ -63,7 +63,7 @@ trait FluxProcessor[IN, OUT] extends SFlux[OUT] with Processor[IN, OUT] with Dis
     */
   def hasError: Boolean = jFluxProcessor.hasError
 
-  override def inners(): Stream[_ <: Scannable] = jFluxProcessor.inners().iterator().asScala.map(js=> js: Scannable).toStream
+  override def inners: Stream[_ <: Scannable] = jFluxProcessor.inners().iterator().asScala.map(js=> js: Scannable).toStream
 
   /**
     * Has this upstream finished or "completed" / "failed" ?
@@ -86,7 +86,7 @@ trait FluxProcessor[IN, OUT] extends SFlux[OUT] with Processor[IN, OUT] with Dis
     *
     * @return a serializing [[FluxProcessor]]
     */
-  final def serialize(): FluxProcessor[IN, OUT] = new ReactiveSFlux[OUT](jFluxProcessor) with FluxProcessor[IN, OUT] {
+  final def serialize: FluxProcessor[IN, OUT] = new ReactiveSFlux[OUT](jFluxProcessor) with FluxProcessor[IN, OUT] {
     override protected def jFluxProcessor: JFluxProcessor[IN, OUT] = jFluxProcessor.serialize()
 
     override val jScannable: core.Scannable = jFluxProcessor
@@ -95,7 +95,10 @@ trait FluxProcessor[IN, OUT] extends SFlux[OUT] with Processor[IN, OUT] with Dis
   /**
     * Create a [[FluxSink]] that safely gates multi-threaded producer
     * [[Subscriber.onNext]].
-    *
+    * 
+    * <p> This processor will be subscribed to that [[FluxSink]],
+    * and any previous subscribers will be unsubscribed.
+    * 
     * <p> The returned [[FluxSink]] will not apply any
     * [[FluxSink.OverflowStrategy]] and overflowing [[FluxSink.next]]
     * will behave in two possible ways depending on the Processor:
@@ -165,7 +168,7 @@ object FluxProcessor {
     * @tparam T the produced type
     * @return a [[FluxProcessor]] accepting publishers and producing T
     */
-  def switchOnNext[T](): FluxProcessor[Publisher[_ <: T], T] = {
+  def switchOnNext[T]: FluxProcessor[Publisher[_ <: T], T] = {
     val emitter = new UnicastProcessor[Publisher[_ <: T]](JUnicastProcessor.create())
     wrap[Publisher[_ <: T], T](emitter, SFlux.switchOnNext[T](emitter))
   }

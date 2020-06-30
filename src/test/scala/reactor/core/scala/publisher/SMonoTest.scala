@@ -365,7 +365,7 @@ class SMonoTest extends AnyFreeSpec with Matchers with TestSupport with Idiomati
     }
 
     ".asJava should convert to java" in {
-      just(randomValue).asJava() shouldBe a[JMono[_]]
+      just(randomValue).asJava shouldBe a[JMono[_]]
     }
 
     ".asScala should transform Mono to SMono" in {
@@ -548,7 +548,7 @@ class SMonoTest extends AnyFreeSpec with Matchers with TestSupport with Idiomati
     }
 
     ".dematerialize should dematerialize the underlying mono" in {
-      StepVerifier.create(just(Signal.next(randomValue)).dematerialize())
+      StepVerifier.create(just(Signal.next(randomValue)).dematerialize)
         .expectNext(randomValue)
         .verifyComplete()
     }
@@ -762,7 +762,7 @@ class SMonoTest extends AnyFreeSpec with Matchers with TestSupport with Idiomati
     }
 
     ".flux should convert this mono into a flux" in {
-      val flux = just(randomValue).flux()
+      val flux = just(randomValue).flux
       StepVerifier.create(flux)
         .expectNext(randomValue)
         .verifyComplete()
@@ -860,7 +860,7 @@ class SMonoTest extends AnyFreeSpec with Matchers with TestSupport with Idiomati
     }
 
     ".materialize should convert the mono into a mono that emit its signal" in {
-      StepVerifier.create(just(randomValue).materialize())
+      StepVerifier.create(just(randomValue).materialize)
         .expectNext(Signal.next(randomValue))
         .verifyComplete()
     }
@@ -1028,12 +1028,12 @@ class SMonoTest extends AnyFreeSpec with Matchers with TestSupport with Idiomati
 
     ".single" - {
       "should enforce the existence of element" in {
-        StepVerifier.create(just(randomValue).single())
+        StepVerifier.create(just(randomValue).single)
           .expectNext(randomValue)
           .verifyComplete()
       }
       "should throw exception if it is empty" in {
-        StepVerifier.create(SMono.empty.single())
+        StepVerifier.create(SMono.empty.single)
           .expectError(classOf[NoSuchElementException])
           .verify()
       }
@@ -1076,7 +1076,7 @@ class SMonoTest extends AnyFreeSpec with Matchers with TestSupport with Idiomati
     ".subscribeContext should pass context properly" in {
       val key = "message"
       val r: SMono[String] = just("Hello")
-          .flatMap(s => SMono.subscribeContext()
+          .flatMap(s => SMono.subscribeContext
           .map(ctx => s"$s ${ctx.get(key)}"))
           .subscriberContext(ctx => ctx.put(key, "World"))
 
@@ -1124,7 +1124,7 @@ class SMonoTest extends AnyFreeSpec with Matchers with TestSupport with Idiomati
 
     ".then" - {
       "without parameter should only replays complete and error signals from this mono" in {
-        StepVerifier.create(just(randomValue).`then`())
+        StepVerifier.create(just(randomValue).`then`)
           .verifyComplete()
       }
       "with other mono should ignore element from this mono and transform its completion signal into emission and " +

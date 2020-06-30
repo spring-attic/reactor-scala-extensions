@@ -82,7 +82,7 @@ trait SFlux[+T] extends SFluxLike[T] with MapablePublisher[T] with ScalaConverte
     coreFlux.as[P]((t: JFlux[_ <: T]) => transformer(SFlux.fromPublisher(t)))
   }
 
-  final def asJava(): JFlux[_ <: T] = coreFlux
+  final def asJava: JFlux[_ <: T] = coreFlux
 
   /**
     * Blocks until the upstream signals its first value or completes.
@@ -342,7 +342,7 @@ trait SFlux[+T] extends SFluxLike[T] with MapablePublisher[T] with ScalaConverte
 
   final def collect[E](containerSupplier: () => E, collector: (E, T) => Unit): SMono[E] = coreFlux.collect(containerSupplier, collector: JBiConsumer[E, T]).asScala
 
-  final def collectSeq(): SMono[Seq[T]] = new ReactiveSMono[Seq[T]](coreFlux.collectList().map((l: JList[_ <: T]) => l.asScala.toSeq))
+  final def collectSeq: SMono[Seq[T]] = new ReactiveSMono[Seq[T]](coreFlux.collectList().map((l: JList[_ <: T]) => l.asScala.toSeq))
 
   final def concatMap[V](mapper: T => Publisher[_ <: V], prefetch: Int = XS_BUFFER_SIZE): SFlux[V] = coreFlux.concatMap[V](mapper, prefetch).asScala
 
@@ -391,7 +391,7 @@ trait SFlux[+T] extends SFluxLike[T] with MapablePublisher[T] with ScalaConverte
 
   private[publisher] def coreFlux: JFlux[_ <: T]
 
-  final def count(): SMono[Long] = coreFlux.count().asScala.map(jl => Long2long(jl))
+  final def count: SMono[Long] = coreFlux.count().asScala.map(jl => Long2long(jl))
 
   /**
     * Provide a default unique value if this sequence is completed without any data
@@ -427,13 +427,13 @@ trait SFlux[+T] extends SFluxLike[T] with MapablePublisher[T] with ScalaConverte
 
   final def delaySubscription[U](subscriptionDelay: Publisher[U]): SFlux[T] = new ReactiveSFlux(coreFlux.delaySubscription(subscriptionDelay))
 
-  final def dematerialize[X](): SFlux[X] = new ReactiveSFlux[X](coreFlux.dematerialize[X]())
+  final def dematerialize[X]: SFlux[X] = new ReactiveSFlux[X](coreFlux.dematerialize[X]())
 
-  final def distinct(): SFlux[T] = distinct(identity)
+  final def distinct: SFlux[T] = distinct(identity)
 
   final def distinct[V](keySelector: T => V): SFlux[T] = new ReactiveSFlux(coreFlux.distinct[V](keySelector))
 
-  final def distinctUntilChanged(): SFlux[T] = distinctUntilChanged(identity)
+  final def distinctUntilChanged: SFlux[T] = distinctUntilChanged(identity)
 
   final def distinctUntilChanged[V](keySelector: T => V, keyComparator: (V, V) => Boolean = (x: V, y: V) => x == y): SFlux[T] = new ReactiveSFlux(coreFlux.distinctUntilChanged[V](keySelector, keyComparator))
 
@@ -555,9 +555,9 @@ trait SFlux[+T] extends SFluxLike[T] with MapablePublisher[T] with ScalaConverte
 
   final def hasElements: SMono[Boolean] = new ReactiveSMono[JBoolean](coreFlux.hasElements()).map(Boolean2boolean)
 
-  final def ignoreElements(): SMono[T] = SMono.fromPublisher(coreFlux.ignoreElements())
+  final def ignoreElements: SMono[T] = SMono.fromPublisher(coreFlux.ignoreElements())
 
-  final def index(): SFlux[(Long, T)] = index[(Long, T)]((x, y) => (x, y))
+  final def index: SFlux[(Long, T)] = index[(Long, T)]((x, y) => (x, y))
 
   final def index[I](indexMapper: (Long, T) => I): SFlux[I] = new ReactiveSFlux[I](coreFlux.index[I]((t: JLong, u: T) => indexMapper(Long2long(t), u)))
 
@@ -597,7 +597,7 @@ trait SFlux[+T] extends SFluxLike[T] with MapablePublisher[T] with ScalaConverte
     */
   override final def map[V](mapper: T => V): SFlux[V] = SFlux.fromPublisher(coreFlux.map[V](mapper))
 
-  final def materialize(): SFlux[Signal[_ <: T]] = SFlux.fromPublisher(coreFlux.materialize())
+  final def materialize: SFlux[Signal[_ <: T]] = SFlux.fromPublisher(coreFlux.materialize())
 
   final def mergeWith[U >: T](other: Publisher[U]): SFlux[U] = SFlux.fromPublisher(coreFlux.mergeWith(other.asInstanceOf[Publisher[Nothing]]))
 
@@ -614,13 +614,13 @@ trait SFlux[+T] extends SFluxLike[T] with MapablePublisher[T] with ScalaConverte
 
   final def name(name: String): SFlux[T] = SFlux.fromPublisher(coreFlux.name(name))
 
-  final def next(): SMono[T] = SMono.fromPublisher(coreFlux.next())
+  final def next: SMono[T] = SMono.fromPublisher(coreFlux.next())
 
   final def nonEmpty: SMono[Boolean] = hasElements
 
   final def ofType[U](implicit classTag: ClassTag[U]): SFlux[U] = SFlux.fromPublisher(coreFlux.ofType(classTag.runtimeClass.asInstanceOf[Class[U]]))
 
-  final def onBackpressureBuffer(): SFlux[T] = SFlux.fromPublisher(coreFlux.onBackpressureBuffer())
+  final def onBackpressureBuffer: SFlux[T] = SFlux.fromPublisher(coreFlux.onBackpressureBuffer())
 
   final def onBackpressureBuffer(maxSize: Int): SFlux[T] = SFlux.fromPublisher(coreFlux.onBackpressureBuffer(maxSize))
 
@@ -630,13 +630,13 @@ trait SFlux[+T] extends SFluxLike[T] with MapablePublisher[T] with ScalaConverte
 
   final def onBackpressureBuffer(maxSize: Int, onBufferOverflow: T => Unit, bufferOverflowStrategy: BufferOverflowStrategy): SFlux[T] = SFlux.fromPublisher(coreFlux.onBackpressureBuffer(maxSize, onBufferOverflow, bufferOverflowStrategy))
 
-  final def onBackpressureDrop(): SFlux[T] = SFlux.fromPublisher(coreFlux.onBackpressureDrop())
+  final def onBackpressureDrop: SFlux[T] = SFlux.fromPublisher(coreFlux.onBackpressureDrop())
 
   final def onBackpressureDrop(onDropped: T => Unit): SFlux[T] = SFlux.fromPublisher(coreFlux.onBackpressureDrop(onDropped))
 
-  final def onBackpressureError(): SFlux[T] = SFlux.fromPublisher(coreFlux.onBackpressureError())
+  final def onBackpressureError: SFlux[T] = SFlux.fromPublisher(coreFlux.onBackpressureError())
 
-  final def onBackpressureLatest(): SFlux[T] = SFlux.fromPublisher(coreFlux.onBackpressureLatest())
+  final def onBackpressureLatest: SFlux[T] = SFlux.fromPublisher(coreFlux.onBackpressureLatest())
 
   final def onErrorMap(mapper: Throwable => _ <: Throwable): SFlux[T] = SFlux.fromPublisher(coreFlux.onErrorMap(mapper))
 
@@ -688,7 +688,7 @@ trait SFlux[+T] extends SFluxLike[T] with MapablePublisher[T] with ScalaConverte
     *
     * @return a new [[SMono]]
     */
-  final def publishNext(): SMono[T] = SMono.fromPublisher(coreFlux.publishNext())
+  final def publishNext: SMono[T] = SMono.fromPublisher(coreFlux.publishNext())
 
   final def reduce[A](initial: A)(accumulator: (A, T) => A): SMono[A] = coreFlux.reduce[A](initial, accumulator).asScala
 
@@ -756,7 +756,7 @@ trait SFlux[+T] extends SFluxLike[T] with MapablePublisher[T] with ScalaConverte
     * }</pre>
     * </blockquote>
     *
-    * @param retrySpec the { @link Retry} strategy that will generate the companion { @link Publisher},
+    * @param retry the { @link Retry} strategy that will generate the companion { @link Publisher},
     *                              given a { @link Flux} that signals each onError as a { @link reactor.util.retry.Retry.RetrySignal}.
     * @return a { @link Flux} that retries on onError when a companion { @link Publisher} produces an onNext signal
     * @see Retry.max(long)
@@ -878,7 +878,7 @@ trait SFlux[+T] extends SFluxLike[T] with MapablePublisher[T] with ScalaConverte
       .getOrElse (coreFlux.single()).asScala
   }
 
-  final def singleOrEmpty(): SMono[T] = coreFlux.singleOrEmpty().asScala
+  final def singleOrEmpty: SMono[T] = coreFlux.singleOrEmpty().asScala
 
   final def skip(skipped: Long): SFlux[T] = coreFlux.skip(skipped).asScala
 
@@ -890,7 +890,7 @@ trait SFlux[+T] extends SFluxLike[T] with MapablePublisher[T] with ScalaConverte
 
   final def skipWhile(skipPredicate: T => Boolean): SFlux[T] = coreFlux.skipWhile(skipPredicate).asScala
 
-  final def sort(): SFlux[T] = coreFlux.sort().asScala
+  final def sort: SFlux[T] = coreFlux.sort().asScala
 
   final def sort[U >: T](sortFunction: Ordering[U]): SFlux[U] = coreFlux.sort(sortFunction).asScala
 
@@ -977,7 +977,7 @@ trait SFlux[+T] extends SFluxLike[T] with MapablePublisher[T] with ScalaConverte
 
   final def takeWhile(continuePredicate: T => Boolean): SFlux[T] = coreFlux.takeWhile(continuePredicate).asScala
 
-  final def `then`(): SMono[Unit] = new ReactiveSMono(coreFlux.`then`()).map(_ => ())
+  final def `then`: SMono[Unit] = new ReactiveSMono(coreFlux.`then`()).map(_ => ())
 
   final def thenEmpty(other: MapablePublisher[Unit]): SMono[Unit] = new ReactiveSMono(
     coreFlux.thenEmpty(publisherUnit2PublisherVoid(other))).map(_ => ())
@@ -1165,7 +1165,7 @@ object SFlux {
       if (delayError) JFlux.mergeSequentialDelayError[I](sources, maxConcurrency, prefetch)
       else JFlux.mergeSequential[I](sources, maxConcurrency, prefetch))
 
-  def never[T](): SFlux[T] = new ReactiveSFlux[T](JFlux.never[T]())
+  def never[T]: SFlux[T] = new ReactiveSFlux[T](JFlux.never[T]())
 
   def push[T](emitter: FluxSink[T] => Unit, backPressure: FluxSink.OverflowStrategy = OverflowStrategy.BUFFER): SFlux[T] = new ReactiveSFlux[T](JFlux.push(emitter, backPressure))
 

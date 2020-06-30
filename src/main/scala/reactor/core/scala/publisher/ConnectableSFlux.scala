@@ -51,7 +51,7 @@ class ConnectableSFlux[+T]private(private val connectableFlux: ConnectableFlux[_
     *
     * @return a reference counting [[SFlux]]
     */
-  final def refCount(): SFlux[T] = SFlux.fromPublisher(connectableFlux.refCount())
+  final def refCount: SFlux[T] = SFlux.fromPublisher(connectableFlux.refCount())
 
   /**
     * Connects to the upstream source when the given number of [[org.reactivestreams.Subscriber]] subscribes and disconnects
