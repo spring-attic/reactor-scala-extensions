@@ -869,7 +869,7 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
     }
 
     ".collect should collect the value into the supplied container" in {
-      StepVerifier.create(SFlux.just(1, 2, 3).collect[ListBuffer[Int]](() => ListBuffer.empty, (buffer, v) => buffer += v))
+      StepVerifier.create(SFlux.just(1, 2, 3).collectReduce[ListBuffer[Int]](() => ListBuffer.empty, (buffer, v) => buffer += v))
         .expectNext(ListBuffer(1, 2, 3))
         .verifyComplete()
     }
