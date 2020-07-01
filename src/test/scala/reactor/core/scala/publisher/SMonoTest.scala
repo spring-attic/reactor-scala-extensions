@@ -372,6 +372,17 @@ class SMonoTest extends AnyFreeSpec with Matchers with TestSupport with Idiomati
       JMono.just(randomValue).asScala shouldBe an[SMono[_]]
     }
 
+    ".asScala and .asJava should be" - {
+      val jMono: JMono[Long] = JMono.just(randomValue)
+      "compile" in {
+        //noinspection ScalaUnusedSymbol
+        "val x: JMono[Long] = jMono.asScala.asJava()" should compile
+      }
+      "symmetrical" in {
+        jMono.asScala.asJava() should be theSameInstanceAs jMono
+      }
+    }
+
     ".block" - {
       "should block the mono to get the value" in {
         just(randomValue).block() shouldBe randomValue
