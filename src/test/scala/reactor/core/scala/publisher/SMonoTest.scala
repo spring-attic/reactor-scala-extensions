@@ -1073,6 +1073,25 @@ class SMonoTest extends AnyFreeSpec with Matchers with TestSupport with Idiomati
       }
     }
 
+    ".subscriberContext should pass context properly" in {
+      val key = "message"
+      val r: SMono[String] = just("Hello")
+          .flatMap(s => SMono.subscriberContext
+          .map(ctx => s"$s ${ctx.get(key)}"))
+          .subscriberContext(ctx => ctx.put(key, "World"))
+
+      StepVerifier.create(r)
+          .expectNext("Hello World")
+          .verifyComplete()
+
+      StepVerifier.create(just(1).map(i => i + 10),
+        StepVerifierOptions.create().withInitialContext(Context.of("foo", "bar")))
+        .expectAccessibleContext()
+        .contains("foo", "bar")
+        .`then`()
+        .expectNext(11)
+        .verifyComplete()
+    }
     ".subscribeContext should pass context properly" in {
       val key = "message"
       val r: SMono[String] = just("Hello")

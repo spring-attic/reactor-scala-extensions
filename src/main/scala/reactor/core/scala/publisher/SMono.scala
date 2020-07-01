@@ -1503,6 +1503,9 @@ object SMono extends ScalaConverters {
     * @return a new [[SMono]] emitting current context
     * @see [[SMono.subscribe(CoreSubscriber)]]
     */
+  def subscriberContext: SMono[Context] = JMono.subscriberContext().asScala
+  
+  @deprecated("Use subscriberContext instead")
   def subscribeContext(): SMono[Context] = JMono.subscriberContext().asScala
 
   @deprecated("Use error(Throwable) instead")
