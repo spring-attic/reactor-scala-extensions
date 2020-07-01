@@ -15,6 +15,7 @@ import reactor.util.concurrent.Queues.SMALL_BUFFER_SIZE
 import reactor.util.context.Context
 import reactor.util.function.{Tuple2, Tuple3, Tuple4, Tuple5, Tuple6}
 
+import scala.annotation.unchecked.uncheckedVariance
 import scala.jdk.CollectionConverters._
 import scala.concurrent.duration.Duration
 import scala.concurrent.{ExecutionContext, Future, Promise}
@@ -84,7 +85,7 @@ trait SMono[+T] extends SMonoLike[T] with MapablePublisher[T] with ScalaConverte
     *
     * @return [[reactor.core.publisher.Mono]]
     */
-  final def asJava(): JMono[_ <: T] = coreMono
+  final def asJava(): JMono[T @uncheckedVariance] = coreMono.asInstanceOf[JMono[T]]
 
   /**
     * Block until a next signal is received, will return null if onComplete, T if onNext, throw a

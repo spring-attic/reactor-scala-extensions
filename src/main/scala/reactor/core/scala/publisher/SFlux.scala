@@ -20,6 +20,7 @@ import reactor.util.context.Context
 import reactor.util.function.{Tuple3, Tuple4, Tuple5, Tuple6}
 import reactor.util.retry.Retry
 
+import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.mutable
 import scala.concurrent.duration.Duration
 import scala.concurrent.duration.Duration.Infinite
@@ -85,7 +86,7 @@ trait SFlux[+T] extends SFluxLike[T] with MapablePublisher[T] with ScalaConverte
     })
   }
 
-  final def asJava(): JFlux[_ <: T] = coreFlux
+  final def asJava(): JFlux[T @uncheckedVariance] = coreFlux.asInstanceOf[JFlux[T]]
 
   /**
     * Blocks until the upstream signals its first value or completes.
