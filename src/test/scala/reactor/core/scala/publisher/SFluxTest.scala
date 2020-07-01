@@ -228,10 +228,12 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
           .verifyComplete()
       }
       "with Scheduler should use the provided timed scheduler" in {
-        StepVerifier.withVirtualTime(() => SFlux.interval(1 second, Schedulers.single()).take(5))
+        lazy val scheduler = spy(Schedulers.single())
+        StepVerifier.withVirtualTime(() => SFlux.interval(1 second, scheduler).take(5))
           .thenAwait(5 seconds)
           .expectNext(0, 1, 2, 3, 4)
           .verifyComplete()
+        scheduler.createWorker() was called
       }
       "with delay and Scheduler should use the provided time scheduler after delay" in {
         StepVerifier.withVirtualTime(() => SFlux.interval(2 seconds, Schedulers.single())(1 second).take(5))
@@ -869,7 +871,7 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
     }
 
     ".collect should collect the value into the supplied container" in {
-      StepVerifier.create(SFlux.just(1, 2, 3).collectReduce[ListBuffer[Int]](() => ListBuffer.empty[Int], (buffer, v) => buffer += v))
+      StepVerifier.create(SFlux.just(1, 2, 3).collectReduce[ListBuffer[Int]](() => ListBuffer.empty, (buffer, v) => buffer += v))
         .expectNext(ListBuffer(1, 2, 3))
         .verifyComplete()
     }

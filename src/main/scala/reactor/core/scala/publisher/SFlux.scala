@@ -348,6 +348,8 @@ trait SFlux[+T] extends SFluxLike[T] with MapablePublisher[T] with ScalaConverte
 
   final def concatMap[V](mapper: T => Publisher[_ <: V], prefetch: Int = XS_BUFFER_SIZE): SFlux[V] = coreFlux.concatMap[V](mapper, prefetch).asScala
 
+  final def collectMap[K](keyExtractor: T => K): SMono[Map[K, T]] = collectMap[K, T](keyExtractor, (t: T) => t)
+
   /**
     * Concatenate emissions of this [[SFlux]] with the provided [[Publisher]] (no interleave).
     * <p>
@@ -357,8 +359,6 @@ trait SFlux[+T] extends SFluxLike[T] with MapablePublisher[T] with ScalaConverte
     * @return a concatenated [[SFlux]]
     */
   final def concatWith[U >: T](other: Publisher[U]): SFlux[U] = SFlux.fromPublisher(coreFlux.concatWith(other.asInstanceOf[Publisher[Nothing]]))
-
-  final def collectMap[K](keyExtractor: T => K): SMono[Map[K, T]] = collectMap[K, T](keyExtractor, (t: T) => t)
 
   final def collectMap[K, V](keyExtractor: T => K, valueExtractor: T => V, mapSupplier: () => mutable.Map[K, V] = () => mutable.HashMap.empty[K, V]): SMono[Map[K, V]] =
     new ReactiveSMono[Map[K, V]](coreFlux.collectMap[K, V](keyExtractor, valueExtractor, new Supplier[JMap[K, V]] {
@@ -1104,7 +1104,7 @@ object SFlux {
   )
 
   def interval(period: Duration, scheduler: Scheduler = Schedulers.parallel())(implicit delay: Duration = period): SFlux[Long] =
-    new ReactiveSFlux[Long](JFlux.interval(delay, period).map((l: JLong) => Long2long(l)))
+    new ReactiveSFlux[Long](JFlux.interval(delay, period, scheduler).map((l: JLong) => Long2long(l)))
 
   def just[T](data: T*): SFlux[T] = apply[T](data: _*)
 
