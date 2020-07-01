@@ -1102,7 +1102,7 @@ object SFlux {
   )
 
   def interval(period: Duration, scheduler: Scheduler = Schedulers.parallel())(implicit delay: Duration = period): SFlux[Long] =
-    new ReactiveSFlux[Long](JFlux.interval(delay, period).map((l: JLong) => Long2long(l)))
+    new ReactiveSFlux[Long](JFlux.interval(delay, period, scheduler).map((l: JLong) => Long2long(l)))
 
   def just[T](data: T*): SFlux[T] = apply[T](data: _*)
 
