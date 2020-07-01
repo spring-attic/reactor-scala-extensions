@@ -8,7 +8,7 @@ import java.util.logging.Level
 import java.util.{Comparator, Collection => JCollection, List => JList, Map => JMap}
 
 import cats.effect.{Bracket, ExitCase}
-import cats.{CoflatMap, Functor, FunctorFilter, MonoidK}
+import cats.{Alternative, CoflatMap, Functor, FunctorFilter}
 import org.reactivestreams.{Publisher, Subscriber}
 import reactor.core.Disposable
 import reactor.core.publisher.FluxSink.OverflowStrategy
@@ -1225,7 +1225,7 @@ object SFlux {
 
   implicit val catsInstances: CatsInstances = new CatsInstances
 
-  class CatsInstances extends MonoidK[SFlux] with Bracket[SFlux, Throwable] with FunctorFilter[SFlux] with CoflatMap[SFlux] {
+  class CatsInstances extends Alternative[SFlux] with Bracket[SFlux, Throwable] with FunctorFilter[SFlux] with CoflatMap[SFlux] {
     override def empty[A]: SFlux[A] = SFlux.empty
 
     override def combineK[A](x: SFlux[A], y: SFlux[A]): SFlux[A] = x ++ y
