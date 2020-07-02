@@ -26,8 +26,10 @@ send_msg () {
 send_msg "
 -------------------------------------
 Travis build *${build_status}!*
-\`Repository:  ${TRAVIS_REPO_SLUG}\`
-\`Branch:      ${TRAVIS_BRANCH}\`
+\`Repository:     ${TRAVIS_REPO_SLUG}\`
+\`Branch:         ${TRAVIS_BRANCH}\`
+\'JDK Version:    ${TRAVIS_JDK_VERSION}\`
+\'Scala Version:  ${TRAVIS_SCALA_VERSION}\`
 *Commit Msg:*
 ${TRAVIS_COMMIT_MESSAGE}
 [Job Log here](${TRAVIS_JOB_WEB_URL})
