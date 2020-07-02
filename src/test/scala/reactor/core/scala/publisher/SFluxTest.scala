@@ -596,10 +596,8 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
         files.foreach(f => f.exists() shouldBe true)
         val sf = SFlux.fromIterable(files)
           .bracketCase(f => {
-            val br = Source.fromFile(f)
-            val line = br.getLines().mkString
-            br.close()
-            SFlux.just(line)
+            SFlux.just(Source.fromFile(f))
+              .bracket(br => SFlux.fromIterable(br.getLines().toIterable))(_.close())
           })((file, _) => file.delete())
         StepVerifier.create(sf)
           .expectNext("0", "1", "2", "3", "4")
