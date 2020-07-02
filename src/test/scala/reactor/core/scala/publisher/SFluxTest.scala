@@ -577,7 +577,7 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
       })
       files.foreach(f => f.exists() shouldBe true)
       val sf = SFlux.fromIterable(files)
-        .bracket(_ => SFlux.raiseError(new RuntimeException("Always throw exception")))(file => file.delete())
+        .bracket(_ => SFlux.error(new RuntimeException("Always throw exception")))(file => file.delete())
       StepVerifier.create(sf)
         .expectError(classOf[RuntimeException])
         .verify()

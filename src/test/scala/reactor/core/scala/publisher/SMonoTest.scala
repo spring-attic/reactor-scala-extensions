@@ -1,9 +1,11 @@
 package reactor.core.scala.publisher
 
+import java.nio.file.Files
 import java.util.concurrent._
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger, AtomicLong, AtomicReference}
 import java.util.function.Supplier
 
+import cats.effect.ExitCase.Error
 import io.micrometer.core.instrument.Metrics
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import org.mockito.{ArgumentMatchersSugar, IdiomaticMockito}
@@ -23,6 +25,7 @@ import reactor.util.context.Context
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
+import scala.io.Source
 import scala.language.postfixOps
 import scala.math.ScalaNumber
 import scala.util.{Failure, Random, Success, Try}
@@ -231,7 +234,7 @@ class SMonoTest extends AnyFreeSpec with Matchers with TestSupport with Idiomati
     }
 
     ".raiseError should create Mono that emit error" in {
-      StepVerifier.create(SMono.raiseError(new RuntimeException("runtime error")))
+      StepVerifier.create(SMono.error(new RuntimeException("runtime error")))
         .expectError(classOf[RuntimeException])
         .verify()
     }
@@ -411,6 +414,78 @@ class SMonoTest extends AnyFreeSpec with Matchers with TestSupport with Idiomati
             .thenAwait(10 seconds)
             .expectNext(None)
             .verifyComplete()
+        }
+      }
+    }
+
+    ".bracketCase" - {
+      "should release all resources properly" in {
+        import java.io.PrintWriter
+
+        val file = Files.createTempFile(s"bracketCase-smono", ".tmp").toFile
+        new PrintWriter(file) { write("smono"); close() }
+
+        file.exists() shouldBe true
+        val sMono = SMono.just(file)
+          .bracketCase(f => {
+            val br = Source.fromFile(f)
+            val line = br.getLines().mkString
+            br.close()
+            SMono.just(line)
+          })((file, _) => file.delete())
+        StepVerifier.create(sMono)
+          .expectNext("smono")
+          .verifyComplete()
+        file.exists() shouldBe false
+      }
+
+      "should handle ExitCase.error" - {
+        "when the error happens inside the generated flux" in {
+          import java.io.PrintWriter
+
+          val file = Files.createTempFile(s"bracketCase-smono", ".tmp").toFile
+          new PrintWriter(file) { write("smono"); close() }
+
+          try {
+            file.exists() shouldBe true
+            val sMono = SMono.just(file)
+              .bracketCase(_ => {
+                SMono.error(new RuntimeException("Always throw exception"))
+              })((file, exitCase) => {
+                exitCase match {
+                  case Error(_) => ()
+                  case _ => file.delete()
+                }
+              })
+            StepVerifier.create(sMono)
+              .expectError(classOf[RuntimeException])
+              .verify()
+            file.exists() shouldBe true
+          } finally {
+            file.delete()
+          }
+        }
+        "when the error happens while generating the mono" in {
+          import java.io.PrintWriter
+          val file = Files.createTempFile(s"bracketCase-smono", ".tmp").toFile
+          new PrintWriter(file) { write("smono"); close() }
+
+          try {
+            file.exists() shouldBe true
+            val sMono = SMono.just(file)
+              .bracketCase(_ => throw new RuntimeException)((file, exitCase) => {
+                exitCase match {
+                  case Error(_) => ()
+                  case _ => file.delete()
+                }
+              })
+            StepVerifier.create(sMono)
+              .expectError(classOf[RuntimeException])
+              .verify()
+            file.exists() shouldBe true
+          } finally {
+            file.delete()
+          }
         }
       }
     }
