@@ -418,6 +418,20 @@ class SMonoTest extends AnyFreeSpec with Matchers with TestSupport with Idiomati
       }
     }
 
+    ".bracket should always release all resources properly" in {
+      import java.io.PrintWriter
+      val file = Files.createTempFile(s"bracketCase-smono", ".tmp").toFile
+      new PrintWriter(file) { write("smono"); close() }
+
+      file.exists() shouldBe true
+      val sMono = SMono.just(file)
+        .bracket(_ => SMono.error(new RuntimeException("Always throw exception")))(file => file.delete())
+      StepVerifier.create(sMono)
+        .expectError(classOf[RuntimeException])
+        .verify()
+      file.exists() shouldBe false
+    }
+
     ".bracketCase" - {
       "should release all resources properly" in {
         import java.io.PrintWriter

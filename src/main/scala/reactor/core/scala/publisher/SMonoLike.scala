@@ -12,6 +12,8 @@ trait SMonoLike[+T] extends ScalaConverters { self: SMono[T] =>
 
   private[publisher] def coreMono: JMono[_ <: T]
 
+  final def bracket[R](use: T => SMono[R])(release: T => Unit): SMono[R] = bracketCase(use)((t, _) => release(t))
+
   final def bracketCase[R](use: T => SMono[R])(release: (T, ExitCase[Throwable]) => Unit): SMono[R] = {
     val f: T => SMono[R] = (t: T) => (Try(use(t)) match {
       case Success(value) => value.doOnSuccess(_ => release(t, Completed))
