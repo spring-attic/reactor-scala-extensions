@@ -607,7 +607,36 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
         files.foreach(f => f.exists() shouldBe false)
       }
 
-      "should handle ExitCase.error" in {
+      "should handle ExitCase.error" - {
+        "when the error happens inside the generated flux" in {
+          import java.io.PrintWriter
+          val files = (0 until 5) map(i => {
+            val path = Files.createTempFile(s"bracketCase-$i", ".tmp")
+            val file = path.toFile
+            new PrintWriter(file) { write(s"$i"); close() }
+            file
+          })
+          try {
+            files.foreach(f => f.exists() shouldBe true)
+            val sf = SFlux.fromIterable(files)
+              .bracketCase(_ => {
+                SFlux.error(new RuntimeException("Always throw exception"))
+              })((file, exitCase) => {
+                exitCase match {
+                  case Error(_) => ()
+                  case _ => file.delete()
+                }
+              })
+            StepVerifier.create(sf)
+              .expectError(classOf[RuntimeException])
+              .verify()
+            files.foreach(f => f.exists() shouldBe true)
+          } finally {
+            files.foreach(_.delete())
+          }
+        }
+      }
+      "when the error happens while generating the flux" in {
         import java.io.PrintWriter
         val files = (0 until 5) map(i => {
           val path = Files.createTempFile(s"bracketCase-$i", ".tmp")
@@ -615,20 +644,22 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
           new PrintWriter(file) { write(s"$i"); close() }
           file
         })
-        files.foreach(f => f.exists() shouldBe true)
-        val sf = SFlux.fromIterable(files)
-          .bracketCase(_ => {
-            SFlux.raiseError(new RuntimeException("Always throw exception"))
-          })((file, exitCase) => {
-            exitCase match {
-              case Error(_) => ()
-              case _ => file.delete()
-            }
-          })
-        StepVerifier.create(sf)
-          .expectError(classOf[RuntimeException])
-          .verify()
-        files.foreach(f => f.exists() shouldBe true)
+        try {
+          files.foreach(f => f.exists() shouldBe true)
+          val sf = SFlux.fromIterable(files)
+            .bracketCase(_ => throw new RuntimeException)((file, exitCase) => {
+              exitCase match {
+                case Error(_) => ()
+                case _ => file.delete()
+              }
+            })
+          StepVerifier.create(sf)
+            .expectError(classOf[RuntimeException])
+            .verify()
+          files.foreach(f => f.exists() shouldBe true)
+        } finally {
+          files.foreach(_.delete())
+        }
       }
     }
 

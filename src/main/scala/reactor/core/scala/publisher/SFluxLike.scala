@@ -19,7 +19,7 @@ trait SFluxLike[+T] extends ScalaConverters { self: SFlux[T] =>
   final def bracketCase[R](use: T => SFlux[R])(release: (T, ExitCase[Throwable]) => Unit): SFlux[R] = {
     val f = (t: T) => (Try(use(t)) match {
       case Success(value) => value.doOnComplete(() => release(t, ExitCase.Completed))
-      case Failure(exception) => SFlux.raiseError(exception).doOnComplete(() => release(t, ExitCase.error(exception)))
+      case Failure(exception) => SFlux.error(exception)
     }).doOnError(ex => release(t, ExitCase.error(ex)))
       .doOnCancel(() => release(t, ExitCase.canceled))
     concatMap(f)
