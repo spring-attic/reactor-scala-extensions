@@ -1,7 +1,7 @@
 language: scala
 os: linux
 jdk:
-#  - openjdk14
+  - openjdk14
   - openjdk11
   - openjdk8
 
