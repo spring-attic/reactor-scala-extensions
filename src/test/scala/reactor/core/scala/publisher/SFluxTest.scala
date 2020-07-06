@@ -2329,10 +2329,10 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
       val jFlux: JFlux[Int] = JFlux.just(1, 2, 3)
       "compile" in {
         //noinspection ScalaUnusedSymbol
-        "val x: JFlux[Int] = jFlux.asScala.asJava()" should compile
+        "val x: JFlux[Int] = jFlux.asScala.asJava" should compile
       }
       "symmetrical" in {
-        jFlux.asScala.asJava() should be theSameInstanceAs jFlux
+        jFlux.asScala.asJava should be theSameInstanceAs jFlux
       }
     }
   }

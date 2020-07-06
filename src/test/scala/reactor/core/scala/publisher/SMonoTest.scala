@@ -379,10 +379,10 @@ class SMonoTest extends AnyFreeSpec with Matchers with TestSupport with Idiomati
       val jMono: JMono[Long] = JMono.just(randomValue)
       "compile" in {
         //noinspection ScalaUnusedSymbol
-        "val x: JMono[Long] = jMono.asScala.asJava()" should compile
+        "val x: JMono[Long] = jMono.asScala.asJava" should compile
       }
       "symmetrical" in {
-        jMono.asScala.asJava() should be theSameInstanceAs jMono
+        jMono.asScala.asJava should be theSameInstanceAs jMono
       }
     }
 
