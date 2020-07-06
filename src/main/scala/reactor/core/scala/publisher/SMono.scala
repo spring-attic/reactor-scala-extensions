@@ -2,14 +2,14 @@ package reactor.core.scala.publisher
 
 import java.lang.{Boolean => JBoolean, Long => JLong}
 import java.util.concurrent.{Callable, CompletableFuture}
-import java.util.function.{Consumer, Function, Supplier}
+import java.util.function.Function
 import java.util.logging.Level
 
 import org.reactivestreams.{Publisher, Subscriber, Subscription}
 import reactor.core.publisher.{MonoSink, Signal, SignalType, SynchronousSink, Flux => JFlux, Mono => JMono}
 import reactor.core.scala.Scannable
 import reactor.core.scheduler.{Scheduler, Schedulers}
-import reactor.core.{Disposable, Scannable => JScannable}
+import reactor.core.{Disposable}
 import reactor.util.concurrent.Queues.SMALL_BUFFER_SIZE
 import reactor.util.context.Context
 import reactor.util.function.{Tuple2, Tuple3, Tuple4, Tuple5, Tuple6}
@@ -87,7 +87,7 @@ trait SMono[+T] extends SMonoLike[T] with MapablePublisher[T] with ScalaConverte
     *
     * @return [[reactor.core.publisher.Mono]]
     */
-  final def asJava(): JMono[T @uncheckedVariance] = coreMono.asInstanceOf[JMono[T]]
+  final def asJava: JMono[T @uncheckedVariance] = coreMono.asInstanceOf[JMono[T]]
 
   /**
     * Block until a next signal is received, will return null if onComplete, T if onNext, throw a
@@ -296,7 +296,7 @@ trait SMono[+T] extends SMonoLike[T] with MapablePublisher[T] with ScalaConverte
     * @tparam X the dematerialized type
     * @return a dematerialized [[SMono]]
     */
-  final def dematerialize[X](): SMono[X] = coreMono.dematerialize[X]().asScala
+  final def dematerialize[X]: SMono[X] = coreMono.dematerialize[X]().asScala
 
   /**
     * Triggered after the [[SMono]] terminates, either by completing downstream successfully or with an error.
@@ -640,7 +640,7 @@ trait SMono[+T] extends SMonoLike[T] with MapablePublisher[T] with ScalaConverte
     *
     * @return a [[SFlux]] variant of this [[SMono]]
     */
-  final def flux(): SFlux[T] = coreMono.flux().asScala
+  final def flux: SFlux[T] = coreMono.flux().asScala
 
   /**
     * Emit a single boolean true if this [[SMono]] has an element.
@@ -734,7 +734,7 @@ trait SMono[+T] extends SMonoLike[T] with MapablePublisher[T] with ScalaConverte
     * @return a [[SMono]] of materialized [[Signal]]
     * @see [[SMono.dematerialize()]]
     */
-  final def materialize(): SMono[Signal[_ <: T]] = coreMono.materialize().asScala
+  final def materialize: SMono[Signal[_ <: T]] = coreMono.materialize().asScala
 
   /**
     * Merge emissions of this [[SMono]] with the provided [[Publisher]].
@@ -845,7 +845,7 @@ trait SMono[+T] extends SMonoLike[T] with MapablePublisher[T] with ScalaConverte
     *
     * @return a detachable [[SMono]]
     */
-  final def onTerminateDetach(): SMono[T] = coreMono.onTerminateDetach().asScala
+  final def onTerminateDetach: SMono[T] = coreMono.onTerminateDetach().asScala
 
   /**
     * Emit the any of the result from this mono or from the given mono
@@ -994,7 +994,7 @@ trait SMono[+T] extends SMonoLike[T] with MapablePublisher[T] with ScalaConverte
     *
     * @return a [[SMono]] with the single item or an error signal
     */
-  final def single(): SMono[T] = coreMono.single().asScala
+  final def single: SMono[T] = coreMono.single().asScala
 
   /**
     * Subscribe to this [[SMono]] and request unbounded demand.
@@ -1208,7 +1208,7 @@ trait SMono[+T] extends SMonoLike[T] with MapablePublisher[T] with ScalaConverte
     *
     * @return a [[SMono]] ignoring its payload (actively dropping)
     */
-  final def `then`(): SMono[Unit] = new ReactiveSMono[Unit](coreMono.`then`().map((_: Void) => ()))
+  final def `then`: SMono[Unit] = new ReactiveSMono[Unit](coreMono.`then`().map((_: Void) => ()))
 
   /**
     * Ignore element from this [[SMono]] and transform its completion signal into the
@@ -1432,7 +1432,7 @@ object SMono extends ScalaConverters {
     */
   def create[T](callback: MonoSink[T] => Unit): SMono[T] = JMono.create[T](callback).asScala
 
-  def defer[T](supplier: () => SMono[T]): SMono[T] = SMono.fromPublisher(JMono.defer[T](() => supplier().asJava()))
+  def defer[T](supplier: () => SMono[T]): SMono[T] = SMono.fromPublisher(JMono.defer[T](() => supplier().asJava))
 
   def delay(duration: Duration, timer: Scheduler = Schedulers.parallel()): SMono[Long] = JMono.delay(duration, timer).asScala.map(jl => Long2long(jl))
 
@@ -1449,7 +1449,7 @@ object SMono extends ScalaConverters {
     * @tparam T The type of the function result.
     * @return a [[SMono]].
     */
-  def firstEmitter[T](monos: SMono[_ <: T]*): SMono[T] = JMono.first[T](monos.map(_.asJava()): _*).asScala
+  def firstEmitter[T](monos: SMono[_ <: T]*): SMono[T] = JMono.first[T](monos.map(_.asJava): _*).asScala
 
   def fromPublisher[T](source: Publisher[_ <: T]): SMono[T] = JMono.from[T](source).asScala
 
@@ -1590,7 +1590,7 @@ object SMono extends ScalaConverters {
   )
 
   def zipDelayError[R](monos: Iterable[_ <: SMono[_]], combinator: Array[AnyRef] => _ <: R): SMono[R] = {
-    new ReactiveSMono[R](JMono.zipDelayError[R](monos.map(_.asJava()).asJava, new Function[Array[AnyRef], R] {
+    new ReactiveSMono[R](JMono.zipDelayError[R](monos.map(_.asJava).asJava, new Function[Array[AnyRef], R] {
       override def apply(t: Array[AnyRef]): R = {
         val v = t.map { v => v: AnyRef }
         combinator(v)
@@ -1605,13 +1605,13 @@ object SMono extends ScalaConverters {
         combinator(v)
       }
     }
-    new ReactiveSMono[R](JMono.zipDelayError[R](combinatorFunction, monos.map(_.asJava()): _*))
+    new ReactiveSMono[R](JMono.zipDelayError[R](combinatorFunction, monos.map(_.asJava): _*))
   }
 
-  def zip[R](combinator: Array[AnyRef] => R, monos: SMono[_]*): SMono[R] = new ReactiveSMono[R](JMono.zip(combinator, monos.map(_.asJava()).toArray: _*))
+  def zip[R](combinator: Array[AnyRef] => R, monos: SMono[_]*): SMono[R] = new ReactiveSMono[R](JMono.zip(combinator, monos.map(_.asJava).toArray: _*))
 
   def zip[R](monos: Iterable[_ <: SMono[_]], combinator: Array[AnyRef] => R): SMono[R] =
-    new ReactiveSMono[R](JMono.zip(monos.map(_.asJava()).asJava, new Function[Array[Object], R] {
+    new ReactiveSMono[R](JMono.zip(monos.map(_.asJava).asJava, new Function[Array[Object], R] {
       override def apply(t: Array[Object]) = combinator(t.map { v => Option(v): Option[AnyRef] }.filterNot(_.isEmpty).map(_.getOrElse(None.orNull)))
     }))
 }

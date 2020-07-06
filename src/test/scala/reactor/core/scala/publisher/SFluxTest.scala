@@ -201,7 +201,7 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
 
     ".index" - {
       "should return tuple with the index" in {
-        val flux = SFlux("a", "b", "c").index()
+        val flux = SFlux("a", "b", "c").index
         StepVerifier.create(flux)
           .expectNext((0L, "a"), (1L, "b"), (2L, "c"))
           .verifyComplete()
@@ -374,7 +374,7 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
     }
 
     ".never should never emit any signal" in {
-      StepVerifier.create(SFlux.never())
+      StepVerifier.create(SFlux.never)
         .expectSubscription()
         .expectNoEvent(Duration(1, "second"))
     }
@@ -906,7 +906,7 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
     }
 
     ".collectList should collect the value into a sequence" in {
-      StepVerifier.create(SFlux.just(1, 2, 3).collectSeq())
+      StepVerifier.create(SFlux.just(1, 2, 3).collectSeq)
         .expectNext(Seq(1, 2, 3))
         .verifyComplete()
     }
@@ -1031,7 +1031,7 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
     }
 
     ".count should return Mono which emit the number of value in this flux" in {
-      StepVerifier.create(SFlux.just(10, 9, 8).count())
+      StepVerifier.create(SFlux.just(10, 9, 8).count)
         .expectNext(3)
         .verifyComplete()
     }
@@ -1069,7 +1069,7 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
     }
 
     ".dematerialize should dematerialize the underlying flux" in {
-      StepVerifier.create(SFlux.just(Signal.next(1), Signal.next(2)).dematerialize())
+      StepVerifier.create(SFlux.just(Signal.next(1), Signal.next(2)).dematerialize)
         .expectNext(1, 2)
         .verifyComplete
     }
@@ -1092,7 +1092,7 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
 
     ".distinct" - {
       "should make the flux distinct" in {
-        StepVerifier.create(SFlux.just(1, 2, 3, 2, 4, 3, 6).distinct())
+        StepVerifier.create(SFlux.just(1, 2, 3, 2, 4, 3, 6).distinct)
           .expectNext(1, 2, 3, 4, 6)
           .verifyComplete()
       }
@@ -1105,7 +1105,7 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
 
     ".distinctUntilChanged" - {
       "should make the flux always return different subsequent value" in {
-        StepVerifier.create(SFlux.just(1, 2, 2, 3, 3, 3, 3, 2, 2, 5).distinctUntilChanged())
+        StepVerifier.create(SFlux.just(1, 2, 2, 3, 3, 3, 3, 2, 2, 5).distinctUntilChanged)
           .expectNext(1, 2, 3, 2, 5)
           .verifyComplete()
       }
@@ -1452,11 +1452,11 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
         })
           .expectNextMatches((t: SGroupedFlux[String, _ <: Int]) => {
             t.subscribe(x => oddBuffer append x)
-            t.key() == "odd"
+            t.key == "odd"
           })
           .expectNextMatches((t: SGroupedFlux[String, _ <: Int]) => {
             t.subscribe(x => evenBuffer append x)
-            t.key() == "even"
+            t.key == "even"
           })
           .verifyComplete()
 
@@ -1473,11 +1473,11 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
         }: Int => String, identity, 6))
           .expectNextMatches((t: SGroupedFlux[String, Int]) => {
             t.subscribe(x => oddBuffer append x)
-            t.key() == "odd"
+            t.key == "odd"
           })
           .expectNextMatches((t: SGroupedFlux[String, Int]) => {
             t.subscribe(x => evenBuffer append x)
-            t.key() == "even"
+            t.key == "even"
           })
           .verifyComplete()
 
@@ -1495,11 +1495,11 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
         }: Int => String, (i => i.toString): Int => String))
           .expectNextMatches((t: SGroupedFlux[String, String]) => {
             t.subscribe(x => oddBuffer append x)
-            t.key() == "odd"
+            t.key == "odd"
           })
           .expectNextMatches((t: SGroupedFlux[String, String]) => {
             t.subscribe(x => evenBuffer append x)
-            t.key() == "even"
+            t.key == "even"
           })
           .verifyComplete()
 
@@ -1517,11 +1517,11 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
         }: Int => String, (i => i.toString): Int => String, 6))
           .expectNextMatches((t: SGroupedFlux[String, String]) => {
             t.subscribe(x => oddBuffer append x)
-            t.key() == "odd"
+            t.key == "odd"
           })
           .expectNextMatches((t: SGroupedFlux[String, String]) => {
             t.subscribe(x => evenBuffer append x)
-            t.key() == "even"
+            t.key == "even"
           })
           .verifyComplete()
 
@@ -1566,7 +1566,7 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
     }
 
     ".ignoreElements should ignore all elements and only reacts on termination" in {
-      StepVerifier.create(SFlux.just(1, 2, 3).ignoreElements())
+      StepVerifier.create(SFlux.just(1, 2, 3).ignoreElements)
         .verifyComplete()
     }
 
@@ -1601,7 +1601,7 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
     }
 
     ".materialize should convert the flux into a flux that emit its signal" in {
-      StepVerifier.create(SFlux.just(1, 2, 3).materialize())
+      StepVerifier.create(SFlux.just(1, 2, 3).materialize)
         .expectNext(Signal.next(1), Signal.next(2), Signal.next(3), Signal.complete[Int]())
         .verifyComplete()
     }
@@ -1666,7 +1666,7 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
     }
 
     ".next should emit only the first item" in {
-      StepVerifier.create(SFlux.just(1, 2, 3).next())
+      StepVerifier.create(SFlux.just(1, 2, 3).next)
         .expectNext(1)
         .verifyComplete()
     }
@@ -1687,7 +1687,7 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
       "should call the underlying method" in {
         val jFlux = spy(JFlux.just(1, 2, 3))
         val flux = SFlux.fromPublisher(jFlux)
-        flux.onBackpressureBuffer()
+        flux.onBackpressureBuffer
         jFlux.onBackpressureBuffer() was called
       }
       "with maxSize should call the underlying method" in {
@@ -1720,7 +1720,7 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
       val jFlux = spy(JFlux.just(1, 2, 3))
       val flux = SFlux.fromPublisher(jFlux)
       "without consumer" in {
-        flux.onBackpressureDrop()
+        flux.onBackpressureDrop
         jFlux.onBackpressureDrop() was called
       }
       "with consumer" in {
@@ -1732,14 +1732,14 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
     ".onBackpressureError" in {
       val jFlux = spy(JFlux.just(1, 2, 3))
       val flux = SFlux.fromPublisher(jFlux)
-      flux.onBackpressureError()
+      flux.onBackpressureError
       jFlux.onBackpressureError() was called
     }
 
     ".onBackpressureLatest" in {
       val jFlux = spy(JFlux.just(1, 2, 3))
       val flux = SFlux.fromPublisher(jFlux)
-      flux.onBackpressureLatest()
+      flux.onBackpressureLatest
       jFlux.onBackpressureLatest() was called
     }
 
@@ -1838,7 +1838,7 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
     }
 
     ".publishNext should make this flux a hot mono" in {
-      StepVerifier.create(SFlux.just(1, 2, 3).publishNext())
+      StepVerifier.create(SFlux.just(1, 2, 3).publishNext)
         .expectNext(1)
         .verifyComplete()
     }
@@ -2022,7 +2022,7 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
     }
 
     ".singleOrEmpty should return mono with single value or empty" in {
-      StepVerifier.create(SFlux.just(3).singleOrEmpty())
+      StepVerifier.create(SFlux.just(3).singleOrEmpty)
         .expectNext(3)
         .verifyComplete()
     }
@@ -2067,7 +2067,7 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
 
     ".sort" - {
       "should sort the elements" in {
-        StepVerifier.create(SFlux.just(3, 4, 2, 5, 1, 6).sort())
+        StepVerifier.create(SFlux.just(3, 4, 2, 5, 1, 6).sort)
           .expectNext(1, 2, 3, 4, 5, 6)
           .verifyComplete()
       }
@@ -2184,7 +2184,7 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
 
     ".then" - {
       "without parameter should actively ignore the values" in {
-        StepVerifier.create(SFlux.just(1, 2, 3, 4, 5).`then`())
+        StepVerifier.create(SFlux.just(1, 2, 3, 4, 5).`then`)
           .verifyComplete()
       }
     }
@@ -2322,17 +2322,17 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
     }
 
     ".asJava should convert to java" in {
-      SFlux.just(1, 2, 3).asJava() shouldBe a[reactor.core.publisher.Flux[_]]
+      SFlux.just(1, 2, 3).asJava shouldBe a[reactor.core.publisher.Flux[_]]
     }
 
     ".asScala and .asJava should be" - {
       val jFlux: JFlux[Int] = JFlux.just(1, 2, 3)
       "compile" in {
         //noinspection ScalaUnusedSymbol
-        "val x: JFlux[Int] = jFlux.asScala.asJava()" should compile
+        "val x: JFlux[Int] = jFlux.asScala.asJava" should compile
       }
       "symmetrical" in {
-        jFlux.asScala.asJava() should be theSameInstanceAs jFlux
+        jFlux.asScala.asJava should be theSameInstanceAs jFlux
       }
     }
   }
