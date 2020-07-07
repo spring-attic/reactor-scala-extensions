@@ -648,27 +648,6 @@ class SMonoTest extends AnyFreeSpec with Matchers with TestSupport with Idiomati
         .verifyComplete()
     }
 
-    ".doAfterSuccessOrError (deprecated) should call the callback function after the mono is terminated" in {
-      val atomicBoolean = new AtomicBoolean(false)
-      StepVerifier.create(just(randomValue)
-        .doAfterSuccessOrError { t =>
-          atomicBoolean.compareAndSet(false, true) shouldBe true
-          t shouldBe Success(randomValue)
-        })
-        .expectNext(randomValue)
-        .verifyComplete()
-      atomicBoolean shouldBe Symbol("get")
-      val exception = new RuntimeException
-      StepVerifier.create(SMono.error[Long](exception)
-        .doAfterSuccessOrError { t =>
-          atomicBoolean.compareAndSet(true, false) shouldBe true
-          t shouldBe Failure(exception)
-        })
-        .expectError()
-        .verify()
-      atomicBoolean.get() shouldBe false
-    }
-
     ".doAfterTerminate should call the callback function after the mono is terminated" in {
       val atomicBoolean = new AtomicBoolean(false)
       StepVerifier.create(just(randomValue).doAfterTerminate(() => atomicBoolean.compareAndSet(false, true)))
@@ -966,17 +945,6 @@ class SMonoTest extends AnyFreeSpec with Matchers with TestSupport with Idiomati
         .verifyComplete()
     }
 
-    ".ofType (deprecated) should" - {
-      "convert the Mono value type to the provided type if it can be casted" in {
-        StepVerifier.create(just(BigDecimal("1")).ofType(classOf[ScalaNumber]))
-          .expectNextCount(1)
-          .verifyComplete()
-      }
-      "ignore the Mono value if it can't be casted" in {
-        StepVerifier.create(just(1).ofType(classOf[String]))
-          .verifyComplete()
-      }
-    }
     ".ofType should" - {
       "convert the Mono value type to the provided type if it can be casted" in {
         StepVerifier.create(SMono.just(BigDecimal("1")).ofType[ScalaNumber])
@@ -1172,25 +1140,6 @@ class SMonoTest extends AnyFreeSpec with Matchers with TestSupport with Idiomati
       val key = "message"
       val r: SMono[String] = just("Hello")
           .flatMap(s => SMono.subscriberContext
-          .map(ctx => s"$s ${ctx.get(key)}"))
-          .subscriberContext(ctx => ctx.put(key, "World"))
-
-      StepVerifier.create(r)
-          .expectNext("Hello World")
-          .verifyComplete()
-
-      StepVerifier.create(just(1).map(i => i + 10),
-        StepVerifierOptions.create().withInitialContext(Context.of("foo", "bar")))
-        .expectAccessibleContext()
-        .contains("foo", "bar")
-        .`then`()
-        .expectNext(11)
-        .verifyComplete()
-    }
-    ".subscribeContext should pass context properly" in {
-      val key = "message"
-      val r: SMono[String] = just("Hello")
-          .flatMap(s => SMono.subscribeContext
           .map(ctx => s"$s ${ctx.get(key)}"))
           .subscriberContext(ctx => ctx.put(key, "World"))
 

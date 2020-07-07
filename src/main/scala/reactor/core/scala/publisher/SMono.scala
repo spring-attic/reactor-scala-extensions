@@ -296,31 +296,6 @@ trait SMono[+T] extends SMonoLike[T] with MapablePublisher[T] with ScalaConverte
   final def dematerialize[X]: SMono[X] = coreMono.dematerialize[X]().asScala
 
   /**
-    * Triggered after the [[SMono]] terminates, either by completing downstream successfully or with an error.
-    * The arguments will be null depending on success, success with data and error:
-    * <ul>
-    * <li>null, null : completed without data</li>
-    * <li>T, null : completed with data</li>
-    * <li>null, Throwable : failed with/without data</li>
-    * </ul>
-    *
-    * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/doafterterminate1.png" alt="">
-    * <p>
-    *
-    * @param afterTerminate the callback to call after [[org.reactivestreams.Subscriber.onNext]], [[org.reactivestreams.Subscriber.onComplete]] without preceding [[org.reactivestreams.Subscriber.onNext]] or [[org.reactivestreams.Subscriber.onError]]
-    * @return a new [[SMono]]
-    */
-  @deprecated("prefer using `doAfterTerminate` or `doFinally`. will be removed", since="reactor-scala-extensions 0.5.0, reactor-core 3.3.0")
-  final def doAfterSuccessOrError(afterTerminate: Try[_ <: T] => Unit): SMono[T] = {
-    val biConsumer = (t: T, u: Throwable) => Option(t) match {
-      case Some(s) => afterTerminate(Success(s))
-      case Some(null) | None => afterTerminate(Failure(u))
-    }
-    coreMono.doAfterSuccessOrError(biConsumer).asScala
-  }
-
-  /**
     * Add behavior (side-effect) triggered after the [[SMono]] terminates, either by
     * completing downstream successfully or with an error.
     * <p>
@@ -767,22 +742,6 @@ trait SMono[+T] extends SMonoLike[T] with MapablePublisher[T] with ScalaConverte
     * @return the same sequence, but bearing a name
     */
   final def name(name: String): SMono[T] = coreMono.name(name).asScala
-
-  /**
-    * Evaluate the accepted value against the given [[Class]] type. If the
-    * predicate test succeeds, the value is
-    * passed into the new [[SMono]]. If the predicate test fails, the value is
-    * ignored.
-    *
-    * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/filter.png" alt="">
-    *
-    * @param clazz the [[Class]] type to test values against
-    * @return a new [[SMono]] reduced to items converted to the matched type
-    */
-  @deprecated("Use the other ofType signature instead", "reactor-scala-extensions 0.5.0")
-  final def ofType[U](clazz: Class[U]): SMono[U] = coreMono.ofType[U](clazz).asScala
-
 
   /**
     * Evaluate the accepted value against the given [[Class]] type. If the
@@ -1502,9 +1461,6 @@ object SMono extends ScalaConverters {
     * @see [[SMono.subscribe(CoreSubscriber)]]
     */
   def subscriberContext: SMono[Context] = JMono.subscriberContext().asScala
-  
-  @deprecated("Use subscriberContext instead")
-  def subscribeContext(): SMono[Context] = JMono.subscriberContext().asScala
 
   @deprecated("Use error(Throwable) instead")
   def raiseError[T](exception: Throwable): SMono[T] = error(exception)
