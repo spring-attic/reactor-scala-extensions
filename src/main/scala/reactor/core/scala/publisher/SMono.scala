@@ -197,9 +197,6 @@ trait SMono[+T] extends SMonoLike[T] with MapablePublisher[T] with ScalaConverte
     coreMono.transformDeferred((_: JMono[_ <: T])=> transformer(SMono.this)).asScala
   }
 
-  @deprecated("will be removed, use transformDeferred() instead", since="reactor-scala-extensions 0.5.0 reactor-core 3.3.0")
-  final def compose[V](transformer: SMono[T] => Publisher[V]): SMono[V] = transformDeferred(transformer)
-
   /**
     * Provide a default unique value if this mono is completed without any data
     *

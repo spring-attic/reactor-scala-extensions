@@ -554,11 +554,6 @@ class SMonoTest extends AnyFreeSpec with Matchers with TestSupport with Idiomati
       jMono.cancelOn(any[Scheduler]) was called
     }
 
-    ".compose (deprecated) should defer creating the target mono type" in {
-      StepVerifier.create(just(1).compose[String](m => SFlux.fromPublisher(m.map(_.toString))))
-        .expectNext("1")
-        .verifyComplete()
-    }
     ".transformDeferred should defer creating the target mono type" in {
       StepVerifier.create(SMono.just(1).transformDeferred(m => SFlux.fromPublisher(m.map(_.toString))))
         .expectNext("1")
