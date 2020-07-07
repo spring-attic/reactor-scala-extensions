@@ -498,10 +498,6 @@ class SMonoTest extends AnyFreeSpec with Matchers with TestSupport with Idiomati
       }
     }
 
-    ".cast (deprecated) should cast the underlying value" in {
-      val number = SMono.just(BigDecimal("123")).cast(classOf[ScalaNumber]).block()
-      number shouldBe a[ScalaNumber]
-    }
     ".cast should cast the underlying value" in {
       val number = SMono.just(BigDecimal("123")).cast[ScalaNumber].block()
       number shouldBe a[ScalaNumber]

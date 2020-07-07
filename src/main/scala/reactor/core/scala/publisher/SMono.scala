@@ -137,19 +137,6 @@ trait SMono[+T] extends SMonoLike[T] with MapablePublisher[T] with ScalaConverte
     * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/cast1.png" alt="">
     *
     * @tparam E the [[SMono]] output type
-    * @param clazz the target type to cast to
-    * @return a casted [[SMono]]
-    */
-  @deprecated("Use the other cast signature instead", "reactor-scala-extensions 0.5.0")
-  final def cast[E](clazz: Class[E]): SMono[E] = coreMono.cast(clazz).asScala
-
-  /**
-    * Cast the current [[SMono]] produced type into a target produced type.
-    *
-    * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/cast1.png" alt="">
-    *
-    * @tparam E the [[SMono]] output type
     * @return a casted [[SMono]]
     */
   final def cast[E](implicit classTag: ClassTag[E]): SMono[E] = coreMono.cast(classTag.runtimeClass.asInstanceOf[Class[E]]).asScala
