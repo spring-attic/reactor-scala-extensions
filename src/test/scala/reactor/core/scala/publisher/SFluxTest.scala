@@ -1851,15 +1851,6 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
       }
     }
 
-    ".reduceWith is deprecated and delegate the operation to fold" in {
-      val sFlux = SFlux.just(1, 2, 3)
-      val spiedSFlux = spy(sFlux)
-      StepVerifier.create(spiedSFlux.reduceWith[Int](() => 0, (a, b) => a + b))
-        .expectNext(6)
-        .verifyComplete()
-      spiedSFlux.foldWith(any[() => Int])(any[(() => Int, Int) => () => Int]) was called
-    }
-
     ".repeat" - {
       "with predicate should repeat the subscription if the predicate returns true" in {
         val counter = new AtomicInteger(0)
