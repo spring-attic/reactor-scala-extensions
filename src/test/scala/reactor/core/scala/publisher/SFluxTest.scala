@@ -389,7 +389,7 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
         .verifyComplete()
     }
 
-    ".raiseError" - {
+    ".error" - {
       "with throwable and whenRequest flag should" - {
         ".error should create Flux that emit error" in {
           StepVerifier.create(SFlux.error(new RuntimeException("runtime error")))
@@ -422,11 +422,6 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
             override def hookOnNext(value: Long): Unit = ()
           })) shouldBe a[Failure[_]]
           flag.get() shouldBe true
-        }
-        ".raiseEerror should create Flux that emit error" in {
-          StepVerifier.create(SFlux.raiseError(new RuntimeException("runtime error")))
-            .expectError(classOf[RuntimeException])
-            .verify()
         }
       }
     }
