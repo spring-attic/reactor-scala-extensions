@@ -968,11 +968,6 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
       }
     }
 
-    ".compose should defer transformation of this flux to another publisher" in {
-      StepVerifier.create(SFlux.just(1, 2, 3).compose(SMono.fromPublisher))
-        .expectNext(1)
-        .verifyComplete()
-    }
     ".transformDeferred should defer transformation of this flux to another publisher" in {
       StepVerifier.create(SFlux.just(1, 2, 3).transformDeferred(SMono.fromPublisher))
         .expectNext(1)
