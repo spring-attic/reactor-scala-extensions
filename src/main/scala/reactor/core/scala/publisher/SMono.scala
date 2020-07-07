@@ -1462,9 +1462,6 @@ object SMono extends ScalaConverters {
     */
   def subscriberContext: SMono[Context] = JMono.subscriberContext().asScala
 
-  @deprecated("Use error(Throwable) instead")
-  def raiseError[T](exception: Throwable): SMono[T] = error(exception)
-
   def error[T](exception: Throwable): SMono[T] = JMono.error[T](exception).asScala
 
   /**
