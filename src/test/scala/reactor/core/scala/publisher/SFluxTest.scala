@@ -28,6 +28,7 @@ import reactor.core.scheduler.Schedulers
 import reactor.test.StepVerifier
 import reactor.test.scheduler.VirtualTimeScheduler
 import reactor.util.concurrent.Queues
+import reactor.util.retry.{Retry, RetrySpec}
 import reactor.util.scala.retry.SRetry
 
 import scala.collection.mutable
@@ -1879,7 +1880,7 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
       "with numRetries will retry a number of times according to provided parameter" in {
         StepVerifier.create(SFlux.just(1, 2, 3)
             .concatWith(SMono.error[Int](new RuntimeException("ex")))
-            .retry(3))
+            .retryWhen(Retry.max(3)))
           .expectNext(1, 2, 3)
           .expectNext(1, 2, 3)
           .expectNext(1, 2, 3)
@@ -1891,9 +1892,10 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
         val counter = new AtomicInteger(0)
         StepVerifier.create(SFlux.just(1, 2, 3)
             .concatWith(SMono.error[Int](new RuntimeException("ex")))
-            .retry(retryMatcher = (_: Throwable) =>
-              if (counter.getAndIncrement() > 0) false
-              else true))
+            .retryWhen(Retry.indefinitely().filter(_ => {
+              if(counter.getAndIncrement() > 0) false
+              else true
+            })))
           .expectNext(1, 2, 3)
           .expectNext(1, 2, 3)
           .expectError(classOf[RuntimeException])
@@ -1903,10 +1905,10 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
         val counter = new AtomicInteger(0)
         val flux = SFlux.just(1, 2, 3)
           .concatWith(SMono.error[Int](new RuntimeException("ex")))
-          .retry(3, { _ =>
-            if (counter.getAndIncrement() > 5) false
-            else true
-          })
+            .retryWhen(Retry.max(3).filter(_ => {
+              if (counter.getAndIncrement() > 5) false
+              else true
+            }))
         StepVerifier.create(flux)
           .expectNext(1, 2, 3)
           .expectNext(1, 2, 3)

@@ -6,22 +6,22 @@ import java.util.function.Function
 import java.util.logging.Level
 
 import org.reactivestreams.{Publisher, Subscriber, Subscription}
+import reactor.core.Disposable
 import reactor.core.publisher.{MonoSink, Signal, SignalType, SynchronousSink, Flux => JFlux, Mono => JMono}
 import reactor.core.scala.Scannable
 import reactor.core.scheduler.{Scheduler, Schedulers}
-import reactor.core.{Disposable}
 import reactor.util.concurrent.Queues.SMALL_BUFFER_SIZE
 import reactor.util.context.Context
 import reactor.util.function.{Tuple2, Tuple3, Tuple4, Tuple5, Tuple6}
 import reactor.util.retry.Retry
 
 import scala.annotation.unchecked.uncheckedVariance
-import scala.jdk.CollectionConverters._
 import scala.concurrent.duration.Duration
 import scala.concurrent.{ExecutionContext, Future, Promise}
+import scala.jdk.CollectionConverters._
+import scala.language.implicitConversions
 import scala.reflect.ClassTag
 import scala.util.{Failure, Success, Try}
-import scala.language.implicitConversions
 
 
 /**
@@ -888,44 +888,6 @@ trait SMono[+T] extends SMonoLike[T] with MapablePublisher[T] with ScalaConverte
       override def apply(t: JFlux[JLong]): Publisher[_] = repeatFactory(t.asScala.map(jl => Long2long(jl)))
     }
     coreMono.repeatWhenEmpty(maxRepeat, when).asScala
-  }
-
-  /**
-    * Re-subscribes to this [[SMono]] sequence if it signals any error
-    * either indefinitely or a fixed number of times.
-    * <p>
-    * The times == Long.MAX_VALUE is treated as infinite retry.
-    *
-    * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/retryn1.png" alt="">
-    *
-    * @param numRetries the number of times to tolerate an error
-    * @return a re-subscribing [[SMono]] on onError up to the specified number of retries.
-    *
-    */
-  @deprecated("Use retryWhen(Retry)", since = "0.8.x")
-  final def retry(numRetries: Long = Long.MaxValue, retryMatcher: Throwable => Boolean = (_: Throwable) => true): SMono[T] = coreMono.retry(numRetries, retryMatcher).asScala
-
-  /**
-    * Retries this [[SMono]] when a companion sequence signals
-    * an item in response to this [[SMono]] error signal
-    * <p>If the companion sequence signals when the [[SMono]] is active, the retry
-    * attempt is suppressed and any terminal signal will terminate the [[SMono]] source with the same signal
-    * immediately.
-    *
-    * <p>
-    * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/retrywhen1.png" alt="">
-    *
-    * @param whenFactory the [[Function1]] providing a [[SFlux]] signalling any error from the source sequence and returning a [[Publisher]] companion.
-    * @return a re-subscribing [[SMono]] on onError when the companion [[Publisher]] produces an
-    *                                  onNext signal
-    */
-  @deprecated("Use retryWhen(Retry)", since = "0.8.x")
-  final def retryWhen(whenFactory: SFlux[Throwable] => Publisher[_]): SMono[T] = {
-    val when = new Function[JFlux[Throwable], Publisher[_]] {
-      override def apply(t: JFlux[Throwable]): Publisher[_] = whenFactory(new ReactiveSFlux[Throwable](t))
-    }
-    coreMono.retryWhen(when).asScala
   }
 
   /**
