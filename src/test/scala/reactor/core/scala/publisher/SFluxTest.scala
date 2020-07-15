@@ -8,7 +8,6 @@ import java.util.concurrent.Callable
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger, AtomicLong, AtomicReference}
 import java.util.function.Consumer
 
-import cats.effect.ExitCase
 import cats.effect.ExitCase.Error
 import io.micrometer.core.instrument.Metrics
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
@@ -28,6 +27,7 @@ import reactor.core.scheduler.Schedulers
 import reactor.test.StepVerifier
 import reactor.test.scheduler.VirtualTimeScheduler
 import reactor.util.concurrent.Queues
+import reactor.util.retry.Retry
 import reactor.util.scala.retry.SRetry
 
 import scala.collection.mutable
