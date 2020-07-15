@@ -37,13 +37,9 @@ trait SFluxLike[+T] extends ScalaConverters { self: SFlux[T] =>
 
   final def flatten[S](implicit ev: T <:< SFlux[S]): SFlux[S] = concatMap[S](x => ev(x), XS_BUFFER_SIZE)
 
-  final def fold[R](initial: R)(binaryOps: (R, T) => R): SMono[R] = {
-    coreFlux.reduce(initial, binaryOps).asScala
-  }
+  final def fold[R](initial: R)(binaryOps: (R, T) => R): SMono[R] = coreFlux.reduce(initial, binaryOps).asScala
 
-  final def foldWith[R](initial: => R)(binaryOps: (R, T) => R): SMono[R] = {
-    coreFlux.reduceWith(()=> initial, binaryOps).asScala
-  }
+  final def foldWith[R](initial: => R)(binaryOps: (R, T) => R): SMono[R] = coreFlux.reduceWith(()=> initial, binaryOps).asScala
 
   final def head: SMono[T] = coreFlux.next.asScala
 

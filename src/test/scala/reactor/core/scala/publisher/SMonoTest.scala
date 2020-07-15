@@ -22,6 +22,7 @@ import reactor.core.scheduler.{Scheduler, Schedulers}
 import reactor.test.scheduler.VirtualTimeScheduler
 import reactor.test.{StepVerifier, StepVerifierOptions}
 import reactor.util.context.Context
+import reactor.util.scala.retry.SRetry
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -1077,6 +1078,12 @@ class SMonoTest extends AnyFreeSpec with Matchers with TestSupport with Idiomati
       StepVerifier.create(SMono.empty.doOnSubscribe(_ => counter.incrementAndGet()).repeatWhenEmpty((_: SFlux[Long]) => SFlux.just(-1, -2, -3)))
         .verifyComplete()
       counter.get() shouldBe 4
+    }
+
+    ".retryWhen should retry according to the spec" in {
+      val sMono = SMono.error[Long](new RuntimeException("ex")).retryWhen(SRetry.from(_ => SMono.just(randomValue)))
+      StepVerifier.create(sMono)
+        .verifyComplete()
     }
 
     ".single" - {
