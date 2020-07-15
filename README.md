@@ -1,10 +1,13 @@
 # Reactor Scala Extensions
 [![Join the chat at https://gitter.im/reactor/reactor-scala-extensions](https://badges.gitter.im/reactor/reactor-scala-extensions.svg)](https://gitter.im/reactor/reactor-scala-extensions?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Reactor Scala Extensions](https://maven-badges.herokuapp.com/maven-central/io.projectreactor/reactor-scala-extensions_2.12/badge.svg?style=plastic)](https://mvnrepository.com/artifact/io.projectreactor/reactor-scala-extensions_2.12)
+[![Latest](https://img.shields.io/github/release/reactor/reactor-scala-extensions/all.svg)]() 
 [![Download](https://api.bintray.com/packages/sinwe/io.projectreactor/reactor-scala-extensions_2.12/images/download.svg) ](https://bintray.com/sinwe/io.projectreactor/reactor-scala-extensions_2.12/_latestVersion)
+
 [![Build Status](https://travis-ci.com/reactor/reactor-scala-extensions.svg?branch=master)](https://travis-ci.com/reactor/reactor-scala-extensions)
 ![](https://github.com/reactor/reactor-scala-extensions/workflows/Scala%20CI/badge.svg)
 [![codecov](https://codecov.io/gh/reactor/reactor-scala-extensions/branch/master/graph/badge.svg)](https://codecov.io/gh/reactor/reactor-scala-extensions)
+
 [![Average time to resolve an issue](http://isitmaintained.com/badge/resolution/reactor/reactor-scala-extensions.svg)](http://isitmaintained.com/project/reactor/reactor-scala-extensions "Average time to resolve an issue")
 [![Percentage of issues still open](http://isitmaintained.com/badge/open/reactor/reactor-scala-extensions.svg)](http://isitmaintained.com/project/reactor/reactor-scala-extensions "Percentage of issues still open")
                             
