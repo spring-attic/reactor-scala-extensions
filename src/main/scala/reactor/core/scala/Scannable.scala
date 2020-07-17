@@ -3,18 +3,13 @@ package reactor.core.scala
 import reactor.core.Scannable.Attr
 import reactor.core.{Scannable => JScannable}
 
-import scala.jdk.CollectionConverters._
 import scala.language.implicitConversions
 
 /**
   * Created by winarto on 17/6/17.
   */
-trait Scannable {
+trait Scannable extends VersionedScannable {
   private[scala] def jScannable: JScannable
-
-  def actuals(): Stream[_ <: Scannable] = jScannable.actuals().iterator().asScala.map(js => js: Scannable).toStream
-
-  def inners(): Stream[_ <: Scannable] = jScannable.inners().iterator().asScala.map(js => js: Scannable).toStream
 
   def isScanAvailable: Boolean = jScannable.isScanAvailable
 
@@ -33,15 +28,6 @@ trait Scannable {
   def stepName: String = jScannable.stepName()
 
   /**
-    * Return a [[Stream]] navigating the [[org.reactivestreams.Subscription]]
-    * chain (upward).
-    *
-    * @return a [[Stream]] navigating the [[org.reactivestreams.Subscription]]
-    *                   chain (upward)
-    */
-  def parents: Stream[_ <: Scannable] = jScannable.parents().iterator().asScala.map(js => js: Scannable).toStream
-
-  /**
     * This method is used internally by components to define their key-value mappings
     * in a single place. Although it is ignoring the generic type of the [[Attr]] key,
     * implementors should take care to return values of the correct type, and return
@@ -54,7 +40,7 @@ trait Scannable {
     * @param key a { @link Attr} to resolve for the component.
     * @return the value associated to the key for that specific component, or null if none.
     */
-  def scanUnsafe(key: Attr[_]) = Option(jScannable.scanUnsafe(key))
+  def scanUnsafe(key: Attr[_]): Option[AnyRef] = Option(jScannable.scanUnsafe(key))
 
   /**
     * Introspect a component's specific state [[Attr attribute]], returning an
@@ -78,14 +64,6 @@ trait Scannable {
     * @return a value associated to the key or the provided default if unmatched or unresolved
     */
   def scanOrDefault[T](key: Attr[T], defaultValue: T): T = jScannable.scanOrDefault(key, defaultValue)
-
-  /**
-    * Visit this [[Scannable]] and its [[Scannable.parents()]] and stream all the
-    * observed tags
-    *
-    * @return the stream of tags for this [[Scannable]] and its parents
-    */
-  def tags: Stream[(String, String)] = jScannable.tags().iterator().asScala.map(publisher.tupleTwo2ScalaTuple2).toStream
 }
 
 object Scannable {
