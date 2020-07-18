@@ -16,10 +16,16 @@ class SFlux213Test extends AnyFreeSpec with Matchers {
   "SFlux" - {
     ".fromStream" - {
       "should create flux that emit items contained in the supplier" in {
-        StepVerifier.create(SFlux.fromStream(() => LazyList(1, 2, 3)))
+        StepVerifier.create(SFlux.fromStream(() => Stream(1, 2, 3)))
           .expectNext(1, 2, 3)
           .verifyComplete()
       }
+      ".fromLazyList" - {
+        "should create flux that emit items contained in the supplier" in {
+          StepVerifier.create(SFlux.fromLazyList(() => LazyList(1, 2, 3)))
+            .expectNext(1, 2, 3)
+            .verifyComplete()
+        }
     }
 
     ".using" - {
