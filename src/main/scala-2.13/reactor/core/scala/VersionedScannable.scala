@@ -1,20 +1,20 @@
 package reactor.core.scala
 
-import scala.jdk.CollectionConverters._
+import scala.jdk.StreamConverters._
 
 trait VersionedScannable { self: Scannable =>
-  def actuals(): LazyList[_ <: Scannable] = jScannable.actuals().iterator().asScala.map(js => js: Scannable).to(LazyList)
+  def actuals(): LazyList[_ <: Scannable] = jScannable.actuals().toScala(LazyList).map(js => js: Scannable)
 
-  def inners(): LazyList[_ <: Scannable] = jScannable.inners().iterator().asScala.map(js => js: Scannable).to(LazyList)
+  def inners(): LazyList[_ <: Scannable] = jScannable.inners().toScala(LazyList).map(js => js: Scannable)
 
   /**
-    * Return a [[Stream]] navigating the [[org.reactivestreams.Subscription]]
+    * Return a [[LazyList]] navigating the [[org.reactivestreams.Subscription]]
     * chain (upward).
     *
-    * @return a [[Stream]] navigating the [[org.reactivestreams.Subscription]]
+    * @return a [[LazyList]] navigating the [[org.reactivestreams.Subscription]]
     *                   chain (upward)
     */
-  def parents: LazyList[_ <: Scannable] = jScannable.parents().iterator().asScala.map(js => js: Scannable).to(LazyList)
+  def parents: LazyList[_ <: Scannable] = jScannable.parents().toScala(LazyList).map(js => js: Scannable)
 
   /**
     * Visit this [[Scannable]] and its [[Scannable.parents()]] and stream all the
@@ -22,6 +22,6 @@ trait VersionedScannable { self: Scannable =>
     *
     * @return the stream of tags for this [[Scannable]] and its parents
     */
-  def tags: LazyList[(String, String)] = jScannable.tags().iterator().asScala.map(publisher.tupleTwo2ScalaTuple2).to(LazyList)
+  def tags: LazyList[(String, String)] = jScannable.tags().toScala(LazyList).map(publisher.tupleTwo2ScalaTuple2)
 
 }
