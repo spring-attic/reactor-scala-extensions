@@ -32,7 +32,7 @@ import scala.reflect.ClassTag
   * @tparam T data type for the value emitted by this [[SFlux]]
   */
 
-trait SFlux[+T] extends SFluxLike[T] with MapablePublisher[T] with ScalaConverters {
+trait SFlux[+T] extends VersionedSFlux[T] with SFluxLike[T] with MapablePublisher[T] with ScalaConverters {
 
   /**
     *
@@ -363,17 +363,6 @@ trait SFlux[+T] extends SFluxLike[T] with MapablePublisher[T] with ScalaConverte
     new ReactiveSMono[Map[K, V]](coreFlux.collectMap[K, V](keyExtractor, valueExtractor, new Supplier[JMap[K, V]] {
       override def get(): JMap[K, V] = mapSupplier().asJava
     }).map((m: JMap[K, V]) => m.asScala.toMap))
-
-  final def collectMultimap[K](keyExtractor: T => K): SMono[Map[K, Traversable[T]]] = collectMultimap(keyExtractor, (t: T) => t, ()=>mutable.HashMap.empty[K, util.Collection[T]])
-
-  final def collectMultimap[K, V](keyExtractor: T => K,
-        valueExtractor: T => V,
-        mapSupplier: () => mutable.Map[K, util.Collection[V]] = () => mutable.HashMap.empty[K, util.Collection[V]]):
-      SMono[Map[K, Traversable[V]]] =
-    new ReactiveSMono[Map[K, Traversable[V]]](coreFlux.collectMultimap[K, V](keyExtractor,
-        valueExtractor,
-        () => mapSupplier().asJava)
-      .map((m: JMap[K, JCollection[V]]) => m.asScala.mapValues((vs: JCollection[V]) => vs.asScala.toSeq).toMap))
 
   final def collectSortedSeq[U >: T](ordering: Ordering[U] = None.orNull): SMono[Seq[U]] = {
     new ReactiveSMono[Seq[U]](coreFlux.collectSortedList(ordering).map((l: JList[_ <: T]) => l.asScala.toSeq))
@@ -1005,8 +994,6 @@ trait SFlux[+T] extends SFluxLike[T] with MapablePublisher[T] with ScalaConverte
     coreFlux.toIterable(batchSize, adapt(queueProvider.orNull)).asScala
   }
 
-  final def toStream(batchSize: Int = SMALL_BUFFER_SIZE): Stream[T] = coreFlux.toStream(batchSize).iterator().asScala.toStream
-
   final def transform[U >: T, V](transformer: SFlux[U] => Publisher[V]): SFlux[V] = coreFlux.transform[V](transformer).asScala
 
   final def withLatestFrom[U, R](other: Publisher[_ <: U], resultSelector: (T, U) => _ <: R): SFlux[R] = coreFlux.withLatestFrom[U, R](other, resultSelector).asScala
@@ -1021,7 +1008,7 @@ trait SFlux[+T] extends SFluxLike[T] with MapablePublisher[T] with ScalaConverte
 
 }
 
-object SFlux {
+object SFlux extends VersionedSFluxCompanion {
   def apply[T](source: Publisher[_ <: T]): SFlux[T] = SFlux.fromPublisher[T](source)
 
   def apply[T](elements: T*): SFlux[T] = SFlux.fromIterable(elements)
@@ -1094,8 +1081,6 @@ object SFlux {
   def fromIterable[T](iterable: Iterable[T]): SFlux[T] = new ReactiveSFlux[T](JFlux.fromIterable(iterable.asJava))
 
   def fromPublisher[T](source: Publisher[_ <: T]): SFlux[T] = new ReactiveSFlux[T](JFlux.from(source))
-
-  def fromStream[T](streamSupplier: () => Stream[T]): SFlux[T] = new ReactiveSFlux[T](JFlux.fromStream[T](streamSupplier()))
 
   def generate[T, S](generator: (S, SynchronousSink[T]) => S,
                      stateSupplier: Option[Callable[S]] = None,

@@ -17,7 +17,7 @@ import scala.jdk.CollectionConverters._
   * @tparam IN  the input value type
   * @tparam OUT the output value type
   */
-trait FluxProcessor[IN, OUT] extends SFlux[OUT] with Processor[IN, OUT] with Disposable with Scannable {
+trait FluxProcessor[IN, OUT] extends VersionedFluxProcessor[IN, OUT] with  SFlux[OUT] with Processor[IN, OUT] with Disposable with Scannable {
 
   protected def jFluxProcessor: JFluxProcessor[IN, OUT]
 
@@ -62,8 +62,6 @@ trait FluxProcessor[IN, OUT] extends SFlux[OUT] with Processor[IN, OUT] with Dis
     * @return true if terminated with onError
     */
   def hasError: Boolean = jFluxProcessor.hasError
-
-  override def inners(): Stream[_ <: Scannable] = jFluxProcessor.inners().iterator().asScala.map(js=> js: Scannable).toStream
 
   /**
     * Has this upstream finished or "completed" / "failed" ?

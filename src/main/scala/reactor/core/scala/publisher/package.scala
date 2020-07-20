@@ -2,11 +2,10 @@ package reactor.core.scala
 
 import java.lang.{Iterable => JIterable, Long => JLong}
 import java.time.{Duration => JDuration}
+import java.util.Optional
 import java.util.Optional.empty
 import java.util.concurrent.Callable
 import java.util.function.{BiConsumer, BiFunction, BiPredicate, BooleanSupplier, Consumer, Function, LongConsumer, Predicate, Supplier}
-import java.util.stream.{StreamSupport, Stream => JStream}
-import java.util.{Optional, Spliterator, Spliterators}
 
 import org.reactivestreams.Publisher
 import reactor.core.publisher.{Flux => JFlux}
@@ -81,5 +80,4 @@ package object publisher {
 
   implicit def javaOptional2ScalaOption[T](jOptional: Optional[T]): Option[T] = if(jOptional.isPresent) Some(jOptional.get()) else None
 
-  implicit def scalaStream2JavaStream[T](stream: Stream[T]): JStream[T] = StreamSupport.stream(Spliterators.spliteratorUnknownSize[T](stream.toIterator.asJava, Spliterator.NONNULL), false)
 }
