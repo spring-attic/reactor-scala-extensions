@@ -1,6 +1,6 @@
 
 // Defining dependencies
-val reactorVersion = "3.3.5.RELEASE"
+val reactorVersion = "3.3.8.RELEASE"
 val reactorCore = "io.projectreactor" % "reactor-core" % reactorVersion
 //test libraries
 val micrometer = "io.micrometer" % "micrometer-core" % "1.5.1" % "test"
