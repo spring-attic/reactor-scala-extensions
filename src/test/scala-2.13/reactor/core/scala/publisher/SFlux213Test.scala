@@ -14,13 +14,6 @@ import scala.io.Source
 
 class SFlux213Test extends AnyFreeSpec with Matchers {
   "SFlux" - {
-    ".fromStream" - {
-      "should create flux that emit items contained in the supplier" in {
-        StepVerifier.create(SFlux.fromStream(() => Stream(1, 2, 3)))
-          .expectNext(1, 2, 3)
-          .verifyComplete()
-      }
-    }
     ".fromLazyList" - {
         "should create flux that emit items contained in the supplier" in {
           StepVerifier.create(SFlux.fromLazyList(() => LazyList(1, 2, 3)))
@@ -104,16 +97,7 @@ class SFlux213Test extends AnyFreeSpec with Matchers {
       val flux = SFlux.just(1, 2, 3).tag("integer", "one, two, three")
       Scannable.from(Option(flux)).tags shouldBe LazyList("integer" -> "one, two, three")
     }
-
-    ".toStream" - {
-      "should transform this flux into stream" in {
-        SFlux.just(1, 2, 3).toStream() shouldBe LazyList(1, 2, 3)
-      }
-      "with batchSize should transform this flux into stream" in {
-        SFlux.just(1, 2, 3).toStream(2) shouldBe LazyList(1, 2, 3)
-      }
-    }
-
+    
     ".toLazyList" - {
       "should transform this flux into stream" in {
         SFlux.just(1, 2, 3).toLazyList() shouldBe LazyList(1, 2, 3)

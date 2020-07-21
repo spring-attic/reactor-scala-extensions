@@ -20,9 +20,6 @@ trait VersionedSFlux[+T] {self: SFlux[T] =>
       () => mapSupplier().asJava)
       .map((m: JMap[K, JCollection[V]]) => m.asScala.view.mapValues((vs: JCollection[V]) => vs.asScala.toSeq).toMap))
 
-  @deprecated("Use toLazyList", since = "0.8.0, 2.13.0")
-  final def toStream(batchSize: Int = SMALL_BUFFER_SIZE): LazyList[T] = toLazyList(batchSize)
-
   final def toLazyList(batchSize: Int = SMALL_BUFFER_SIZE): LazyList[T] = coreFlux.toStream(batchSize).iterator().asScala.to(LazyList)
 
 }
