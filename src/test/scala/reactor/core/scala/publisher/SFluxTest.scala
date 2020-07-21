@@ -2,13 +2,11 @@ package reactor.core.scala.publisher
 
 import java.io._
 import java.nio.file.Files
-import java.util
 import java.util.Comparator
 import java.util.concurrent.Callable
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger, AtomicLong, AtomicReference}
 import java.util.function.Consumer
 
-import cats.effect.ExitCase
 import cats.effect.ExitCase.Error
 import io.micrometer.core.instrument.Metrics
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
@@ -28,14 +26,13 @@ import reactor.core.scheduler.Schedulers
 import reactor.test.StepVerifier
 import reactor.test.scheduler.VirtualTimeScheduler
 import reactor.util.concurrent.Queues
-import reactor.util.retry.{Retry, RetrySpec}
+import reactor.util.retry.Retry
 import reactor.util.scala.retry.SRetry
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.TimeoutException
 import scala.concurrent.duration.{Duration, _}
-import scala.io.Source
 import scala.language.postfixOps
 import scala.math.Ordering.IntOrdering
 import scala.math.ScalaNumber
@@ -165,14 +162,6 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
       StepVerifier.create(SFlux.fromPublisher(Mono.just(1)))
         .expectNext(1)
         .verifyComplete()
-    }
-
-    ".fromStream" - {
-      "with supplier should create flux that emit items contained in the supplier" in {
-        StepVerifier.create(SFlux.fromStream(() => Stream(1, 2, 3)))
-          .expectNext(1, 2, 3)
-          .verifyComplete()
-      }
     }
 
     ".generate" - {
@@ -433,41 +422,6 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
         .verifyComplete()
     }
 
-    ".using" - {
-      "without eager flag should produce some data" in {
-        val tempFile = Files.createTempFile("fluxtest-", ".tmp")
-        tempFile.toFile.deleteOnExit()
-        new PrintWriter(tempFile.toFile) {
-          write(s"1${sys.props("line.separator")}2")
-          flush()
-          close()
-        }
-
-        StepVerifier.create(
-          SFlux.using[String, File](() => tempFile.toFile, (file: File) => SFlux.fromIterable[String](Source.fromFile(file).getLines().toIterable), (file: File) => {
-            file.delete()
-            ()
-          }))
-          .expectNext("1", "2")
-          .verifyComplete()
-      }
-      "with eager flag should produce some data" in {
-        val tempFile = Files.createTempFile("fluxtest-", ".tmp")
-        tempFile.toFile.deleteOnExit()
-        new PrintWriter(tempFile.toFile) {
-          write(s"1${sys.props("line.separator")}2")
-          flush()
-          close()
-        }
-        StepVerifier.create(
-          SFlux.using[String, File](() => tempFile.toFile, (file: File) => SFlux.fromIterable[String](Source.fromFile(file).getLines().toIterable), (file: File) => {
-            file.delete()
-            ()
-          }, eager = true))
-          .expectNext("1", "2")
-          .verifyComplete()
-      }
-    }
 
     ".zip" - {
       "with source1, source2 and combinator should combine the data" in {
@@ -581,26 +535,6 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
     }
 
     ".bracketCase" - {
-      "should release all resources properly" in {
-        import java.io.PrintWriter
-        val files = (0 until 5) map(i => {
-          val path = Files.createTempFile(s"bracketCase-$i", ".tmp")
-          val file = path.toFile
-          new PrintWriter(file) { write(s"$i"); close() }
-          file
-        })
-        files.foreach(f => f.exists() shouldBe true)
-        val sf = SFlux.fromIterable(files)
-          .bracketCase(f => {
-            SFlux.just(Source.fromFile(f))
-              .bracket(br => SFlux.fromIterable(br.getLines().toIterable))(_.close())
-          })((file, _) => file.delete())
-        StepVerifier.create(sf)
-          .expectNext("0", "1", "2", "3", "4")
-          .verifyComplete()
-        files.foreach(f => f.exists() shouldBe false)
-      }
-
       "should handle ExitCase.error" - {
         "when the error happens inside the generated flux" in {
           import java.io.PrintWriter
@@ -935,16 +869,6 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
       "with keyExtractor and valueExtractor should collect the value, extract the key and value from it" in {
         StepVerifier.create(SFlux.just(1, 2, 3, 4, 5, 6, 7, 8, 9, 10).collectMultimap(i => i % 3, i => i + 6))
           .expectNext(Map((0, Seq(9, 12, 15)), (1, Seq(7, 10, 13, 16)), (2, Seq(8, 11, 14))))
-          .verifyComplete()
-      }
-      "with keyExtractor, valueExtractor and map supplier should collect the value, extract the key and value from it and put in the provided map" in {
-        val map = mutable.HashMap[Int, util.Collection[Int]]()
-        StepVerifier.create(SFlux.just(1, 2, 3, 4, 5, 6, 7, 8, 9, 10).collectMultimap(i => i % 3, i => i + 6, () => map))
-          .expectNextMatches((m: Map[Int, Traversable[Int]]) => {
-            m shouldBe map.mapValues(vs => vs.toArray().toSeq).toMap
-            m shouldBe Map((0, Seq(9, 12, 15)), (1, Seq(7, 10, 13, 16)), (2, Seq(8, 11, 14)))
-            true
-          })
           .verifyComplete()
       }
     }
@@ -2113,11 +2037,6 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
         .verifyComplete()
     }
 
-    ".tag should tag the Flux and accessible from Scannable" in {
-      val flux = SFlux.just(1, 2, 3).tag("integer", "one, two, three")
-      Scannable.from(Option(flux)).tags shouldBe Stream("integer" -> "one, two, three")
-    }
-
     ".tail should return flux that exclude the head" in {
       StepVerifier.create(SFlux.just(1, 2, 3, 4, 5).tail)
         .expectNext(2, 3, 4, 5)
@@ -2235,15 +2154,6 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
         val list = SFlux.just(1, 2, 3)
           .toIterable[Int](1, Option(Queues.get(1))).toList
         list shouldBe Iterable(1, 2, 3)
-      }
-    }
-
-    ".toStream" - {
-      "should transform this flux into stream" in {
-        SFlux.just(1, 2, 3).toStream() shouldBe Stream(1, 2, 3)
-      }
-      "with batchSize should transform this flux into stream" in {
-        SFlux.just(1, 2, 3).toStream(2) shouldBe Stream(1, 2, 3)
       }
     }
 

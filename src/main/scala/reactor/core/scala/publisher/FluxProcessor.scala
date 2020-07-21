@@ -17,7 +17,7 @@ import scala.jdk.CollectionConverters._
   * @tparam IN  the input value type
   * @tparam OUT the output value type
   */
-trait FluxProcessor[IN, OUT] extends SFlux[OUT] with Processor[IN, OUT] with Disposable with Scannable {
+trait FluxProcessor[IN, OUT] extends VersionedFluxProcessor[IN, OUT] with  SFlux[OUT] with Processor[IN, OUT] with Disposable with Scannable {
 
   protected def jFluxProcessor: JFluxProcessor[IN, OUT]
 
@@ -63,8 +63,6 @@ trait FluxProcessor[IN, OUT] extends SFlux[OUT] with Processor[IN, OUT] with Dis
     */
   def hasError: Boolean = jFluxProcessor.hasError
 
-  override def inners: Stream[_ <: Scannable] = jFluxProcessor.inners().iterator().asScala.map(js=> js: Scannable).toStream
-
   /**
     * Has this upstream finished or "completed" / "failed" ?
     *
@@ -95,10 +93,10 @@ trait FluxProcessor[IN, OUT] extends SFlux[OUT] with Processor[IN, OUT] with Dis
   /**
     * Create a [[FluxSink]] that safely gates multi-threaded producer
     * [[Subscriber.onNext]].
-    * 
+    *
     * <p> This processor will be subscribed to that [[FluxSink]],
     * and any previous subscribers will be unsubscribed.
-    * 
+    *
     * <p> The returned [[FluxSink]] will not apply any
     * [[FluxSink.OverflowStrategy]] and overflowing [[FluxSink.next]]
     * will behave in two possible ways depending on the Processor:

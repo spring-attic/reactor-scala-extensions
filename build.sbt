@@ -16,7 +16,7 @@ lazy val scala212 = "2.12.11"
 lazy val scala213 = "2.13.2"
 lazy val supportedScalaVersions = List(scala212, scala213)
 
-ThisBuild / scalaVersion := "2.12.11"
+ThisBuild / scalaVersion := scala212
 
 lazy val root = (project in file("."))
 	.settings(
