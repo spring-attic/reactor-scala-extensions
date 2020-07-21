@@ -1,6 +1,6 @@
 package reactor.core.scala
 
-import scala.jdk.CollectionConverters._
+import scala.collection.JavaConverters._
 
 trait VersionedScannable { self: Scannable =>
   def actuals(): Stream[_ <: Scannable] = jScannable.actuals().iterator().asScala.map(js => js: Scannable).toStream

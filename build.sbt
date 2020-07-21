@@ -23,7 +23,6 @@ lazy val root = (project in file("."))
 		crossScalaVersions := supportedScalaVersions,
 		name := "reactor-scala-extensions",
 		libraryDependencies += reactorCore,
-		libraryDependencies += scalaCollCompat,
 		libraryDependencies += micrometer,
 		libraryDependencies += mockitoScala,
 		libraryDependencies += scalaTest,
