@@ -2,26 +2,26 @@ package reactor.core.scala.publisher
 
 import java.lang.{Boolean => JBoolean, Long => JLong}
 import java.util.concurrent.{Callable, CompletableFuture}
-import java.util.function.{Consumer, Function, Supplier}
+import java.util.function.Function
 import java.util.logging.Level
 
 import org.reactivestreams.{Publisher, Subscriber, Subscription}
+import reactor.core.Disposable
 import reactor.core.publisher.{MonoSink, Signal, SignalType, SynchronousSink, Flux => JFlux, Mono => JMono}
 import reactor.core.scala.Scannable
 import reactor.core.scheduler.{Scheduler, Schedulers}
-import reactor.core.{Disposable, Scannable => JScannable}
 import reactor.util.concurrent.Queues.SMALL_BUFFER_SIZE
 import reactor.util.context.Context
 import reactor.util.function.{Tuple2, Tuple3, Tuple4, Tuple5, Tuple6}
 import reactor.util.retry.Retry
 
 import scala.annotation.unchecked.uncheckedVariance
-import scala.jdk.CollectionConverters._
+import scala.collection.JavaConverters._
 import scala.concurrent.duration.Duration
 import scala.concurrent.{ExecutionContext, Future, Promise}
+import scala.language.implicitConversions
 import scala.reflect.ClassTag
 import scala.util.{Failure, Success, Try}
-import scala.language.implicitConversions
 
 
 /**
