@@ -23,7 +23,7 @@ import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.mutable
 import scala.concurrent.duration.Duration
 import scala.concurrent.duration.Duration.Infinite
-import scala.jdk.CollectionConverters._
+import scala.collection.JavaConverters._
 import scala.language.postfixOps
 import scala.reflect.ClassTag
 

@@ -6,7 +6,7 @@ import java.util.{Collection => JCollection, Map => JMap}
 import reactor.util.concurrent.Queues.SMALL_BUFFER_SIZE
 
 import scala.collection.mutable
-import scala.jdk.CollectionConverters._
+import scala.collection.JavaConverters._
 
 trait VersionedSFlux[+T] {self: SFlux[T] =>
   final def collectMultimap[K](keyExtractor: T => K): SMono[Map[K, Traversable[T]]] = collectMultimap(keyExtractor, (t: T) => t, ()=>mutable.HashMap.empty[K, util.Collection[T]])
