@@ -3,7 +3,6 @@ package reactor.core.scala.publisher
 import java.util.concurrent.TimeUnit
 import java.util.function.Function
 
-import cats.effect.ExitCase
 import org.reactivestreams.{Publisher, Subscription}
 import reactor.core.publisher.{Flux => JFlux}
 import reactor.core.scheduler.Schedulers
@@ -14,14 +13,14 @@ import scala.util.{Failure, Success, Try}
 
 trait SFluxLike[+T] extends ScalaConverters { self: SFlux[T] =>
 
-  final def bracket[R](use: T => SFlux[R])(release: T => Unit): SFlux[R] = bracketCase(use)((t, _) => release(t))
+  final def using[R](use: T => SFlux[R])(release: T => Unit): SFlux[R] = usingWhen(use)((t, _) => release(t))
 
-  final def bracketCase[R](use: T => SFlux[R])(release: (T, ExitCase[Throwable]) => Unit): SFlux[R] = {
+  final def usingWhen[R](use: T => SFlux[R])(release: (T, ExitCondition) => Unit): SFlux[R] = {
     val f = (t: T) => (Try(use(t)) match {
-      case Success(value) => value.doOnComplete(() => release(t, ExitCase.Completed))
+      case Success(value) => value.doOnComplete(() => release(t, Completed))
       case Failure(exception) => SFlux.error(exception)
-    }).doOnError(ex => release(t, ExitCase.error(ex)))
-      .doOnCancel(() => release(t, ExitCase.canceled))
+    }).doOnError(ex => release(t, Error(ex)))
+      .doOnCancel(() => release(t, Cancelled))
     concatMap(f)
   }
 
