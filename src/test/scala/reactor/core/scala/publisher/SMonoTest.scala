@@ -5,7 +5,6 @@ import java.util.concurrent._
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger, AtomicLong, AtomicReference}
 import java.util.function.Supplier
 
-import cats.effect.ExitCase.Error
 import io.micrometer.core.instrument.Metrics
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import org.mockito.{ArgumentMatchersSugar, IdiomaticMockito}
@@ -420,7 +419,7 @@ class SMonoTest extends AnyFreeSpec with Matchers with TestSupport with Idiomati
 
       file.exists() shouldBe true
       val sMono = SMono.just(file)
-        .bracket(_ => SMono.error(new RuntimeException("Always throw exception")))(file => file.delete())
+        .using(_ => SMono.error(new RuntimeException("Always throw exception")))(file => file.delete())
       StepVerifier.create(sMono)
         .expectError(classOf[RuntimeException])
         .verify()
@@ -436,7 +435,7 @@ class SMonoTest extends AnyFreeSpec with Matchers with TestSupport with Idiomati
 
         file.exists() shouldBe true
         val sMono = SMono.just(file)
-          .bracketCase(f => {
+          .usingWhen(f => {
             val br = Source.fromFile(f)
             val line = br.getLines().mkString
             br.close()
@@ -458,7 +457,7 @@ class SMonoTest extends AnyFreeSpec with Matchers with TestSupport with Idiomati
           try {
             file.exists() shouldBe true
             val sMono = SMono.just(file)
-              .bracketCase(_ => {
+              .usingWhen(_ => {
                 SMono.error(new RuntimeException("Always throw exception"))
               })((file, exitCase) => {
                 exitCase match {
@@ -482,7 +481,7 @@ class SMonoTest extends AnyFreeSpec with Matchers with TestSupport with Idiomati
           try {
             file.exists() shouldBe true
             val sMono = SMono.just(file)
-              .bracketCase(_ => throw new RuntimeException)((file, exitCase) => {
+              .usingWhen(_ => throw new RuntimeException)((file, exitCase) => {
                 exitCase match {
                   case Error(_) => ()
                   case _ => file.delete()

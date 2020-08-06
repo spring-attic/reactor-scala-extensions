@@ -1,7 +1,5 @@
 package reactor.core.scala.publisher
 
-import cats.effect.ExitCase
-import cats.effect.ExitCase.{Canceled, Completed}
 import org.reactivestreams.Publisher
 import reactor.core.publisher.{Mono => JMono}
 
@@ -12,14 +10,14 @@ trait SMonoLike[+T] extends ScalaConverters { self: SMono[T] =>
 
   private[publisher] def coreMono: JMono[_ <: T]
 
-  final def bracket[R](use: T => SMono[R])(release: T => Unit): SMono[R] = bracketCase(use)((t, _) => release(t))
+  final def using[R](use: T => SMono[R])(release: T => Unit): SMono[R] = usingWhen(use)((t, _) => release(t))
 
-  final def bracketCase[R](use: T => SMono[R])(release: (T, ExitCase[Throwable]) => Unit): SMono[R] = {
+  final def usingWhen[R](use: T => SMono[R])(release: (T, ExitCondition) => Unit): SMono[R] = {
     val f: T => SMono[R] = (t: T) => (Try(use(t)) match {
       case Success(value) => value.doOnSuccess(_ => release(t, Completed))
       case Failure(exception) => SMono.error(exception)
-    }).doOnError(ex => release(t, ExitCase.error(ex)))
-        .doOnCancel(() => release(t, Canceled))
+    }).doOnError(ex => release(t, Error(ex)))
+        .doOnCancel(() => release(t, Cancelled))
     flatMap(f)
   }
 

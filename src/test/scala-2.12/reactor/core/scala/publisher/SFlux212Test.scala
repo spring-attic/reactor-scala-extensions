@@ -57,7 +57,7 @@ class SFlux212Test extends AnyFreeSpec with Matchers {
           .verifyComplete()
       }
     }
-    "bracketCase" - {
+    "usingWhen" - {
       "should release all resources properly" in {
         import java.io.PrintWriter
         val files = (0 until 5) map(i => {
@@ -68,9 +68,9 @@ class SFlux212Test extends AnyFreeSpec with Matchers {
         })
         files.foreach(f => f.exists() shouldBe true)
         val sf = SFlux.fromIterable(files)
-          .bracketCase(f => {
+          .usingWhen(f => {
             SFlux.just(Source.fromFile(f))
-              .bracket(br => SFlux.fromIterable(br.getLines().toIterable))(_.close())
+              .using(br => SFlux.fromIterable(br.getLines().toIterable))(_.close())
           })((file, _) => file.delete())
         StepVerifier.create(sf)
           .expectNext("0", "1", "2", "3", "4")

@@ -7,7 +7,6 @@ import java.util.concurrent.Callable
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger, AtomicLong, AtomicReference}
 import java.util.function.Consumer
 
-import cats.effect.ExitCase.Error
 import io.micrometer.core.instrument.Metrics
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import org.mockito.{ArgumentMatchersSugar, IdiomaticMockito}
@@ -517,7 +516,7 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
       }
     }
 
-    ".bracket should always release all resources properly" in {
+    ".using should always release all resources properly" in {
       import java.io.PrintWriter
       val files = (0 until 1) map(i => {
         val path = Files.createTempFile(s"bracketCase-$i", ".tmp")
@@ -527,15 +526,15 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
       })
       files.foreach(f => f.exists() shouldBe true)
       val sf = SFlux.fromIterable(files)
-        .bracket(_ => SFlux.error(new RuntimeException("Always throw exception")))(file => file.delete())
+        .using(_ => SFlux.error(new RuntimeException("Always throw exception")))(file => file.delete())
       StepVerifier.create(sf)
         .expectError(classOf[RuntimeException])
         .verify()
       files.foreach(f => f.exists() shouldBe false)
     }
 
-    ".bracketCase" - {
-      "should handle ExitCase.error" - {
+    ".usingWhen" - {
+      "should handle ExitCondition error" - {
         "when the error happens inside the generated flux" in {
           import java.io.PrintWriter
           val files = (0 until 5) map(i => {
@@ -547,7 +546,7 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
           try {
             files.foreach(f => f.exists() shouldBe true)
             val sf = SFlux.fromIterable(files)
-              .bracketCase(_ => {
+              .usingWhen(_ => {
                 SFlux.error(new RuntimeException("Always throw exception"))
               })((file, exitCase) => {
                 exitCase match {
@@ -575,7 +574,7 @@ class SFluxTest extends AnyFreeSpec with Matchers with TableDrivenPropertyChecks
         try {
           files.foreach(f => f.exists() shouldBe true)
           val sf = SFlux.fromIterable(files)
-            .bracketCase(_ => throw new RuntimeException)((file, exitCase) => {
+            .usingWhen(_ => throw new RuntimeException)((file, exitCase) => {
               exitCase match {
                 case Error(_) => ()
                 case _ => file.delete()
