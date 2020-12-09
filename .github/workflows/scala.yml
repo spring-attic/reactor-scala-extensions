@@ -28,3 +28,4 @@ jobs:
         botToken: ${{ secrets.TELEGRAMBOTTOKEN }}
         chatId: ${{ secrets.TELEGRAMCHATID }}
         jobStatus: ${{ job.status }}
+        skipSuccess: 'false'
