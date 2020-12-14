@@ -10,8 +10,8 @@ val scalaTest = "org.scalatest" %% "scalatest" % "3.2.1" % "test"
 val reactorTest = "io.projectreactor" % "reactor-test" % reactorVersion % "test"
 
 //Scala versions for cross compiling
-lazy val scala212 = "2.12.11"
-lazy val scala213 = "2.13.3"
+lazy val scala212 = "2.12.12"
+lazy val scala213 = "2.13.4"
 lazy val supportedScalaVersions = List(scala212, scala213)
 
 ThisBuild / scalaVersion := scala212

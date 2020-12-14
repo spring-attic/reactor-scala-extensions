@@ -21,3 +21,11 @@ jobs:
         java-version: ${{ matrix.java }}
     - name: Run tests
       run: sbt +test
+    - name: Notify via telegram
+      if: cancelled() == false
+      uses: xinthink/action-telegram@v1.1
+      with:
+        botToken: ${{ secrets.TELEGRAMBOTTOKEN }}
+        chatId: ${{ secrets.TELEGRAMCHATID }}
+        jobStatus: ${{ job.status }}
+        skipSuccess: 'false'
