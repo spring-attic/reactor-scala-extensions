@@ -1,3 +1,10 @@
+# reactor-scala-extensions is no longer actively maintained by VMware, Inc.
+This project is being move to the `spring-attic` GitHub org, and may eventually reside in the `vmware-archive` org.
+
+Special note from Simon Baslé @simonbasle, Reactor Project Lead:
+Should this project need to be revived, please reach out to the Reactor GitHub org @team + GitHub user @sinwe in a GitHub discussion or issue, or on Twitter to @projectreactor or @springops
+
+
 # Reactor Scala Extensions
 [![Join the chat at https://gitter.im/reactor/reactor-scala-extensions](https://badges.gitter.im/reactor/reactor-scala-extensions.svg)](https://gitter.im/reactor/reactor-scala-extensions?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Reactor Scala Extensions](https://maven-badges.herokuapp.com/maven-central/io.projectreactor/reactor-scala-extensions_2.12/badge.svg?style=plastic)](https://mvnrepository.com/artifact/io.projectreactor/reactor-scala-extensions_2.12)
